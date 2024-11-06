@@ -24,6 +24,14 @@ const (
 
 // handleRequest is the main Lambda handler
 func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+	if err != nil {
+		logLevel = log.InfoLevel
+	}
+
+	log.SetOutput(os.Stdout)
+	log.SetLevel(logLevel)
+
 	// Parse request body
 	var reqBody model.Request
 	if err := json.Unmarshal([]byte(request.Body), &reqBody); err != nil {
@@ -33,15 +41,13 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		})
 	}
 
-	// Validate code
 	if reqBody.Code == "" {
 		return createResponse(http.StatusBadRequest, model.Response{
-			Message: "Code is required",
+			Message: "Access code: 'code' is required",
 			Status:  "error",
 		})
 	}
 
-	// Exchange code for token
 	token, err := exchangeCode(ctx, reqBody.Code)
 	if err != nil {
 		return createResponse(http.StatusInternalServerError, model.Response{
@@ -50,12 +56,14 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		})
 	}
 
-	// Return success response
 	return createResponse(http.StatusOK, model.Response{
-		Message: "OAuth successful",
-		Status:  "success",
-		Token:   token.AccessToken,
+		AccessToken:  token.AccessToken,
+		TokenType:    token.TokenType,
+		ExpiresIn:    token.ExpiresIn,
+		RefreshToken: token.RefreshToken,
+		Scope:        token.Scope,
 	})
+
 }
 
 // exchangeCode exchanges the OAuth code for an access token
@@ -63,17 +71,9 @@ func exchangeCode(ctx context.Context, code string) (*model.DiscordTokenResponse
 	clientID := os.Getenv("DISCORD_CLIENT_ID")
 	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")
 	redirectURI := os.Getenv("DISCORD_REDIRECT_URI")
-	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
-
-	if err != nil {
-		logLevel = log.InfoLevel
-	}
-
-	log.SetOutput(os.Stdout)
-	log.SetLevel(logLevel)
 
 	if clientID == "" || clientSecret == "" || redirectURI == "" {
-		return nil, fmt.Errorf("missing required environment variables")
+		return nil, fmt.Errorf("missing required environment variables: CLIENT_ID, CLIENT_SECRET or REDIRECT_URI")
 	}
 
 	// Prepare the request body
@@ -113,12 +113,16 @@ func exchangeCode(ctx context.Context, code string) (*model.DiscordTokenResponse
 		return nil, fmt.Errorf("discord API returned status: %d", resp.StatusCode)
 	}
 
+	log.Infof("http status code: %d", resp.StatusCode)
+
 	// Parse response
 	var tokenResp model.DiscordTokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
 		log.Errorf("failed to deserialize discord response body into model.DiscordTokenResponse object: %s", err)
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
+
+	log.Infof("Discord token response: %s", tokenResp.AccessToken)
 
 	return &tokenResp, nil
 }

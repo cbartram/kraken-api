@@ -16,7 +16,11 @@ type DiscordTokenResponse struct {
 
 // Response represents our API response
 type Response struct {
-	Message string `json:"message"`
-	Status  string `json:"status"`
-	Token   string `json:"token,omitempty"` // Only included on success
+	Message      string `json:"message,omitempty"`
+	Status       string `json:"status,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	TokenType    string `json:"token_type,omitempty"`
+	ExpiresIn    int    `json:"expires_in,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	Scope        string `json:"scope,omitempty"`
 }
