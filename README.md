@@ -22,11 +22,30 @@ your machine.
 
 ### Running
 
-Build this application by running: 
+Build this application by running the following: 
 
 ```shell
+export GOOS=linux
+export GOARCH=amd64
+export CGO_ENABLED=0
+
 go build -tags lambda.norpc -o bootstrap main.go
 ```
+*Note: `GOOS` should always be linux regardless of which OS you are running on.*
+
+Next zip the binary so it can be uploaded to the lambda servers. 
+
+```shell
+zip deployment.zip bootstrap
+```
+
+Finally upload the binary to AWS Lambda so it can be executed:
+
+```shell
+aws lambda update-function-code --function-name kraken-api --zip-file fileb://deployment.zip --color on --output table
+```
+
+You can also run `./scripts/deploy.sh` to build, zip, and upload the function to AWS.
 
 ## Running the tests
 
