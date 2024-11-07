@@ -31,7 +31,8 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 	isAuth, tokens := authManager.AuthUser(ctx, &reqBody.RefreshToken)
 	if isAuth {
 		c.JSON(http.StatusOK, model.CognitoAuthResponse{
-			AccessToken: *tokens.AccessToken,
+			AccessToken:  *tokens.AccessToken,
+			RefreshToken: *tokens.RefreshToken,
 		})
 	} else {
 		c.JSON(http.StatusUnauthorized, model.ErrorResponse{

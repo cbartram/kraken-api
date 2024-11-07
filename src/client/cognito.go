@@ -2,6 +2,9 @@ package client
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -123,9 +126,18 @@ func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, d
 // The cognito refresh token and access token will be returned in the response along with the discord refresh and access
 // token.
 func (m *CognitoAuthManager) initiateAuthUserPass(ctx context.Context, discordID, password string) (*types.AuthenticationResultType, error) {
+	usernameClientID := discordID + m.clientID
+	hash := hmac.New(sha256.New, []byte(m.clientSecret))
+	hash.Write([]byte(usernameClientID))
+	digest := hash.Sum(nil)
+
+	// Encode the digest to base64
+	secretHash := base64.StdEncoding.EncodeToString(digest)
+
 	authParams := map[string]string{
-		"USERNAME": discordID,
-		"PASSWORD": password,
+		"USERNAME":    discordID,
+		"PASSWORD":    password,
+		"SECRET_HASH": secretHash,
 	}
 
 	result, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
