@@ -11,7 +11,7 @@ import (
 func DiscordMiddleware(c *gin.Context) {
 	discordClient, err := client.MakeDiscordClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
 			Message: "failed to create discord client: " + err.Error(),
 			Status:  "error",
 		})

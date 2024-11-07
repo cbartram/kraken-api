@@ -12,5 +12,5 @@ func main() {
 }
 
 func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return src.MakeRouter().ProxyWithContext(ctx, request)
+	return src.MakeRouter(ctx).ProxyWithContext(ctx, request)
 }

@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 )
@@ -17,6 +19,7 @@ type CognitoAuthManager struct {
 	cognitoClient *cognitoidentityprovider.Client
 	userPoolID    string
 	clientID      string
+	clientSecret  string
 	configPath    string
 }
 
@@ -25,19 +28,25 @@ type SessionData struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// NewCognitoAuthManager creates a new instance of CognitoAuthManager
-func NewCognitoAuthManager(cfg aws.Config, userPoolID, clientID string) *CognitoAuthManager {
+// MakeCognitoAuthManager creates a new instance of CognitoAuthManager
+func MakeCognitoAuthManager() *CognitoAuthManager {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Errorf("error loading default aws config: %s", err)
+	}
+
 	return &CognitoAuthManager{
 		cognitoClient: cognitoidentityprovider.NewFromConfig(cfg),
-		userPoolID:    userPoolID,
-		clientID:      clientID,
+		userPoolID:    os.Getenv("USER_POOL_ID"),
+		clientID:      os.Getenv("COGNITO_CLIENT_ID"),
+		clientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),
 		configPath:    filepath.Join(os.Getenv("HOME"), ".config", "your-app", "session.json"),
 	}
 }
 
-// HandleDiscordAuth processes Discord OAuth results and manages Cognito user creation/session
-func (m *CognitoAuthManager) HandleDiscordAuth(ctx context.Context, discordID, email string) error {
-
+// DoesUserExist Checks the user pool for the existence of a user with a given discord ID.
+func (m *CognitoAuthManager) DoesUserExist(ctx context.Context, discordID string) bool {
+	log.Infof("checking user-pool for user with discord id: %s", discordID)
 	// Try to find existing user
 	_, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(m.userPoolID),
@@ -47,17 +56,16 @@ func (m *CognitoAuthManager) HandleDiscordAuth(ctx context.Context, discordID, e
 	if err != nil {
 		var notFoundErr *types.UserNotFoundException
 		if errors.As(err, &notFoundErr) {
-			// User doesn't exist, create new user
-			return m.createCognitoUser(ctx, discordID, email)
+			log.Infof("user with discord ID: %s not found in user pool. creating new user.", discordID)
+			return false
 		}
-		return fmt.Errorf("error checking user existence: %w", err)
+		log.Error(fmt.Errorf("error checking user existence: %w", err))
+		return false
 	}
-
-	// User exists, refresh session
-	return m.refreshUserSession(ctx, discordID)
+	return true
 }
 
-func (m *CognitoAuthManager) createCognitoUser(ctx context.Context, discordID, email string) error {
+func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, discordUsername, email string) (*types.AuthenticationResultType, error) {
 	// Create user attributes
 	attributes := []types.AttributeType{
 		{
@@ -67,6 +75,10 @@ func (m *CognitoAuthManager) createCognitoUser(ctx context.Context, discordID, e
 		{
 			Name:  aws.String("custom:discord_id"),
 			Value: aws.String(discordID),
+		},
+		{
+			Name:  aws.String("custom:discord_username"),
+			Value: aws.String(discordUsername),
 		},
 	}
 
@@ -88,10 +100,11 @@ func (m *CognitoAuthManager) createCognitoUser(ctx context.Context, discordID, e
 	})
 
 	if err != nil {
-		return fmt.Errorf("error creating user: %w", err)
+		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
-	// Set permanent password
+	// Set permanent password although users will never actually log in with a user/pass combo. The Kraken client will use the Cognito refresh token
+	// to try and get an access token for the user and authenticate with the access token.
 	_, err = m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
 		UserPoolId: aws.String(m.userPoolID),
 		Username:   aws.String(discordID),
@@ -99,14 +112,17 @@ func (m *CognitoAuthManager) createCognitoUser(ctx context.Context, discordID, e
 		Permanent:  true,
 	})
 	if err != nil {
-		return fmt.Errorf("error setting permanent password: %w", err)
+		return nil, fmt.Errorf("error setting permanent password: %w", err)
 	}
 
 	// Initialize auth session
-	return m.initiateAuth(ctx, discordID, password)
+	return m.initiateAuthUserPass(ctx, discordID, password)
 }
 
-func (m *CognitoAuthManager) initiateAuth(ctx context.Context, discordID, password string) error {
+// initiateAuthUserPass Happens when a user is initially created with the user pool and uses username + generated pass to login
+// The cognito refresh token and access token will be returned in the response along with the discord refresh and access
+// token.
+func (m *CognitoAuthManager) initiateAuthUserPass(ctx context.Context, discordID, password string) (*types.AuthenticationResultType, error) {
 	authParams := map[string]string{
 		"USERNAME": discordID,
 		"PASSWORD": password,
@@ -119,20 +135,14 @@ func (m *CognitoAuthManager) initiateAuth(ctx context.Context, discordID, passwo
 		AuthParameters: authParams,
 	})
 	if err != nil {
-		return fmt.Errorf("error initiating auth: %w", err)
+		return nil, fmt.Errorf("error initiating admin user/pass auth with user pool: %w", err)
 	}
 
-	return m.storeRefreshToken(result.AuthenticationResult.RefreshToken)
+	return result.AuthenticationResult, nil
 }
 
-// VerifyUserSession checks if the current session is valid
-func (m *CognitoAuthManager) VerifyUserSession(ctx context.Context) bool {
-	refreshToken, err := m.loadRefreshToken()
-	if err != nil {
-		return false
-	}
-
-	_, err = m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken *string) (bool, *types.AuthenticationResultType) {
+	auth, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(m.userPoolID),
 		ClientId:   aws.String(m.clientID),
 		AuthFlow:   types.AuthFlowTypeRefreshTokenAuth,
@@ -141,15 +151,15 @@ func (m *CognitoAuthManager) VerifyUserSession(ctx context.Context) bool {
 		},
 	})
 
-	return err == nil
+	if err != nil {
+		log.Infof("user with refresh token: %s could not be authenticated: %s", refreshToken, err.Error())
+		return false, nil
+	}
+
+	return true, auth.AuthenticationResult
 }
 
-func (m *CognitoAuthManager) refreshUserSession(ctx context.Context, discordID string) error {
-	// TODO BIG TODO
-	//password := retrieveSecurePassword(discordID) // Implement this function
-	return m.initiateAuth(ctx, discordID, "foo")
-}
-
+// TODO needs to be done on the kraken client java side
 func (m *CognitoAuthManager) storeRefreshToken(refreshToken *string) error {
 	if refreshToken == nil {
 		return errors.New("refresh token is nil")
@@ -173,6 +183,7 @@ func (m *CognitoAuthManager) storeRefreshToken(refreshToken *string) error {
 	return os.WriteFile(m.configPath, jsonData, 0600)
 }
 
+// TODO needs to be done on java side
 func (m *CognitoAuthManager) loadRefreshToken() (*string, error) {
 	data, err := os.ReadFile(m.configPath)
 	if err != nil {
