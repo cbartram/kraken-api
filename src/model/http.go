@@ -48,5 +48,6 @@ type CognitoUser struct {
 	DiscordUsername string             `json:"discordUsername,omitempty"`
 	Email           string             `json:"email,omitempty"`
 	DiscordID       string             `json:"discordId,omitempty"`
+	AccountEnabled  bool               `json:"accountEnabled,omitempty"`
 	Credentials     CognitoCredentials `json:"credentials,omitempty"`
 }

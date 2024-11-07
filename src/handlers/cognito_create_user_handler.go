@@ -51,6 +51,7 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			DiscordUsername: reqBody.DiscordUsername,
 			Email:           reqBody.DiscordEmail,
 			DiscordID:       reqBody.DiscordID,
+			AccountEnabled:  true,
 			Credentials: model.CognitoCredentials{
 				RefreshToken: *refreshToken.RefreshToken,
 				AccessToken:  *refreshToken.AccessToken,

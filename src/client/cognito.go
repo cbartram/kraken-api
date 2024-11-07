@@ -84,6 +84,10 @@ func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, d
 			Name:  aws.String("custom:discord_username"),
 			Value: aws.String(discordUsername),
 		},
+		{
+			Name:  aws.String("custom:purchased_plugins"),
+			Value: aws.String(""),
+		},
 	}
 
 	// Create user in Cognito
@@ -203,6 +207,7 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, usernam
 		DiscordID:       discordID,
 		Email:           email,
 		CognitoID:       cognitoID,
+		AccountEnabled:  user.Enabled,
 		Credentials: model.CognitoCredentials{
 			AccessToken:  *auth.AuthenticationResult.AccessToken,
 			RefreshToken: *auth.AuthenticationResult.RefreshToken,
