@@ -29,6 +29,8 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 
 	authManager := client.MakeCognitoAuthManager()
 	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.Credentials.RefreshToken, &reqBody.DiscordID)
+
+	// Note: This also has checked that the user account in cognito is enabled.
 	if isAuth {
 		c.JSON(http.StatusOK, cognitoUser)
 	} else {

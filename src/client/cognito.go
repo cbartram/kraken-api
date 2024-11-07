@@ -179,6 +179,11 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, usernam
 		return false, nil
 	}
 
+	if !user.Enabled {
+		log.Warnf("user with username: %s found but not enabled.", *username)
+		return false, nil
+	}
+
 	var email, discordID, discordUsername, cognitoID string
 	for _, attr := range user.UserAttributes {
 		switch aws.ToString(attr.Name) {
