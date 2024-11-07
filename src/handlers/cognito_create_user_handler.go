@@ -46,9 +46,15 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			return
 		}
 
-		c.JSON(http.StatusOK, model.CognitoAuthResponse{
-			RefreshToken: *refreshToken.RefreshToken,
-			AccessToken:  *refreshToken.AccessToken,
+		// Note: this does not provide the cognito id. However, users are located via username (discord id) not cognito id.
+		c.JSON(http.StatusOK, model.CognitoUser{
+			DiscordUsername: reqBody.DiscordUsername,
+			Email:           reqBody.DiscordEmail,
+			DiscordID:       reqBody.DiscordID,
+			Credentials: model.CognitoCredentials{
+				RefreshToken: *refreshToken.RefreshToken,
+				AccessToken:  *refreshToken.AccessToken,
+			},
 		})
 	} else {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{

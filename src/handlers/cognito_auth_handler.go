@@ -21,19 +21,16 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 		return
 	}
 
-	var reqBody model.CognitoAuthRequest
+	var reqBody model.CognitoUser
 	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: "invalid request body: " + err.Error(), Status: "error"})
 		return
 	}
 
 	authManager := client.MakeCognitoAuthManager()
-	isAuth, tokens := authManager.AuthUser(ctx, &reqBody.RefreshToken)
+	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.Credentials.RefreshToken, &reqBody.DiscordID)
 	if isAuth {
-		c.JSON(http.StatusOK, model.CognitoAuthResponse{
-			AccessToken:  *tokens.AccessToken,
-			RefreshToken: *tokens.RefreshToken,
-		})
+		c.JSON(http.StatusOK, cognitoUser)
 	} else {
 		c.JSON(http.StatusUnauthorized, model.ErrorResponse{
 			Message: "user unauthorized",

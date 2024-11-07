@@ -35,7 +35,7 @@ type CognitoCreateUserRequest struct {
 	DiscordEmail    string `json:"discord_email"`
 }
 
-type CognitoAuthRequest struct {
+type CognitoCredentials struct {
 	RefreshToken string `json:"refresh_token"`
 
 	// This isn't actually used in the auth process as it can be expired but in case it is sent by the client
@@ -43,7 +43,10 @@ type CognitoAuthRequest struct {
 	AccessToken string `json:"access_token,omitempty"`
 }
 
-type CognitoAuthResponse struct {
-	RefreshToken string `json:"refresh_token,omitempty"`
-	AccessToken  string `json:"access_token"`
+type CognitoUser struct {
+	CognitoID       string             `json:"cognitoId,omitempty"`
+	DiscordUsername string             `json:"discordUsername,omitempty"`
+	Email           string             `json:"email,omitempty"`
+	DiscordID       string             `json:"discordId,omitempty"`
+	Credentials     CognitoCredentials `json:"credentials,omitempty"`
 }

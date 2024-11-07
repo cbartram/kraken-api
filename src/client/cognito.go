@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	log "github.com/sirupsen/logrus"
+	"kraken-api/src/model"
 	"os"
 	"path/filepath"
 )
@@ -153,7 +154,7 @@ func (m *CognitoAuthManager) initiateAuthUserPass(ctx context.Context, discordID
 	return result.AuthenticationResult, nil
 }
 
-func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken *string) (bool, *types.AuthenticationResultType) {
+func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, username *string) (bool, *model.CognitoUser) {
 	auth, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(m.userPoolID),
 		ClientId:   aws.String(m.clientID),
@@ -164,11 +165,44 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken *string)
 	})
 
 	if err != nil {
-		log.Infof("user with refresh token: %s could not be authenticated: %s", refreshToken, err.Error())
+		log.Errorf("user with refresh token: %s could not be authenticated: %s", *refreshToken, err.Error())
 		return false, nil
 	}
 
-	return true, auth.AuthenticationResult
+	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
+		UserPoolId: aws.String(m.userPoolID),
+		Username:   username,
+	})
+
+	if err != nil {
+		log.Errorf("could not get user with username: %s", *username, err.Error())
+		return false, nil
+	}
+
+	var email, discordID, discordUsername, cognitoID string
+	for _, attr := range user.UserAttributes {
+		switch aws.ToString(attr.Name) {
+		case "email":
+			email = aws.ToString(attr.Value)
+		case "sub":
+			cognitoID = aws.ToString(attr.Value)
+		case "custom:discord_id":
+			discordID = aws.ToString(attr.Value)
+		case "custom:discord_username":
+			discordUsername = aws.ToString(attr.Value)
+		}
+	}
+
+	return true, &model.CognitoUser{
+		DiscordUsername: discordUsername,
+		DiscordID:       discordID,
+		Email:           email,
+		CognitoID:       cognitoID,
+		Credentials: model.CognitoCredentials{
+			AccessToken:  *auth.AuthenticationResult.AccessToken,
+			RefreshToken: *auth.AuthenticationResult.RefreshToken,
+		},
+	}
 }
 
 // TODO needs to be done on the kraken client java side
