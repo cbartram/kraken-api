@@ -23,12 +23,6 @@ type DiscordTokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
-// ErrorResponse A response when an error occurs.
-type ErrorResponse struct {
-	Message string `json:"message,omitempty"`
-	Status  string `json:"status,omitempty"`
-}
-
 type CognitoCreateUserRequest struct {
 	DiscordID       string `json:"discord_id"`
 	DiscordUsername string `json:"discord_username"`

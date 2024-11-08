@@ -19,9 +19,8 @@ type DiscordRequestHandler struct{}
 func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	discClient, exists := c.Get("discord-client")
 	if !exists {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
-			Message: "failed to get discord client from request context",
-			Status:  "error",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to get discord client from request context",
 		})
 		return
 	}
@@ -30,20 +29,19 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		bodyRaw, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			log.Errorf("could not read body from request: %s", err)
-			c.JSON(http.StatusInternalServerError, model.ErrorResponse{Message: "could not read body from request: " + err.Error(), Status: "error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
 			return
 		}
 
 		var reqBody model.DiscordOAuthRequest
 		if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: "invalid request body: " + err.Error(), Status: "error"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 			return
 		}
 
 		if reqBody.Code == "" {
-			c.JSON(http.StatusBadRequest, model.ErrorResponse{
-				Message: "access code: 'code' is required",
-				Status:  "error",
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "access code: 'code' is required",
 			})
 			return
 		}
@@ -51,9 +49,8 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		log.Infof("exchanging code: %s for oauth access token", reqBody.Code)
 		token, err := discordClient.ExchangeCodeForToken(reqBody.Code)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.ErrorResponse{
-				Message: fmt.Sprintf("Failed to exchange code: %v", err),
-				Status:  "error",
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("Failed to exchange code: %v", err),
 			})
 			return
 		}
@@ -66,9 +63,8 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Contex
 			Scope:        token.Scope,
 		})
 	} else {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
-			Message: "invalid type cast to discord client",
-			Status:  "error",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "invalid type cast to discord client",
 		})
 	}
 }

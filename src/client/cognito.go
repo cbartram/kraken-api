@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	log "github.com/sirupsen/logrus"
 	"kraken-api/src/model"
+	"kraken-api/src/util"
 	"os"
 	"path/filepath"
 )
@@ -151,7 +152,7 @@ func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, d
 	}
 
 	// Create user in Cognito
-	password, _ := MakeSecurePassword().GeneratePassword(PasswordConfig{
+	password, _ := util.MakeSecurePassword().GeneratePassword(util.PasswordConfig{
 		Length:         15,
 		RequireUpper:   true,
 		RequireLower:   true,

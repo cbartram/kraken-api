@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"kraken-api/src/client"
-	"kraken-api/src/model"
 	"net/http"
 )
 
@@ -13,17 +12,22 @@ type CognitoGetUserHandler struct{}
 
 // HandleRequest Retrieves a user from Cognito.
 func (h *CognitoGetUserHandler) HandleRequest(c *gin.Context, ctx context.Context) {
-	// TODO Parse the discord id from req query params
+	discordID := c.Query("discordId")
+	if discordID == "" {
+		c.JSON(400, gin.H{
+			"error": "discordId query parameter is required",
+		})
+		return
+	}
 
 	authManager := client.MakeCognitoAuthManager()
-	cognitoUser, err := authManager.GetUser(ctx, &reqBody.DiscordID)
+	cognitoUser, err := authManager.GetUser(ctx, &discordID)
 
 	if err == nil {
 		c.JSON(http.StatusOK, cognitoUser)
 	} else {
-		c.JSON(http.StatusNotFound, model.ErrorResponse{
-			Message: fmt.Sprintf("user with id: %s does not exist", reqBody.DiscordID),
-			Status:  "error",
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": fmt.Sprintf("user with id: %s does not exist", discordID),
 		})
 	}
 }

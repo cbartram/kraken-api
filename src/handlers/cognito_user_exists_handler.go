@@ -2,12 +2,8 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
-	"io"
 	"kraken-api/src/client"
-	"kraken-api/src/model"
 	"net/http"
 )
 
@@ -15,25 +11,19 @@ type CognitoUserExistsHandler struct{}
 
 // HandleRequest Checks if the user exists and is enabled.
 func (h *CognitoUserExistsHandler) HandleRequest(c *gin.Context, ctx context.Context) {
-	bodyRaw, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Message: "could not read body from request: " + err.Error(), Status: "error"})
+	discordID := c.Query("discordId")
+	if discordID == "" {
+		c.JSON(400, gin.H{
+			"error": "discordId query parameter is required",
+		})
 		return
 	}
 
-	var reqBody map[string]string
-	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: "invalid request body: " + err.Error(), Status: "error"})
-		return
-	}
-
-	returnObj := map[string]bool{}
 	authManager := client.MakeCognitoAuthManager()
-	userExists, userEnabled := authManager.DoesUserExist(ctx, reqBody["discordId"])
+	userExists, userEnabled := authManager.DoesUserExist(ctx, discordID)
 
-	returnObj["userExists"] = userExists
-	returnObj["userEnabled"] = userEnabled
-
-	c.JSON(http.StatusOK, returnObj)
+	c.JSON(http.StatusOK, gin.H{
+		"userExists":  userExists,
+		"userEnabled": userEnabled,
+	})
 }

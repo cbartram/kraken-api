@@ -19,13 +19,13 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Message: "could not read body from request: " + err.Error(), Status: "error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
 		return
 	}
 
 	var reqBody model.CognitoUser
 	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: "invalid request body: " + err.Error(), Status: "error"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
 
@@ -36,9 +36,8 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 	if isAuth {
 		c.JSON(http.StatusOK, cognitoUser)
 	} else {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{
-			Message: "user unauthorized",
-			Status:  "error",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user unauthorized",
 		})
 	}
 }

@@ -51,7 +51,7 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
-	r.POST("/api/v1/cognito/user-exists", func(c *gin.Context) {
+	r.GET("/api/v1/cognito/user-exists", func(c *gin.Context) {
 		handler := handlers.CognitoUserExistsHandler{}
 		handler.HandleRequest(c, ctx)
 	})

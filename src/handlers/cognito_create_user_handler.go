@@ -22,13 +22,13 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Message: "could not read body from request: " + err.Error(), Status: "error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
 		return
 	}
 
 	var reqBody model.CognitoCreateUserRequest
 	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: "invalid request body: " + err.Error(), Status: "error"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
 
@@ -39,9 +39,8 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 		refreshToken, err := authManager.CreateCognitoUser(ctx, reqBody.DiscordID, reqBody.DiscordUsername, reqBody.DiscordEmail)
 		if err != nil {
 			log.Errorf("error while creating new cognito user: %s", err)
-			c.JSON(http.StatusInternalServerError, model.ErrorResponse{
-				Message: "error while creating new cognito user:" + err.Error(),
-				Status:  "error",
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "error while creating new cognito user:" + err.Error(),
 			})
 			return
 		}
@@ -58,9 +57,8 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			},
 		})
 	} else {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
-			Message: fmt.Sprintf("user with discord id: %s already exists", reqBody.DiscordID),
-			Status:  "error",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("user with discord id: %s already exists", reqBody.DiscordID),
 		})
 	}
 }
