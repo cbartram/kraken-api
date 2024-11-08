@@ -48,11 +48,12 @@ func MakeCognitoAuthManager() *CognitoAuthManager {
 	}
 }
 
-// DoesUserExist Checks the user pool for the existence of a user with a given discord ID.
-func (m *CognitoAuthManager) DoesUserExist(ctx context.Context, discordID string) bool {
+// DoesUserExist Checks the user pool for the existence of a user with a given discord ID. This method returns 2
+// booleans. The first is true if the user exists. The second is true if the users account is enabled and false otherwise.
+func (m *CognitoAuthManager) DoesUserExist(ctx context.Context, discordID string) (bool, bool) {
 	log.Infof("checking user-pool for user with discord id: %s", discordID)
 	// Try to find existing user
-	_, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
+	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(m.userPoolID),
 		Username:   aws.String(discordID),
 	})
@@ -60,10 +61,69 @@ func (m *CognitoAuthManager) DoesUserExist(ctx context.Context, discordID string
 	if err != nil {
 		var notFoundErr *types.UserNotFoundException
 		if errors.As(err, &notFoundErr) {
-			log.Infof("user with discord ID: %s not found in user pool. creating new user.", discordID)
-			return false
+			log.Infof("user with discord ID: %s not found in user pool.", discordID)
+			return false, false
 		}
 		log.Error(fmt.Errorf("error checking user existence: %w", err))
+		return false, false
+	}
+	return true, user.Enabled
+}
+
+func (m *CognitoAuthManager) GetUser(ctx context.Context, discordId *string) (*model.CognitoUser, error) {
+	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
+		UserPoolId: aws.String(m.userPoolID),
+		Username:   discordId,
+	})
+
+	if err != nil {
+		log.Errorf("could not get user with username: %s", *discordId, err.Error())
+		return nil, errors.New("could not get user with username: " + *discordId)
+	}
+
+	var email, discordID, discordUsername, cognitoID string
+	for _, attr := range user.UserAttributes {
+		switch aws.ToString(attr.Name) {
+		case "email":
+			email = aws.ToString(attr.Value)
+		case "sub":
+			cognitoID = aws.ToString(attr.Value)
+		case "custom:discord_id":
+			discordID = aws.ToString(attr.Value)
+		case "custom:discord_username":
+			discordUsername = aws.ToString(attr.Value)
+		}
+	}
+
+	// Note: This method does not return credentials with the user
+	return &model.CognitoUser{
+		DiscordUsername: discordUsername,
+		DiscordID:       discordID,
+		Email:           email,
+		CognitoID:       cognitoID,
+		AccountEnabled:  user.Enabled,
+	}, nil
+}
+
+func (m *CognitoAuthManager) EnableUser(ctx context.Context, discordId string) bool {
+	_, err := m.cognitoClient.AdminEnableUser(ctx, &cognitoidentityprovider.AdminEnableUserInput{
+		UserPoolId: aws.String(m.userPoolID),
+		Username:   aws.String(discordId),
+	})
+	if err != nil {
+		log.Errorf("failed to enable user: %s", err)
+		return false
+	}
+	return true
+}
+
+func (m *CognitoAuthManager) DisableUser(ctx context.Context, discordId string) bool {
+	_, err := m.cognitoClient.AdminDisableUser(ctx, &cognitoidentityprovider.AdminDisableUserInput{
+		UserPoolId: aws.String(m.userPoolID),
+		Username:   aws.String(discordId),
+	})
+	if err != nil {
+		log.Errorf("failed to disable user: %s", err)
 		return false
 	}
 	return true
@@ -183,11 +243,6 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, usernam
 		return false, nil
 	}
 
-	if !user.Enabled {
-		log.Warnf("user with username: %s found but not enabled.", *username)
-		return false, nil
-	}
-
 	var email, discordID, discordUsername, cognitoID string
 	for _, attr := range user.UserAttributes {
 		switch aws.ToString(attr.Name) {
@@ -202,6 +257,8 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, usernam
 		}
 	}
 
+	// Note: we still authenticate a disabled user the client side handles updating UI/auth flows
+	// to re-auth with discord.
 	return true, &model.CognitoUser{
 		DiscordUsername: discordUsername,
 		DiscordID:       discordID,

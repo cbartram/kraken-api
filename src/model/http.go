@@ -35,6 +35,11 @@ type CognitoCreateUserRequest struct {
 	DiscordEmail    string `json:"discord_email"`
 }
 
+type CognitoUserStatusRequest struct {
+	AccountEnabled bool   `json:"accountEnabled"`
+	DiscordID      string `json:"discordId"`
+}
+
 type CognitoCredentials struct {
 	RefreshToken string `json:"refresh_token"`
 

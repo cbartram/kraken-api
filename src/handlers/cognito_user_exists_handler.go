@@ -11,11 +11,10 @@ import (
 	"net/http"
 )
 
-type CognitoAuthHandler struct{}
+type CognitoUserExistsHandler struct{}
 
-// HandleRequest Authenticates that a refresh token is valid for a given user id. This returns the entire
-// user object with a refreshed access token.
-func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+// HandleRequest Checks if the user exists and is enabled.
+func (h *CognitoUserExistsHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -23,22 +22,18 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 		return
 	}
 
-	var reqBody model.CognitoUser
+	var reqBody map[string]string
 	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{Message: "invalid request body: " + err.Error(), Status: "error"})
 		return
 	}
 
+	returnObj := map[string]bool{}
 	authManager := client.MakeCognitoAuthManager()
-	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.Credentials.RefreshToken, &reqBody.DiscordID)
+	userExists, userEnabled := authManager.DoesUserExist(ctx, reqBody["discordId"])
 
-	// Note: This also has checked that the user account in cognito is enabled.
-	if isAuth {
-		c.JSON(http.StatusOK, cognitoUser)
-	} else {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{
-			Message: "user unauthorized",
-			Status:  "error",
-		})
-	}
+	returnObj["userExists"] = userExists
+	returnObj["userEnabled"] = userEnabled
+
+	c.JSON(http.StatusOK, returnObj)
 }

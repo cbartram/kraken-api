@@ -33,7 +33,7 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 	}
 
 	authManager := client.MakeCognitoAuthManager()
-	exists := authManager.DoesUserExist(ctx, reqBody.DiscordID)
+	exists, _ := authManager.DoesUserExist(ctx, reqBody.DiscordID)
 
 	if !exists {
 		refreshToken, err := authManager.CreateCognitoUser(ctx, reqBody.DiscordID, reqBody.DiscordUsername, reqBody.DiscordEmail)
