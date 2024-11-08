@@ -59,8 +59,24 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			},
 		})
 	} else {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("user with discord id: %s already exists", reqBody.DiscordID),
+		// User already exists.
+		log.Infof("user already exists, re-enabling and refreshing session")
+		authManager.EnableUser(ctx, reqBody.DiscordID)
+		creds, err := authManager.RefreshSession(ctx, reqBody.DiscordID)
+		if err != nil {
+			log.Errorf("error: failed to refresh existing user session: " + err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("user with discord id: %s already exists. failed to refresh session", reqBody.DiscordID),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, model.CognitoUser{
+			DiscordUsername: reqBody.DiscordUsername,
+			Email:           reqBody.DiscordEmail,
+			DiscordID:       reqBody.DiscordID,
+			AccountEnabled:  true,
+			Credentials:     *creds,
 		})
 	}
 }
