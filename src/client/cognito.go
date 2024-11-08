@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -46,28 +45,6 @@ func MakeCognitoAuthManager() *CognitoAuthManager {
 	}
 }
 
-// DoesUserExist Checks the user pool for the existence of a user with a given discord ID. This method returns 2
-// booleans. The first is true if the user exists. The second is true if the users account is enabled and false otherwise.
-func (m *CognitoAuthManager) DoesUserExist(ctx context.Context, discordID string) (bool, bool) {
-	log.Infof("checking user-pool for user with discord id: %s", discordID)
-	// Try to find existing user
-	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-		UserPoolId: aws.String(m.userPoolID),
-		Username:   aws.String(discordID),
-	})
-
-	if err != nil {
-		var notFoundErr *types.UserNotFoundException
-		if errors.As(err, &notFoundErr) {
-			log.Infof("user with discord ID: %s not found in user pool.", discordID)
-			return false, false
-		}
-		log.Error(fmt.Errorf("error checking user existence: %w", err))
-		return false, false
-	}
-	return true, user.Enabled
-}
-
 func (m *CognitoAuthManager) GetUser(ctx context.Context, discordId *string) (*model.CognitoUser, error) {
 	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(m.userPoolID),
@@ -75,7 +52,7 @@ func (m *CognitoAuthManager) GetUser(ctx context.Context, discordId *string) (*m
 	})
 
 	if err != nil {
-		log.Errorf("could not get user with username: %s", *discordId, err.Error())
+		log.Errorf("no user exists with username: %s", *discordId, err.Error())
 		return nil, errors.New("could not get user with username: " + *discordId)
 	}
 
@@ -261,43 +238,4 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, userId 
 			RefreshToken: *auth.AuthenticationResult.RefreshToken,
 		},
 	}
-}
-
-// TODO needs to be done on the kraken client java side
-func (m *CognitoAuthManager) storeRefreshToken(refreshToken *string) error {
-	if refreshToken == nil {
-		return errors.New("refresh token is nil")
-	}
-
-	// Ensure directory exists
-	dir := filepath.Dir(m.configPath)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("error creating config directory: %w", err)
-	}
-
-	data := SessionData{
-		RefreshToken: *refreshToken,
-	}
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("error marshaling session data: %w", err)
-	}
-
-	return os.WriteFile(m.configPath, jsonData, 0600)
-}
-
-// TODO needs to be done on java side
-func (m *CognitoAuthManager) loadRefreshToken() (*string, error) {
-	data, err := os.ReadFile(m.configPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading session file: %w", err)
-	}
-
-	var sessionData SessionData
-	if err := json.Unmarshal(data, &sessionData); err != nil {
-		return nil, fmt.Errorf("error unmarshaling session data: %w", err)
-	}
-
-	return &sessionData.RefreshToken, nil
 }

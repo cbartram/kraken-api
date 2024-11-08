@@ -24,7 +24,7 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 	}
 
 	var reqBody model.CognitoUser
-	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
+	if err = json.Unmarshal(bodyRaw, &reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}

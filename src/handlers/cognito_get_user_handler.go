@@ -24,6 +24,8 @@ func (h *CognitoGetUserHandler) HandleRequest(c *gin.Context, ctx context.Contex
 
 	authManager := client.MakeCognitoAuthManager()
 	log.Infof("retrieving user with id: %s from cognito", discordID)
+
+	// Note: This method does not return credentials with the user
 	cognitoUser, err := authManager.GetUser(ctx, &discordID)
 
 	if err == nil {

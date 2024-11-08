@@ -7,10 +7,10 @@ import (
 
 func LogrusMiddleware(logger *log.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Next()
 		logger.WithFields(log.Fields{
 			"user-agent": c.Request.UserAgent(),
 			"error":      c.Errors.ByType(gin.ErrorTypePrivate).String(),
 		}).Infof("[%s] %s: ", c.Request.Method, c.Request.URL.Path)
+		c.Next()
 	}
 }
