@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"kraken-api/src/client"
+
 	"net/http"
 )
 
@@ -14,13 +16,14 @@ type CognitoGetUserHandler struct{}
 func (h *CognitoGetUserHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	discordID := c.Query("discordId")
 	if discordID == "" {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "discordId query parameter is required",
 		})
 		return
 	}
 
 	authManager := client.MakeCognitoAuthManager()
+	log.Infof("retrieving user with id: %s from cognito", discordID)
 	cognitoUser, err := authManager.GetUser(ctx, &discordID)
 
 	if err == nil {

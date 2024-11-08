@@ -23,15 +23,15 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 
 	log.SetOutput(os.Stdout)
 	logrus.SetLevel(logLevel)
-	logrus.Infof("log Level set to: %s", logLevel)
 
 	r := gin.New()
 
 	gin.DefaultWriter = logger.Writer()
 	gin.DefaultErrorWriter = logger.Writer()
+	gin.SetMode(gin.ReleaseMode)
 
 	r.Use(LogrusMiddleware(logger))
-	r.POST("/api/v1/discord/oauth", DiscordMiddleware, func(c *gin.Context) {
+	r.POST("/api/v1/discord/oauth", func(c *gin.Context) {
 		handler := handlers.DiscordRequestHandler{}
 		handler.HandleRequest(c, ctx)
 	})

@@ -13,7 +13,7 @@ type CognitoUserExistsHandler struct{}
 func (h *CognitoUserExistsHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	discordID := c.Query("discordId")
 	if discordID == "" {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "discordId query parameter is required",
 		})
 		return

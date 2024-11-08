@@ -29,6 +29,12 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 		return
 	}
 
+	if reqBody.DiscordID == "" || reqBody.Credentials.RefreshToken == "" {
+		log.Errorf("error: discord id '%s' or refresh token: '%s' missing from request body: ", reqBody.DiscordID, reqBody.Credentials.RefreshToken)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: discordId or refreshToken missing."})
+		return
+	}
+
 	authManager := client.MakeCognitoAuthManager()
 	log.Infof("authenticating user with discord id: %s", reqBody.DiscordID)
 	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.Credentials.RefreshToken, &reqBody.DiscordID)
