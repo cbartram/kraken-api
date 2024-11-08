@@ -34,6 +34,11 @@ type CognitoUserStatusRequest struct {
 	DiscordID      string `json:"discordId"`
 }
 
+type CognitoAuthRequest struct {
+	RefreshToken string `json:"refreshToken"`
+	DiscordID    string `json:"discordId"`
+}
+
 type CognitoCredentials struct {
 	RefreshToken string `json:"refresh_token"`
 
