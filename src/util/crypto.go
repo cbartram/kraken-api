@@ -1,7 +1,10 @@
 package util
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"math/big"
 	"sync"
@@ -25,18 +28,28 @@ type PasswordConfig struct {
 	RequireSpecial bool
 }
 
-// SecurePassword generates and stores passwords securely
-type SecurePassword struct {
+type Crypto struct {
 	mu sync.RWMutex
 }
 
+// MakeCognitoSecretHash Creates a hash based on the user id, client id and secret which must be
+// sent with every cognito auth request (along with a refresh token) to get a new access token.
+func (c *Crypto) MakeCognitoSecretHash(userId, clientId, clientSecret string) string {
+	usernameClientID := userId + clientId
+	hash := hmac.New(sha256.New, []byte(clientSecret))
+	hash.Write([]byte(usernameClientID))
+	digest := hash.Sum(nil)
+
+	return base64.StdEncoding.EncodeToString(digest)
+}
+
 // NewSecurePassword creates a new SecurePassword instance
-func MakeSecurePassword() *SecurePassword {
-	return &SecurePassword{}
+func MakeCrypto() *Crypto {
+	return &Crypto{}
 }
 
 // GeneratePassword generates a cryptographically secure password
-func (sp *SecurePassword) GeneratePassword(config PasswordConfig) (string, error) {
+func (c *Crypto) GeneratePassword(config PasswordConfig) (string, error) {
 	if config.Length < minLength {
 		return "", errors.New("password length must be at least 8 characters")
 	}
@@ -81,13 +94,11 @@ func (sp *SecurePassword) GeneratePassword(config PasswordConfig) (string, error
 		allChars += specialChars
 	}
 
-	// Generate remaining characters
 	remainingLength := config.Length - len(requiredChars)
 	if remainingLength < 0 {
 		return "", errors.New("password length too short to satisfy requirements")
 	}
 
-	// Generate random characters for the remaining length
 	for i := 0; i < remainingLength; i++ {
 		char, err := getRandomChar(allChars)
 		if err != nil {
@@ -96,7 +107,6 @@ func (sp *SecurePassword) GeneratePassword(config PasswordConfig) (string, error
 		requiredChars = append(requiredChars, char)
 	}
 
-	// Shuffle the password
 	password, err := shuffleBytes(requiredChars)
 	if err != nil {
 		return "", err

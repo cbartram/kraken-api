@@ -2,9 +2,6 @@ package client
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -152,7 +149,7 @@ func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, d
 	}
 
 	// Create user in Cognito
-	password, _ := util.MakeSecurePassword().GeneratePassword(util.PasswordConfig{
+	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
 		Length:         15,
 		RequireUpper:   true,
 		RequireLower:   true,
@@ -192,18 +189,10 @@ func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, d
 // The cognito refresh token and access token will be returned in the response along with the discord refresh and access
 // token.
 func (m *CognitoAuthManager) initiateAuthUserPass(ctx context.Context, discordID, password string) (*types.AuthenticationResultType, error) {
-	usernameClientID := discordID + m.clientID
-	hash := hmac.New(sha256.New, []byte(m.clientSecret))
-	hash.Write([]byte(usernameClientID))
-	digest := hash.Sum(nil)
-
-	// Encode the digest to base64
-	secretHash := base64.StdEncoding.EncodeToString(digest)
-
 	authParams := map[string]string{
 		"USERNAME":    discordID,
 		"PASSWORD":    password,
-		"SECRET_HASH": secretHash,
+		"SECRET_HASH": util.MakeCrypto().MakeCognitoSecretHash(discordID, m.clientID, m.clientSecret),
 	}
 
 	result, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
@@ -219,28 +208,29 @@ func (m *CognitoAuthManager) initiateAuthUserPass(ctx context.Context, discordID
 	return result.AuthenticationResult, nil
 }
 
-func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, username *string) (bool, *model.CognitoUser) {
+func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, userId *string) (bool, *model.CognitoUser) {
 	auth, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(m.userPoolID),
 		ClientId:   aws.String(m.clientID),
 		AuthFlow:   types.AuthFlowTypeRefreshTokenAuth,
 		AuthParameters: map[string]string{
 			"REFRESH_TOKEN": *refreshToken,
+			"SECRET_HASH":   util.MakeCrypto().MakeCognitoSecretHash(*userId, m.clientID, m.clientSecret),
 		},
 	})
 
 	if err != nil {
-		log.Errorf("user with refresh token: %s could not be authenticated: %s", *refreshToken, err.Error())
+		log.Errorf("error auth: user %s could not be authenticated: %s", *userId, err.Error())
 		return false, nil
 	}
 
 	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(m.userPoolID),
-		Username:   username,
+		Username:   userId,
 	})
 
 	if err != nil {
-		log.Errorf("could not get user with username: %s", *username, err.Error())
+		log.Errorf("could not get user with username: %s: error: %s", *userId, err.Error())
 		return false, nil
 	}
 

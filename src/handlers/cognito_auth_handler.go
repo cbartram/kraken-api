@@ -30,12 +30,15 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 	}
 
 	authManager := client.MakeCognitoAuthManager()
+	log.Infof("authenticating user with discord id: %s", reqBody.DiscordID)
 	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.Credentials.RefreshToken, &reqBody.DiscordID)
 
 	// Note: This also has checked that the user account in cognito is enabled.
 	if isAuth {
+		log.Infof("user auth ok")
 		c.JSON(http.StatusOK, cognitoUser)
 	} else {
+		log.Errorf("user is unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "user unauthorized",
 		})
