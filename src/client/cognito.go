@@ -235,7 +235,7 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, userId 
 		AccountEnabled:  user.Enabled,
 		Credentials: model.CognitoCredentials{
 			AccessToken:  *auth.AuthenticationResult.AccessToken,
-			RefreshToken: *auth.AuthenticationResult.RefreshToken,
+			RefreshToken: *refreshToken,
 		},
 	}
 }
