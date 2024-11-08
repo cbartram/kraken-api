@@ -185,6 +185,49 @@ func (m *CognitoAuthManager) initiateAuthUserPass(ctx context.Context, discordID
 	return result.AuthenticationResult, nil
 }
 
+// RefreshSession This method is called when a refresh token is about to expire and a new one needs to be generated.
+// There is no direct way to get a new refresh token without a users password. Since we do not store the password we set
+// must reset the password and re-auth to get a new refresh token.
+func (m *CognitoAuthManager) RefreshSession(ctx context.Context, discordID string) (*model.CognitoCredentials, error) {
+	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
+		Length:         15,
+		RequireUpper:   true,
+		RequireLower:   true,
+		RequireNumber:  true,
+		RequireSpecial: true,
+	})
+
+	log.Infof("resetting user password")
+	_, err := m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+		UserPoolId: aws.String(m.userPoolID),
+		Username:   aws.String(discordID),
+		Password:   aws.String(password),
+		Permanent:  true,
+	})
+
+	if err != nil {
+		log.Errorf("error: failed to reset user password with id: %s", discordID)
+		return nil, errors.New(fmt.Sprintf("error: failed to reset user password with id: %s", discordID))
+	}
+
+	log.Infof("auth user: %s with newly reset password", discordID)
+	auth, err := m.initiateAuthUserPass(ctx, discordID, password)
+
+	if err != nil {
+		log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
+		return nil, errors.New(fmt.Sprintf("error: failed to auth with user/pass for discord id: %s", discordID))
+	}
+
+	log.Infof("refresh token: %s, access token: %s", *auth.RefreshToken, *auth.AccessToken)
+
+	return &model.CognitoCredentials{
+		RefreshToken:    *auth.RefreshToken,
+		TokenExpiration: auth.ExpiresIn,
+		AccessToken:     *auth.AccessToken,
+	}, nil
+
+}
+
 func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, userId *string) (bool, *model.CognitoUser) {
 	auth, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(m.userPoolID),
@@ -234,8 +277,9 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, userId 
 		CognitoID:       cognitoID,
 		AccountEnabled:  user.Enabled,
 		Credentials: model.CognitoCredentials{
-			AccessToken:  *auth.AuthenticationResult.AccessToken,
-			RefreshToken: *refreshToken,
+			AccessToken:     *auth.AuthenticationResult.AccessToken,
+			RefreshToken:    *refreshToken,
+			TokenExpiration: auth.AuthenticationResult.ExpiresIn,
 		},
 	}
 }

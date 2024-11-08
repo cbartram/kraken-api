@@ -40,11 +40,9 @@ type CognitoAuthRequest struct {
 }
 
 type CognitoCredentials struct {
-	RefreshToken string `json:"refresh_token"`
-
-	// This isn't actually used in the auth process as it can be expired but in case it is sent by the client
-	// it is kept here.
-	AccessToken string `json:"access_token,omitempty"`
+	RefreshToken    string `json:"refresh_token"`
+	TokenExpiration int32  `json:"token_expiration_seconds"`
+	AccessToken     string `json:"access_token,omitempty"`
 }
 
 type CognitoUser struct {

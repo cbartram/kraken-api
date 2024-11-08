@@ -53,8 +53,9 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			DiscordID:       reqBody.DiscordID,
 			AccountEnabled:  true,
 			Credentials: model.CognitoCredentials{
-				RefreshToken: *refreshToken.RefreshToken,
-				AccessToken:  *refreshToken.AccessToken,
+				RefreshToken:    *refreshToken.RefreshToken,
+				AccessToken:     *refreshToken.AccessToken,
+				TokenExpiration: refreshToken.ExpiresIn,
 			},
 		})
 	} else {

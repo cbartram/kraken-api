@@ -46,6 +46,11 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
+	r.POST("/api/v1/cognito/refresh-session", func(c *gin.Context) {
+		handler := handlers.CognitoRefreshSessionHandler{}
+		handler.HandleRequest(c, ctx)
+	})
+
 	r.GET("/api/v1/cognito/get-user", func(c *gin.Context) {
 		handler := handlers.CognitoGetUserHandler{}
 		handler.HandleRequest(c, ctx)
