@@ -59,8 +59,7 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 	log.Infof("custom:purchased_plugins=%s", purchasedPlugins)
 	if purchasedPlugins == "nil" {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "user has not purchased any plugins",
-			"urls":    []string{},
+			"urls": []v4.PresignedHTTPRequest{},
 		})
 		return
 	}
@@ -68,7 +67,14 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 	// TODO This should be parallelized in the future with go routines.
 	pluginKeys := strings.Split(purchasedPlugins, ",")
 	var preSignedUrls []v4.PresignedHTTPRequest
-	s3 := client.MakeS3Service("kraken-plugins")
+	s3, err := client.MakeS3Service("kraken-plugins")
+	if err != nil {
+		log.Errorf("error: failed to create s3 client: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "error: failed to create S3 client.",
+		})
+		return
+	}
 
 	for _, plugin := range pluginKeys {
 		url, err := s3.GetObject(ctx, fmt.Sprintf("plugins/%s.jar", plugin), 120)
@@ -76,8 +82,11 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 			log.Errorf("error creating presigned url for plugin: %s", plugin)
 			continue
 		}
+		log.Infof("generated pre-signed url good for: plugin=%s, %d seconds, url: %s", plugin, 120, url.URL)
 		preSignedUrls = append(preSignedUrls, *url)
 	}
 
-	c.JSON(http.StatusOK, preSignedUrls)
+	c.JSON(http.StatusOK, gin.H{
+		"urls": preSignedUrls,
+	})
 }

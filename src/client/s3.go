@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
 	"time"
 
@@ -19,13 +20,19 @@ type S3Service struct {
 	PresignClient *s3.PresignClient
 }
 
-func MakeS3Service(bucketName string) *S3Service {
-	return &S3Service{
-		BucketName: bucketName,
-		PresignClient: s3.NewPresignClient(s3.New(s3.Options{
-			Region: "us-east-1",
-		})),
+func MakeS3Service(bucketName string) (*S3Service, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		//config.WithCredentialsProvider(),
+		config.WithRegion("us-east-1"),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	return &S3Service{
+		BucketName:    bucketName,
+		PresignClient: s3.NewPresignClient(s3.NewFromConfig(cfg)),
+	}, nil
 }
 
 // GetObject makes a presigned request that can be used to get an object from a bucket.
