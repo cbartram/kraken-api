@@ -32,7 +32,7 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 		return
 	}
 
-	authManager := client.MakeCognitoAuthManager()
+	authManager := client.MakeCognitoService()
 
 	// We want to assert that the user does not exist before we create it.
 	user, _ := authManager.GetUser(ctx, &reqBody.DiscordID)

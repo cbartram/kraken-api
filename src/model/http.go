@@ -40,8 +40,8 @@ type CognitoAuthRequest struct {
 }
 
 type CognitoCredentials struct {
-	RefreshToken    string `json:"refresh_token"`
-	TokenExpiration int32  `json:"token_expiration_seconds"`
+	RefreshToken    string `json:"refresh_token,omitempty"`
+	TokenExpiration int32  `json:"token_expiration_seconds,omitempty"`
 	AccessToken     string `json:"access_token,omitempty"`
 	IdToken         string `json:"id_token,omitempty"`
 }

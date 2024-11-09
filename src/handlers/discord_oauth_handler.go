@@ -17,7 +17,7 @@ type DiscordRequestHandler struct{}
 // HandleRequest Handles the /api/v1/discord-oauth route which the client calls to trade a code for an OAuth
 // access token.
 func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Context) {
-	discordClient, err := client.MakeDiscordClient()
+	discordClient, err := client.MakeDiscordService()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to create discord client: " + err.Error(),

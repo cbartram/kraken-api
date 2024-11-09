@@ -47,6 +47,39 @@ aws lambda update-function-code --function-name kraken-api --zip-file fileb://de
 
 You can also run `./scripts/deploy.sh` to build, zip, and upload the function to AWS.
 
+## API Plugin Fetching Sequence
+
+The following sequence diagram details the process of validating requests and generating a signed url that can be
+used to fetch plugin JAR files.
+
+```
+sequenceDiagram
+    participant Client as Kraken Client
+    participant Cognito as AWS Cognito
+    participant API as API Gateway/Lambda
+    participant S3 as S3 Bucket
+    
+    Note over Client,S3: Authentication Flow
+    Client->>Cognito: 1. User Login
+    Cognito-->>Client: 2. ID Token + Access Token
+    
+    Note over Client,S3: Plugin Download Flow
+    Client->>API: 3. Request Plugin Download (ID Token)
+    API->>Cognito: 4. Validate Token
+    API->>Cognito: 5. Get user attributes
+    Cognito-->>API: 6. custom:purchased_plugins
+    
+    Note over API: 7. Verify plugin access
+    
+    alt Plugin access allowed
+        API->>S3: 8a. Generate pre-signed URL
+        API-->>Client: 9a. Return pre-signed URL
+        Client->>S3: 10a. Download plugin using pre-signed URL
+    else Plugin access denied
+        API-->>Client: 8b. Access Denied
+    end
+```
+
 ## Running the tests
 
 No tests yet.

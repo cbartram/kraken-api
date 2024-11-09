@@ -19,7 +19,7 @@ const (
 )
 
 // DiscordClient handles OAuth2 authentication and API calls
-type DiscordClient struct {
+type DiscordService struct {
 	clientID     string
 	clientSecret string
 	redirectURI  string
@@ -36,8 +36,8 @@ type UserResponse struct {
 	Verified      bool   `json:"verified"`
 }
 
-// NewDiscordClient creates a new Discord client
-func MakeDiscordClient() (*DiscordClient, error) {
+// MakeDiscordService creates a new Discord client
+func MakeDiscordService() (*DiscordService, error) {
 	clientID := os.Getenv("DISCORD_CLIENT_ID")
 	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")
 	redirectURI := os.Getenv("DISCORD_REDIRECT_URI")
@@ -46,7 +46,7 @@ func MakeDiscordClient() (*DiscordClient, error) {
 		return nil, fmt.Errorf("missing required environment variables: CLIENT_ID, CLIENT_SECRET or REDIRECT_URI")
 	}
 
-	return &DiscordClient{
+	return &DiscordService{
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		redirectURI:  redirectURI,
@@ -55,7 +55,7 @@ func MakeDiscordClient() (*DiscordClient, error) {
 }
 
 // ExchangeCodeForToken exchanges an authorization code for an access token
-func (c *DiscordClient) ExchangeCodeForToken(code string) (*model.DiscordTokenResponse, error) {
+func (c *DiscordService) ExchangeCodeForToken(code string) (*model.DiscordTokenResponse, error) {
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
@@ -98,7 +98,7 @@ func (c *DiscordClient) ExchangeCodeForToken(code string) (*model.DiscordTokenRe
 }
 
 // GetUserInfo retrieves the user's information using the access token
-func (c *DiscordClient) GetUserInfo(accessToken string) (*UserResponse, error) {
+func (c *DiscordService) GetUserInfo(accessToken string) (*UserResponse, error) {
 	log.Infof("fetching user information from: %s", discordUserEndpoint)
 	req, err := http.NewRequest("GET", discordUserEndpoint, nil)
 	if err != nil {

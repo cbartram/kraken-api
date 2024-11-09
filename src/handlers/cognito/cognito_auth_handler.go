@@ -35,7 +35,7 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 		return
 	}
 
-	authManager := client.MakeCognitoAuthManager()
+	authManager := client.MakeCognitoService()
 	log.Infof("authenticating user with discord id: %s", reqBody.DiscordID)
 	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.RefreshToken, &reqBody.DiscordID)
 

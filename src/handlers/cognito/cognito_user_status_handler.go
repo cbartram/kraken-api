@@ -28,7 +28,7 @@ func (h *CognitoUserStatusHandler) HandleRequest(c *gin.Context, ctx context.Con
 		return
 	}
 
-	authManager := client.MakeCognitoAuthManager()
+	authManager := client.MakeCognitoService()
 
 	if reqBody.AccountEnabled {
 		ok := authManager.EnableUser(ctx, reqBody.DiscordID)
