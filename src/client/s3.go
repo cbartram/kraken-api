@@ -15,22 +15,31 @@ import (
 // It contains PresignClient, a client that is used to presign requests to Amazon S3.
 // Presigned requests contain temporary credentials and can be made from any HTTP client.
 type S3Service struct {
+	BucketName    string
 	PresignClient *s3.PresignClient
+}
+
+func MakeS3Service(bucketName string) *S3Service {
+	return &S3Service{
+		BucketName: bucketName,
+		PresignClient: s3.NewPresignClient(s3.New(s3.Options{
+			Region: "us-east-1",
+		})),
+	}
 }
 
 // GetObject makes a presigned request that can be used to get an object from a bucket.
 // The presigned request is valid for the specified number of seconds.
-func (p *S3Service) GetObject(
-	ctx context.Context, bucketName string, objectKey string, lifetimeSecs int64) (*v4.PresignedHTTPRequest, error) {
+func (p *S3Service) GetObject(ctx context.Context, objectKey string, lifetimeSecs int64) (*v4.PresignedHTTPRequest, error) {
 	request, err := p.PresignClient.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(p.BucketName),
 		Key:    aws.String(objectKey),
 	}, func(opts *s3.PresignOptions) {
 		opts.Expires = time.Duration(lifetimeSecs * int64(time.Second))
 	})
 	if err != nil {
 		log.Printf("Couldn't get a presigned request to get %v:%v. Here's why: %v\n",
-			bucketName, objectKey, err)
+			p.BucketName, objectKey, err)
 	}
 	return request, err
 }

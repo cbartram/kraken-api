@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -58,15 +60,24 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 	if purchasedPlugins == "nil" {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "user has not purchased any plugins",
-			"url":     "",
+			"urls":    []string{},
 		})
 		return
 	}
 
-	// TODO Gen presigned URL
-	pluginIds := strings.Split(purchasedPlugins, ",")
-	c.JSON(http.StatusOK, gin.H{
-		"pluginIds": pluginIds,
-		"url":       "",
-	})
+	// TODO This should be parallelized in the future with go routines.
+	pluginKeys := strings.Split(purchasedPlugins, ",")
+	var preSignedUrls []v4.PresignedHTTPRequest
+	s3 := client.MakeS3Service("kraken-plugins")
+
+	for _, plugin := range pluginKeys {
+		url, err := s3.GetObject(ctx, fmt.Sprintf("plugins/%s.jar", plugin), 120)
+		if err != nil {
+			log.Errorf("error creating presigned url for plugin: %s", plugin)
+			continue
+		}
+		preSignedUrls = append(preSignedUrls, *url)
+	}
+
+	c.JSON(http.StatusOK, preSignedUrls)
 }
