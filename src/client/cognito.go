@@ -121,7 +121,7 @@ func (m *CognitoAuthManager) CreateCognitoUser(ctx context.Context, discordID, d
 		},
 		{
 			Name:  aws.String("custom:purchased_plugins"),
-			Value: aws.String(""),
+			Value: aws.String("nil"),
 		},
 	}
 
@@ -224,6 +224,7 @@ func (m *CognitoAuthManager) RefreshSession(ctx context.Context, discordID strin
 		RefreshToken:    *auth.RefreshToken,
 		TokenExpiration: auth.ExpiresIn,
 		AccessToken:     *auth.AccessToken,
+		IdToken:         *auth.IdToken,
 	}, nil
 
 }
@@ -280,6 +281,7 @@ func (m *CognitoAuthManager) AuthUser(ctx context.Context, refreshToken, userId 
 			AccessToken:     *auth.AuthenticationResult.AccessToken,
 			RefreshToken:    *refreshToken,
 			TokenExpiration: auth.AuthenticationResult.ExpiresIn,
+			IdToken:         *auth.AuthenticationResult.IdToken,
 		},
 	}
 }

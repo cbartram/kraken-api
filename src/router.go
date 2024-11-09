@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"kraken-api/src/handlers"
+	"kraken-api/src/handlers/cognito"
 	"log"
 	"os"
 )
@@ -31,33 +32,43 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 	gin.SetMode(gin.ReleaseMode)
 
 	r.Use(LogrusMiddleware(logger))
-	r.POST("/api/v1/discord/oauth", func(c *gin.Context) {
+
+	api := r.Group("/api/v1")
+	cog := api.Group("/cognito")
+	plugin := api.Group("/plugin")
+
+	api.POST("/discord/oauth", func(c *gin.Context) {
 		handler := handlers.DiscordRequestHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	r.POST("/api/v1/cognito/create-user", func(c *gin.Context) {
-		handler := handlers.CognitoCreateUserRequestHandler{}
+	plugin.POST("/create-presigned-url", func(c *gin.Context) {
+		handler := handlers.PluginPresignedUrlHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	r.POST("/api/v1/cognito/auth", func(c *gin.Context) {
-		handler := handlers.CognitoAuthHandler{}
+	cog.POST("/create-user", func(c *gin.Context) {
+		handler := cognito.CognitoCreateUserRequestHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	r.POST("/api/v1/cognito/refresh-session", func(c *gin.Context) {
-		handler := handlers.CognitoRefreshSessionHandler{}
+	cog.POST("/auth", func(c *gin.Context) {
+		handler := cognito.CognitoAuthHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	r.GET("/api/v1/cognito/get-user", func(c *gin.Context) {
-		handler := handlers.CognitoGetUserHandler{}
+	cog.POST("/refresh-session", func(c *gin.Context) {
+		handler := cognito.CognitoRefreshSessionHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	r.PUT("/api/v1/cognito/user-status", func(c *gin.Context) {
-		handler := handlers.CognitoUserStatusHandler{}
+	cog.GET("/get-user", func(c *gin.Context) {
+		handler := cognito.CognitoGetUserHandler{}
+		handler.HandleRequest(c, ctx)
+	})
+
+	cog.PUT("/user-status", func(c *gin.Context) {
+		handler := cognito.CognitoUserStatusHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 

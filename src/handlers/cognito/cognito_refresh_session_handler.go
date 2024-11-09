@@ -1,4 +1,4 @@
-package handlers
+package cognito
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"net/http"
 )
 
-type CognitoAuthHandler struct{}
+type CognitoRefreshSessionHandler struct{}
 
 // HandleRequest Authenticates that a refresh token is valid for a given user id. This returns the entire
 // user object with a refreshed access token.
-func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+func (h *CognitoRefreshSessionHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -29,24 +29,22 @@ func (h *CognitoAuthHandler) HandleRequest(c *gin.Context, ctx context.Context) 
 		return
 	}
 
-	if reqBody.DiscordID == "" || reqBody.RefreshToken == "" {
-		log.Errorf("error: discord id '%s' or refresh token: '%s' missing from request body: ", reqBody.DiscordID, reqBody.RefreshToken)
+	if reqBody.DiscordID == "" {
+		log.Errorf("error: discord id '%s' missing from request body: ", reqBody.DiscordID)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: discordId or refreshToken missing."})
 		return
 	}
 
 	authManager := client.MakeCognitoAuthManager()
 	log.Infof("authenticating user with discord id: %s", reqBody.DiscordID)
-	isAuth, cognitoUser := authManager.AuthUser(ctx, &reqBody.RefreshToken, &reqBody.DiscordID)
+	creds, err := authManager.RefreshSession(ctx, reqBody.RefreshToken)
 
-	// Note: This also has checked that the user account in cognito is enabled.
-	if isAuth {
-		log.Infof("user auth ok")
-		c.JSON(http.StatusOK, cognitoUser)
-	} else {
-		log.Errorf("user is unauthorized")
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "user unauthorized",
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "error: failed to refresh user session: " + err.Error(),
 		})
 	}
+
+	log.Infof("user auth ok")
+	c.JSON(http.StatusOK, creds)
 }

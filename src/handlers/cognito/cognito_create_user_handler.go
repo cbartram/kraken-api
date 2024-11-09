@@ -1,4 +1,4 @@
-package handlers
+package cognito
 
 import (
 	"context"
@@ -37,7 +37,7 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 	// We want to assert that the user does not exist before we create it.
 	user, _ := authManager.GetUser(ctx, &reqBody.DiscordID)
 	if user == nil {
-		refreshToken, err := authManager.CreateCognitoUser(ctx, reqBody.DiscordID, reqBody.DiscordUsername, reqBody.DiscordEmail)
+		creds, err := authManager.CreateCognitoUser(ctx, reqBody.DiscordID, reqBody.DiscordUsername, reqBody.DiscordEmail)
 		if err != nil {
 			log.Errorf("error while creating new cognito user: %s", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -53,9 +53,10 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			DiscordID:       reqBody.DiscordID,
 			AccountEnabled:  true,
 			Credentials: model.CognitoCredentials{
-				RefreshToken:    *refreshToken.RefreshToken,
-				AccessToken:     *refreshToken.AccessToken,
-				TokenExpiration: refreshToken.ExpiresIn,
+				RefreshToken:    *creds.RefreshToken,
+				AccessToken:     *creds.AccessToken,
+				TokenExpiration: creds.ExpiresIn,
+				IdToken:         *creds.IdToken,
 			},
 		})
 	} else {

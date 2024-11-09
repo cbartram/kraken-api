@@ -43,6 +43,7 @@ type CognitoCredentials struct {
 	RefreshToken    string `json:"refresh_token"`
 	TokenExpiration int32  `json:"token_expiration_seconds"`
 	AccessToken     string `json:"access_token,omitempty"`
+	IdToken         string `json:"id_token,omitempty"`
 }
 
 type CognitoUser struct {
