@@ -133,6 +133,22 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, discordID, disco
 			Name:  aws.String("custom:purchased_plugins"),
 			Value: aws.String("nil"),
 		},
+		{
+			Name:  aws.String("custom:license_key"),
+			Value: aws.String("nil"),
+		},
+		{
+			Name:  aws.String("custom:purchase_timestamp"),
+			Value: aws.String("nil"),
+		},
+		{
+			Name:  aws.String("custom:expiration_timestamp"),
+			Value: aws.String("nil"),
+		},
+		{
+			Name:  aws.String("custom:hardware_id"),
+			Value: aws.String("nil"),
+		},
 	}
 
 	// Create user in Cognito

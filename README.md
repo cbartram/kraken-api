@@ -80,6 +80,15 @@ sequenceDiagram
     end
 ```
 
+There are a few layers of additional security beyond signed URL's for plugin downloads:
+
+- First, the plugin expiration timestamp is checked before any signed URL's are generated and returned to the client Thus, after a plugin expires it should
+no longer be loaded into the client. 
+- Second, users will enter a license key for each plugin they purchase. An additional API
+call is made to the server to validate the users license key **after** the plugin is loaded but **before** the plugin is registered with RuneLite & started
+- Finally, when a license key is generated during the plugin purchase process a hardware ID is associated with it. When the API call is made to validate the license
+the hardware ID is also sent to verify that the plugin is: not expired, valid license, and running on the right hardware.
+
 ## Running the tests
 
 No tests yet.
