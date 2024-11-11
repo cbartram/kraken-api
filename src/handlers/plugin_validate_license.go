@@ -36,6 +36,8 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 		return
 	}
 
+	// TODO Validate that the license key matches a regex.
+
 	authManger := client.MakeCognitoService()
 	log.Infof("fetching user attributes with access token")
 	attr, err := authManger.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)

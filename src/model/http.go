@@ -27,6 +27,7 @@ type CognitoCreateUserRequest struct {
 	DiscordID       string `json:"discord_id"`
 	DiscordUsername string `json:"discord_username"`
 	DiscordEmail    string `json:"discord_email"`
+	HardwareID      string `json:"hardware_id"`
 }
 
 type CognitoUserStatusRequest struct {

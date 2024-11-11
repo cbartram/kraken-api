@@ -115,19 +115,27 @@ func (m *CognitoService) DisableUser(ctx context.Context, discordId string) bool
 	return true
 }
 
-func (m *CognitoService) CreateCognitoUser(ctx context.Context, discordID, discordUsername, email string) (*types.AuthenticationResultType, error) {
+func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayload *model.CognitoCreateUserRequest) (*types.AuthenticationResultType, error) {
+	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
+		Length:         15,
+		RequireUpper:   true,
+		RequireLower:   true,
+		RequireNumber:  true,
+		RequireSpecial: true,
+	})
+
 	attributes := []types.AttributeType{
 		{
 			Name:  aws.String("email"),
-			Value: aws.String(email),
+			Value: aws.String(createUserPayload.DiscordEmail),
 		},
 		{
 			Name:  aws.String("custom:discord_id"),
-			Value: aws.String(discordID),
+			Value: aws.String(createUserPayload.DiscordID),
 		},
 		{
 			Name:  aws.String("custom:discord_username"),
-			Value: aws.String(discordUsername),
+			Value: aws.String(createUserPayload.DiscordUsername),
 		},
 		{
 			Name:  aws.String("custom:purchased_plugins"),
@@ -147,22 +155,17 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, discordID, disco
 		},
 		{
 			Name:  aws.String("custom:hardware_id"),
-			Value: aws.String("nil"),
+			Value: aws.String(createUserPayload.HardwareID),
+		},
+		{
+			Name:  aws.String("custom:temporary_password"),
+			Value: aws.String(password),
 		},
 	}
 
-	// Create user in Cognito
-	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
-		Length:         15,
-		RequireUpper:   true,
-		RequireLower:   true,
-		RequireNumber:  true,
-		RequireSpecial: true,
-	})
-
 	_, err := m.cognitoClient.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
 		UserPoolId:        aws.String(m.userPoolID),
-		Username:          aws.String(discordID),
+		Username:          aws.String(createUserPayload.DiscordID),
 		UserAttributes:    attributes,
 		MessageAction:     types.MessageActionTypeSuppress,
 		TemporaryPassword: aws.String(password),
@@ -176,7 +179,7 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, discordID, disco
 	// to try and get an access token for the user and authenticate with the access token.
 	_, err = m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
 		UserPoolId: aws.String(m.userPoolID),
-		Username:   aws.String(discordID),
+		Username:   aws.String(createUserPayload.DiscordID),
 		Password:   aws.String(password),
 		Permanent:  true,
 	})
@@ -185,7 +188,7 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, discordID, disco
 	}
 
 	// Initialize auth session
-	return m.initiateAuthUserPass(ctx, discordID, password)
+	return m.initiateAuthUserPass(ctx, createUserPayload.DiscordID, password)
 }
 
 // initiateAuthUserPass Happens when a user is initially created with the user pool and uses username + generated pass to login
@@ -215,6 +218,7 @@ func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, pa
 // There is no direct way to get a new refresh token without a users password. Since we do not store the password we set
 // must reset the password and re-auth to get a new refresh token.
 func (m *CognitoService) RefreshSession(ctx context.Context, discordID string) (*model.CognitoCredentials, error) {
+	// TODO get user, find temp pass, use that to get fresh creds
 	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
 		Length:         15,
 		RequireUpper:   true,
