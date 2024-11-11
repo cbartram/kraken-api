@@ -32,21 +32,23 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		return
 	}
 
-	var reqBody model.DiscordOAuthRequest
+	var reqBody map[string]string
 	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
 
-	if reqBody.Code == "" {
+	code := reqBody["code"]
+
+	if reqBody["code"] == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "access code: 'code' is required",
 		})
 		return
 	}
 
-	log.Infof("exchanging code: %s for oauth access token", reqBody.Code)
-	token, err := discordClient.ExchangeCodeForToken(reqBody.Code)
+	log.Infof("exchanging code: %s for oauth access token", code)
+	token, err := discordClient.ExchangeCodeForToken(code)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("Failed to exchange code: %v", err),

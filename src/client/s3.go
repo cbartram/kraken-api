@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,22 +18,47 @@ import (
 // Presigned requests contain temporary credentials and can be made from any HTTP client.
 type S3Service struct {
 	BucketName    string
+	S3Client      *s3.Client
 	PresignClient *s3.PresignClient
 }
 
 func MakeS3Service(bucketName string) (*S3Service, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		//config.WithCredentialsProvider(),
 		config.WithRegion("us-east-1"),
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	s3Client := s3.NewFromConfig(cfg)
 	return &S3Service{
 		BucketName:    bucketName,
-		PresignClient: s3.NewPresignClient(s3.NewFromConfig(cfg)),
+		S3Client:      s3Client,
+		PresignClient: s3.NewPresignClient(s3Client),
 	}, nil
+}
+
+// DoesObjectExist Returns true if an object with a given prefix exists in the S3 bucket, false otherwise. This
+// function automatically trims any *.jar extension off of the S3 object name if it exists.
+func (p *S3Service) DoesObjectExist(prefix string) (bool, string, error) {
+	input := &s3.ListObjectsV2Input{
+		Bucket: aws.String(p.BucketName),
+		Prefix: aws.String(prefix),
+	}
+
+	result, err := p.S3Client.ListObjectsV2(context.TODO(), input)
+	if err != nil {
+		return false, "", err
+	}
+
+	// Check if any objects were found
+	if len(result.Contents) > 0 {
+		// Return the first matching object's key trimmed of its .jar extension
+		name := strings.TrimSuffix(*result.Contents[0].Key, ".jar")
+		return true, name, nil
+	}
+
+	return false, "", nil
 }
 
 // GetObject makes a presigned request that can be used to get an object from a bucket.
@@ -80,7 +106,7 @@ func (p *S3Service) DeleteObject(ctx context.Context, bucketName string, objectK
 	return request, err
 }
 
-func (p S3Service) PresignPostObject(ctx context.Context, bucketName string, objectKey string, lifetimeSecs int64) (*s3.PresignedPostRequest, error) {
+func (p *S3Service) PresignPostObject(ctx context.Context, bucketName string, objectKey string, lifetimeSecs int64) (*s3.PresignedPostRequest, error) {
 	request, err := p.PresignClient.PresignPostObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),

@@ -9,11 +9,6 @@ type RequestHandler interface {
 	HandleRequest(c *gin.Context, ctx context.Context)
 }
 
-// DiscordOAuthRequest represents the expected request body
-type DiscordOAuthRequest struct {
-	Code string `json:"code"`
-}
-
 // DiscordTokenResponse represents Discord's token response
 type DiscordTokenResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -44,6 +39,13 @@ type LicenseKeyRequest struct {
 	Credentials CognitoCredentials `json:"credentials"`
 	LicenseKey  string             `json:"licenseKey"`
 	HardwareID  string             `json:"hardwareId"`
+}
+
+type PurchasePluginRequest struct {
+	PluginName           string             `json:"pluginName"`
+	PurchaseDurationDays int                `json:"purchaseDurationDays,omitempty"`
+	Credentials          CognitoCredentials `json:"credentials"`
+	// TODO CC information likely
 }
 
 type CognitoCredentials struct {

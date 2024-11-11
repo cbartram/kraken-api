@@ -1,10 +1,9 @@
-package handlers
+package plugin
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -13,7 +12,6 @@ import (
 	"kraken-api/src/model"
 	"kraken-api/src/util"
 	"net/http"
-	"strings"
 )
 
 // The amount of time the signed URL is valid for to read plugin data from S3
@@ -50,30 +48,18 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 	}
 
 	// Purchased Plugins attribute type will be "nil" (string) if no plugins have been purchased, else it will be
-	// a CSV list of purchased plugin id's.
-	var purchasedPlugins = "nil"
-	var pluginExpirationDates = "nil"
-	for _, attribute := range attr {
-		switch aws.ToString(attribute.Name) {
-		case "custom:purchased_plugins":
-			purchasedPlugins = aws.ToString(attribute.Value)
-		case "custom:expiration_timestamp":
-			pluginExpirationDates = aws.ToString(attribute.Value)
-		}
-	}
-
+	// a CSV list of purchased plugin id's
+	// TODO This should be parallelized in the future with go routines.
+	pluginKeys := util.GetUserAttribute(attr, "custom:purchased_plugins")
+	expirationTimestamps := util.GetUserAttribute(attr, "custom:expiration_timestamp")
 	// Only return pre-signed url's for plugins where the plugin is not expired
-	log.Infof("custom:purchased_plugins=%s, custom:expiration_timestamps=%s", purchasedPlugins, pluginExpirationDates)
-	if purchasedPlugins == "nil" {
+	log.Infof("custom:purchased_plugins=%s, custom:expiration_timestamps=%s", pluginKeys, expirationTimestamps)
+	if pluginKeys[0] == "nil" {
 		c.JSON(http.StatusOK, gin.H{
 			"urls": []v4.PresignedHTTPRequest{},
 		})
 		return
 	}
-
-	// TODO This should be parallelized in the future with go routines.
-	pluginKeys := strings.Split(purchasedPlugins, ",")
-	expirationTimestamps := strings.Split(pluginExpirationDates, ",")
 	var preSignedUrls = make([]v4.PresignedHTTPRequest, 0)
 	s3, err := client.MakeS3Service("kraken-plugins")
 	if err != nil {
@@ -96,12 +82,18 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 			continue
 		}
 
-		url, err := s3.GetObject(ctx, fmt.Sprintf("plugins/%s.jar", plugin), SIGNED_URL_DURATION_SECONDS)
-		if err != nil {
-			log.Errorf("error creating presigned url for plugin: %s", plugin)
+		exists, name, err := s3.DoesObjectExist(plugin)
+		if err != nil || !exists {
+			log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err.Error())
 			continue
 		}
-		log.Infof("generated pre-signed url good for: plugin=%s, %d seconds, url: %s", plugin, SIGNED_URL_DURATION_SECONDS, url.URL)
+
+		url, err := s3.GetObject(ctx, fmt.Sprintf("plugins/%s.jar", name), SIGNED_URL_DURATION_SECONDS)
+		if err != nil {
+			log.Errorf("error creating presigned url for plugin: %s", name)
+			continue
+		}
+		log.Infof("generated pre-signed url good for: plugin=%s, %d seconds, url: %s", name, SIGNED_URL_DURATION_SECONDS, url.URL)
 		preSignedUrls = append(preSignedUrls, *url)
 	}
 

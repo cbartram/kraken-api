@@ -56,6 +56,20 @@ func (m *CognitoService) GetUserAttributes(ctx context.Context, accessToken *str
 	return user.UserAttributes, nil
 }
 
+func (m *CognitoService) UpdateUserAttributes(ctx context.Context, accessToken *string, attributes []types.AttributeType) error {
+	_, err := m.cognitoClient.UpdateUserAttributes(ctx, &cognitoidentityprovider.UpdateUserAttributesInput{
+		AccessToken:    accessToken,
+		UserAttributes: attributes,
+	})
+
+	if err != nil {
+		log.Errorf("could not update user attributes with access token: %s", err.Error())
+		return errors.New("could not update user attributes with access token")
+	}
+
+	return nil
+}
+
 func (m *CognitoService) GetUser(ctx context.Context, discordId *string) (*model.CognitoUser, error) {
 	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(m.userPoolID),

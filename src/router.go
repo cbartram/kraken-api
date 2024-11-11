@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"kraken-api/src/handlers"
 	"kraken-api/src/handlers/cognito"
+	"kraken-api/src/handlers/plugin"
 	"log"
 	"os"
 )
@@ -33,46 +34,51 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 
 	r.Use(LogrusMiddleware(logger))
 
-	api := r.Group("/api/v1")
-	cog := api.Group("/cognito")
-	plugin := api.Group("/plugin")
+	apiGroup := r.Group("/api/v1")
+	cognitoGroup := apiGroup.Group("/cognito")
+	pluginGroup := apiGroup.Group("/plugin")
 
-	api.POST("/discord/oauth", func(c *gin.Context) {
+	apiGroup.POST("/discord/oauth", func(c *gin.Context) {
 		handler := handlers.DiscordRequestHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	plugin.POST("/create-presigned-url", func(c *gin.Context) {
-		handler := handlers.PluginPresignedUrlHandler{}
+	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {
+		handler := plugin.PluginPresignedUrlHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	plugin.POST("/validate-license", func(c *gin.Context) {
-		handler := handlers.PluginValidateLicenseHandler{}
+	pluginGroup.POST("/validate-license", func(c *gin.Context) {
+		handler := plugin.PluginValidateLicenseHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	cog.POST("/create-user", func(c *gin.Context) {
+	pluginGroup.POST("/purchase", func(c *gin.Context) {
+		handler := plugin.PluginPurchaseHandler{}
+		handler.HandleRequest(c, ctx)
+	})
+
+	cognitoGroup.POST("/create-user", func(c *gin.Context) {
 		handler := cognito.CognitoCreateUserRequestHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	cog.POST("/auth", func(c *gin.Context) {
+	cognitoGroup.POST("/auth", func(c *gin.Context) {
 		handler := cognito.CognitoAuthHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	cog.POST("/refresh-session", func(c *gin.Context) {
+	cognitoGroup.POST("/refresh-session", func(c *gin.Context) {
 		handler := cognito.CognitoRefreshSessionHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	cog.GET("/get-user", func(c *gin.Context) {
+	cognitoGroup.GET("/get-user", func(c *gin.Context) {
 		handler := cognito.CognitoGetUserHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	cog.PUT("/user-status", func(c *gin.Context) {
+	cognitoGroup.PUT("/user-status", func(c *gin.Context) {
 		handler := cognito.CognitoUserStatusHandler{}
 		handler.HandleRequest(c, ctx)
 	})
