@@ -22,6 +22,7 @@ type PluginPurchaseHandler struct{}
 const PURCHASED_PLUGINS_KEY = "custom:purchased_plugins"
 const EXPIRATION_TIMESTAMP_KEY = "custom:expiration_timestamp"
 const PURCHASE_TIMESTAMP_KEY = "custom:purchase_timestamp"
+const LICENSE_KEY = "custom:license_key"
 
 // HandleRequest Handles the /api/v1/plugin/purchase API route.
 func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
@@ -51,9 +52,9 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		return
 	}
 
-	exists, objectName, err := s3.DoesObjectExist(reqBody.PluginName)
+	exists, objectName, err := s3.DoesObjectExist(fmt.Sprintf("plugins/%s", reqBody.PluginName))
 	if err != nil || !exists {
-		log.Errorf("error: failed to list objects in s3 bucket or object does not exist: %s", err.Error())
+		log.Errorf("error: failed to list objects in s3 bucket or object does not exist: object exists: %v, error: %s,", exists, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to list objects in s3 bucket or object does not exist: " + err.Error()})
 		return
 	}
@@ -72,11 +73,18 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 	pluginKeys := util.GetUserAttribute(attributes, PURCHASED_PLUGINS_KEY)
 	expirationTimestamps := util.GetUserAttribute(attributes, EXPIRATION_TIMESTAMP_KEY)
 	purchaseDates := util.GetUserAttribute(attributes, PURCHASE_TIMESTAMP_KEY)
+	licenseKeys := util.GetUserAttribute(attributes, LICENSE_KEY)
 
 	log.Infof("User attributes: custom:purchased_plugins=%s, custom:expiration_timestamp=%s, custom:purchase_timestamp=%s", pluginKeys, expirationTimestamps, purchaseDates)
 
 	purchaseTime := time.Now()
 	expirationTime := purchaseTime.AddDate(0, 0, reqBody.PurchaseDurationDays).Format(time.RFC3339)
+	licenseKey, err := util.GenerateLicenseKey()
+	if err != nil {
+		log.Errorf("error: failed to generate license key: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate license key: " + err.Error()})
+		return
+	}
 
 	// Purchased plugin properties are initially set to: "nil". This value tracks if we can just remove the "nil"
 	// and replace it with the purchased plugin. i.e. this is the users first plugin purchase
@@ -87,8 +95,9 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		updatedPlugins := util.MakeAttribute(PURCHASED_PLUGINS_KEY, reqBody.PluginName)
 		updatedExpiration := util.MakeAttribute(EXPIRATION_TIMESTAMP_KEY, expirationTime)
 		updatedPurchaseDate := util.MakeAttribute(PURCHASE_TIMESTAMP_KEY, purchaseTime.Format(time.RFC3339))
+		updatedLicenseKey := util.MakeAttribute(LICENSE_KEY, licenseKey)
 
-		writableAttributes = append(writableAttributes, updatedPlugins, updatedExpiration, updatedPurchaseDate)
+		writableAttributes = append(writableAttributes, updatedPlugins, updatedExpiration, updatedPurchaseDate, updatedLicenseKey)
 		err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
 		if err != nil {
 			log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
@@ -101,6 +110,7 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 
 	// Tracks if we should extend the plugin duration i.e they have purchased this plugin before
 	// or if we should just add the plugin to their list of purchased plugins
+	// TODO Add license key addition here
 	if slices.Contains(pluginKeys, reqBody.PluginName) {
 		log.Infof("user is renewing plugin: %s", reqBody.PluginName)
 		for i, pluginKey := range pluginKeys {
@@ -132,11 +142,14 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 	pluginKeys = append(pluginKeys, reqBody.PluginName)
 	expirationTimestamps = append(expirationTimestamps, expirationTime)
 	purchaseDates = append(purchaseDates, purchaseTime.Format(time.RFC3339))
+	licenseKeys = append(licenseKeys, licenseKey)
+
+	updatedLicenseKeys := util.MakeAttribute(LICENSE_KEY, strings.Join(licenseKeys, ","))
 	updatedPluginKeys := util.MakeAttribute(PURCHASED_PLUGINS_KEY, strings.Join(pluginKeys, ","))
 	updatedExpirationTimestamps := util.MakeAttribute(EXPIRATION_TIMESTAMP_KEY, strings.Join(expirationTimestamps, ","))
 	updatedPurchaseDates := util.MakeAttribute(PURCHASE_TIMESTAMP_KEY, strings.Join(purchaseDates, ","))
 
-	writableAttributes = append(writableAttributes, updatedPurchaseDates, updatedPluginKeys, updatedExpirationTimestamps)
+	writableAttributes = append(writableAttributes, updatedLicenseKeys, updatedPurchaseDates, updatedPluginKeys, updatedExpirationTimestamps)
 
 	err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
 	if err != nil {
