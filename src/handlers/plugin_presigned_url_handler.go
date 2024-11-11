@@ -11,9 +11,9 @@ import (
 	"io"
 	"kraken-api/src/client"
 	"kraken-api/src/model"
+	"kraken-api/src/util"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // The amount of time the signed URL is valid for to read plugin data from S3
@@ -85,7 +85,7 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 	}
 
 	for i, plugin := range pluginKeys {
-		expired, err := isPluginExpired(expirationTimestamps[i])
+		expired, err := util.IsPluginExpired(expirationTimestamps[i])
 		if err != nil {
 			log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expirationTimestamps[i], err.Error())
 			continue
@@ -108,20 +108,4 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 	c.JSON(http.StatusOK, gin.H{
 		"urls": preSignedUrls,
 	})
-}
-
-// isPluginExpired Returns true when the plugin expiration date is past the current date and false otherwise.
-func isPluginExpired(expirationTimestamp string) (bool, error) {
-	expiresAt, err := time.Parse(time.RFC3339, expirationTimestamp)
-	now := time.Now()
-	if err != nil {
-		return true, err
-	}
-
-	if now.After(expiresAt) {
-		return true, nil
-	}
-
-	log.Infof("plugin is still valid for: %v days", expiresAt.Sub(now).Hours()/24)
-	return false, nil
 }

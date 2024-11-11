@@ -39,6 +39,12 @@ type CognitoAuthRequest struct {
 	DiscordID    string `json:"discordId"`
 }
 
+type LicenseKeyRequest struct {
+	Credentials CognitoCredentials `json:"credentials"`
+	LicenseKey  string             `json:"licenseKey"`
+	HardwareID  string             `json:"hardwareId"`
+}
+
 type CognitoCredentials struct {
 	RefreshToken    string `json:"refresh_token,omitempty"`
 	TokenExpiration int32  `json:"token_expiration_seconds,omitempty"`

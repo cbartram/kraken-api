@@ -47,6 +47,11 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
+	plugin.POST("/validate-license", func(c *gin.Context) {
+		handler := handlers.PluginValidateLicenseHandler{}
+		handler.HandleRequest(c, ctx)
+	})
+
 	cog.POST("/create-user", func(c *gin.Context) {
 		handler := cognito.CognitoCreateUserRequestHandler{}
 		handler.HandleRequest(c, ctx)
