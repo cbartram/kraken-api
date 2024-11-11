@@ -19,8 +19,10 @@ const SIGNED_URL_DURATION_SECONDS = 30
 
 type PluginPresignedUrlHandler struct{}
 
-// HandleRequest Handles the /api/v1/discord-oauth route which the client calls to trade a code for an OAuth
-// access token.
+// HandleRequest Handles the /api/v1/plugin/presigned-url route which the client calls to generate pre signed urls
+// to download plugin JAR files from S3. Note: this method does NOT validate license keys for plugins only that
+// plugins are not expired. All non-expired plugins will have presigned urls and be loadable by the client. License
+// key validation happens in the /api/v1/plugin/validate-license endpoint before a loaded plugin is started.
 func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -82,13 +84,13 @@ func (p *PluginPresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Co
 			continue
 		}
 
-		exists, name, err := s3.DoesObjectExist(plugin)
+		exists, name, err := s3.DoesObjectExist(fmt.Sprintf("plugins/%s", plugin))
 		if err != nil || !exists {
-			log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err.Error())
+			log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err)
 			continue
 		}
 
-		url, err := s3.GetObject(ctx, fmt.Sprintf("plugins/%s.jar", name), SIGNED_URL_DURATION_SECONDS)
+		url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SIGNED_URL_DURATION_SECONDS)
 		if err != nil {
 			log.Errorf("error creating presigned url for plugin: %s", name)
 			continue

@@ -104,13 +104,16 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("plugin purchase successful: %s, expires at: %s", reqBody.PluginName, expirationTime)})
+		c.JSON(http.StatusOK, gin.H{
+			"licenseKey":          licenseKey,
+			"pluginName":          reqBody.PluginName,
+			"expirationTimestamp": expirationTime,
+		})
 		return
 	}
 
 	// Tracks if we should extend the plugin duration i.e they have purchased this plugin before
 	// or if we should just add the plugin to their list of purchased plugins
-	// TODO Add license key addition here
 	if slices.Contains(pluginKeys, reqBody.PluginName) {
 		log.Infof("user is renewing plugin: %s", reqBody.PluginName)
 		for i, pluginKey := range pluginKeys {
@@ -118,13 +121,15 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 				// The user previously purchased this plugin. We only need to update the expiration timestamp at index i.
 				expirationTimestamps[i] = time.Now().AddDate(0, 0, reqBody.PurchaseDurationDays).Format(time.RFC3339)
 				purchaseDates[i] = time.Now().Format(time.RFC3339)
+				licenseKeys[i] = licenseKey
 			}
 		}
 
 		// Join the expiration and purchase date back into csv strings and make them into cognito Attributes
 		updatedExpiration := util.MakeAttribute(EXPIRATION_TIMESTAMP_KEY, strings.Join(expirationTimestamps, ","))
 		updatedPurchase := util.MakeAttribute(PURCHASE_TIMESTAMP_KEY, strings.Join(purchaseDates, ","))
-		writableAttributes = append(writableAttributes, updatedExpiration, updatedPurchase)
+		updatedLicense := util.MakeAttribute(LICENSE_KEY, strings.Join(licenseKeys, ","))
+		writableAttributes = append(writableAttributes, updatedExpiration, updatedPurchase, updatedLicense)
 
 		// TODO This code can be Dry'd up substantially
 		err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
@@ -133,7 +138,11 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("plugin purchase successful: %s, expires at: %s", reqBody.PluginName, expirationTime)})
+		c.JSON(http.StatusOK, gin.H{
+			"licenseKey":          licenseKey,
+			"pluginName":          reqBody.PluginName,
+			"expirationTimestamp": expirationTime,
+		})
 		return
 	}
 
@@ -157,6 +166,10 @@ func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("plugin purchase successful: %s, expires at: %s", reqBody.PluginName, expirationTime)})
+	c.JSON(http.StatusOK, gin.H{
+		"licenseKey":          licenseKey,
+		"pluginName":          reqBody.PluginName,
+		"expirationTimestamp": expirationTime,
+	})
 
 }

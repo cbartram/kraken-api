@@ -63,7 +63,7 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	if !slices.Contains(licenseKeys, reqBody.LicenseKey) {
 		log.Infof("user passed invalid license key: %s key does not belong to user acct: %s", reqBody.LicenseKey, licenseKeys)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("license key invalid: no license: %s in user account", reqBody.LicenseKey),
+			"error": fmt.Sprintf("license key invalid, no license %s in user account", reqBody.LicenseKey),
 		})
 		return
 	}
