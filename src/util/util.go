@@ -47,6 +47,16 @@ func GetUserAttribute(attributes []types.AttributeType, attributeName string) []
 	return make([]string, 0)
 }
 
+func GetUserAttributeString(attributes []types.AttributeType, attributeName string) string {
+	for _, attribute := range attributes {
+		if aws.ToString(attribute.Name) == attributeName {
+			return aws.ToString(attribute.Value)
+		}
+	}
+
+	return ""
+}
+
 func MakeAttribute(key, value string) types.AttributeType {
 	attr := types.AttributeType{
 		Name:  &key,

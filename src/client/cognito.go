@@ -232,37 +232,25 @@ func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, pa
 // There is no direct way to get a new refresh token without a users password. Since we do not store the password we set
 // must reset the password and re-auth to get a new refresh token.
 func (m *CognitoService) RefreshSession(ctx context.Context, discordID string) (*model.CognitoCredentials, error) {
-	// TODO get user, find temp pass, use that to get fresh creds
-	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
-		Length:         15,
-		RequireUpper:   true,
-		RequireLower:   true,
-		RequireNumber:  true,
-		RequireSpecial: true,
-	})
-
-	log.Infof("resetting user password")
-	_, err := m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(m.userPoolID),
-		Username:   aws.String(discordID),
-		Password:   aws.String(password),
-		Permanent:  true,
+		Username:   &discordID,
 	})
 
 	if err != nil {
-		log.Errorf("error: failed to reset user password with id: %s", discordID)
-		return nil, errors.New(fmt.Sprintf("error: failed to reset user password with id: %s", discordID))
+		log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
+		return nil, errors.New(fmt.Sprintf("error: failed to get user for discord id: %s", discordID))
 	}
 
-	log.Infof("auth user: %s with newly reset password", discordID)
+	password := util.GetUserAttributeString(user.UserAttributes, "custom:temporary_password")
+
+	log.Infof("auth user: %s with password", discordID)
 	auth, err := m.initiateAuthUserPass(ctx, discordID, password)
 
 	if err != nil {
 		log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to auth with user/pass for discord id: %s", discordID))
 	}
-
-	log.Infof("refresh token: %s, access token: %s", *auth.RefreshToken, *auth.AccessToken)
 
 	return &model.CognitoCredentials{
 		RefreshToken:    *auth.RefreshToken,
