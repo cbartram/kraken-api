@@ -54,7 +54,7 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 
 	for i, _ := range licenseKeys {
 		expired, err := util.IsPluginExpired(expirationTimestamps[i])
-		pluginHardwareId := hardwareIds[i]
+		pluginHardwareId := hardwareIds[0]
 		if err != nil {
 			log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expirationTimestamps[i], err.Error())
 			continue
