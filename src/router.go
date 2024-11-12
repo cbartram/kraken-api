@@ -54,7 +54,7 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 	})
 
 	pluginGroup.POST("/purchase", func(c *gin.Context) {
-		handler := plugin.PluginPurchaseHandler{}
+		handler := plugin.PurchaseHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 

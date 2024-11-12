@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -13,7 +12,6 @@ import (
 	"kraken-api/src/util"
 	"net/http"
 	"slices"
-	"strings"
 )
 
 type PluginValidateLicenseHandler struct{}
@@ -42,23 +40,9 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	log.Infof("fetching user attributes with access token")
 	attr, err := authManger.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)
 
-	var licenseKeyString = "nil"
-	var expirationTimestampString = "nil"
-	var hardwareIdString = "nil"
-	for _, attribute := range attr {
-		switch aws.ToString(attribute.Name) {
-		case "custom:license_key":
-			licenseKeyString = aws.ToString(attribute.Value)
-		case "custom:expiration_timestamp":
-			expirationTimestampString = aws.ToString(attribute.Value)
-		case "custom:hardware_id":
-			hardwareIdString = aws.ToString(attribute.Value)
-		}
-	}
-
-	licenseKeys := strings.Split(licenseKeyString, ",")
-	expirationTimestamps := strings.Split(expirationTimestampString, ",")
-	hardwareIds := strings.Split(hardwareIdString, ",")
+	licenseKeys := util.GetUserAttribute(attr, LICENSE_KEY)
+	expirationTimestamps := util.GetUserAttribute(attr, EXPIRATION_TIMESTAMP_KEY)
+	hardwareIds := util.GetUserAttribute(attr, HARDWARE_ID_KEY)
 
 	if !slices.Contains(licenseKeys, reqBody.LicenseKey) {
 		log.Infof("user passed invalid license key: %s key does not belong to user acct: %s", reqBody.LicenseKey, licenseKeys)
@@ -87,13 +71,13 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 		if pluginHardwareId != reqBody.HardwareID {
 			log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, pluginHardwareId)
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("license key invalid: hardware id: %s invalid", reqBody.HardwareID),
+				"error": fmt.Sprintf("license key invalid: hardware id %s is invalid", reqBody.HardwareID),
 			})
 			return
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "OK",
+		"error": nil,
 	})
 }

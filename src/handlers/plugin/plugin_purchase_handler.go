@@ -17,15 +17,18 @@ import (
 	"time"
 )
 
-type PluginPurchaseHandler struct{}
+type PurchaseHandler struct{}
 
-const PURCHASED_PLUGINS_KEY = "custom:purchased_plugins"
-const EXPIRATION_TIMESTAMP_KEY = "custom:expiration_timestamp"
-const PURCHASE_TIMESTAMP_KEY = "custom:purchase_timestamp"
-const LICENSE_KEY = "custom:license_key"
+const (
+	PURCHASED_PLUGINS_KEY    = "custom:purchased_plugins"
+	EXPIRATION_TIMESTAMP_KEY = "custom:expiration_timestamp"
+	PURCHASE_TIMESTAMP_KEY   = "custom:purchase_timestamp"
+	LICENSE_KEY              = "custom:license_key"
+	HARDWARE_ID_KEY          = "custom:hardware_id"
+)
 
 // HandleRequest Handles the /api/v1/plugin/purchase API route.
-func (p *PluginPurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
