@@ -175,6 +175,10 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 			Name:  aws.String("custom:temporary_password"),
 			Value: aws.String(password),
 		},
+		{
+			Name:  aws.String("custom:refresh_token"),
+			Value: aws.String("nil"),
+		},
 	}
 
 	_, err := m.cognitoClient.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{

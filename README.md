@@ -62,8 +62,28 @@ signed URL's for plugin JAR files in S3. Signed URL's provide temporary (30s) ac
 generated the client will read the JAR file directly into memory and load each Kraken Plugin class from the JAR before the signed
 URL expires. 
 
-Once the classes are loaded into memory 
+Once the classes are loaded into memory the plugin can be registered with RuneLite and starts normally.
 
+## Discord Tools
+
+Since plugin purchases are managed through the Discord ticketing system we have a special tool which makes generating
+license keys easy. Make sure you have [JQ installed](https://github.com/jqlang/jq) on your system.
+
+Run:
+
+```shell
+./scripts/discord_grant_plugin.sh <discord_user_id> <refresh_token>
+```
+
+The discord id can be found in the discord support ticket for the user while the refresh token can be found for the user in
+the AWS cognito console.
+
+The tool will also prompt for the plugin name and a valid integer duration where the plugin is active. Make sure the name
+matches a prefix of the JAR file in S3. i.e:
+
+- "Alchemical-Hydra"
+- "Cox-Helper"
+- etc...
 
 ## API Plugin Fetching Sequence
 
