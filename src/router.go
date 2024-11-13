@@ -48,6 +48,7 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
+	// TODO This method has the potential for abuse. Add some sort of rate limiting to it.
 	pluginGroup.POST("/validate-license", func(c *gin.Context) {
 		handler := plugin.PluginValidateLicenseHandler{}
 		handler.HandleRequest(c, ctx)

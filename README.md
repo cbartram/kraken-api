@@ -1,7 +1,15 @@
 # Kraken API
 
-This repository contains an AWS lambda function which functions as the API for the Kraken
-Client.
+This repository contains an AWS lambda function which functions as the API for the [Kraken
+Client](https://github.com/cbartram/kraken-client). This API handles:
+
+- Any user account updates (CRUD) through AWS Cognito
+- Linking Discord accounts via OAuth flow
+- Purchasing new Kraken plugins
+- Allowing JAR file plugin downloads
+- Validating running plugins
+
+This API requires that you have an AWS account with a lambda function, API gateway, and S3 bucket setup to fully utilize this.
 
 ## Getting Started
 
@@ -46,6 +54,16 @@ aws lambda update-function-code --function-name kraken-api --zip-file fileb://de
 ```
 
 You can also run `./scripts/deploy.sh` to build, zip, and upload the function to AWS.
+
+## Plugin Verification & Loading
+
+When the Kraken client needs to load a plugin it will make a request on behalf of the authenticated user to generate
+signed URL's for plugin JAR files in S3. Signed URL's provide temporary (30s) access to JAR files. Once a signed URL is 
+generated the client will read the JAR file directly into memory and load each Kraken Plugin class from the JAR before the signed
+URL expires. 
+
+Once the classes are loaded into memory 
+
 
 ## API Plugin Fetching Sequence
 
@@ -95,7 +113,11 @@ No tests yet.
 
 ## Deployment
 
-Deployment will come later in this project's lifecycle.
+Deployment is managed through AWS lambda and API gateway. To package and upload the go binary to Lambda you can run the
+deployment script: `./scripts/deploy.sh` with proper AWS credentials.
+
+To make any adjustments to the API spec (i.e adding a new route, removing a route, or updating an HTTP method)
+you will need to deploy the stage within the API Gateway console in AWS.
 
 ## Built With
 
