@@ -12,6 +12,7 @@ import (
 	"kraken-api/src/util"
 	"net/http"
 	"slices"
+	"strings"
 )
 
 type PluginValidateLicenseHandler struct{}
@@ -44,7 +45,7 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	expirationTimestamps := util.GetUserAttribute(attr, EXPIRATION_TIMESTAMP_KEY)
 	hardwareIds := util.GetUserAttribute(attr, HARDWARE_ID_KEY)
 
-	if !slices.Contains(licenseKeys, reqBody.LicenseKey) {
+	if !slices.Contains(licenseKeys, strings.TrimSpace(reqBody.LicenseKey)) {
 		log.Infof("user passed invalid license key: %s key does not belong to user acct: %s", reqBody.LicenseKey, licenseKeys)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": fmt.Sprintf("license key invalid, no license %s in user account", reqBody.LicenseKey),
