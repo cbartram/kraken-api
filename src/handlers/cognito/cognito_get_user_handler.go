@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"kraken-api/src/client"
+	"kraken-api/src/service"
 
 	"net/http"
 )
@@ -22,7 +22,7 @@ func (h *CognitoGetUserHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		return
 	}
 
-	authManager := client.MakeCognitoService()
+	authManager := service.MakeCognitoService()
 	log.Infof("retrieving user with id: %s from cognito", discordID)
 
 	// Note: This method does not return credentials with the user

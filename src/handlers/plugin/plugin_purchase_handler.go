@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"kraken-api/src/client"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"slices"
@@ -48,10 +48,10 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	// are free to update versions without impacting how plugins are purchased.
 	// When presigned URL's are generated the plugin name fetched from cognito user attributes will be "Alchemical-Hydra" it follows the
 	// same process of finding the true object name from S3 to generate the signed URL for.
-	s3, err := client.MakeS3Service("kraken-plugins")
+	s3, err := service.MakeS3Service("kraken-plugins")
 	if err != nil {
-		log.Errorf("error: failed to create client: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create client: " + err.Error()})
+		log.Errorf("error: failed to create service: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create service: " + err.Error()})
 		return
 	}
 
@@ -63,11 +63,11 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	}
 
 	// Check if the user has previously purchased this plugin.
-	cognitoService := client.MakeCognitoService()
+	cognitoService := service.MakeCognitoService()
 	attributes, err := cognitoService.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)
 	if err != nil {
-		log.Errorf("error: failed to create cognito client: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create client: " + err.Error()})
+		log.Errorf("error: failed to create cognito service: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create service: " + err.Error()})
 		return
 	}
 

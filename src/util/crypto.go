@@ -32,7 +32,7 @@ type Crypto struct {
 	mu sync.RWMutex
 }
 
-// MakeCognitoSecretHash Creates a hash based on the user id, client id and secret which must be
+// MakeCognitoSecretHash Creates a hash based on the user id, service id and secret which must be
 // sent with every cognito auth request (along with a refresh token) to get a new access token.
 func (c *Crypto) MakeCognitoSecretHash(userId, clientId, clientSecret string) string {
 	usernameClientID := userId + clientId

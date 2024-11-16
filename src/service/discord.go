@@ -1,4 +1,4 @@
-package client
+package service
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ type UserResponse struct {
 	Verified      bool   `json:"verified"`
 }
 
-// MakeDiscordService creates a new Discord client
+// MakeDiscordService creates a new Discord service
 func MakeDiscordService() (*DiscordService, error) {
 	clientID := os.Getenv("DISCORD_CLIENT_ID")
 	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")

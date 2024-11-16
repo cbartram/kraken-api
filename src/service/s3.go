@@ -1,4 +1,4 @@
-package client
+package service
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 
 // Presigner encapsulates the Amazon Simple Storage Service (Amazon S3) presign actions
 // used in the examples.
-// It contains PresignClient, a client that is used to presign requests to Amazon S3.
-// Presigned requests contain temporary credentials and can be made from any HTTP client.
+// It contains PresignClient, a service that is used to presign requests to Amazon S3.
+// Presigned requests contain temporary credentials and can be made from any HTTP service.
 type S3Service struct {
 	BucketName    string
 	S3Client      *s3.Client

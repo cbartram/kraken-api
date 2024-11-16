@@ -1,4 +1,4 @@
-package client
+package service
 
 import (
 	"context"
@@ -193,7 +193,7 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
-	// Set permanent password although users will never actually log in with a user/pass combo. The Kraken client will use the Cognito refresh token
+	// Set permanent password although users will never actually log in with a user/pass combo. The Kraken service will use the Cognito refresh token
 	// to try and get an access token for the user and authenticate with the access token.
 	_, err = m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
 		UserPoolId: aws.String(m.userPoolID),
@@ -319,7 +319,7 @@ func (m *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *str
 		}
 	}
 
-	// Note: we still authenticate a disabled user the client side handles updating UI/auth flows
+	// Note: we still authenticate a disabled user the service side handles updating UI/auth flows
 	// to re-auth with discord.
 	return true, &model.CognitoUser{
 		DiscordUsername: discordUsername,

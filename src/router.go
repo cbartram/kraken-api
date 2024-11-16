@@ -43,8 +43,13 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
+	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {
+		handler := handlers.ClientBootstrapHandler{}
+		handler.HandleRequest(c, ctx)
+	})
+
 	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {
-		handler := plugin.PluginPresignedUrlHandler{}
+		handler := plugin.PresignedUrlHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 

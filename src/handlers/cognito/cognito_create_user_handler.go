@@ -7,15 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"kraken-api/src/client"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"net/http"
 )
 
 type CognitoCreateUserRequestHandler struct{}
 
 // HandleRequest This method handles the creation of a new cognito user after the user has finished the discord
-// OAuth flow. It will return a Cognito refresh token AND access token which will be used by the Kraken client to authenticate a user
+// OAuth flow. It will return a Cognito refresh token AND access token which will be used by the Kraken service to authenticate a user
 // in subsequent runs. In subsequent runs a user who is attempting to authenticate must use their refresh token to gain
 // an access token.
 func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Context) {
@@ -32,7 +32,7 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 		return
 	}
 
-	authManager := client.MakeCognitoService()
+	authManager := service.MakeCognitoService()
 
 	// We want to assert that the user does not exist before we create it.
 	user, _ := authManager.GetUser(ctx, &reqBody.DiscordID)

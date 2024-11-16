@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"kraken-api/src/client"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"net/http"
 )
 
@@ -28,7 +28,7 @@ func (h *CognitoUserStatusHandler) HandleRequest(c *gin.Context, ctx context.Con
 		return
 	}
 
-	authManager := client.MakeCognitoService()
+	authManager := service.MakeCognitoService()
 
 	if reqBody.AccountEnabled {
 		ok := authManager.EnableUser(ctx, reqBody.DiscordID)

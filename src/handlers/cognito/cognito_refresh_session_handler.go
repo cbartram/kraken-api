@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"kraken-api/src/client"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"net/http"
 )
 
@@ -35,7 +35,7 @@ func (h *CognitoRefreshSessionHandler) HandleRequest(c *gin.Context, ctx context
 		return
 	}
 
-	authManager := client.MakeCognitoService()
+	authManager := service.MakeCognitoService()
 	log.Infof("authenticating user with discord id: %s", reqBody.DiscordID)
 	creds, err := authManager.RefreshSession(ctx, reqBody.RefreshToken)
 

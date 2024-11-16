@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"kraken-api/src/client"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"slices"
@@ -37,7 +37,7 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 
 	// TODO Validate that the license key matches a regex.
 
-	authManger := client.MakeCognitoService()
+	authManger := service.MakeCognitoService()
 	log.Infof("fetching user attributes with access token")
 	attr, err := authManger.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)
 
