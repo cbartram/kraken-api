@@ -12,10 +12,11 @@ import (
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
+	"strconv"
 )
 
 // The amount of time the signed URL is valid for to read plugin data from S3
-const SIGNED_URL_DURATION_SECONDS = 90
+const SIGNED_URL_DURATION_SECONDS = 300
 
 type PresignedUrlHandler struct{}
 
@@ -37,6 +38,14 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
+
+	devPlugins, err := strconv.ParseBool(c.Query("dev"))
+	if err != nil {
+		log.Errorf("Unable to parse boolean for dev plugins from val: %s", c.Query("dev"))
+		devPlugins = false
+	}
+
+	log.Infof("Loading dev plugins: %v", devPlugins)
 
 	authManger := service.MakeCognitoService()
 	log.Infof("fetching user attributes with access token")
@@ -84,7 +93,14 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context)
 			continue
 		}
 
-		exists, name, err := s3.DoesObjectExist(fmt.Sprintf("plugins/%s", plugin))
+		var obj string
+		if devPlugins {
+			obj = fmt.Sprintf("dev/%s", plugin)
+		} else {
+			obj = fmt.Sprintf("plugins/%s", plugin)
+		}
+
+		exists, name, err := s3.DoesObjectExist(obj)
 		if err != nil || !exists {
 			log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err)
 			continue
