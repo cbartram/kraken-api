@@ -5,8 +5,6 @@ orbs:
 
 jobs:
   build-and-deploy:
-    context:
-      - Kraken Env
     docker:
       - image: cimg/go:1.20
     executor: aws-cli/default
@@ -40,4 +38,6 @@ jobs:
 workflows:
   build-and-deploy:
     jobs:
-      - build-and-deploy
+      - build-and-deploy:
+          context:
+            - Kraken Env
