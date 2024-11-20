@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"kraken-api/src/util"
 	"log"
 	"strings"
 	"time"
@@ -38,9 +39,9 @@ func MakeS3Service(bucketName string) (*S3Service, error) {
 	}, nil
 }
 
-// DoesObjectExist Returns true if an object with a given prefix exists in the S3 bucket, false otherwise. This
+// GetLatestVersion Returns true if an object with a given prefix exists in the S3 bucket, false otherwise. This
 // function automatically trims any *.jar extension off of the S3 object name if it exists.
-func (p *S3Service) DoesObjectExist(prefix string) (bool, string, error) {
+func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket: aws.String(p.BucketName),
 		Prefix: aws.String(prefix),
@@ -51,14 +52,35 @@ func (p *S3Service) DoesObjectExist(prefix string) (bool, string, error) {
 		return false, "", err
 	}
 
-	// Check if any objects were found
-	if len(result.Contents) > 0 {
-		// Return the first matching object's key trimmed of its .jar extension
-		name := strings.TrimSuffix(*result.Contents[0].Key, ".jar")
-		return true, name, nil
+	if len(result.Contents) == 0 {
+		return false, "", nil
 	}
 
-	return false, "", nil
+	// Find object with latest version
+	var latestVersion *util.Version
+	var latestKey string
+
+	for _, obj := range result.Contents {
+		version, err := util.ParseVersion(*obj.Key)
+		if err != nil {
+			// Skip objects with invalid version format
+			log.Printf("Unable to parse version for object: %s", *obj.Key)
+			continue
+		}
+
+		if latestVersion == nil || version.IsGreaterThan(*latestVersion) {
+			latestVersion = version
+			latestKey = *obj.Key
+		}
+	}
+
+	if latestKey == "" {
+		return false, "", nil
+	}
+
+	// Return the object's key trimmed of its .jar extension
+	name := strings.TrimSuffix(latestKey, ".jar")
+	return true, name, nil
 }
 
 // GetObject makes a presigned request that can be used to get an object from a bucket.

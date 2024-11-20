@@ -55,7 +55,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 		return
 	}
 
-	exists, objectName, err := s3.DoesObjectExist(fmt.Sprintf("plugins/%s", reqBody.PluginName))
+	exists, objectName, err := s3.GetLatestVersion(fmt.Sprintf("plugins/%s", reqBody.PluginName))
 	if err != nil || !exists {
 		log.Errorf("error: failed to list objects in s3 bucket or object does not exist: object exists: %v, error: %s,", exists, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to list objects in s3 bucket or object does not exist: " + err.Error()})

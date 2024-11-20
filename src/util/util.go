@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	log "github.com/sirupsen/logrus"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +19,45 @@ const (
 	numSections  = 4  // Number of sections
 	validPattern = "^[A-Z]{5}-[A-Z]{5}-[A-Z]{5}-[A-Z]{5}$"
 )
+
+// Version represents a semantic version
+type Version struct {
+	Major int
+	Minor int
+	Patch int
+}
+
+// ParseVersion extracts version from object name
+func ParseVersion(objectName string) (*Version, error) {
+	// Extract version using regex
+	re := regexp.MustCompile(`-(\d+)\.(\d+)\.(\d+)\.jar$`)
+	matches := re.FindStringSubmatch(objectName)
+
+	if len(matches) != 4 {
+		return nil, fmt.Errorf("invalid version format in object name: %s", objectName)
+	}
+
+	major, _ := strconv.Atoi(matches[1])
+	minor, _ := strconv.Atoi(matches[2])
+	patch, _ := strconv.Atoi(matches[3])
+
+	return &Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}, nil
+}
+
+// Compare returns true if v is greater than other
+func (v Version) IsGreaterThan(other Version) bool {
+	if v.Major != other.Major {
+		return v.Major > other.Major
+	}
+	if v.Minor != other.Minor {
+		return v.Minor > other.Minor
+	}
+	return v.Patch > other.Patch
+}
 
 // IsPluginExpired Returns true when the plugin expiration date is past the current date and false otherwise.
 func IsPluginExpired(expirationTimestamp string) (bool, error) {

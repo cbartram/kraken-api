@@ -93,14 +93,14 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context)
 			continue
 		}
 
-		var obj string
+		var prefix string
 		if devPlugins {
-			obj = fmt.Sprintf("dev/%s", plugin)
+			prefix = fmt.Sprintf("dev/%s", plugin)
 		} else {
-			obj = fmt.Sprintf("plugins/%s", plugin)
+			prefix = fmt.Sprintf("plugins/%s", plugin)
 		}
 
-		exists, name, err := s3.DoesObjectExist(obj)
+		exists, name, err := s3.GetLatestVersion(prefix)
 		if err != nil || !exists {
 			log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err)
 			continue

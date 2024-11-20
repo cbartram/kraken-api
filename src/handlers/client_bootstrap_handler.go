@@ -28,7 +28,7 @@ func (b *ClientBootstrapHandler) HandleRequest(c *gin.Context, ctx context.Conte
 		return
 	}
 
-	exists, name, err := s3.DoesObjectExist("kraken-client-")
+	exists, name, err := s3.GetLatestVersion("client/")
 	if err != nil || !exists {
 		log.Errorf("error: kraken client with prefix: kraken-client- does not exist or error: %s", err)
 	}
