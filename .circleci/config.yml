@@ -6,7 +6,7 @@ orbs:
 jobs:
   build-and-deploy:
     docker:
-      - image: cimg/go:1.20
+      - image: cimg/go:1.23.2
     executor: aws-cli/default
     steps:
       - checkout
