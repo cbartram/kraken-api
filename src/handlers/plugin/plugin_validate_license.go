@@ -44,14 +44,11 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	pluginNames := util.GetUserAttribute(attr, PURCHASED_PLUGINS_KEY)
 
 	plugins := map[string]string{}
+	licenseKeyNameMap := map[string]string{}
 
+	// Validate expiration and hwid for all plugins we have in the DB
 	for i, name := range pluginNames {
-		// Get the license key for this plugin name that was provided in the request. If this plugin name doesn't
-		// exist its value will be "" which will not match the valid value anyway.
-		providedLicenseKey := reqBody.Plugins[name]
-		validLicenseKey := licenseKeys[i]
-
-		// If HWID doesn't match don't bother validating the license's they are playing on the wrong computer.
+		licenseKeyNameMap[name] = licenseKeys[i]
 		if hardwareIds[0] != reqBody.HardwareID {
 			log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, hardwareIds[0])
 			plugins[name] = ""
@@ -70,14 +67,24 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 			plugins[name] = ""
 			continue
 		}
+		plugins[name] = expirationTimestamps[i]
+	}
 
-		if providedLicenseKey != validLicenseKey {
-			log.Infof("provided license key: %s does not match valid license key: %s for plugin: %s", providedLicenseKey, validLicenseKey, name)
-			plugins[name] = ""
+	// Now simply verify that the license key matches for ONLY the plugins that were requested.
+	for pluginName := range reqBody.Plugins {
+
+		// The plugin failed a previous check simply continue
+		if plugins[pluginName] == "" {
 			continue
 		}
 
-		plugins[name] = expirationTimestamps[i]
+		providedLicenseKey := reqBody.Plugins[pluginName]
+		validLicenseKey := licenseKeyNameMap[pluginName]
+
+		if providedLicenseKey != validLicenseKey {
+			log.Infof("provided license key: %s does not match valid license key: %s for plugin: %s", providedLicenseKey, validLicenseKey, pluginName)
+			plugins[pluginName] = ""
+		}
 	}
 
 	c.JSON(http.StatusOK, plugins)
