@@ -37,7 +37,7 @@ type CognitoAuthRequest struct {
 
 type LicenseKeyRequest struct {
 	Credentials CognitoCredentials `json:"credentials"`
-	LicenseKey  string             `json:"licenseKey"`
+	Plugins     map[string]string  `json:"plugins"`
 	HardwareID  string             `json:"hardwareId"`
 }
 

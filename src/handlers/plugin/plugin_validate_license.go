@@ -3,7 +3,6 @@ package plugin
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -11,8 +10,6 @@ import (
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
-	"slices"
-	"strings"
 )
 
 type PluginValidateLicenseHandler struct{}
@@ -44,18 +41,24 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	licenseKeys := util.GetUserAttribute(attr, LICENSE_KEY)
 	expirationTimestamps := util.GetUserAttribute(attr, EXPIRATION_TIMESTAMP_KEY)
 	hardwareIds := util.GetUserAttribute(attr, HARDWARE_ID_KEY)
+	pluginNames := util.GetUserAttribute(attr, PURCHASED_PLUGINS_KEY)
 
-	if !slices.Contains(licenseKeys, strings.TrimSpace(reqBody.LicenseKey)) {
-		log.Infof("user passed invalid license key: %s key does not belong to user acct: %s", reqBody.LicenseKey, licenseKeys)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("license key invalid, no license %s in user account", reqBody.LicenseKey),
-		})
+	validPlugins := map[string]string{}
+	pluginHardwareId := hardwareIds[0]
+
+	// If HWID doesn't match don't bother validating the license's they are playing on the wrong computer.
+	if pluginHardwareId != reqBody.HardwareID {
+		log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, pluginHardwareId)
+		c.JSON(http.StatusOK, validPlugins)
 		return
 	}
 
-	for i, _ := range licenseKeys {
+	for i, name := range pluginNames {
+		// Get the license key for this plugin name that was provided in the request. If this plugin name doesn't
+		// exist its value will be "" which will not match the valid value anyway.
+		providedLicenseKey := reqBody.Plugins[name]
+		validLicenseKey := licenseKeys[i]
 		expired, err := util.IsPluginExpired(expirationTimestamps[i])
-		pluginHardwareId := hardwareIds[0]
 		if err != nil {
 			log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expirationTimestamps[i], err.Error())
 			continue
@@ -63,22 +66,16 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 
 		if expired {
 			log.Infof("current time is after plugin expiration time, license key is expired.")
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "license key invalid: expired",
-			})
-			return
+			continue
 		}
 
-		if pluginHardwareId != reqBody.HardwareID {
-			log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, pluginHardwareId)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("license key invalid: hardware id %s is invalid", reqBody.HardwareID),
-			})
-			return
+		if providedLicenseKey != validLicenseKey {
+			log.Infof("provided license key: %s does not match valid license key: %s for plugin: %s", providedLicenseKey, validLicenseKey, name)
+			continue
 		}
+
+		validPlugins[name] = expirationTimestamps[i]
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"error": nil,
-	})
+	c.JSON(http.StatusOK, validPlugins)
 }
