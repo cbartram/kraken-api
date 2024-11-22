@@ -43,39 +43,42 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	hardwareIds := util.GetUserAttribute(attr, HARDWARE_ID_KEY)
 	pluginNames := util.GetUserAttribute(attr, PURCHASED_PLUGINS_KEY)
 
-	validPlugins := map[string]string{}
-	pluginHardwareId := hardwareIds[0]
-
-	// If HWID doesn't match don't bother validating the license's they are playing on the wrong computer.
-	if pluginHardwareId != reqBody.HardwareID {
-		log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, pluginHardwareId)
-		c.JSON(http.StatusOK, validPlugins)
-		return
-	}
+	plugins := map[string]string{}
 
 	for i, name := range pluginNames {
 		// Get the license key for this plugin name that was provided in the request. If this plugin name doesn't
 		// exist its value will be "" which will not match the valid value anyway.
 		providedLicenseKey := reqBody.Plugins[name]
 		validLicenseKey := licenseKeys[i]
+
+		// If HWID doesn't match don't bother validating the license's they are playing on the wrong computer.
+		if hardwareIds[0] != reqBody.HardwareID {
+			log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, hardwareIds[0])
+			plugins[name] = ""
+			continue
+		}
+
 		expired, err := util.IsPluginExpired(expirationTimestamps[i])
 		if err != nil {
 			log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expirationTimestamps[i], err.Error())
+			plugins[name] = ""
 			continue
 		}
 
 		if expired {
 			log.Infof("current time is after plugin expiration time, license key is expired.")
+			plugins[name] = ""
 			continue
 		}
 
 		if providedLicenseKey != validLicenseKey {
 			log.Infof("provided license key: %s does not match valid license key: %s for plugin: %s", providedLicenseKey, validLicenseKey, name)
+			plugins[name] = ""
 			continue
 		}
 
-		validPlugins[name] = expirationTimestamps[i]
+		plugins[name] = expirationTimestamps[i]
 	}
 
-	c.JSON(http.StatusOK, validPlugins)
+	c.JSON(http.StatusOK, plugins)
 }
