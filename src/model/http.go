@@ -35,9 +35,16 @@ type CognitoAuthRequest struct {
 	DiscordID    string `json:"discordId"`
 }
 
-type LicenseKeyRequest struct {
+type LicenseKeyRequestBatch struct {
 	Credentials CognitoCredentials `json:"credentials"`
 	Plugins     map[string]string  `json:"plugins"`
+	HardwareID  string             `json:"hardwareId"`
+}
+
+type LicenseKeyRequest struct {
+	Credentials CognitoCredentials `json:"credentials"`
+	LicenseKey  string             `json:"licenseKey"`
+	PluginName  string             `json:"pluginName"`
 	HardwareID  string             `json:"hardwareId"`
 }
 

@@ -59,6 +59,11 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
+	pluginGroup.POST("/validate-license-single", func(c *gin.Context) {
+		handler := plugin.PluginValidateLicenseHandler{}
+		handler.HandleSingleValidationRequest(c, ctx)
+	})
+
 	pluginGroup.POST("/purchase", func(c *gin.Context) {
 		handler := plugin.PurchaseHandler{}
 		handler.HandleRequest(c, ctx)
