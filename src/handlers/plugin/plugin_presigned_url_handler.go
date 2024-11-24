@@ -13,6 +13,7 @@ import (
 	"kraken-api/src/util"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 // The amount of time the signed URL is valid for to read plugin data from S3
@@ -71,7 +72,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context)
 		})
 		return
 	}
-	var preSignedUrls = make([]v4.PresignedHTTPRequest, 0)
+	var preSignedUrls []v4.PresignedHTTPRequest
 	s3, err := service.MakeS3Service("kraken-plugins")
 	if err != nil {
 		log.Errorf("error: failed to create s3 service: %s", err.Error())
@@ -81,41 +82,100 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context)
 		return
 	}
 
+	// Create channels and wait group for parallel processing
+	results := make(chan PresignedURLResult, len(pluginKeys))
+	var wg sync.WaitGroup
+
+	// Launch goroutines for each plugin
 	for i, plugin := range pluginKeys {
-		expired, err := util.IsPluginExpired(expirationTimestamps[i])
-		if err != nil {
-			log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expirationTimestamps[i], err.Error())
+		wg.Add(1)
+		go GeneratePreSignedURL(
+			ctx,
+			s3,
+			plugin,
+			expirationTimestamps[i],
+			devPlugins,
+			&wg,
+			results,
+		)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Note: This will return partial results if some S3 calls fails for any reason.
+	for result := range results {
+		if result.Error != nil {
+			log.Errorf("error generating presigned url: %s", err)
 			continue
 		}
-
-		if expired {
-			log.Infof("current time is after plugin expiration time, skipping pre-signed URL")
-			continue
+		if result.URL != nil {
+			preSignedUrls = append(preSignedUrls, *result.URL)
 		}
-
-		var prefix string
-		if devPlugins {
-			prefix = fmt.Sprintf("dev/%s", plugin)
-		} else {
-			prefix = fmt.Sprintf("plugins/%s", plugin)
-		}
-
-		exists, name, err := s3.GetLatestVersion(prefix)
-		if err != nil || !exists {
-			log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err)
-			continue
-		}
-
-		url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SIGNED_URL_DURATION_SECONDS)
-		if err != nil {
-			log.Errorf("error creating presigned url for plugin: %s", name)
-			continue
-		}
-		log.Infof("generated pre-signed url good for: plugin=%s, %d seconds, url: %s", name, SIGNED_URL_DURATION_SECONDS, url.URL)
-		preSignedUrls = append(preSignedUrls, *url)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"urls": preSignedUrls,
 	})
+}
+
+type PresignedURLResult struct {
+	URL   *v4.PresignedHTTPRequest
+	Error error
+}
+
+func GeneratePreSignedURL(
+	ctx context.Context,
+	s3 *service.S3Service,
+	plugin string,
+	expiration string,
+	devPlugins bool,
+	wg *sync.WaitGroup,
+	results chan<- PresignedURLResult,
+) {
+	defer wg.Done()
+
+	// Check expiration
+	expired, err := util.IsPluginExpired(expiration)
+	if err != nil {
+		log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expiration, err.Error())
+		results <- PresignedURLResult{nil, err}
+		return
+	}
+
+	if expired {
+		log.Infof("current time is after plugin expiration time, skipping pre-signed URL")
+		results <- PresignedURLResult{nil, nil}
+		return
+	}
+
+	// Determine prefix
+	var prefix string
+	if devPlugins {
+		prefix = fmt.Sprintf("dev/%s", plugin)
+	} else {
+		prefix = fmt.Sprintf("plugins/%s", plugin)
+	}
+
+	// Get latest version
+	exists, name, err := s3.GetLatestVersion(prefix)
+	if err != nil || !exists {
+		log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err)
+		results <- PresignedURLResult{nil, err}
+		return
+	}
+
+	// Generate pre-signed URL
+	url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SIGNED_URL_DURATION_SECONDS)
+	if err != nil {
+		log.Errorf("error creating presigned url for plugin: %s", name)
+		results <- PresignedURLResult{nil, err}
+		return
+	}
+
+	log.Infof("generated pre-signed url for: plugin=%s, %d seconds, url: %s",
+		name, SIGNED_URL_DURATION_SECONDS, url.URL)
+	results <- PresignedURLResult{url, nil}
 }

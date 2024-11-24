@@ -10,6 +10,7 @@ import (
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
+	"slices"
 )
 
 type PluginValidateLicenseHandler struct{}
@@ -124,8 +125,8 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 
 	// Validate expiration and hwid for all plugins we have in the DB
 	for i, name := range pluginNames {
-		if hardwareIds[0] != reqBody.HardwareID {
-			log.Infof("hardware id passed: %s does not match plugin HWID: %s", reqBody.HardwareID, hardwareIds[0])
+		if !slices.Contains(hardwareIds, reqBody.HardwareID) {
+			log.Infof("hardware id(s): %s does not match plugin HWID: %s", reqBody.HardwareID, hardwareIds[0])
 			plugins[name] = ""
 			continue
 		}
