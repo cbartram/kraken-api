@@ -27,7 +27,38 @@ jobs:
           name: Build Go Binary
           command: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda.norpc -o bootstrap main.go
       - run:
-          name: Deploy to Lambda
+          name: Deploy to Lambda Dev
+          command: |
+            zip deployment.zip bootstrap
+            aws lambda update-function-code --function-name kraken-api-dev --zip-file fileb://deployment.zip
+      - save_cache:
+          key: go-mod-{{ checksum "go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+  deploy-prod:
+    docker:
+      - image: cimg/go:1.23.2
+    executor: aws-cli/default
+    steps:
+      - checkout
+      - aws-cli/setup:
+          aws_access_key_id: $AWS_ACCESS_KEY_ID
+          aws_secret_access_key: $AWS_SECRET_ACCESS_KEY
+          region: $AWS_REGION
+          profile_name: default
+      - restore_cache:
+          key: go-mod-{{ checksum "go.sum" }}
+      - run:
+          name: Download Go Modules
+          command: |
+            go env -w GOPRIVATE=github.com/cbartram
+            git config --global url."https://$GITHUB_USER:$GITHUB_TOKEN@github.com/cbartram/".insteadOf "https://github.com/cbartram/"
+            go mod download
+      - run:
+          name: Build Go Binary
+          command: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda.norpc -o bootstrap main.go
+      - run:
+          name: Deploy to Lambda Prod
           command: |
             zip deployment.zip bootstrap
             aws lambda update-function-code --function-name kraken-api --zip-file fileb://deployment.zip
@@ -35,9 +66,18 @@ jobs:
           key: go-mod-{{ checksum "go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
+
 workflows:
   build-and-deploy:
     jobs:
       - build-and-deploy:
           context:
             - Kraken Env
+      - deploy-prod:
+          context:
+            - Kraken Env
+          filters:
+            branches:
+              only:
+                - main
+                - master
