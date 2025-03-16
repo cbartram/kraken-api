@@ -55,13 +55,6 @@ type PurchasePluginRequest struct {
 	// TODO CC information likely
 }
 
-type CognitoCredentials struct {
-	RefreshToken    string `json:"refresh_token,omitempty"`
-	TokenExpiration int32  `json:"token_expiration_seconds,omitempty"`
-	AccessToken     string `json:"access_token,omitempty"`
-	IdToken         string `json:"id_token,omitempty"`
-}
-
 type CognitoUser struct {
 	CognitoID       string             `json:"cognitoId,omitempty"`
 	DiscordUsername string             `json:"discordUsername,omitempty"`

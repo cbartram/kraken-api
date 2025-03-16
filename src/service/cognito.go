@@ -9,13 +9,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"kraken-api/src/model"
 	"kraken-api/src/util"
 	"os"
 	"path/filepath"
 )
 
-// CognitoAuthManager handles AWS Cognito authentication operations
+// CognitoService handles AWS Cognito authentication operations
 type CognitoService struct {
 	cognitoClient *cognitoidentityprovider.Client
 	userPoolID    string
@@ -29,7 +30,7 @@ type SessionData struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// MakeCognitoAuthManager creates a new instance of CognitoAuthManager
+// MakeCognitoService creates a new instance of CognitoAuthManager
 func MakeCognitoService() *CognitoService {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -41,92 +42,8 @@ func MakeCognitoService() *CognitoService {
 		userPoolID:    os.Getenv("USER_POOL_ID"),
 		clientID:      os.Getenv("COGNITO_CLIENT_ID"),
 		clientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),
-		configPath:    filepath.Join(os.Getenv("HOME"), ".config", "your-app", "session.json"),
+		configPath:    filepath.Join(os.Getenv("HOME"), ".config", "kraken", "session.json"),
 	}
-}
-
-func (m *CognitoService) GetUserAttributes(ctx context.Context, accessToken *string) ([]types.AttributeType, error) {
-	user, err := m.cognitoClient.GetUser(ctx, &cognitoidentityprovider.GetUserInput{AccessToken: accessToken})
-
-	if err != nil {
-		log.Errorf("could not get user with access token: %s", err.Error())
-		return nil, errors.New("could not get user with access token")
-	}
-
-	return user.UserAttributes, nil
-}
-
-func (m *CognitoService) UpdateUserAttributes(ctx context.Context, accessToken *string, attributes []types.AttributeType) error {
-	_, err := m.cognitoClient.UpdateUserAttributes(ctx, &cognitoidentityprovider.UpdateUserAttributesInput{
-		AccessToken:    accessToken,
-		UserAttributes: attributes,
-	})
-
-	if err != nil {
-		log.Errorf("could not update user attributes with access token: %s", err.Error())
-		return errors.New("could not update user attributes with access token")
-	}
-
-	return nil
-}
-
-func (m *CognitoService) GetUser(ctx context.Context, discordId *string) (*model.CognitoUser, error) {
-	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-		UserPoolId: aws.String(m.userPoolID),
-		Username:   discordId,
-	})
-
-	if err != nil {
-		log.Errorf("no user exists with username: %s", *discordId, err.Error())
-		return nil, errors.New("could not get user with username: " + *discordId)
-	}
-
-	var email, discordID, discordUsername, cognitoID string
-	for _, attr := range user.UserAttributes {
-		switch aws.ToString(attr.Name) {
-		case "email":
-			email = aws.ToString(attr.Value)
-		case "sub":
-			cognitoID = aws.ToString(attr.Value)
-		case "custom:discord_id":
-			discordID = aws.ToString(attr.Value)
-		case "custom:discord_username":
-			discordUsername = aws.ToString(attr.Value)
-		}
-	}
-
-	// Note: This method does not return credentials with the user
-	return &model.CognitoUser{
-		DiscordUsername: discordUsername,
-		DiscordID:       discordID,
-		Email:           email,
-		CognitoID:       cognitoID,
-		AccountEnabled:  user.Enabled,
-	}, nil
-}
-
-func (m *CognitoService) EnableUser(ctx context.Context, discordId string) bool {
-	_, err := m.cognitoClient.AdminEnableUser(ctx, &cognitoidentityprovider.AdminEnableUserInput{
-		UserPoolId: aws.String(m.userPoolID),
-		Username:   aws.String(discordId),
-	})
-	if err != nil {
-		log.Errorf("failed to enable user: %s", err)
-		return false
-	}
-	return true
-}
-
-func (m *CognitoService) DisableUser(ctx context.Context, discordId string) bool {
-	_, err := m.cognitoClient.AdminDisableUser(ctx, &cognitoidentityprovider.AdminDisableUserInput{
-		UserPoolId: aws.String(m.userPoolID),
-		Username:   aws.String(discordId),
-	})
-	if err != nil {
-		log.Errorf("failed to disable user: %s", err)
-		return false
-	}
-	return true
 }
 
 func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayload *model.CognitoCreateUserRequest) (*types.AuthenticationResultType, error) {
@@ -152,32 +69,8 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 			Value: aws.String(createUserPayload.DiscordUsername),
 		},
 		{
-			Name:  aws.String("custom:purchased_plugins"),
-			Value: aws.String("nil"),
-		},
-		{
-			Name:  aws.String("custom:license_key"),
-			Value: aws.String("nil"),
-		},
-		{
-			Name:  aws.String("custom:purchase_timestamp"),
-			Value: aws.String("nil"),
-		},
-		{
-			Name:  aws.String("custom:expiration_timestamp"),
-			Value: aws.String("nil"),
-		},
-		{
-			Name:  aws.String("custom:hardware_id"),
-			Value: aws.String(createUserPayload.HardwareID),
-		},
-		{
 			Name:  aws.String("custom:temporary_password"),
 			Value: aws.String(password),
-		},
-		{
-			Name:  aws.String("custom:refresh_token"),
-			Value: aws.String("nil"),
 		},
 	}
 
@@ -238,11 +131,6 @@ func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, pa
 		Value: result.AuthenticationResult.RefreshToken,
 	})
 
-	err = m.UpdateUserAttributes(ctx, result.AuthenticationResult.AccessToken, attributes)
-	if err != nil {
-		return nil, err
-	}
-
 	return result.AuthenticationResult, nil
 }
 
@@ -279,7 +167,7 @@ func (m *CognitoService) RefreshSession(ctx context.Context, discordID string) (
 
 }
 
-func (m *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string) (bool, *model.CognitoUser) {
+func (m *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string, db *gorm.DB) (*model.User, error) {
 	auth, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(m.userPoolID),
 		ClientId:   aws.String(m.clientID),
@@ -291,47 +179,22 @@ func (m *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *str
 	})
 
 	if err != nil {
-		log.Errorf("error auth: user %s could not be authenticated: %s", *userId, err.Error())
-		return false, nil
+		log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
+		return nil, err
 	}
 
-	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-		UserPoolId: aws.String(m.userPoolID),
-		Username:   userId,
-	})
-
+	user, err := model.GetUser(*userId, db)
 	if err != nil {
-		log.Errorf("could not get user with username: %s: error: %s", *userId, err.Error())
-		return false, nil
+		log.Errorf("could not get user from db: %v", err)
+		return nil, err
 	}
 
-	var email, discordID, discordUsername, cognitoID string
-	for _, attr := range user.UserAttributes {
-		switch aws.ToString(attr.Name) {
-		case "email":
-			email = aws.ToString(attr.Value)
-		case "sub":
-			cognitoID = aws.ToString(attr.Value)
-		case "custom:discord_id":
-			discordID = aws.ToString(attr.Value)
-		case "custom:discord_username":
-			discordUsername = aws.ToString(attr.Value)
-		}
+	user.Credentials = model.CognitoCredentials{
+		AccessToken:     *auth.AuthenticationResult.AccessToken,
+		RefreshToken:    *refreshToken,
+		TokenExpiration: auth.AuthenticationResult.ExpiresIn,
+		IdToken:         *auth.AuthenticationResult.IdToken,
 	}
 
-	// Note: we still authenticate a disabled user the service side handles updating UI/auth flows
-	// to re-auth with discord.
-	return true, &model.CognitoUser{
-		DiscordUsername: discordUsername,
-		DiscordID:       discordID,
-		Email:           email,
-		CognitoID:       cognitoID,
-		AccountEnabled:  user.Enabled,
-		Credentials: model.CognitoCredentials{
-			AccessToken:     *auth.AuthenticationResult.AccessToken,
-			RefreshToken:    *refreshToken,
-			TokenExpiration: auth.AuthenticationResult.ExpiresIn,
-			IdToken:         *auth.AuthenticationResult.IdToken,
-		},
-	}
+	return user, nil
 }

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.name}}
+  labels:
+    app: {{.Values.name}}
+spec:
+  replicas: {{.Values.replicaCount}}
+  selector:
+    matchLabels:
+      app: {{.Values.name}}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{.Values.name}}
+    spec:
+      containers:
+        - name: main
+          image: {{.Values.image.repository}}:{{.Values.image.tag}}
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          ports:
+            - containerPort: {{.Values.service.targetPort}}
+              name: {{.Values.name}}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: MYSQL_USER
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: MYSQL_DATABASE
+          volumeMounts:
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}

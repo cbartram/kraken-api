@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-config
+  namespace: {{.Values.namespace}}
+data:
+  # Versions and images for containers the API is responsible
+  # for deploying
+  API_VERSION: {{ .Values.image.tag | quote }}
+
+  # API
+  GIN_MODE: "release"
+  API_BASE_URL: {{ .Values.api.baseUrl | quote }}
+  MYSQL_HOST: {{ .Values.db.host }}

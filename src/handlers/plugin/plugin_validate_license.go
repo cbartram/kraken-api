@@ -1,21 +1,20 @@
 package plugin
 
 import (
-	"context"
 	"encoding/json"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"kraken-api/src/model"
-	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"slices"
 )
 
-type PluginValidateLicenseHandler struct{}
+type ValidateLicenseHandler struct{}
 
-func (p *PluginValidateLicenseHandler) HandleSingleValidationRequest(c *gin.Context, ctx context.Context) {
+func (p *ValidateLicenseHandler) HandleSingleValidationRequest(c *gin.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -31,14 +30,14 @@ func (p *PluginValidateLicenseHandler) HandleSingleValidationRequest(c *gin.Cont
 
 	// TODO Validate that the license key matches a regex.
 
-	authManger := service.MakeCognitoService()
 	log.Infof("fetching user attributes with access token")
-	attr, err := authManger.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)
+	// TODO DB
+	attr := []types.AttributeType{}
 
-	licenseKeys := util.GetUserAttribute(attr, LICENSE_KEY)
-	expirationTimestamps := util.GetUserAttribute(attr, EXPIRATION_TIMESTAMP_KEY)
-	hardwareIds := util.GetUserAttribute(attr, HARDWARE_ID_KEY)
-	pluginNames := util.GetUserAttribute(attr, PURCHASED_PLUGINS_KEY)
+	licenseKeys := util.GetUserAttribute(attr, LicenseKey)
+	expirationTimestamps := util.GetUserAttribute(attr, ExpirationTimestampKey)
+	hardwareIds := util.GetUserAttribute(attr, HardwareIdKey)
+	pluginNames := util.GetUserAttribute(attr, PurchasedPluginsKey)
 	foundPlugin := false
 
 	for i, name := range pluginNames {
@@ -96,7 +95,7 @@ func (p *PluginValidateLicenseHandler) HandleSingleValidationRequest(c *gin.Cont
 // 1. Validate what they sent = what is on their account
 // 2. Validate (once again) that the expiration timestamp for the plugin is ok
 // 3. Validate that the hardware id matches what is on the users account
-func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+func (p *ValidateLicenseHandler) HandleRequest(c *gin.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -111,15 +110,14 @@ func (p *PluginValidateLicenseHandler) HandleRequest(c *gin.Context, ctx context
 	}
 
 	// TODO Validate that the license key matches a regex.
-
-	authManger := service.MakeCognitoService()
 	log.Infof("fetching user attributes with access token")
-	attr, err := authManger.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)
+	// TODO DB
+	attr := []types.AttributeType{}
 
-	licenseKeys := util.GetUserAttribute(attr, LICENSE_KEY)
-	expirationTimestamps := util.GetUserAttribute(attr, EXPIRATION_TIMESTAMP_KEY)
-	hardwareIds := util.GetUserAttribute(attr, HARDWARE_ID_KEY)
-	pluginNames := util.GetUserAttribute(attr, PURCHASED_PLUGINS_KEY)
+	licenseKeys := util.GetUserAttribute(attr, LicenseKey)
+	expirationTimestamps := util.GetUserAttribute(attr, ExpirationTimestampKey)
+	hardwareIds := util.GetUserAttribute(attr, HardwareIdKey)
+	pluginNames := util.GetUserAttribute(attr, PurchasedPluginsKey)
 
 	plugins := map[string]string{}
 

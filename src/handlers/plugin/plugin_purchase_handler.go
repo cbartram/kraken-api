@@ -20,11 +20,11 @@ import (
 type PurchaseHandler struct{}
 
 const (
-	PURCHASED_PLUGINS_KEY    = "custom:purchased_plugins"
-	EXPIRATION_TIMESTAMP_KEY = "custom:expiration_timestamp"
-	PURCHASE_TIMESTAMP_KEY   = "custom:purchase_timestamp"
-	LICENSE_KEY              = "custom:license_key"
-	HARDWARE_ID_KEY          = "custom:hardware_id"
+	PurchasedPluginsKey    = "custom:purchased_plugins"
+	ExpirationTimestampKey = "custom:expiration_timestamp"
+	PurchaseTimestampKey   = "custom:purchase_timestamp"
+	LicenseKey             = "custom:license_key"
+	HardwareIdKey          = "custom:hardware_id"
 )
 
 // HandleRequest Handles the /api/v1/plugin/purchase API route.
@@ -63,20 +63,15 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	}
 
 	// Check if the user has previously purchased this plugin.
-	cognitoService := service.MakeCognitoService()
-	attributes, err := cognitoService.GetUserAttributes(ctx, &reqBody.Credentials.AccessToken)
-	if err != nil {
-		log.Errorf("error: failed to create cognito service: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create service: " + err.Error()})
-		return
-	}
+	// TODO from db
+	attributes := []types.AttributeType{}
 
 	writableAttributes := make([]types.AttributeType, 0)
 
-	pluginKeys := util.GetUserAttribute(attributes, PURCHASED_PLUGINS_KEY)
-	expirationTimestamps := util.GetUserAttribute(attributes, EXPIRATION_TIMESTAMP_KEY)
-	purchaseDates := util.GetUserAttribute(attributes, PURCHASE_TIMESTAMP_KEY)
-	licenseKeys := util.GetUserAttribute(attributes, LICENSE_KEY)
+	pluginKeys := util.GetUserAttribute(attributes, PurchasedPluginsKey)
+	expirationTimestamps := util.GetUserAttribute(attributes, ExpirationTimestampKey)
+	purchaseDates := util.GetUserAttribute(attributes, PurchaseTimestampKey)
+	licenseKeys := util.GetUserAttribute(attributes, LicenseKey)
 
 	log.Infof("User attributes: custom:purchased_plugins=%s, custom:expiration_timestamp=%s, custom:purchase_timestamp=%s", pluginKeys, expirationTimestamps, purchaseDates)
 
@@ -95,18 +90,19 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 		log.Infof("list of plugins is nil: first ever purchase, overwriting plugin list with: %s", objectName)
 
 		// Note: we store the plugin name: "Alchemical-Hydra" NOT the jar file name: "Alchemical-Hydra-1.0.0-all.jar"
-		updatedPlugins := util.MakeAttribute(PURCHASED_PLUGINS_KEY, reqBody.PluginName)
-		updatedExpiration := util.MakeAttribute(EXPIRATION_TIMESTAMP_KEY, expirationTime)
-		updatedPurchaseDate := util.MakeAttribute(PURCHASE_TIMESTAMP_KEY, purchaseTime.Format(time.RFC3339))
-		updatedLicenseKey := util.MakeAttribute(LICENSE_KEY, licenseKey)
+		updatedPlugins := util.MakeAttribute(PurchasedPluginsKey, reqBody.PluginName)
+		updatedExpiration := util.MakeAttribute(ExpirationTimestampKey, expirationTime)
+		updatedPurchaseDate := util.MakeAttribute(PurchaseTimestampKey, purchaseTime.Format(time.RFC3339))
+		updatedLicenseKey := util.MakeAttribute(LicenseKey, licenseKey)
 
 		writableAttributes = append(writableAttributes, updatedPlugins, updatedExpiration, updatedPurchaseDate, updatedLicenseKey)
-		err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
-		if err != nil {
-			log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
-			return
-		}
+		// TODO DB
+		//err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
+		//if err != nil {
+		//	log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
+		//	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
+		//	return
+		//}
 		c.JSON(http.StatusOK, gin.H{
 			"licenseKey":          licenseKey,
 			"pluginName":          reqBody.PluginName,
@@ -129,18 +125,19 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 		}
 
 		// Join the expiration and purchase date back into csv strings and make them into cognito Attributes
-		updatedExpiration := util.MakeAttribute(EXPIRATION_TIMESTAMP_KEY, strings.Join(expirationTimestamps, ","))
-		updatedPurchase := util.MakeAttribute(PURCHASE_TIMESTAMP_KEY, strings.Join(purchaseDates, ","))
-		updatedLicense := util.MakeAttribute(LICENSE_KEY, strings.Join(licenseKeys, ","))
+		updatedExpiration := util.MakeAttribute(ExpirationTimestampKey, strings.Join(expirationTimestamps, ","))
+		updatedPurchase := util.MakeAttribute(PurchaseTimestampKey, strings.Join(purchaseDates, ","))
+		updatedLicense := util.MakeAttribute(LicenseKey, strings.Join(licenseKeys, ","))
 		writableAttributes = append(writableAttributes, updatedExpiration, updatedPurchase, updatedLicense)
 
 		// TODO This code can be Dry'd up substantially
-		err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
-		if err != nil {
-			log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
-			return
-		}
+		// TODO DB
+		//err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
+		//if err != nil {
+		//	log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
+		//	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
+		//	return
+		//}
 		c.JSON(http.StatusOK, gin.H{
 			"licenseKey":          licenseKey,
 			"pluginName":          reqBody.PluginName,
@@ -156,19 +153,20 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, ctx context.Context) {
 	purchaseDates = append(purchaseDates, purchaseTime.Format(time.RFC3339))
 	licenseKeys = append(licenseKeys, licenseKey)
 
-	updatedLicenseKeys := util.MakeAttribute(LICENSE_KEY, strings.Join(licenseKeys, ","))
-	updatedPluginKeys := util.MakeAttribute(PURCHASED_PLUGINS_KEY, strings.Join(pluginKeys, ","))
-	updatedExpirationTimestamps := util.MakeAttribute(EXPIRATION_TIMESTAMP_KEY, strings.Join(expirationTimestamps, ","))
-	updatedPurchaseDates := util.MakeAttribute(PURCHASE_TIMESTAMP_KEY, strings.Join(purchaseDates, ","))
+	updatedLicenseKeys := util.MakeAttribute(LicenseKey, strings.Join(licenseKeys, ","))
+	updatedPluginKeys := util.MakeAttribute(PurchasedPluginsKey, strings.Join(pluginKeys, ","))
+	updatedExpirationTimestamps := util.MakeAttribute(ExpirationTimestampKey, strings.Join(expirationTimestamps, ","))
+	updatedPurchaseDates := util.MakeAttribute(PurchaseTimestampKey, strings.Join(purchaseDates, ","))
 
 	writableAttributes = append(writableAttributes, updatedLicenseKeys, updatedPurchaseDates, updatedPluginKeys, updatedExpirationTimestamps)
 
-	err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
-	if err != nil {
-		log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
-		return
-	}
+	// TODO DB
+	//err = cognitoService.UpdateUserAttributes(ctx, &reqBody.Credentials.AccessToken, writableAttributes)
+	//if err != nil {
+	//	log.Errorf("error: failed to update user attributes for first time plugin purchase: %s", err.Error())
+	//	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user attributes: " + err.Error()})
+	//	return
+	//}
 	c.JSON(http.StatusOK, gin.H{
 		"licenseKey":          licenseKey,
 		"pluginName":          reqBody.PluginName,

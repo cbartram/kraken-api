@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -16,8 +17,8 @@ import (
 	"sync"
 )
 
-// The amount of time the signed URL is valid for to read plugin data from S3
-const SIGNED_URL_DURATION_SECONDS = 300
+// SignedUrlDurationSeconds The amount of time the signed URL is valid for to read plugin data from S3
+const SignedUrlDurationSeconds = 300
 
 type PresignedUrlHandler struct{}
 
@@ -25,7 +26,7 @@ type PresignedUrlHandler struct{}
 // to download plugin JAR files from S3. Note: this method does NOT validate license keys for plugins only that
 // plugins are not expired. All non-expired plugins will have presigned urls and be loadable by the service. License
 // key validation happens in the /api/v1/plugin/validate-license endpoint before a loaded plugin is started.
-func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -48,16 +49,8 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context)
 
 	log.Infof("Loading dev plugins: %v", devPlugins)
 
-	authManger := service.MakeCognitoService()
 	log.Infof("fetching user attributes with access token")
-	attr, err := authManger.GetUserAttributes(ctx, &reqBody.AccessToken)
-	if err != nil {
-		log.Errorf("error: failed to get user attributes with access token, error: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to get user attributes with access token: " + err.Error(),
-		})
-		return
-	}
+	attr := []types.AttributeType{}
 
 	// Purchased Plugins attribute type will be "nil" (string) if no plugins have been purchased, else it will be
 	// a CSV list of purchased plugin id's
@@ -168,7 +161,7 @@ func GeneratePreSignedURL(
 	}
 
 	// Generate pre-signed URL
-	url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SIGNED_URL_DURATION_SECONDS)
+	url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
 	if err != nil {
 		log.Errorf("error creating presigned url for plugin: %s", name)
 		results <- PresignedURLResult{nil, err}
@@ -176,6 +169,6 @@ func GeneratePreSignedURL(
 	}
 
 	log.Infof("generated pre-signed url for: plugin=%s, %d seconds, url: %s",
-		name, SIGNED_URL_DURATION_SECONDS, url.URL)
+		name, SignedUrlDurationSeconds, url.URL)
 	results <- PresignedURLResult{url, nil}
 }

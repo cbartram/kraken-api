@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kraken-api
+description: The API for handling user authentication, plugin purchases, and plugin signed url generation for Kraken client.
+type: application
+version: 0.1.0
+appVersion: "0.0.22"

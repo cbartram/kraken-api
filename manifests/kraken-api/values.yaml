@@ -1,0 +1,35 @@
+name: kraken-api
+namespace: kraken
+replicaCount: 1
+
+db:
+  host: "kraken-db.kraken.svc.cluster.local"
+
+api:
+  baseUrl: "https://kraken-api.duckdns.org"
+
+image:
+  repository: cbartram/kraken-api
+  pullPolicy: IfNotPresent
+  tag: "0.0.2"
+
+serviceAccountName: kraken-api-sa
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+resources:
+   limits:
+     cpu: 100m
+     memory: 128Mi
+   requests:
+     cpu: 100m
+     memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80

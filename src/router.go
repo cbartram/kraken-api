@@ -2,17 +2,19 @@ package src
 
 import (
 	"context"
-	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"kraken-api/src/handlers"
 	"kraken-api/src/handlers/cognito"
 	"kraken-api/src/handlers/plugin"
+	"kraken-api/src/service"
 	"log"
+	"net/http"
 	"os"
 )
 
-func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
+func NewRouter(w *service.Wrapper) *gin.Engine {
+	ctx := context.Background()
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: false,
@@ -35,12 +37,18 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 	r.Use(LogrusMiddleware(logger))
 
 	apiGroup := r.Group("/api/v1")
-	cognitoGroup := apiGroup.Group("/cognito")
-	pluginGroup := apiGroup.Group("/plugin")
+	userGroup := apiGroup.Group("/user")
+	pluginGroup := apiGroup.Group("/plugin", AuthMiddleware(w))
+
+	apiGroup.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"api-version": os.Getenv("API_VERSION"),
+		})
+	})
 
 	apiGroup.POST("/discord/oauth", func(c *gin.Context) {
 		handler := handlers.DiscordRequestHandler{}
-		handler.HandleRequest(c, ctx)
+		handler.HandleRequest(c)
 	})
 
 	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {
@@ -50,18 +58,18 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 
 	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {
 		handler := plugin.PresignedUrlHandler{}
-		handler.HandleRequest(c, ctx)
+		handler.HandleRequest(c, ctx, w)
 	})
 
 	// TODO This method has the potential for abuse. Add some sort of rate limiting to it.
 	pluginGroup.POST("/validate-license", func(c *gin.Context) {
-		handler := plugin.PluginValidateLicenseHandler{}
-		handler.HandleRequest(c, ctx)
+		handler := plugin.ValidateLicenseHandler{}
+		handler.HandleRequest(c)
 	})
 
 	pluginGroup.POST("/validate-license-single", func(c *gin.Context) {
-		handler := plugin.PluginValidateLicenseHandler{}
-		handler.HandleSingleValidationRequest(c, ctx)
+		handler := plugin.ValidateLicenseHandler{}
+		handler.HandleSingleValidationRequest(c)
 	})
 
 	pluginGroup.POST("/purchase", func(c *gin.Context) {
@@ -69,30 +77,20 @@ func MakeRouter(ctx context.Context) *ginadapter.GinLambda {
 		handler.HandleRequest(c, ctx)
 	})
 
-	cognitoGroup.POST("/create-user", func(c *gin.Context) {
-		handler := cognito.CognitoCreateUserRequestHandler{}
-		handler.HandleRequest(c, ctx)
+	userGroup.POST("/create-user", func(c *gin.Context) {
+		handler := cognito.CreateUserRequestHandler{}
+		handler.HandleRequest(c, ctx, w)
 	})
 
-	cognitoGroup.POST("/auth", func(c *gin.Context) {
-		handler := cognito.CognitoAuthHandler{}
-		handler.HandleRequest(c, ctx)
+	userGroup.POST("/auth", AuthMiddleware(w), func(c *gin.Context) {
+		handler := cognito.AuthHandler{}
+		handler.HandleRequest(c, ctx, w)
 	})
 
-	cognitoGroup.POST("/refresh-session", func(c *gin.Context) {
+	userGroup.POST("/refresh-session", AuthMiddleware(w), func(c *gin.Context) {
 		handler := cognito.CognitoRefreshSessionHandler{}
 		handler.HandleRequest(c, ctx)
 	})
 
-	cognitoGroup.GET("/get-user", func(c *gin.Context) {
-		handler := cognito.CognitoGetUserHandler{}
-		handler.HandleRequest(c, ctx)
-	})
-
-	cognitoGroup.PUT("/user-status", func(c *gin.Context) {
-		handler := cognito.CognitoUserStatusHandler{}
-		handler.HandleRequest(c, ctx)
-	})
-
-	return ginadapter.New(r)
+	return r
 }

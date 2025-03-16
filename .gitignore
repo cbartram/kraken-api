@@ -24,6 +24,8 @@ go.work.sum
 # env file
 .env
 
+main
+
 bootstrap
 .idea
 *.iml

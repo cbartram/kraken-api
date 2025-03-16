@@ -1,0 +1,33 @@
+name: kraken-db
+namespace: kraken
+replicaCount: 1
+
+pvc:
+  size: 20Gi
+
+image:
+  repository: mysql
+  pullPolicy: IfNotPresent
+  tag: "9.2.0"
+
+service:
+  type: ClusterIP
+  port: 3306
+  targetPort: 3306
+
+resources:
+  limits:
+    cpu: 256m
+    memory: 1Gi
+  requests:
+    cpu: 128m
+    memory: 512Mi
+
+volumes:
+  - name: db-storage
+    persistentVolumeClaim:
+      claimName: kraken-db-pvc
+
+volumeMounts:
+  - name: db-storage
+    mountPath: /var/lib/mysql

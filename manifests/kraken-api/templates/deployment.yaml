@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.name}}
+  namespace: {{.Values.namespace}}
+  labels:
+    app: {{.Values.name}}
+spec:
+  replicas: {{.Values.replicaCount}}
+  selector:
+    matchLabels:
+      app: {{.Values.name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.name}}
+    spec:
+      serviceAccountName: {{.Values.serviceAccountName}}
+      containers:
+        - name: main
+          image: {{.Values.image.repository}}:{{.Values.image.tag}}
+          imagePullPolicy: IfNotPresent
+          args:
+            - "./main"
+            - "-port"
+            - {{.Values.service.targetPort | quote }}
+          envFrom:
+            - secretRef:
+                name: cognito-secrets
+            - secretRef:
+                name: discord-secrets
+            - secretRef:
+                name: mysql-secrets
+            - secretRef:
+                name: aws-secrets
+            - configMapRef:
+                name: server-config
+          ports:
+            - containerPort: {{.Values.service.targetPort}}
+              name: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: {{.Values.service.targetPort}}
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: {{.Values.service.targetPort}}

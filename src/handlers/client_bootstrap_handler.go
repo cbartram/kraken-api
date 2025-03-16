@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-// The amount of time the signed URL is valid for to read plugin data from S3
-const SIGNED_URL_DURATION_SECONDS = 90
+// SignedUrlDurationSeconds The amount of time the signed URL is valid for to read plugin data from S3
+const SignedUrlDurationSeconds = 90
 
 type ClientBootstrapHandler struct{}
 
@@ -33,7 +33,7 @@ func (b *ClientBootstrapHandler) HandleRequest(c *gin.Context, ctx context.Conte
 		log.Errorf("error: kraken client with prefix: kraken-client- does not exist or error: %s", err)
 	}
 
-	url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SIGNED_URL_DURATION_SECONDS)
+	url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
 	if err != nil {
 		log.Errorf("error creating presigned url for kraken-client: %s", name)
 	}

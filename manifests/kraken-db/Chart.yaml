@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kraken-db
+description: A Helm chart for deploying the Kraken MySQL database.
+
+type: application
+version: 0.1.0
+appVersion: "1.16.0"

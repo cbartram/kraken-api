@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -16,7 +15,7 @@ type DiscordRequestHandler struct{}
 
 // HandleRequest Handles the /api/v1/discord-oauth route which the service calls to trade a code for an OAuth
 // access token.
-func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+func (h *DiscordRequestHandler) HandleRequest(c *gin.Context) {
 	discordClient, err := service.MakeDiscordService()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

@@ -12,13 +12,13 @@ import (
 	"net/http"
 )
 
-type CognitoCreateUserRequestHandler struct{}
+type CreateUserRequestHandler struct{}
 
 // HandleRequest This method handles the creation of a new cognito user after the user has finished the discord
 // OAuth flow. It will return a Cognito refresh token AND access token which will be used by the Kraken service to authenticate a user
 // in subsequent runs. In subsequent runs a user who is attempting to authenticate must use their refresh token to gain
 // an access token.
-func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Context) {
+func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -32,12 +32,13 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 		return
 	}
 
-	authManager := service.MakeCognitoService()
-
 	// We want to assert that the user does not exist before we create it.
-	user, _ := authManager.GetUser(ctx, &reqBody.DiscordID)
-	if user == nil {
-		creds, err := authManager.CreateCognitoUser(ctx, &reqBody)
+	var user model.User
+	tx := w.Database.Where("discord_id = ?", reqBody.DiscordID).First(&user)
+
+	if tx.RowsAffected == 0 {
+		log.Infof("no user found with id: %s, creating user", reqBody.DiscordID)
+		creds, err := w.CognitoService.CreateCognitoUser(ctx, &reqBody)
 		if err != nil {
 			log.Errorf("error while creating new cognito user: %s", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -46,24 +47,31 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			return
 		}
 
-		// Note: this does not provide the cognito id. However, users are located via username (discord id) not cognito id.
-		c.JSON(http.StatusOK, model.CognitoUser{
+		newUser := model.User{
 			DiscordUsername: reqBody.DiscordUsername,
 			Email:           reqBody.DiscordEmail,
 			DiscordID:       reqBody.DiscordID,
-			AccountEnabled:  true,
 			Credentials: model.CognitoCredentials{
 				RefreshToken:    *creds.RefreshToken,
 				AccessToken:     *creds.AccessToken,
 				TokenExpiration: creds.ExpiresIn,
 				IdToken:         *creds.IdToken,
 			},
-		})
+		}
+
+		tx = w.Database.Create(&newUser)
+		if tx.Error != nil {
+			log.Errorf("error while creating new user: %v", tx.Error)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "error while creating new user: " + tx.Error.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, newUser)
 	} else {
-		// User already exists.
-		log.Infof("user already exists, re-enabling and refreshing session")
-		authManager.EnableUser(ctx, reqBody.DiscordID)
-		creds, err := authManager.RefreshSession(ctx, reqBody.DiscordID)
+		log.Infof("user already exists, refreshing session")
+		creds, err := w.CognitoService.RefreshSession(ctx, reqBody.DiscordID)
 		if err != nil {
 			log.Errorf("error: failed to refresh existing user session: " + err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -72,12 +80,13 @@ func (h *CognitoCreateUserRequestHandler) HandleRequest(c *gin.Context, ctx cont
 			return
 		}
 
-		c.JSON(http.StatusOK, model.CognitoUser{
-			DiscordUsername: reqBody.DiscordUsername,
-			Email:           reqBody.DiscordEmail,
-			DiscordID:       reqBody.DiscordID,
-			AccountEnabled:  true,
-			Credentials:     *creds,
-		})
+		user.Credentials = model.CognitoCredentials{
+			RefreshToken:    creds.RefreshToken,
+			AccessToken:     creds.AccessToken,
+			IdToken:         creds.IdToken,
+			TokenExpiration: creds.TokenExpiration,
+		}
+
+		c.JSON(http.StatusOK, user)
 	}
 }
