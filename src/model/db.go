@@ -97,11 +97,11 @@ func (HardwareID) TableName() string {
 
 // Plugin represents a software plugin in the system
 type Plugin struct {
-	ID                  uint   `gorm:"primaryKey" json:"id"`
-	UserID              uint   `gorm:"column:user_id;index" json:"userId"`
-	Name                string `gorm:"uniqueIndex;not null"`
-	ExpirationTimestamp time.Time
-	S3JarFilePath       string
+	ID                  uint           `gorm:"primaryKey" json:"id"`
+	UserID              uint           `gorm:"column:user_id;index" json:"userId"`
+	Name                string         `gorm:"uniqueIndex;not null" json:"name"`
+	ExpirationTimestamp time.Time      `gorm:"column:expiration_timestamp" json:"expirationTimestamp"`
+	S3JarFilePath       string         `json:"s3JarFilePath"`
 	LicenseKey          string         `gorm:"uniqueIndex" json:"-"`
 	CreatedAt           time.Time      `json:"createdAt"`
 	UpdatedAt           time.Time      `json:"updatedAt"`

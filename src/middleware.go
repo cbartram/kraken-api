@@ -57,6 +57,7 @@ func AuthMiddleware(w *service.Wrapper) gin.HandlerFunc {
 		discordID := credentials[0]
 		refreshToken := credentials[1]
 
+		logrus.Infof("authenticating user with discord id: %s", discordID)
 		user, err := w.CognitoService.AuthUser(context.Background(), &refreshToken, &discordID, w.Database)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("could not authenticate user with refresh token: %s", err)})

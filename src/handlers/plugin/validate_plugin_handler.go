@@ -52,7 +52,7 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 
 	log.Infof("req body plugins: %v", reqBody.Plugins)
 
-	var validPlugins map[string]string
+	validPlugins := make(map[string]string)
 	for _, plugin := range user.Plugins {
 		log.Infof("validating plugin: %s", plugin.Name)
 		licenseKeyToValidate, exists := reqBody.Plugins[plugin.Name]
