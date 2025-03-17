@@ -72,10 +72,10 @@ func (User) TableName() string {
 type CognitoCredentials struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
 	UserID          uint           `gorm:"column:user_id;index" json:"userId"`
-	RefreshToken    string         `gorm:"column:refresh_token" json:"refreshToken,omitempty"`
+	RefreshToken    string         `gorm:"column:refresh_token;type:LONGTEXT" json:"refreshToken,omitempty"`
 	TokenExpiration int32          `gorm:"column:token_expiration" json:"tokenExpirationSeconds,omitempty"`
-	AccessToken     string         `gorm:"column:access_token" json:"accessToken,omitempty"`
-	IdToken         string         `gorm:"column:id_token" json:"idToken,omitempty"`
+	AccessToken     string         `gorm:"column:access_token;type:LONGTEXT" json:"accessToken,omitempty"`
+	IdToken         string         `gorm:"column:id_token;type:LONGTEXT" json:"idToken,omitempty"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
