@@ -89,6 +89,14 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			IdToken:         creds.IdToken,
 			TokenExpiration: creds.TokenExpiration,
 		}
+		tx := w.Database.Save(&user)
+		if tx.Error != nil {
+			log.Errorf("error while saving existing user: %v", tx.Error)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "error while saving existing user: " + tx.Error.Error(),
+			})
+			return
+		}
 
 		c.JSON(http.StatusOK, user)
 	}
