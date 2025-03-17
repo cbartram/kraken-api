@@ -71,11 +71,11 @@ func (User) TableName() string {
 
 type CognitoCredentials struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
-	UserID          uint           `gorm:"column:user_id;index" json:"user_id"`
-	RefreshToken    string         `gorm:"column:refresh_token" json:"refresh_token,omitempty"`
-	TokenExpiration int32          `gorm:"column:token_expiration" json:"token_expiration_seconds,omitempty"`
-	AccessToken     string         `gorm:"column:access_token" json:"access_token,omitempty"`
-	IdToken         string         `gorm:"column:id_token" json:"id_token,omitempty"`
+	UserID          uint           `gorm:"column:user_id;index" json:"userId"`
+	RefreshToken    string         `gorm:"column:refresh_token" json:"refreshToken,omitempty"`
+	TokenExpiration int32          `gorm:"column:token_expiration" json:"tokenExpirationSeconds,omitempty"`
+	AccessToken     string         `gorm:"column:access_token" json:"accessToken,omitempty"`
+	IdToken         string         `gorm:"column:id_token" json:"idToken,omitempty"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
@@ -85,7 +85,7 @@ type CognitoCredentials struct {
 type HardwareID struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	Value     string         `gorm:"uniqueIndex;not null"`
-	UserID    uint           `gorm:"column:user_id;index" json:"user_id"`
+	UserID    uint           `gorm:"column:user_id;index" json:"userId"`
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
@@ -98,7 +98,7 @@ func (HardwareID) TableName() string {
 // Plugin represents a software plugin in the system
 type Plugin struct {
 	ID                  uint   `gorm:"primaryKey" json:"id"`
-	UserID              uint   `gorm:"column:user_id;index" json:"user_id"`
+	UserID              uint   `gorm:"column:user_id;index" json:"userId"`
 	Name                string `gorm:"uniqueIndex;not null"`
 	ExpirationTimestamp time.Time
 	S3JarFilePath       string

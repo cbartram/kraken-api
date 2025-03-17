@@ -71,7 +71,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		handler.HandleRequest(c, ctx, w)
 	})
 
-	userGroup.POST("/auth", AuthMiddleware(w), func(c *gin.Context) {
+	userGroup.GET("/", AuthMiddleware(w), func(c *gin.Context) {
 		handler := cognito.AuthHandler{}
 		handler.HandleRequest(c, ctx, w)
 	})
