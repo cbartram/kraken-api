@@ -22,7 +22,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not read body from request: " + err.Error()})
 		return
 	}
 
@@ -35,7 +35,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found in context"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in context"})
 		return
 	}
 

@@ -27,7 +27,7 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not read body from request: " + err.Error()})
 		return
 	}
 

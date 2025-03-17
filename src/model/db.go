@@ -102,7 +102,7 @@ type Plugin struct {
 	Name                string `gorm:"uniqueIndex;not null"`
 	ExpirationTimestamp time.Time
 	S3JarFilePath       string
-	LicenseKey          string         `gorm:"uniqueIndex"`
+	LicenseKey          string         `gorm:"uniqueIndex" json:"-"`
 	CreatedAt           time.Time      `json:"createdAt"`
 	UpdatedAt           time.Time      `json:"updatedAt"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`

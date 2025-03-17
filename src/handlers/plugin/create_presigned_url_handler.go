@@ -2,13 +2,11 @@ package plugin
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"io"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
@@ -35,34 +33,26 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 	}
 
 	user := tmp.(*model.User)
+	hwid := c.Query("hardwareId")
+	if len(hwid) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "must provide hardwareId query parameter"})
+	}
+
 	devPlugins, err := strconv.ParseBool(c.Query("dev"))
 	if err != nil {
 		log.Errorf("Unable to parse boolean for dev plugins from val: %s", c.Query("dev"))
 		devPlugins = false
 	}
 
-	log.Infof("loading dev plugins: %v", devPlugins)
+	log.Infof("user provided hardware id: %s, loading dev plugins: %v", hwid, devPlugins)
 	if len(user.Plugins) == 0 {
 		log.Infof("user: %s has no purchased plugins, skipping presigned url generation", user.DiscordUsername)
 		c.JSON(http.StatusOK, []v4.PresignedHTTPRequest{})
 		return
 	}
 
-	bodyRaw, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
-		return
-	}
-
-	var reqBody model.CreatePresignedUrlRequestBatch
-	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request body: %v", err)})
-		return
-	}
-
-	if !util.IsValidHardwareID(reqBody.HardwareID, user.HardwareIDs) {
-		log.Infof("user: %s has provided an invalid hardware id: %s", user.DiscordUsername, reqBody.HardwareID)
+	if !util.IsValidHardwareID(hwid, user.HardwareIDs) {
+		log.Infof("user: %s has provided an invalid hardware id: %s", user.DiscordUsername, hwid)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid hardware id"})
 		return
 	}
@@ -77,7 +67,6 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		go GeneratePreSignedURL(
 			ctx,
 			w.S3Service,
-			reqBody.Plugins,
 			plugin,
 			devPlugins,
 			&wg,
@@ -112,7 +101,6 @@ type PresignedURLResult struct {
 func GeneratePreSignedURL(
 	ctx context.Context,
 	s3 *service.S3Service,
-	licenseKeys map[string]string,
 	plugin model.Plugin,
 	devPlugins bool,
 	wg *sync.WaitGroup,
@@ -122,20 +110,6 @@ func GeneratePreSignedURL(
 	if util.IsPluginExpired(plugin.ExpirationTimestamp) {
 		log.Infof("plugin: %s is expired", plugin.Name)
 		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s is expired", plugin.Name))}
-		return
-	}
-
-	license, exists := licenseKeys[plugin.Name]
-
-	if !exists {
-		log.Infof("plugin: %s is not present in given license key map", plugin.Name)
-		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s is not present in given license key map", plugin.Name))}
-		return
-	}
-
-	if plugin.LicenseKey != license {
-		log.Infof("plugin: %s license key: %s does not match provided (request) license key: %s", plugin.Name, plugin.LicenseKey, license)
-		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s license key: %s does not match provided (request) license key: %s", plugin.Name, plugin.LicenseKey, license))}
 		return
 	}
 

@@ -47,38 +47,38 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	})
 
 	apiGroup.POST("/discord/oauth", func(c *gin.Context) {
-		handler := handlers.DiscordRequestHandler{}
-		handler.HandleRequest(c)
+		h := handlers.DiscordRequestHandler{}
+		h.HandleRequest(c)
 	})
 
 	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {
-		handler := handlers.ClientBootstrapHandler{}
-		handler.HandleRequest(c, ctx, w)
+		h := handlers.ClientBootstrapHandler{}
+		h.HandleRequest(c, ctx, w)
 	})
 
 	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {
-		handler := plugin.PresignedUrlHandler{}
-		handler.HandleRequest(c, ctx, w)
+		h := plugin.PresignedUrlHandler{}
+		h.HandleRequest(c, ctx, w)
 	})
 
 	pluginGroup.POST("/purchase", func(c *gin.Context) {
-		handler := plugin.PurchaseHandler{}
-		handler.HandleRequest(c, w)
+		h := plugin.PurchaseHandler{}
+		h.HandleRequest(c, w)
+	})
+
+	pluginGroup.POST("/validate", func(c *gin.Context) {
+		h := plugin.ValidatePluginHandler{}
+		h.HandleRequest(c, ctx, w)
 	})
 
 	userGroup.POST("/create", func(c *gin.Context) {
-		handler := cognito.CreateUserRequestHandler{}
-		handler.HandleRequest(c, ctx, w)
+		h := cognito.CreateUserRequestHandler{}
+		h.HandleRequest(c, ctx, w)
 	})
 
 	userGroup.GET("/", AuthMiddleware(w), func(c *gin.Context) {
-		handler := cognito.AuthHandler{}
-		handler.HandleRequest(c, ctx, w)
-	})
-
-	userGroup.POST("/refresh-session", AuthMiddleware(w), func(c *gin.Context) {
-		handler := cognito.RefreshSessionHandler{}
-		handler.HandleRequest(c, ctx, w)
+		h := cognito.AuthHandler{}
+		h.HandleRequest(c, ctx, w)
 	})
 
 	return r

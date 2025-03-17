@@ -17,7 +17,7 @@ func (h *AuthHandler) HandleRequest(c *gin.Context, ctx context.Context, wrapper
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found in context"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in context"})
 		return
 	}
 

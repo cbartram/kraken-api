@@ -15,7 +15,7 @@ const SignedUrlDurationSeconds = 90
 type ClientBootstrapHandler struct{}
 
 // HandleRequest Handles the /api/v1/plugin/pre-signed-url route which the service calls to generate pre-signed urls
-// to download plugin JAR files from S3.
+// to download the kraken-client JAR file from S3.
 func (b *ClientBootstrapHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
 	exists, name, err := w.S3Service.GetLatestVersion("client/")
 	if err != nil || !exists {
