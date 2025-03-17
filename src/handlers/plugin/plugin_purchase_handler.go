@@ -56,7 +56,8 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 
 	for _, ownedPlugin := range user.Plugins {
 		if strings.ToLower(ownedPlugin.Name) == strings.ToLower(reqBody.PluginName) {
-			if util.IsPluginExpired(ownedPlugin.ExpirationTimestamp) {
+			log.Infof("plugin already exists: %s and expires: %s, is expired: %v", ownedPlugin.Name, ownedPlugin.ExpirationTimestamp.Format(time.RFC3339), util.IsPluginExpired(ownedPlugin.ExpirationTimestamp))
+			if !util.IsPluginExpired(ownedPlugin.ExpirationTimestamp) {
 				log.Infof("user: %s attempted to purchase plugin: %s, but plugin is already owned and not expired: ", user.DiscordUsername, reqBody.PluginName)
 				c.JSON(http.StatusBadRequest, gin.H{"error": "user already owns plugin (not expired): " + reqBody.PluginName})
 				return

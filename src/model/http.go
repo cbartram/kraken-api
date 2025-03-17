@@ -19,10 +19,10 @@ type DiscordTokenResponse struct {
 }
 
 type CognitoCreateUserRequest struct {
-	DiscordID       string `json:"discord_id"`
-	DiscordUsername string `json:"discord_username"`
-	DiscordEmail    string `json:"discord_email"`
-	HardwareID      string `json:"hardware_id"`
+	DiscordID       string `json:"discordId"`
+	DiscordUsername string `json:"discordUsername"`
+	DiscordEmail    string `json:"discordEmail"`
+	HardwareID      string `json:"hardwareId"`
 }
 
 type CreatePresignedUrlRequestBatch struct {

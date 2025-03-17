@@ -66,7 +66,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		handler.HandleRequest(c, w)
 	})
 
-	userGroup.POST("/create-user", func(c *gin.Context) {
+	userGroup.POST("/create", func(c *gin.Context) {
 		handler := cognito.CreateUserRequestHandler{}
 		handler.HandleRequest(c, ctx, w)
 	})

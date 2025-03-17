@@ -13,7 +13,6 @@ import (
 	"kraken-api/src/model"
 	"kraken-api/src/util"
 	"os"
-	"path/filepath"
 )
 
 // CognitoService handles AWS Cognito authentication operations
@@ -22,12 +21,6 @@ type CognitoService struct {
 	userPoolID    string
 	clientID      string
 	clientSecret  string
-	configPath    string
-}
-
-// SessionData represents locally stored session information
-type SessionData struct {
-	RefreshToken string `json:"refresh_token"`
 }
 
 // MakeCognitoService creates a new instance of CognitoAuthManager
@@ -42,7 +35,6 @@ func MakeCognitoService() *CognitoService {
 		userPoolID:    os.Getenv("USER_POOL_ID"),
 		clientID:      os.Getenv("COGNITO_CLIENT_ID"),
 		clientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),
-		configPath:    filepath.Join(os.Getenv("HOME"), ".config", "kraken", "session.json"),
 	}
 }
 
@@ -86,7 +78,7 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
-	// Set permanent password although users will never actually log in with a user/pass combo. The Kraken service will use the Cognito refresh token
+	// Set a permanent password although users will never actually log in with a user/pass combo. The Kraken service will use the Cognito refresh token
 	// to try and get an access token for the user and authenticate with the access token.
 	_, err = m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
 		UserPoolId: aws.String(m.userPoolID),

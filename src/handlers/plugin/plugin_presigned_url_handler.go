@@ -44,9 +44,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 	log.Infof("loading dev plugins: %v", devPlugins)
 	if len(user.Plugins) == 0 {
 		log.Infof("user: %s has no purchased plugins, skipping presigned url generation", user.DiscordUsername)
-		c.JSON(http.StatusOK, gin.H{
-			"urls": []v4.PresignedHTTPRequest{},
-		})
+		c.JSON(http.StatusOK, []v4.PresignedHTTPRequest{})
 		return
 	}
 
@@ -103,9 +101,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"urls": preSignedUrls,
-	})
+	c.JSON(http.StatusOK, preSignedUrls)
 }
 
 type PresignedURLResult struct {

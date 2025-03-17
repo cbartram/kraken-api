@@ -64,7 +64,7 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 		version, err := util.ParseVersion(*obj.Key)
 		if err != nil {
 			// Skip objects with invalid version format
-			log.Printf("Unable to parse version for object: %s", *obj.Key)
+			log.Printf("unable to parse version for object: %s", *obj.Key)
 			continue
 		}
 

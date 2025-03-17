@@ -33,10 +33,9 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 	}
 
 	// We want to assert that the user does not exist before we create it.
-	var user model.User
-	tx := w.Database.Where("discord_id = ?", reqBody.DiscordID).First(&user)
+	user, err := model.GetUser(reqBody.DiscordID, w.Database)
 
-	if tx.RowsAffected == 0 {
+	if err != nil {
 		log.Infof("no user found with id: %s, creating user", reqBody.DiscordID)
 		creds, err := w.CognitoService.CreateCognitoUser(ctx, &reqBody)
 		if err != nil {
@@ -63,7 +62,7 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			Plugins: []model.Plugin{},
 		}
 
-		tx = w.Database.Create(&newUser)
+		tx := w.Database.Create(&newUser)
 		if tx.Error != nil {
 			log.Errorf("error while creating new user: %v", tx.Error)
 			c.JSON(http.StatusInternalServerError, gin.H{
