@@ -122,15 +122,6 @@ func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, pa
 		return nil, fmt.Errorf("error initiating admin user/pass auth with user pool: %w", err)
 	}
 
-	// Add refresh token as custom attribute. This enables admins to get credentials on behalf of a user when
-	// purchasing plugins through the Discord ticket system.
-	attributes := make([]types.AttributeType, 0)
-	attrName := "custom:refresh_token"
-	attributes = append(attributes, types.AttributeType{
-		Name:  &attrName,
-		Value: result.AuthenticationResult.RefreshToken,
-	})
-
 	return result.AuthenticationResult, nil
 }
 

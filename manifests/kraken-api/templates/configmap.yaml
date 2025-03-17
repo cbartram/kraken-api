@@ -7,8 +7,7 @@ data:
   # Versions and images for containers the API is responsible
   # for deploying
   API_VERSION: {{ .Values.image.tag | quote }}
-
-  # API
+  BUCKET_NAME: {{ .Values.s3.bucketName }}
   GIN_MODE: "release"
   API_BASE_URL: {{ .Values.api.baseUrl | quote }}
   MYSQL_HOST: {{ .Values.db.host }}

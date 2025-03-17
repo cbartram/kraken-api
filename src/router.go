@@ -53,7 +53,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 
 	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {
 		handler := handlers.ClientBootstrapHandler{}
-		handler.HandleRequest(c, ctx)
+		handler.HandleRequest(c, ctx, w)
 	})
 
 	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {
@@ -61,20 +61,9 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		handler.HandleRequest(c, ctx, w)
 	})
 
-	// TODO This method has the potential for abuse. Add some sort of rate limiting to it.
-	pluginGroup.POST("/validate-license", func(c *gin.Context) {
-		handler := plugin.ValidateLicenseHandler{}
-		handler.HandleRequest(c)
-	})
-
-	pluginGroup.POST("/validate-license-single", func(c *gin.Context) {
-		handler := plugin.ValidateLicenseHandler{}
-		handler.HandleSingleValidationRequest(c)
-	})
-
 	pluginGroup.POST("/purchase", func(c *gin.Context) {
 		handler := plugin.PurchaseHandler{}
-		handler.HandleRequest(c, ctx)
+		handler.HandleRequest(c, w)
 	})
 
 	userGroup.POST("/create-user", func(c *gin.Context) {
@@ -88,8 +77,8 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	})
 
 	userGroup.POST("/refresh-session", AuthMiddleware(w), func(c *gin.Context) {
-		handler := cognito.CognitoRefreshSessionHandler{}
-		handler.HandleRequest(c, ctx)
+		handler := cognito.RefreshSessionHandler{}
+		handler.HandleRequest(c, ctx, w)
 	})
 
 	return r

@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to make discord service: %v", err)
 	}
-	s3Service, err := service.MakeS3Service("us-east-1")
+	s3Service, err := service.MakeS3Service(os.Getenv("BUCKET_NAME"))
 	if err != nil {
 		logrus.Fatalf("failed to create S3 service: %v", err)
 	}

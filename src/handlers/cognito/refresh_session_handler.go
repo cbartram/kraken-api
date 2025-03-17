@@ -2,42 +2,29 @@ package cognito
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"io"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
 )
 
-type CognitoRefreshSessionHandler struct{}
+type RefreshSessionHandler struct{}
 
 // HandleRequest Authenticates that a refresh token is valid for a given user id. This returns the entire
 // user object with a refreshed access token.
-func (h *CognitoRefreshSessionHandler) HandleRequest(c *gin.Context, ctx context.Context) {
-	bodyRaw, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Errorf("could not read body from request: %s", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not read body from request: " + err.Error()})
+func (h *RefreshSessionHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
+	tmp, exists := c.Get("user")
+	if !exists {
+		log.Errorf("user not found in context")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found in context"})
 		return
 	}
 
-	var reqBody model.CognitoAuthRequest
-	if err = json.Unmarshal(bodyRaw, &reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
-		return
-	}
+	user := tmp.(*model.User)
 
-	if reqBody.DiscordID == "" {
-		log.Errorf("error: discord id '%s' missing from request body: ", reqBody.DiscordID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: discordId or refreshToken missing."})
-		return
-	}
-
-	authManager := service.MakeCognitoService()
-	log.Infof("authenticating user with discord id: %s", reqBody.DiscordID)
-	creds, err := authManager.RefreshSession(ctx, reqBody.RefreshToken)
+	log.Infof("authenticating user with discord id: %s", user.DiscordID)
+	creds, err := w.CognitoService.RefreshSession(ctx, user.Credentials.RefreshToken)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

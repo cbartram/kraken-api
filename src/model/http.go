@@ -25,41 +25,13 @@ type CognitoCreateUserRequest struct {
 	HardwareID      string `json:"hardware_id"`
 }
 
-type CognitoUserStatusRequest struct {
-	AccountEnabled bool   `json:"accountEnabled"`
-	DiscordID      string `json:"discordId"`
-}
-
-type CognitoAuthRequest struct {
-	RefreshToken string `json:"refreshToken"`
-	DiscordID    string `json:"discordId"`
-}
-
-type LicenseKeyRequestBatch struct {
-	Credentials CognitoCredentials `json:"credentials"`
-	Plugins     map[string]string  `json:"plugins"`
-	HardwareID  string             `json:"hardwareId"`
-}
-
-type LicenseKeyRequest struct {
-	Credentials CognitoCredentials `json:"credentials"`
-	LicenseKey  string             `json:"licenseKey"`
-	PluginName  string             `json:"pluginName"`
-	HardwareID  string             `json:"hardwareId"`
+type CreatePresignedUrlRequestBatch struct {
+	Plugins    map[string]string `json:"plugins"`
+	HardwareID string            `json:"hardwareId"`
 }
 
 type PurchasePluginRequest struct {
-	PluginName           string             `json:"pluginName"`
-	PurchaseDurationDays int                `json:"purchaseDurationDays,omitempty"`
-	Credentials          CognitoCredentials `json:"credentials"`
+	PluginName           string `json:"pluginName"`
+	PurchaseDurationDays int    `json:"purchaseDurationDays,omitempty"`
 	// TODO CC information likely
-}
-
-type CognitoUser struct {
-	CognitoID       string             `json:"cognitoId,omitempty"`
-	DiscordUsername string             `json:"discordUsername,omitempty"`
-	Email           string             `json:"email,omitempty"`
-	DiscordID       string             `json:"discordId,omitempty"`
-	AccountEnabled  bool               `json:"accountEnabled,omitempty"`
-	Credentials     CognitoCredentials `json:"credentials,omitempty"`
 }

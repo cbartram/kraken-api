@@ -3,9 +3,9 @@ package plugin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
@@ -22,11 +22,34 @@ const SignedUrlDurationSeconds = 300
 
 type PresignedUrlHandler struct{}
 
-// HandleRequest Handles the /api/v1/plugin/presigned-url route which the service calls to generate pre signed urls
+// HandleRequest Handles the /api/v1/plugin/presigned-url route which the service calls to generate pre-signed urls
 // to download plugin JAR files from S3. Note: this method does NOT validate license keys for plugins only that
 // plugins are not expired. All non-expired plugins will have presigned urls and be loadable by the service. License
 // key validation happens in the /api/v1/plugin/validate-license endpoint before a loaded plugin is started.
 func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
+	tmp, exists := c.Get("user")
+	if !exists {
+		log.Errorf("user not found in context")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found in context"})
+		return
+	}
+
+	user := tmp.(*model.User)
+	devPlugins, err := strconv.ParseBool(c.Query("dev"))
+	if err != nil {
+		log.Errorf("Unable to parse boolean for dev plugins from val: %s", c.Query("dev"))
+		devPlugins = false
+	}
+
+	log.Infof("loading dev plugins: %v", devPlugins)
+	if len(user.Plugins) == 0 {
+		log.Infof("user: %s has no purchased plugins, skipping presigned url generation", user.DiscordUsername)
+		c.JSON(http.StatusOK, gin.H{
+			"urls": []v4.PresignedHTTPRequest{},
+		})
+		return
+	}
+
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -34,59 +57,30 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		return
 	}
 
-	// Note: Only the access token is provided in the request body. All other values will be nil
-	var reqBody model.CognitoCredentials
+	var reqBody model.CreatePresignedUrlRequestBatch
 	if err := json.Unmarshal(bodyRaw, &reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request body: %v", err)})
 		return
 	}
 
-	devPlugins, err := strconv.ParseBool(c.Query("dev"))
-	if err != nil {
-		log.Errorf("Unable to parse boolean for dev plugins from val: %s", c.Query("dev"))
-		devPlugins = false
-	}
-
-	log.Infof("Loading dev plugins: %v", devPlugins)
-
-	log.Infof("fetching user attributes with access token")
-	attr := []types.AttributeType{}
-
-	// Purchased Plugins attribute type will be "nil" (string) if no plugins have been purchased, else it will be
-	// a CSV list of purchased plugin id's
-	// TODO This should be parallelized in the future with go routines.
-	pluginKeys := util.GetUserAttribute(attr, "custom:purchased_plugins")
-	expirationTimestamps := util.GetUserAttribute(attr, "custom:expiration_timestamp")
-	// Only return pre-signed url's for plugins where the plugin is not expired
-	log.Infof("custom:purchased_plugins=%s, custom:expiration_timestamps=%s", pluginKeys, expirationTimestamps)
-	if pluginKeys[0] == "nil" {
-		c.JSON(http.StatusOK, gin.H{
-			"urls": []v4.PresignedHTTPRequest{},
-		})
+	if !util.IsValidHardwareID(reqBody.HardwareID, user.HardwareIDs) {
+		log.Infof("user: %s has provided an invalid hardware id: %s", user.DiscordUsername, reqBody.HardwareID)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid hardware id"})
 		return
 	}
+
 	var preSignedUrls []v4.PresignedHTTPRequest
-	s3, err := service.MakeS3Service("kraken-plugins")
-	if err != nil {
-		log.Errorf("error: failed to create s3 service: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "error: failed to create S3 service.",
-		})
-		return
-	}
 
-	// Create channels and wait group for parallel processing
-	results := make(chan PresignedURLResult, len(pluginKeys))
+	results := make(chan PresignedURLResult, len(user.Plugins))
 	var wg sync.WaitGroup
 
-	// Launch goroutines for each plugin
-	for i, plugin := range pluginKeys {
+	for _, plugin := range user.Plugins {
 		wg.Add(1)
 		go GeneratePreSignedURL(
 			ctx,
-			s3,
+			w.S3Service,
+			reqBody.Plugins,
 			plugin,
-			expirationTimestamps[i],
 			devPlugins,
 			&wg,
 			results,
@@ -122,53 +116,55 @@ type PresignedURLResult struct {
 func GeneratePreSignedURL(
 	ctx context.Context,
 	s3 *service.S3Service,
-	plugin string,
-	expiration string,
+	licenseKeys map[string]string,
+	plugin model.Plugin,
 	devPlugins bool,
 	wg *sync.WaitGroup,
 	results chan<- PresignedURLResult,
 ) {
 	defer wg.Done()
-
-	// Check expiration
-	expired, err := util.IsPluginExpired(expiration)
-	if err != nil {
-		log.Errorf("error: failed to parse plugin expiration timestamp: %s to RFC3339 format. error: %s", expiration, err.Error())
-		results <- PresignedURLResult{nil, err}
+	if util.IsPluginExpired(plugin.ExpirationTimestamp) {
+		log.Infof("plugin: %s is expired", plugin.Name)
+		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s is expired", plugin.Name))}
 		return
 	}
 
-	if expired {
-		log.Infof("current time is after plugin expiration time, skipping pre-signed URL")
-		results <- PresignedURLResult{nil, nil}
+	license, exists := licenseKeys[plugin.Name]
+
+	if !exists {
+		log.Infof("plugin: %s is not present in given license key map", plugin.Name)
+		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s is not present in given license key map", plugin.Name))}
 		return
 	}
 
-	// Determine prefix
+	if plugin.LicenseKey != license {
+		log.Infof("plugin: %s license key: %s does not match provided (request) license key: %s", plugin.Name, plugin.LicenseKey, license)
+		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s license key: %s does not match provided (request) license key: %s", plugin.Name, plugin.LicenseKey, license))}
+		return
+	}
+
 	var prefix string
 	if devPlugins {
-		prefix = fmt.Sprintf("dev/%s", plugin)
+		prefix = fmt.Sprintf("dev/%s", plugin.Name)
 	} else {
-		prefix = fmt.Sprintf("plugins/%s", plugin)
+		prefix = fmt.Sprintf("plugins/%s", plugin.Name)
 	}
 
-	// Get latest version
 	exists, name, err := s3.GetLatestVersion(prefix)
 	if err != nil || !exists {
-		log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin, err)
+		log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin.Name, err)
 		results <- PresignedURLResult{nil, err}
 		return
 	}
 
-	// Generate pre-signed URL
-	url, err := s3.GetObject(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
+	url, err := s3.CreatePresignedUrl(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
 	if err != nil {
-		log.Errorf("error creating presigned url for plugin: %s", name)
+		log.Errorf("error creating presigned url for plugin: %s.jar with prefix: %s", name, prefix)
 		results <- PresignedURLResult{nil, err}
 		return
 	}
 
-	log.Infof("generated pre-signed url for: plugin=%s, %d seconds, url: %s",
+	log.Infof("generated pre-signed url for: plugin: %s, %d seconds, url: %s",
 		name, SignedUrlDurationSeconds, url.URL)
 	results <- PresignedURLResult{url, nil}
 }

@@ -2,6 +2,9 @@ name: kraken-api
 namespace: kraken
 replicaCount: 1
 
+s3:
+  bucketName: kraken-plugins
+
 db:
   host: "kraken-db.kraken.svc.cluster.local"
 
@@ -11,7 +14,7 @@ api:
 image:
   repository: cbartram/kraken-api
   pullPolicy: IfNotPresent
-  tag: "0.0.2"
+  tag: "0.0.4"
 
 serviceAccountName: kraken-api-sa
 

@@ -57,6 +57,10 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 				TokenExpiration: creds.ExpiresIn,
 				IdToken:         *creds.IdToken,
 			},
+			HardwareIDs: []model.HardwareID{
+				{Value: reqBody.HardwareID},
+			},
+			Plugins: []model.Plugin{},
 		}
 
 		tx = w.Database.Create(&newUser)

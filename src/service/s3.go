@@ -83,9 +83,9 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 	return true, name, nil
 }
 
-// GetObject makes a presigned request that can be used to get an object from a bucket.
+// CreatePresignedUrl makes a presigned request that can be used to get an object from a bucket.
 // The presigned request is valid for the specified number of seconds.
-func (p *S3Service) GetObject(ctx context.Context, objectKey string, lifetimeSecs int64) (*v4.PresignedHTTPRequest, error) {
+func (p *S3Service) CreatePresignedUrl(ctx context.Context, objectKey string, lifetimeSecs int64) (*v4.PresignedHTTPRequest, error) {
 	request, err := p.PresignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(p.BucketName),
 		Key:    aws.String(objectKey),

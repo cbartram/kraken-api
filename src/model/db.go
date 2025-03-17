@@ -100,8 +100,6 @@ type Plugin struct {
 	ID                  uint   `gorm:"primaryKey" json:"id"`
 	UserID              uint   `gorm:"column:user_id;index" json:"user_id"`
 	Name                string `gorm:"uniqueIndex;not null"`
-	LatestVersion       string `gorm:"not null"`
-	Expired             bool   `gorm:"default:false"`
 	ExpirationTimestamp time.Time
 	S3JarFilePath       string
 	LicenseKey          string         `gorm:"uniqueIndex"`
