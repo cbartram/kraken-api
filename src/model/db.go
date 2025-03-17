@@ -99,7 +99,7 @@ func (HardwareID) TableName() string {
 type Plugin struct {
 	ID                  uint           `gorm:"primaryKey" json:"id"`
 	UserID              uint           `gorm:"column:user_id;index" json:"userId"`
-	Name                string         `gorm:"uniqueIndex;not null" json:"name"`
+	Name                string         `gorm:"column:name;index;not null" json:"name"`
 	ExpirationTimestamp time.Time      `gorm:"column:expiration_timestamp" json:"expirationTimestamp"`
 	S3JarFilePath       string         `json:"s3JarFilePath"`
 	LicenseKey          string         `gorm:"uniqueIndex" json:"-"`
