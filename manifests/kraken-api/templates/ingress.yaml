@@ -15,10 +15,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - kraken-api.duckdns.org
+        - kraken-plugins.duckdns.org
       secretName: kraken-tls
   rules:
-    - host: kraken-api.duckdns.org
+    - host: kraken-plugins.duckdns.org
       http:
         paths:
           - path: /
