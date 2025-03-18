@@ -38,7 +38,7 @@ type User struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
 	DiscordUsername string         `gorm:"column:discord_username" json:"discordUsername,omitempty"`
 	Email           string         `gorm:"column:email" json:"email,omitempty"`
-	AvatarId        string         `gorm:"column:avatar_id" json:"avatarId,omitempty"`
+	AvatarId        string         `gorm:"column:avatar_id" json:"avatarId"`
 	DiscordID       string         `gorm:"column:discord_id;uniqueIndex" json:"discordId,omitempty"`
 	CustomerId      string         `gorm:"column:customer_id" json:"customerId,omitempty"`
 	CreatedAt       time.Time      `json:"createdAt"`

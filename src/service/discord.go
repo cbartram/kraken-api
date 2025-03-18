@@ -95,32 +95,3 @@ func (c *DiscordService) ExchangeCodeForToken(code, redirectUri string) (*model.
 
 	return &tokenResp, nil
 }
-
-// GetUserInfo retrieves the user's information using the access token
-func (c *DiscordService) GetUserInfo(accessToken string) (*UserResponse, error) {
-	log.Infof("fetching user information from: %s", discordUserEndpoint)
-	req, err := http.NewRequest("GET", discordUserEndpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating user info request: %w", err)
-	}
-
-	req.Header.Add("Authorization", "Bearer "+accessToken)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("executing user info request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("user info request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var userResp UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&userResp); err != nil {
-		return nil, fmt.Errorf("decoding user response: %w", err)
-	}
-
-	return &userResp, nil
-}

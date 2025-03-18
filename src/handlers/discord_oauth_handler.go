@@ -13,7 +13,7 @@ import (
 
 type DiscordRequestHandler struct{}
 
-// HandleRequest Handles the /api/v1/discord-oauth route which the service calls to trade a code for an OAuth
+// HandleRequest Handles the /api/v1/discord/oauth route which the service calls to trade a code for an OAuth
 // access token.
 func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
