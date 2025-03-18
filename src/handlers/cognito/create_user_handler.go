@@ -46,10 +46,22 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			return
 		}
 
+		// Users signing up for the first time through the UI in chrome won't have a hardware id
+		// so this creates a tmp one for them. When the user signs in via the kraken client it will
+		// update the hardware id from temp.
+		var hardwareId string
+		if len(reqBody.HardwareID) == 0 {
+			log.Infof("no hardware id provided, creating user with temp hardware id")
+			hardwareId = "temp"
+		} else {
+			hardwareId = reqBody.HardwareID
+		}
+
 		newUser := model.User{
 			DiscordUsername: reqBody.DiscordUsername,
 			Email:           reqBody.DiscordEmail,
 			DiscordID:       reqBody.DiscordID,
+			AvatarId:        reqBody.AvatarID,
 			Credentials: model.CognitoCredentials{
 				RefreshToken:    *creds.RefreshToken,
 				AccessToken:     *creds.AccessToken,
@@ -57,7 +69,7 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 				IdToken:         *creds.IdToken,
 			},
 			HardwareIDs: []model.HardwareID{
-				{Value: reqBody.HardwareID},
+				{Value: hardwareId},
 			},
 			Plugins: []model.Plugin{},
 		}
@@ -81,6 +93,16 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 				"error": fmt.Sprintf("user with discord id: %s already exists. failed to refresh session", reqBody.DiscordID),
 			})
 			return
+		}
+
+		// TODO This is ripe for abuse. Need a separate route for adding hardware ids in the future.
+		if len(reqBody.HardwareID) != 0 {
+			for _, hardwareId := range user.HardwareIDs {
+				if hardwareId.Value == "temp" {
+					log.Infof("found temp hardware id, updating with actual value: %s", reqBody.HardwareID)
+					hardwareId.Value = reqBody.HardwareID
+				}
+			}
 		}
 
 		user.Credentials = model.CognitoCredentials{

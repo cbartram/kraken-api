@@ -21,6 +21,7 @@ type DiscordTokenResponse struct {
 type CognitoCreateUserRequest struct {
 	DiscordID       string `json:"discordId"`
 	DiscordUsername string `json:"discordUsername"`
+	AvatarID        string `json:"avatarId"`
 	DiscordEmail    string `json:"discordEmail"`
 	HardwareID      string `json:"hardwareId"`
 }

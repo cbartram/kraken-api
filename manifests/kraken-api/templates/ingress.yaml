@@ -21,11 +21,18 @@ spec:
     - host: kraken-plugins.duckdns.org
       http:
         paths:
-          - path: /
+          - path: /api/v1
             pathType: Prefix
             backend:
               service:
                 name: {{.Values.name}}
+                port:
+                  number: {{.Values.service.port}}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{.Values.frontendServiceName}}
                 port:
                   number: {{.Values.service.port}}
 

@@ -1,4 +1,5 @@
 name: kraken-api
+frontendServiceName: kraken-frontend-service
 namespace: kraken
 replicaCount: 1
 

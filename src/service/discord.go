@@ -18,11 +18,10 @@ const (
 	discordUserEndpoint  = discordAPIEndpoint + "/users/@me"
 )
 
-// DiscordClient handles OAuth2 authentication and API calls
+// DiscordService handles OAuth2 authentication and API calls
 type DiscordService struct {
 	clientID     string
 	clientSecret string
-	redirectURI  string
 	httpClient   *http.Client
 }
 
@@ -40,28 +39,26 @@ type UserResponse struct {
 func MakeDiscordService() (*DiscordService, error) {
 	clientID := os.Getenv("DISCORD_CLIENT_ID")
 	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")
-	redirectURI := os.Getenv("DISCORD_REDIRECT_URI")
 
-	if clientID == "" || clientSecret == "" || redirectURI == "" {
-		return nil, fmt.Errorf("missing required environment variables: CLIENT_ID, CLIENT_SECRET or REDIRECT_URI")
+	if clientID == "" || clientSecret == "" {
+		return nil, fmt.Errorf("missing required environment variables: CLIENT_ID, CLIENT_SECRET")
 	}
 
 	return &DiscordService{
 		clientID:     clientID,
 		clientSecret: clientSecret,
-		redirectURI:  redirectURI,
 		httpClient:   &http.Client{},
 	}, nil
 }
 
 // ExchangeCodeForToken exchanges an authorization code for an access token
-func (c *DiscordService) ExchangeCodeForToken(code string) (*model.DiscordTokenResponse, error) {
+func (c *DiscordService) ExchangeCodeForToken(code, redirectUri string) (*model.DiscordTokenResponse, error) {
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
-	data.Set("redirect_uri", c.redirectURI)
+	data.Set("redirect_uri", redirectUri)
 
-	log.Infof("Making POST request to: %s", discordTokenEndpoint)
+	log.Infof("Making POST request to: %s with redirect uri: %s and code: %s", discordTokenEndpoint, redirectUri, code)
 
 	// Create request
 	req, err := http.NewRequest("POST", discordTokenEndpoint, strings.NewReader(data.Encode()))
@@ -82,11 +79,13 @@ func (c *DiscordService) ExchangeCodeForToken(code string) (*model.DiscordTokenR
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Errorf("unexpected status code from discord API: %d", resp.StatusCode)
-		return nil, fmt.Errorf("discord API returned status: %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyString := string(bodyBytes)
+		log.Errorf("unexpected status code from discord API: %d message: %s", resp.StatusCode, bodyString)
+		return nil, fmt.Errorf("discord API returned status: %d message: %s", resp.StatusCode, bodyString)
 	}
 
-	log.Infof("http status code: %d", resp.StatusCode)
+	log.Infof("discord access token http status code: %d", resp.StatusCode)
 
 	var tokenResp model.DiscordTokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {

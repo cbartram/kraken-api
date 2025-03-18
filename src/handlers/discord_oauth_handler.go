@@ -15,15 +15,7 @@ type DiscordRequestHandler struct{}
 
 // HandleRequest Handles the /api/v1/discord-oauth route which the service calls to trade a code for an OAuth
 // access token.
-func (h *DiscordRequestHandler) HandleRequest(c *gin.Context) {
-	discordClient, err := service.MakeDiscordService()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to create discord service: " + err.Error(),
-		})
-		return
-	}
-
+func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -38,6 +30,7 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context) {
 	}
 
 	code := reqBody["code"]
+	redirectUri := reqBody["redirectUri"]
 
 	if reqBody["code"] == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -47,10 +40,10 @@ func (h *DiscordRequestHandler) HandleRequest(c *gin.Context) {
 	}
 
 	log.Infof("exchanging code: %s for oauth access token", code)
-	token, err := discordClient.ExchangeCodeForToken(code)
+	token, err := w.DiscordService.ExchangeCodeForToken(code, redirectUri)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("Failed to exchange code: %v", err),
+			"error": fmt.Sprintf("failed to exchange code: %v", err),
 		})
 		return
 	}

@@ -34,7 +34,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	gin.DefaultErrorWriter = logger.Writer()
 	gin.SetMode(gin.ReleaseMode)
 
-	r.Use(LogrusMiddleware(logger))
+	r.Use(CORSMiddleware(), LogrusMiddleware(logger))
 
 	apiGroup := r.Group("/api/v1")
 	userGroup := apiGroup.Group("/user")
@@ -48,7 +48,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 
 	apiGroup.POST("/discord/oauth", func(c *gin.Context) {
 		h := handlers.DiscordRequestHandler{}
-		h.HandleRequest(c)
+		h.HandleRequest(c, w)
 	})
 
 	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {
