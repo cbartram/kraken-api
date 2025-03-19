@@ -7,9 +7,9 @@ import (
 type Period string
 
 const (
-	Month      Period = "month"
+	Month      Period = "monthly"
 	ThreeMonth Period = "3-month"
-	Year       Period = "year"
+	Year       Period = "yearly"
 )
 
 // Tier prices in tokens
@@ -135,6 +135,6 @@ func (s *PluginStore) GetPrice(pluginName string, period Period) (int, error) {
 	case Year:
 		return plugin.PriceDetails.Year, nil
 	default:
-		return 0, errors.New("invalid period")
+		return 0, errors.New("invalid period, given: " + string(period))
 	}
 }

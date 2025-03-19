@@ -54,7 +54,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	if user.Tokens < int64(price) {
 		err := fmt.Sprintf("user does not have enough tokens to purchase: %s, has tokens: %d, needs tokens: %d", reqBody.PluginName, user.Tokens, price)
 		log.Error(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Not enough tokens", "message": err})
 		return
 	}
 

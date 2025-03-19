@@ -104,8 +104,8 @@ type Plugin struct {
 	UserID              uint           `gorm:"column:user_id;index" json:"userId"`
 	Name                string         `gorm:"column:name;index;not null" json:"name"`
 	ExpirationTimestamp time.Time      `gorm:"column:expiration_timestamp" json:"expirationTimestamp"`
-	S3JarFilePath       string         `json:"s3JarFilePath"`
-	LicenseKey          string         `gorm:"uniqueIndex" json:"-"`
+	S3JarFilePath       string         `gorm:"column:s3_jar_file_path" json:"s3JarFilePath"`
+	LicenseKey          string         `gorm:"column:license_key;uniqueIndex" json:"licenseKey"`
 	CreatedAt           time.Time      `json:"createdAt"`
 	UpdatedAt           time.Time      `json:"updatedAt"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
