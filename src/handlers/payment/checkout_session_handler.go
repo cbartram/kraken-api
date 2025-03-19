@@ -54,6 +54,12 @@ func (h *CheckoutSessionHandler) HandleRequest(c *gin.Context) {
 
 	host := util.GetHostname()
 	params := &stripe.CheckoutSessionParams{
+		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
+			Metadata: map[string]string{
+				"customer_id": user.CustomerId,
+				"tokens":      foundPrice.LookupKey[13:], // trims the kraken_token_ prefix from the lookup key to get just the tokens
+			},
+		},
 		LineItems: []*stripe.CheckoutSessionLineItemParams{{
 			Price:    stripe.String(foundPrice.ID),
 			Quantity: stripe.Int64(1),

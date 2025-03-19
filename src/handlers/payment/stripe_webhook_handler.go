@@ -13,6 +13,7 @@ import (
 	"kraken-api/src/service"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type WebhookHandler struct{}
@@ -25,34 +26,40 @@ func ConsumeMessageWithDelay(message service.Message, db *gorm.DB) {
 		log.Infof("customer failed to make payment")
 		return
 	case "payment_intent.succeeded":
-		var invoice stripe.Invoice
-		err := json.Unmarshal(message.Body, &invoice)
+		var payment stripe.PaymentIntent
+		err := json.Unmarshal(message.Body, &payment)
 		if err != nil {
 			log.Errorf("error parsing webhook json: %v", err)
 			return
 		}
 
+		customerId := payment.Metadata["customer_id"]
+		tokens := payment.Metadata["tokens"]
+
+		log.Infof("payment intent - customer id: %s, tokens: %s", customerId, tokens)
+
 		var user model.User
-		tx := db.Model(&model.User{}).Where("customer_id = ?", invoice.Customer.ID).First(&user)
+		tx := db.Model(&model.User{}).Where("customer_id = ?", customerId).First(&user)
 		if tx.Error != nil {
-			log.Errorf("failed to find user with customer id: %s, error: %v", invoice.Customer.ID, err)
+			log.Errorf("failed to find user with customer id: %s, error: %v", payment.Customer.ID, err)
 			return
 		}
 
-		for _, lineItem := range invoice.Lines.Data {
-			if lineItem.Price != nil {
-				log.Infof("line item price lookup key: %s", lineItem.Price.LookupKey)
-			}
+		validTokens, err := strconv.Atoi(tokens)
+		if err != nil {
+			log.Errorf("error parsing tokens: %s: %v", tokens, err)
+			return
 		}
-		// TODO Update user with additional kraken tokens
+
+		user.Tokens = user.Tokens + int64(validTokens)
 
 		tx = db.Save(&user)
 		if tx.Error != nil {
-			log.Errorf("failed to update user with stripe invoice id: %s, error: %v", invoice.ID, err)
+			log.Errorf("failed to update user with stripe payment id: %s, error: %v", payment.ID, err)
 			return
 		}
 
-		log.Infof("invoice updated for user %s, id: %s, status: %s", user.DiscordUsername, invoice.ID, invoice.Status)
+		log.Infof("payment updated for user %s, id: %s, status: %s", user.DiscordUsername, payment.ID, payment.Status)
 	}
 }
 
