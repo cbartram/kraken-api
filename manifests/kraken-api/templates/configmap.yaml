@@ -9,5 +9,6 @@ data:
   API_VERSION: {{ .Values.image.tag | quote }}
   BUCKET_NAME: {{ .Values.s3.bucketName | quote }}
   GIN_MODE: "release"
+  RABBITMQ_BASE_URL: {{ .Values.api.rabbitmqBaseUrl | quote }}
   API_BASE_URL: {{ .Values.api.baseUrl | quote }}
   MYSQL_HOST: {{ .Values.db.host | quote }}

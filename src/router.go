@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"kraken-api/src/handlers"
 	"kraken-api/src/handlers/cognito"
+	"kraken-api/src/handlers/payment"
 	"kraken-api/src/handlers/plugin"
 	"kraken-api/src/service"
 	"log"
@@ -39,6 +40,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	apiGroup := r.Group("/api/v1")
 	userGroup := apiGroup.Group("/user")
 	pluginGroup := apiGroup.Group("/plugin", AuthMiddleware(w))
+	stripeGroup := apiGroup.Group("/stripe", AuthMiddleware(w))
 
 	apiGroup.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -54,6 +56,21 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {
 		h := handlers.ClientBootstrapHandler{}
 		h.HandleRequest(c, ctx, w)
+	})
+
+	apiGroup.POST("/support/send-message", AuthMiddleware(w), func(c *gin.Context) {
+		h := handlers.EmailHandler{}
+		h.HandleRequest(c)
+	})
+
+	stripeGroup.GET("/checkout-session", func(c *gin.Context) {
+		h := payment.CheckoutSessionHandler{}
+		h.HandleRequest(c)
+	})
+
+	stripeGroup.POST("/webhook", func(c *gin.Context) {
+		h := payment.WebhookHandler{}
+		h.HandleRequest(c, w)
 	})
 
 	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {

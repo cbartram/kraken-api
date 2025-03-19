@@ -39,8 +39,9 @@ type User struct {
 	DiscordUsername string         `gorm:"column:discord_username" json:"discordUsername,omitempty"`
 	Email           string         `gorm:"column:email" json:"email,omitempty"`
 	AvatarId        string         `gorm:"column:avatar_id" json:"avatarId"`
+	Tokens          int64          `gorm:"column:tokens;default:0" json:"tokens"`
 	DiscordID       string         `gorm:"column:discord_id;uniqueIndex" json:"discordId,omitempty"`
-	CustomerId      string         `gorm:"column:customer_id" json:"customerId,omitempty"`
+	CustomerId      string         `gorm:"column:customer_id;uniqueIndex" json:"customerId,omitempty"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`

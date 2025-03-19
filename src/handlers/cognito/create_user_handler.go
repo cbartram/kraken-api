@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v81/customer"
 	"io"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
@@ -46,6 +48,24 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			return
 		}
 
+		cust, err := customer.New(&stripe.CustomerParams{
+			Params: stripe.Params{},
+			Email:  &reqBody.DiscordEmail,
+			Metadata: map[string]string{
+				"discord-id":       reqBody.DiscordID,
+				"discord-username": reqBody.DiscordUsername,
+			},
+			Name: &reqBody.DiscordUsername,
+		})
+
+		if err != nil {
+			log.Errorf("error while creating new stripe customer: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "error while creating new stripe user: " + err.Error(),
+			})
+			return
+		}
+
 		// Users signing up for the first time through the UI in chrome won't have a hardware id
 		// so this creates a tmp one for them. When the user signs in via the kraken client it will
 		// update the hardware id from temp.
@@ -62,6 +82,7 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			Email:           reqBody.DiscordEmail,
 			DiscordID:       reqBody.DiscordID,
 			AvatarId:        reqBody.AvatarID,
+			CustomerId:      cust.ID,
 			Credentials: model.CognitoCredentials{
 				RefreshToken:    *creds.RefreshToken,
 				AccessToken:     *creds.AccessToken,

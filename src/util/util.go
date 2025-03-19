@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	"kraken-api/src/model"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,6 +26,16 @@ type Version struct {
 	Major int
 	Minor int
 	Patch int
+}
+
+func GetHostname() string {
+	host := os.Getenv("HOSTNAME")
+
+	if host == "" {
+		return "http://localhost:5173"
+	}
+
+	return "https://kraken-plugins.duckdns.org"
 }
 
 // ParseVersion extracts version from object name

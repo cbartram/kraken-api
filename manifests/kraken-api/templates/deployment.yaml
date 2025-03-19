@@ -33,6 +33,12 @@ spec:
                 name: mysql-secrets
             - secretRef:
                 name: aws-secrets
+            - secretRef:
+                name: stripe-secrets
+            - secretRef:
+                name: gmail-secrets
+            - secretRef:
+                name: rabbitmq-secrets
             - configMapRef:
                 name: server-config
           ports:

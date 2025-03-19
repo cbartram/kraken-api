@@ -10,6 +10,7 @@ db:
   host: "kraken-db.kraken.svc.cluster.local"
 
 api:
+  rabbitmqBaseUrl: "rabbitmq.rabbitmq.svc.cluster.local:5672"
   baseUrl: "https://kraken-api.duckdns.org"
 
 image:

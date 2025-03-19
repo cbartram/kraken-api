@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	"github.com/stripe/stripe-go/v81"
 	"kraken-api/src"
+	"kraken-api/src/handlers/payment"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -33,14 +36,34 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("failed to create S3 service: %v", err)
 	}
+	rabbitMqService, err := service.MakeRabbitMQService("stripe-webhooks-kraken", "stripe-webhooks-kraken")
+	if err != nil {
+		logrus.Fatalf("failed to make rabbitmq service: %v", err)
+	}
+
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 
 	w := service.Wrapper{
-		DiscordService: discordService,
-		S3Service:      s3Service,
-		CognitoService: service.MakeCognitoService(),
-		Database:       model.Connect(),
+		DiscordService:  discordService,
+		S3Service:       s3Service,
+		CognitoService:  service.MakeCognitoService(),
+		Database:        model.Connect(),
+		RabbitMqService: rabbitMqService,
 	}
 	router := src.NewRouter(&w)
+
+	// Registers a new go routine listening to the stripe-webhooks channel. New messages are enqueued when the /api/v1/stripe/webhook
+	// endpoint is called and this function consumes the messages with a 3-second delay in between each message resolving eventual consistency
+	// issues with both cognito and stripe when many events are sent at checkout.
+	err = rabbitMqService.RegisterConsumer(payment.ConsumeMessageWithDelay, 3*time.Second, w.Database)
+	if err != nil {
+		logrus.Errorf("failed to register stripe webhook message consumer: %v", err)
+	}
+
+	defer func() {
+		logrus.Infof("Closing rabbitmq connection and channel")
+		rabbitMqService.Close()
+	}()
 
 	log.Printf("Server Listening on port %s", *port)
 	err = router.Run(fmt.Sprintf(":%v", *port))
