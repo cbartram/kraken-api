@@ -38,7 +38,7 @@ spec:
             - secretRef:
                 name: gmail-secrets
             - secretRef:
-                name: rabbitmq-secrets
+                name: rabittmq-secrets
             - configMapRef:
                 name: server-config
           ports:
