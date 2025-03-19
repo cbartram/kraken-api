@@ -32,7 +32,6 @@ type CreatePresignedUrlRequestBatch struct {
 }
 
 type PurchasePluginRequest struct {
-	PluginName           string `json:"pluginName"`
-	PurchaseDurationDays int    `json:"purchaseDurationDays,omitempty"`
-	// TODO CC information likely
+	PluginName       string `json:"pluginName"`
+	PurchaseDuration string `json:"purchaseDuration"`
 }

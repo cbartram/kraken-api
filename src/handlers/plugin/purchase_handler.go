@@ -17,6 +17,8 @@ import (
 
 type PurchaseHandler struct{}
 
+var pluginStore = NewPluginStore()
+
 // HandleRequest Handles the /api/v1/plugin/purchase API route.
 func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
@@ -32,6 +34,15 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		return
 	}
 
+	price, err := pluginStore.GetPrice(reqBody.PluginName, Period(reqBody.PurchaseDuration))
+	if err != nil {
+		log.Errorf("could not get plugin from store: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not get plugin from store: " + err.Error()})
+		return
+	}
+
+	purchaseDurationDays := util.PurchaseDurationToDays(reqBody.PurchaseDuration)
+
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")
@@ -40,8 +51,14 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	}
 
 	user := tmp.(*model.User)
+	if user.Tokens < int64(price) {
+		err := fmt.Sprintf("user does not have enough tokens to purchase: %s, has tokens: %d, needs tokens: %d", reqBody.PluginName, user.Tokens, price)
+		log.Error(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
 
-	// TODO In the future integrate stripe payments here.
+	user.Tokens -= int64(price)
 
 	// Validate plugin name. Request body will send something like:
 	// "Alchemical-Hydra". We check s3 for a file that starts with the prefix: "Alchemical-Hydra"
@@ -63,7 +80,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 				return
 			} else {
 				// User is renewing the plugin
-				ownedPlugin.ExpirationTimestamp = time.Now().AddDate(0, 0, reqBody.PurchaseDurationDays)
+				ownedPlugin.ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
 				ownedPlugin.UpdatedAt = time.Now()
 				licenseKey, err := util.GenerateLicenseKey()
 				if err != nil {
@@ -99,7 +116,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	plugin := model.Plugin{
 		UserID:              user.ID,
 		Name:                reqBody.PluginName,
-		ExpirationTimestamp: time.Now().AddDate(0, 0, reqBody.PurchaseDurationDays),
+		ExpirationTimestamp: time.Now().AddDate(0, 0, purchaseDurationDays),
 		S3JarFilePath:       fmt.Sprintf("s3://kraken-plugins/plugins/%s", reqBody.PluginName),
 		LicenseKey:          licenseKey,
 		CreatedAt:           time.Now(),
@@ -108,7 +125,14 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		User:                *user,
 	}
 
-	tx := w.Database.Create(&plugin)
+	tx := w.Database.Save(&user)
+	if tx.Error != nil {
+		log.Errorf("error: failed to save user tokens to db: %s", tx.Error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save user tokens to db: " + reqBody.PluginName})
+		return
+	}
+
+	tx = w.Database.Create(&plugin)
 	if tx.Error != nil {
 		log.Errorf("error: failed to save plugin to db: %s", tx.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save plugin to db: " + reqBody.PluginName})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
+	log "github.com/sirupsen/logrus"
 	"kraken-api/src/model"
 	"os"
 	"regexp"
@@ -26,6 +27,19 @@ type Version struct {
 	Major int
 	Minor int
 	Patch int
+}
+
+func PurchaseDurationToDays(purchaseDuration string) int {
+	switch purchaseDuration {
+	case "monthly":
+		return 32
+	case "3-months":
+		return 96
+	case "yearly":
+		return 366
+	}
+	log.Infof("Invalid purchase duration: %s", purchaseDuration)
+	return 0
 }
 
 func GetHostname() string {
