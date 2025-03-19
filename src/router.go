@@ -40,7 +40,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	apiGroup := r.Group("/api/v1")
 	userGroup := apiGroup.Group("/user")
 	pluginGroup := apiGroup.Group("/plugin", AuthMiddleware(w))
-	stripeGroup := apiGroup.Group("/stripe", AuthMiddleware(w))
+	stripeGroup := apiGroup.Group("/stripe")
 
 	apiGroup.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -63,7 +63,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c)
 	})
 
-	stripeGroup.GET("/checkout-session", func(c *gin.Context) {
+	stripeGroup.GET("/checkout-session", AuthMiddleware(w), func(c *gin.Context) {
 		h := payment.CheckoutSessionHandler{}
 		h.HandleRequest(c)
 	})

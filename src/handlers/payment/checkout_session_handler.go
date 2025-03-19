@@ -61,7 +61,7 @@ func (h *CheckoutSessionHandler) HandleRequest(c *gin.Context) {
 		},
 		Customer:          stripe.String(user.CustomerId), // The stripe user is created when the user is created
 		ClientReferenceID: stripe.String(user.DiscordID),
-		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		Mode:              stripe.String(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL:        stripe.String(host + "/processing?success=true&session_id={CHECKOUT_SESSION_ID}"),
 		CancelURL:         stripe.String(host + "/processing?canceled=true"),
 		AutomaticTax:      &stripe.CheckoutSessionAutomaticTaxParams{Enabled: stripe.Bool(false)},

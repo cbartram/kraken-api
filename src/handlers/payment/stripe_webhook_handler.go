@@ -21,7 +21,10 @@ func ConsumeMessageWithDelay(message service.Message, db *gorm.DB) {
 	log.Infof("processing rabbitmq message type: %s", message.Type)
 
 	switch message.Type {
-	case "invoice.paid":
+	case "payment_intent.payment_failed":
+		log.Infof("customer failed to make payment")
+		return
+	case "payment_intent.succeeded":
 		var invoice stripe.Invoice
 		err := json.Unmarshal(message.Body, &invoice)
 		if err != nil {
@@ -36,6 +39,11 @@ func ConsumeMessageWithDelay(message service.Message, db *gorm.DB) {
 			return
 		}
 
+		for _, lineItem := range invoice.Lines.Data {
+			if lineItem.Price != nil {
+				log.Infof("line item price lookup key: %s", lineItem.Price.LookupKey)
+			}
+		}
 		// TODO Update user with additional kraken tokens
 
 		tx = db.Save(&user)
@@ -72,8 +80,10 @@ func (w *WebhookHandler) HandleRequest(c *gin.Context, wrapper *service.Wrapper)
 	case
 		"charge.failed",
 		"charge.succeeded",
+		"payment_intent.succeeded",
 		"checkout.session.completed",
 		"invoice.created",
+		"payment_intent.payment_failed",
 		"invoice.paid":
 		log.Infof("enqueueing message with type: %s", eventType)
 		err = wrapper.RabbitMqService.PublishMessage(&service.Message{
