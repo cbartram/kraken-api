@@ -77,7 +77,22 @@ func NewPluginStore() *PluginStore {
 		"",
 		true,
 		[]PluginConfig{
-			{},
+			{
+				Name:        "License Key",
+				Section:     "None",
+				Description: "The kraken license key field.",
+				Type:        "Text Field",
+				IsBool:      false,
+			},
+			{
+				Name:        "Muttadile Marker",
+				Section:     "Muttadile",
+				Description: "Places an overlay around muttadiles showing their melee range.",
+				IsBool:      true,
+			},
+			{
+				Name: "Tekton Marker",
+			},
 		},
 		PriceDetails{
 			Month:      Tier3Month,

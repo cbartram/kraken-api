@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // SignedUrlDurationSeconds The amount of time the signed URL is valid for to read plugin data from S3
@@ -107,8 +108,11 @@ func GeneratePreSignedURL(
 	results chan<- PresignedURLResult,
 ) {
 	defer wg.Done()
+
+	log.Infof("generating presigned url for plugin: %s, expires at: %s, license key: %s for user id: %d", plugin.Name, plugin.ExpirationTimestamp, plugin.LicenseKey, plugin.UserID)
+
 	if util.IsPluginExpired(plugin.ExpirationTimestamp) {
-		log.Infof("plugin: %s is expired", plugin.Name)
+		log.Infof("plugin: %s is expired with timestamp: %s when current time is: %s", plugin.Name, plugin.ExpirationTimestamp, time.Now().Format(time.RFC3339))
 		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s is expired", plugin.Name))}
 		return
 	}

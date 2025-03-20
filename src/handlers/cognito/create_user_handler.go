@@ -118,10 +118,21 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 
 		// TODO This is ripe for abuse. Need a separate route for adding hardware ids in the future.
 		if len(reqBody.HardwareID) != 0 {
-			for _, hardwareId := range user.HardwareIDs {
-				if hardwareId.Value == "temp" {
+			for i := range user.HardwareIDs {
+				if user.HardwareIDs[i].Value == "temp" {
 					log.Infof("found temp hardware id, updating with actual value: %s", reqBody.HardwareID)
-					hardwareId.Value = reqBody.HardwareID
+					// Update the in-memory value
+					user.HardwareIDs[i].Value = reqBody.HardwareID
+
+					// Explicitly save the updated hardware ID record
+					tx := w.Database.Save(&user.HardwareIDs[i])
+					if tx.Error != nil {
+						log.Errorf("error while saving hardware ID: %v", tx.Error)
+						c.JSON(http.StatusInternalServerError, gin.H{
+							"error": "error while saving hardware ID: " + tx.Error.Error(),
+						})
+						return
+					}
 				}
 			}
 		}
