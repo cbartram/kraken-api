@@ -39,7 +39,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 
 	apiGroup := r.Group("/api/v1")
 	userGroup := apiGroup.Group("/user")
-	pluginGroup := apiGroup.Group("/plugin", AuthMiddleware(w))
+	pluginGroup := apiGroup.Group("/plugin")
 	stripeGroup := apiGroup.Group("/stripe")
 
 	apiGroup.GET("/health", func(c *gin.Context) {
@@ -73,17 +73,22 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, w)
 	})
 
-	pluginGroup.POST("/create-presigned-url", func(c *gin.Context) {
+	pluginGroup.GET("/", func(c *gin.Context) {
+		h := plugin.PluginMetadataHandler{}
+		h.HandleRequest(c, w)
+	})
+
+	pluginGroup.POST("/create-presigned-url", AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.PresignedUrlHandler{}
 		h.HandleRequest(c, ctx, w)
 	})
 
-	pluginGroup.POST("/purchase", func(c *gin.Context) {
+	pluginGroup.POST("/purchase", AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.PurchaseHandler{}
 		h.HandleRequest(c, w)
 	})
 
-	pluginGroup.POST("/validate", func(c *gin.Context) {
+	pluginGroup.POST("/validate", AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.ValidatePluginHandler{}
 		h.HandleRequest(c, ctx, w)
 	})

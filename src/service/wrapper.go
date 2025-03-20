@@ -10,4 +10,5 @@ type Wrapper struct {
 	DiscordService  *DiscordService
 	Database        *gorm.DB
 	RabbitMqService *RabbitMqService
+	PluginStore     *PluginStore
 }

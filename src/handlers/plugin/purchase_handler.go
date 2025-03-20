@@ -17,8 +17,6 @@ import (
 
 type PurchaseHandler struct{}
 
-var pluginStore = NewPluginStore()
-
 // HandleRequest Handles the /api/v1/plugin/purchase API route.
 func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
@@ -34,7 +32,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		return
 	}
 
-	price, err := pluginStore.GetPrice(reqBody.PluginName, Period(reqBody.PurchaseDuration))
+	price, err := w.PluginStore.GetPrice(reqBody.PluginName, service.Period(reqBody.PurchaseDuration))
 	if err != nil {
 		log.Errorf("could not get plugin from store: %s", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "could not get plugin from store: " + err.Error()})

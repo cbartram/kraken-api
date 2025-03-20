@@ -49,6 +49,7 @@ func main() {
 		CognitoService:  service.MakeCognitoService(),
 		Database:        model.Connect(),
 		RabbitMqService: rabbitMqService,
+		PluginStore:     service.NewPluginStore(),
 	}
 	router := src.NewRouter(&w)
 
