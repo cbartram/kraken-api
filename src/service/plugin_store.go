@@ -51,11 +51,12 @@ type PluginMetadata struct {
 }
 
 type PluginConfig struct {
-	Name    string   `json:"name"`
-	Section string   `json:"section"`
-	Type    string   `json:"type"`
-	IsBool  bool     `json:"isBool"`
-	Values  []string `json:"values"`
+	Name        string   `json:"name"`
+	Section     string   `json:"section"`
+	Description string   `json:"description"`
+	Type        string   `json:"type"`
+	IsBool      bool     `json:"isBool"`
+	Values      []string `json:"values"`
 }
 
 type PluginStore struct {
@@ -75,7 +76,9 @@ func NewPluginStore() *PluginStore {
 		"https://kraken-plugins.duckdns.org/olm.png",
 		"",
 		true,
-		[]PluginConfig{},
+		[]PluginConfig{
+			{},
+		},
 		PriceDetails{
 			Month:      Tier3Month,
 			ThreeMonth: Tier3ThreeMonth,
