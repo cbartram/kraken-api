@@ -33,7 +33,7 @@ func PurchaseDurationToDays(purchaseDuration string) int {
 	switch purchaseDuration {
 	case "monthly":
 		return 32
-	case "3-months":
+	case "3-month":
 		return 96
 	case "yearly":
 		return 366

@@ -69,26 +69,26 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		return
 	}
 
-	for _, ownedPlugin := range user.Plugins {
-		if strings.ToLower(ownedPlugin.Name) == strings.ToLower(reqBody.PluginName) {
-			log.Infof("plugin already exists: %s and expires: %s, is expired: %v", ownedPlugin.Name, ownedPlugin.ExpirationTimestamp.Format(time.RFC3339), util.IsPluginExpired(ownedPlugin.ExpirationTimestamp))
-			if !util.IsPluginExpired(ownedPlugin.ExpirationTimestamp) {
+	for i, ownedPlugin := range user.Plugins {
+		if strings.ToLower(user.Plugins[i].Name) == strings.ToLower(reqBody.PluginName) {
+			log.Infof("plugin already exists: %s and expires: %s, is expired: %v", user.Plugins[i].Name, user.Plugins[i].ExpirationTimestamp.Format(time.RFC3339), util.IsPluginExpired(user.Plugins[i].ExpirationTimestamp))
+			if !util.IsPluginExpired(user.Plugins[i].ExpirationTimestamp) {
 				log.Infof("user: %s attempted to purchase plugin: %s, but plugin is already owned and not expired: ", user.DiscordUsername, reqBody.PluginName)
 				c.JSON(http.StatusBadRequest, gin.H{"error": "user already owns plugin (not expired): " + reqBody.PluginName})
 				return
 			} else {
 				// User is renewing the plugin
-				ownedPlugin.ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
-				ownedPlugin.UpdatedAt = time.Now()
+				user.Plugins[i].ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
+				user.Plugins[i].UpdatedAt = time.Now()
 				licenseKey, err := util.GenerateLicenseKey()
 				if err != nil {
 					log.Errorf("error: failed to generate license key: %v", err)
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate license key: " + err.Error()})
 					return
 				}
-				ownedPlugin.LicenseKey = licenseKey
-				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license: %s", user.DiscordUsername, reqBody.PluginName, ownedPlugin.ExpirationTimestamp, ownedPlugin.LicenseKey)
-				tx := w.Database.Save(&ownedPlugin)
+				user.Plugins[i].LicenseKey = licenseKey
+				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license: %s", user.DiscordUsername, reqBody.PluginName, user.Plugins[i].ExpirationTimestamp, user.Plugins[i].LicenseKey)
+				tx := w.Database.Save(&user.Plugins[i])
 				if tx.Error != nil {
 					log.Errorf("error: failed to save plugin to db: %v", tx.Error)
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to renew plugin: " + reqBody.PluginName})
@@ -111,10 +111,14 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate license key: " + err.Error()})
 		return
 	}
+
+	expirationTime := time.Now().AddDate(0, 0, purchaseDurationDays)
+	log.Infof("plugin has been purchased for: %d days and will expire at: %s", purchaseDurationDays, expirationTime.Format(time.RFC3339))
+
 	plugin := model.Plugin{
 		UserID:              user.ID,
 		Name:                reqBody.PluginName,
-		ExpirationTimestamp: time.Now().AddDate(0, 0, purchaseDurationDays),
+		ExpirationTimestamp: expirationTime,
 		S3JarFilePath:       fmt.Sprintf("s3://kraken-plugins/plugins/%s", reqBody.PluginName),
 		LicenseKey:          licenseKey,
 		CreatedAt:           time.Now(),
