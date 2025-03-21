@@ -1131,7 +1131,7 @@
         "description": "Overlay resources with a respective icon and tile outline.",
         "type": "boolean",
         "isBool": true,
-        "values": []
+        "values": ["true", "false"]
       },
       {
         "name": "Icon size",
@@ -2729,5 +2729,618 @@
      "year":  700
     },
     "tier": 1
+  },
+  {
+    "name": "ToA-Extended",
+    "title": "Tombs of Amascut Extended",
+    "description": "A plugin for Tombs of Amascut with extended features like overlays for: prayers, graphics, counters, entity hiding, and boss mechanics.",
+    "imageUrl": "https://kraken-plugins.duckdns.org/toa.png",
+    "videoUrl": "",
+    "topPick": true,
+    "configurationOptions": [
+      {
+        "name": "Prayer Overlay",
+        "section": "Zebak",
+        "description": "Enable prayer overlays for Zebak.<br>Requires prayer mode config to be set.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Health Counter",
+        "section": "Zebak",
+        "description": "Overlay hp until next phase.<br>Requires boss hp bar in-game setting turned on.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Blood Cloud Tile",
+        "section": "Zebak",
+        "description": "Highlight blood cloud tiles.",
+        "type": "Tile",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Wave Tile",
+        "section": "Zebak",
+        "description": "Highlight wave tiles.",
+        "type": "Tile",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Projectile Tile",
+        "section": "Zebak",
+        "description": "Highlight where rocks, jugs, and poison will land.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Blood Magic Outline",
+        "section": "Zebak",
+        "description": "Outline blood magic for visibility.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Jug Outline",
+        "section": "Zebak",
+        "description": "Outline jugs.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Boulder Outline",
+        "section": "Zebak",
+        "description": "Outline boulders.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Wave",
+        "section": "Zebak",
+        "description": "Prevent rendering waves.<br>Use with wave tile highlighting.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Attack Counter",
+        "section": "Kephri",
+        "description": "Overlay Kephri with an attack counter.",
+        "type": "AttackCounter",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Fireball Tile",
+        "section": "Kephri",
+        "description": "Highlight where fireball projectiles will land.<br>Includes bomber scarabs.",
+        "type": "FireballRadius",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Egg Tile",
+        "section": "Kephri",
+        "description": "Highlight egg explosion radius tiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Prayer Overlay",
+        "section": "Akkha",
+        "description": "Enable prayer overlays for Akkha.<br>Requires prayer mode config to be set.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Health Counter",
+        "section": "Akkha",
+        "description": "Overlay hp until next phase.<br>Requires boss hp bar in-game setting turned on.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Akkha Tile",
+        "section": "Akkha",
+        "description": "Highlight Akkha's tile with color indicating attack style.",
+        "type": "Tile",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Special Attack Outline",
+        "section": "Akkha",
+        "description": "Outline Akkha when a special attack is imminent.<br>Trailing orbs or memory blast.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Prayer Overlay",
+        "section": "Warden Phase 2",
+        "description": "Enable prayer overlays for Wardens.<br>Requires prayer mode config to be set.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Health Counter",
+        "section": "Warden Phase 2",
+        "description": "Overlay hp until next phase.<br>Requires boss hp bar in-game setting turned on.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Warden Core Tick Timer",
+        "section": "Warden Phase 2",
+        "description": "Overlay warden core with a tick timer.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Siphon Tick Timer",
+        "section": "Warden Phase 3",
+        "description": "Overlay energy siphons with a tick timer.<br>Solo and Insanity invocation.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Siphon Projectile Tile",
+        "section": "Warden Phase 3",
+        "description": "Highlight energy siphon projectiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Boulder Tile",
+        "section": "Warden Phase 3",
+        "description": "Highlight Phantom Baba's falling boulder.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Fireball Tile",
+        "section": "Warden Phase 3",
+        "description": "Highlight Phantom Kephri's fireball.",
+        "type": "FireballRadius",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Red Lightning Tile",
+        "section": "Warden Phase 3",
+        "description": "Highlight red lightning gfx objects.<br>Insanity phase.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Tile Debris Projectile",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering tile debris projectiles.<br>Insanity phase.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Siphon Projectile",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering energy siphon projectiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Charge Projectile",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering energy siphon charge projectiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Dead Siphon",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering dead energy siphons.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Baba Boulder",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering Phantom Baba's falling boulders.<br>Use with boulder tile highlighting.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Kephri Fireball",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering Phantom Kephri's fireballs.<br>Use with fireball tile highlighting.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Zebak Projectile",
+        "section": "Warden Phase 3",
+        "description": "Prevent renndering Zebak's range and mage projectiles.<br>Use with prayer overlay.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Red Lightning",
+        "section": "Warden Phase 3",
+        "description": "Prevent rendering red lightning gfx objects.<br>Insanity phase. Use with red lighting tile highlighting.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Addition Puzzle Solver",
+        "section": "Scabaras Challenge",
+        "description": "Toggle the addition puzzle solver.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Light Puzzle Solver",
+        "section": "Scabaras Challenge",
+        "description": "Toggle the light puzzle solver.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Sequence Puzzle Solver",
+        "section": "Scabaras Challenge",
+        "description": "Toggle the sequence puzzle solver.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Obelisk Puzzle Solver",
+        "section": "Scabaras Challenge",
+        "description": "Toggle the obelisk puzzle solver.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Obelisk Falling Rocks Tile",
+        "section": "Scabaras Challenge",
+        "description": "Outline tile of falling rocks.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Matching Puzzle Solver",
+        "section": "Scabaras Challenge",
+        "description": "Toggle the matching puzzle solver.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Highlight Entrance",
+        "section": "Scabaras Challenge",
+        "description": "Highlight the entrance to skip obelisks.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Baboon Outline",
+        "section": "Apmeken Challenge",
+        "description": "Highlight baboons.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Volatile Baboon Tile",
+        "section": "Apmeken Challenge",
+        "description": "Highlight the tiles of the explode radius.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Roof/Vent Outline",
+        "section": "Apmeken Challenge",
+        "description": "Outline vents and roof support.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Repair Roof Menu Entry",
+        "section": "Apmeken Challenge",
+        "description": "Deprioritize menu entry when inactive.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Deposit-Pickaxe",
+        "section": "Het Challenge",
+        "description": "Automatically swap to Deposit-pickaxe when a pickaxe is in your inventory.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Caster Statue Beam Timer",
+        "section": "Het Challenge",
+        "description": "Overlay caster statue with a count down timer.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Mirror Outline",
+        "section": "Het Challenge",
+        "description": "Highlight mirrors you can pick up.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Orb of Darkness Tile",
+        "section": "Het Challenge",
+        "description": "Highlight orb of darkness tiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Orbs of Darkness",
+        "section": "Het Challenge",
+        "description": "Prevent rendering orbs of darkness.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Prayer Mode",
+        "section": "Prayer",
+        "description": "Types of overlays to use to indicate prayers.",
+        "type": "PrayerMode",
+        "isBool": false,
+        "values": null
+      },
+      {
+        "name": "Descending Boxes (Guitar Hero)",
+        "section": "Prayer",
+        "description": "Overlay descending boxes on prayer widgets.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Non-Priority Boxes (Guitar Hero)",
+        "section": "Prayer",
+        "description": "Show boxes for all upcoming attacks. Requires descending boxes to be enabled.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Box Color",
+        "section": "Prayer",
+        "description": "Color of boxes that have > 1 ticks remaining.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Box Warning Color",
+        "section": "Prayer",
+        "description": "Color of boxes that have 1 tick remaining.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Recolor White",
+        "section": "Recolor Sarcophagus",
+        "description": "Recolor white sarcophagus.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Color",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to replace white sarcophagus with.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Recolor Purple (Mine)",
+        "section": "Recolor Sarcophagus",
+        "description": "Recolor purple sarcophagus. When the sarcophagus is my loot.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Color",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to replace purple sarcophagus with. When the sarcophagus is my loot.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Recolor Purple (Other)",
+        "section": "Recolor Sarcophagus",
+        "description": "Recolor purple sarcophagus. When the sarcophagus is not my loot.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Color",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to replace purple sarcophagus with. When the sarcophagus is not my loot.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Recolor Loot",
+        "section": "Recolor Sarcophagus",
+        "description": "Recolor purple sarcophagus based on loot.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Lightbearer",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is a lightbearer.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Elidinis' Ward",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is Elidinis' Ward.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Osmumten's Fang",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is Osmumten's Fang.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Masori Mask",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is a Masori Mask.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Masori Chaps",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is a Masori Chaps.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Masori Body",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is a Masori Body.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Tumeken's Shadow",
+        "section": "Recolor Sarcophagus",
+        "description": "Color to use when loot is Tumeken's Shadow.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Hide Loot",
+        "section": "Recolor Sarcophagus",
+        "description": "Prevent rendering loot animation and chatbox text. Only active when purple is mine.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide Fade Transition",
+        "section": "Misc",
+        "description": "Hide the room fade transitions.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Hide HP Orbs",
+        "section": "Misc",
+        "description": "Hide the HP orbs in the HUD.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Menu Swaps",
+        "section": "Misc",
+        "description": "Menu entry swaps for entering/exiting etc.",
+        "type": "string",
+        "isBool": false
+      },
+      {
+        "name": "Font Style",
+        "section": "Misc",
+        "description": "Font style of most text overlays.",
+        "type": "string",
+        "isBool": false
+      },
+      {
+        "name": "Font Size",
+        "section": "Misc",
+        "description": "Font size of most text overlays.",
+        "type": "number",
+        "isBool": false
+      },
+      {
+        "name": "Danger Outline",
+        "section": "Misc",
+        "description": "Color used to mark \"dangerous\" tiles.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Danger Fill",
+        "section": "Misc",
+        "description": "Color used to mark \"dangerous\" tiles.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Tile Outline",
+        "section": "Misc",
+        "description": "Color used to outline npc tiles.",
+        "type": "color",
+        "isBool": false
+      },
+      {
+        "name": "Tile Fill",
+        "section": "Misc",
+        "description": "Color used to fill npc tiles.",
+        "type": "color",
+        "isBool": false
+      }
+    ],
+    "priceDetails": {
+      "month": 500,
+      "threeMonth": 1000,
+      "year": 5000
+    },
+    "tier": 3
   }
 ]

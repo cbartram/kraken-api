@@ -16,7 +16,7 @@ api:
 image:
   repository: cbartram/kraken-api
   pullPolicy: IfNotPresent
-  tag: "0.0.28"
+  tag: "0.0.29"
 
 serviceAccountName: kraken-api-sa
 
