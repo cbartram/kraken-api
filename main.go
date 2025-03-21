@@ -41,17 +41,24 @@ func main() {
 		logrus.Fatalf("failed to make rabbitmq service: %v", err)
 	}
 
+	db := model.Connect()
+
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 
 	w := service.Wrapper{
 		DiscordService:  discordService,
 		S3Service:       s3Service,
 		CognitoService:  service.MakeCognitoService(),
-		Database:        model.Connect(),
+		Database:        db,
 		RabbitMqService: rabbitMqService,
-		PluginStore:     service.NewPluginStore(),
+		PluginStore:     service.NewPluginStore(db),
 	}
 	router := src.NewRouter(&w)
+
+	//err = model.ImportOrUpdatePluginMetadata("./data/plugin_metadata.json", w.Database)
+	//if err != nil {
+	//	logrus.Fatalf("failed to import plugin metadata: %v", err)
+	//}
 
 	// Registers a new go routine listening to the stripe-webhooks channel. New messages are enqueued when the /api/v1/stripe/webhook
 	// endpoint is called and this function consumes the messages with a 3-second delay in between each message resolving eventual consistency

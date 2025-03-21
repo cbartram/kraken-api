@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
@@ -24,6 +26,9 @@ func Connect() *gorm.DB {
 		&CognitoCredentials{},
 		&Plugin{},
 		&HardwareID{},
+		&PluginMetadata{},
+		&PluginConfig{},
+		&PriceDetails{},
 	)
 
 	if err != nil {
@@ -115,4 +120,218 @@ type Plugin struct {
 
 func (Plugin) TableName() string {
 	return "plugins"
+}
+
+type PriceDetails struct {
+	ID               uint `gorm:"primaryKey" json:"id"`
+	Month            int  `json:"month"`
+	ThreeMonth       int  `json:"threeMonth"`
+	Year             int  `json:"year"`
+	PluginMetadataID uint `json:"pluginMetadataId"`
+}
+
+type PluginMetadata struct {
+	ID                   uint           `gorm:"primaryKey" json:"id"`
+	Name                 string         `gorm:"uniqueIndex" json:"name"`
+	Title                string         `json:"title"`
+	Description          string         `json:"description"`
+	ImageUrl             string         `json:"imageUrl"`
+	VideoUrl             string         `json:"videoUrl"`
+	TopPick              bool           `json:"topPick"`
+	ConfigurationOptions []PluginConfig `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"` // One-to-many relationship
+	PriceDetails         PriceDetails   `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`         // One-to-one relationship
+	Tier                 int            `json:"tier"`
+}
+
+type PluginConfig struct {
+	ID               uint     `gorm:"primaryKey" json:"id"`
+	Name             string   `json:"name"`
+	Section          string   `json:"section"`
+	Description      string   `json:"description"`
+	Type             string   `json:"type"`
+	IsBool           bool     `json:"isBool"`
+	Values           string   `gorm:"type:text" json:"-"` // Store as JSON string in DB
+	ValuesSlice      []string `gorm:"-" json:"values"`    // For JSON serialization
+	PluginMetadataID uint     `json:"pluginMetadataId"`   // Foreign key reference
+}
+
+func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
+	jsonData, err := os.ReadFile(jsonFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read JSON file: %w", err)
+	}
+
+	// Parse the JSON into a slice of your structs
+	var pluginMetadataList []PluginMetadata
+	if err := json.Unmarshal(jsonData, &pluginMetadataList); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON data: %w", err)
+	}
+
+	// Begin a transaction
+	tx := db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("failed to begin transaction: %w", tx.Error)
+	}
+
+	for i := range pluginMetadataList {
+		plugin := &pluginMetadataList[i]
+
+		// Check if the plugin already exists by Name (which should be unique)
+		var existingPlugin PluginMetadata
+		result := tx.Where("name = ?", plugin.Name).First(&existingPlugin)
+
+		if result.Error == nil {
+			// Plugin exists, update it
+			plugin.ID = existingPlugin.ID // Keep the same ID
+
+			// Store references for relationship handling
+			priceDetails := plugin.PriceDetails
+			configOptions := plugin.ConfigurationOptions
+			plugin.ConfigurationOptions = nil
+
+			// Update the main plugin metadata
+			if err := tx.Model(&existingPlugin).Updates(map[string]interface{}{
+				"title":       plugin.Title,
+				"description": plugin.Description,
+				"image_url":   plugin.ImageUrl,
+				"video_url":   plugin.VideoUrl,
+				"top_pick":    plugin.TopPick,
+				"tier":        plugin.Tier,
+			}).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to update plugin metadata: %w", err)
+			}
+
+			// Handle PriceDetails (update or create)
+			var existingPriceDetails PriceDetails
+			if err := tx.Where("plugin_metadata_id = ?", existingPlugin.ID).First(&existingPriceDetails).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					// Create new price details if not exists
+					priceDetails.PluginMetadataID = existingPlugin.ID
+					if err := tx.Create(&priceDetails).Error; err != nil {
+						tx.Rollback()
+						return fmt.Errorf("failed to create price details: %w", err)
+					}
+				} else {
+					tx.Rollback()
+					return fmt.Errorf("failed to query price details: %w", err)
+				}
+			} else {
+				// Update existing price details
+				if err := tx.Model(&existingPriceDetails).Updates(map[string]interface{}{
+					"month":       priceDetails.Month,
+					"three_month": priceDetails.ThreeMonth,
+					"year":        priceDetails.Year,
+				}).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to update price details: %w", err)
+				}
+			}
+
+			// Handle ConfigurationOptions (more complex as it's one-to-many)
+			// First, get all existing config options
+			var existingConfigOptions []PluginConfig
+			if err := tx.Where("plugin_metadata_id = ?", existingPlugin.ID).Find(&existingConfigOptions).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to query existing config options: %w", err)
+			}
+
+			// Create a map for easier lookup
+			existingConfigMap := make(map[string]PluginConfig)
+			for _, config := range existingConfigOptions {
+				existingConfigMap[config.Name] = config
+			}
+
+			// Process each config option
+			for j := range configOptions {
+				// Handle the Values slice to string conversion
+				if len(configOptions[j].ValuesSlice) > 0 {
+					valuesData, err := json.Marshal(configOptions[j].ValuesSlice)
+					if err != nil {
+						tx.Rollback()
+						return fmt.Errorf("failed to marshal values: %w", err)
+					}
+					configOptions[j].Values = string(valuesData)
+				}
+
+				configOptions[j].PluginMetadataID = existingPlugin.ID
+
+				// Check if this config exists
+				if existingConfig, exists := existingConfigMap[configOptions[j].Name]; exists {
+					// Update existing config
+					if err := tx.Model(&existingConfig).Updates(map[string]interface{}{
+						"section":     configOptions[j].Section,
+						"description": configOptions[j].Description,
+						"type":        configOptions[j].Type,
+						"is_bool":     configOptions[j].IsBool,
+						"values":      configOptions[j].Values,
+					}).Error; err != nil {
+						tx.Rollback()
+						return fmt.Errorf("failed to update config option: %w", err)
+					}
+
+					// Remove from map to track which ones we've processed
+					delete(existingConfigMap, configOptions[j].Name)
+				} else {
+					// Create new config option
+					if err := tx.Create(&configOptions[j]).Error; err != nil {
+						tx.Rollback()
+						return fmt.Errorf("failed to create config option: %w", err)
+					}
+				}
+			}
+
+			for _, remainingConfig := range existingConfigMap {
+				if err := tx.Delete(&remainingConfig).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to delete obsolete config option: %w", err)
+				}
+			}
+
+		} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// Plugin doesn't exist, create it (similar to original function)
+			priceDetails := plugin.PriceDetails
+			configOptions := plugin.ConfigurationOptions
+			plugin.ConfigurationOptions = nil
+
+			if err := tx.Create(plugin).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to create plugin metadata: %w", err)
+			}
+
+			priceDetails.PluginMetadataID = plugin.ID
+			if err := tx.Create(&priceDetails).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to create price details: %w", err)
+			}
+
+			for j := range configOptions {
+				if len(configOptions[j].ValuesSlice) > 0 {
+					valuesData, err := json.Marshal(configOptions[j].ValuesSlice)
+					if err != nil {
+						tx.Rollback()
+						return fmt.Errorf("failed to marshal values: %w", err)
+					}
+					configOptions[j].Values = string(valuesData)
+				}
+
+				configOptions[j].PluginMetadataID = plugin.ID
+				if err := tx.Create(&configOptions[j]).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to create config option: %w", err)
+				}
+			}
+		} else {
+			// Some other error occurred
+			tx.Rollback()
+			return fmt.Errorf("error checking for existing plugin: %w", result.Error)
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
