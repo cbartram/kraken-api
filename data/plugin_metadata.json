@@ -246,9 +246,9 @@
       }
     ],
     "priceDetails": {
-      "month": 15,
-      "threeMonth": 40,
-      "year": 140
+      "month": 500,
+      "threeMonth": 1000,
+      "year":  5000
     },
     "tier": 3
   },
@@ -1103,9 +1103,9 @@
       }
     ],
     "priceDetails": {
-      "month": 15,
-      "threeMonth": 40,
-      "year": 140
+      "month": 500,
+      "threeMonth": 1000,
+      "year":  5000
     },
     "tier": 3
   },
@@ -1663,9 +1663,9 @@
       }
     ],
     "priceDetails": {
-      "month": 15,
-      "threeMonth": 40,
-      "year": 140
+      "month": 500,
+      "threeMonth": 1000,
+      "year":  5000
     },
     "tier": 3
   },
@@ -1935,9 +1935,9 @@
       }
     ],
     "priceDetails": {
-      "month": 10,
-      "threeMonth": 25,
-      "year": 90
+      "month": 200,
+      "threeMonth": 500,
+      "year": 1000
     },
     "tier": 2
   },
@@ -2232,9 +2232,9 @@
       }
     ],
     "priceDetails": {
-      "month": 10,
-      "threeMonth": 25,
-      "year": 90
+      "month": 200,
+      "threeMonth": 500,
+      "year": 1000
     },
     "tier": 2
   },
@@ -2368,9 +2368,9 @@
       }
     ],
     "priceDetails": {
-      "month": 10,
-      "threeMonth": 25,
-      "year": 90
+      "month": 200,
+      "threeMonth": 500,
+      "year": 1000
     },
     "tier": 2
   },
@@ -2444,9 +2444,9 @@
       }
     ],
     "priceDetails": {
-      "month": 5,
-      "threeMonth": 12,
-      "year": 40
+     "month":  100,
+     "threeMonth":  250,
+     "year":  700
     },
     "tier": 1
   },
@@ -2588,9 +2588,9 @@
       }
     ],
     "priceDetails": {
-      "month": 5,
-      "threeMonth": 12,
-      "year": 40
+     "month":  100,
+     "threeMonth":  250,
+     "year":  700
     },
     "tier": 1
   },
@@ -2724,9 +2724,9 @@
       }
     ],
     "priceDetails": {
-      "month": 5,
-      "threeMonth": 12,
-      "year": 40
+     "month":  100,
+     "threeMonth":  250,
+     "year":  700
     },
     "tier": 1
   }

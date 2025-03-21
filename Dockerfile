@@ -13,6 +13,7 @@ RUN go build -o main .
 
 FROM alpine:latest
 COPY --from=build /app/main /main
+COPY --from=build /app/data /data
 
 EXPOSE 8080
 
