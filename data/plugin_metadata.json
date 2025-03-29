@@ -3334,6 +3334,675 @@
         "description": "Color used to fill npc tiles.",
         "type": "color",
         "isBool": false
+      },
+      {
+        "name": "Bank All Swap",
+        "section": "Misc",
+        "description": "Swaps the menu entry for Bank all on the chest allowing 1 click banking of loot.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      }
+    ],
+    "priceDetails": {
+      "month": 500,
+      "threeMonth": 1000,
+      "year": 5000
+    },
+    "tier": 3
+  },
+  {
+    "name": "Inferno",
+    "title": "Inferno",
+    "description": "Timers, NPC overlays, prayer overlays and more for your Inferno grind!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/inferno.png",
+    "videoUrl": "",
+    "topPick": true,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Prayer Display Mode",
+        "section": "Prayer",
+        "description": "Display prayer indicator in the prayer tab or in the bottom right corner of the screen",
+        "type": "InfernoPrayerDisplayMode",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Indicate When Praying Correctly",
+        "section": "Prayer",
+        "description": "Indicate the correct prayer, even if you are already praying that prayer",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Descending Boxes",
+        "section": "Prayer",
+        "description": "Draws timing boxes above the prayer icons, as if you were playing Piano Tiles",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Non-Priority Boxes",
+        "section": "Prayer",
+        "description": "Render descending boxes for prayers that are not the priority prayer for that tick",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Always Show Prayer Helper",
+        "section": "Prayer",
+        "description": "Render prayer helper at all time, even when other inventory tabs are open.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Tile Safespots",
+        "section": "Safespots",
+        "description": "Indicate safespots on the ground: safespot (white), pray melee (red), pray range (green), pray magic (blue) and combinations of those",
+        "type": "InfernoSafespotDisplayMode",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tile Safespots Check Size",
+        "section": "Safespots",
+        "description": "The size of the area around the player that should be checked for safespots (SIZE x SIZE area)",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Non-safespotted NPC\u0027s Overlay",
+        "section": "Safespots",
+        "description": "Red overlay for NPC\u0027s that can attack you",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Temporary safespotted NPC\u0027s Overlay",
+        "section": "Safespots",
+        "description": "Orange overlay for NPC\u0027s that have to move to attack you",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespotted NPC\u0027s Overlay",
+        "section": "Safespots",
+        "description": "Green overlay for NPC\u0027s that are safespotted (can\u0027t attack you)",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Wave Display",
+        "section": "Waves",
+        "description": "Shows monsters that will spawn on the selected wave(s).",
+        "type": "InfernoWaveDisplayMode",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "NPC Naming",
+        "section": "Waves",
+        "description": "Simple (ex: Bat) or Complex (ex: Jal-MejRah) NPC naming",
+        "type": "InfernoNamingDisplayMode",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "NPC Levels",
+        "section": "Waves",
+        "description": "Show the combat level of the NPC next to their name",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Wave Header",
+        "section": "Waves",
+        "description": "Color for Wave Header",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Wave Text Color",
+        "section": "Waves",
+        "description": "Color for Wave Texts",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Obstacles",
+        "section": "Extra",
+        "description": "Indicate obstacles that NPC\u0027s cannot pass through",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Spawn Timer Infobox",
+        "section": "Extra",
+        "description": "Display an Infobox that times spawn sets during Zuk fight.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Nibblers",
+        "section": "Nibblers",
+        "description": "Indicates nibblers that are alive",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Central Nibbler",
+        "section": "Nibblers",
+        "description": "Indicate the most central nibbler. If multiple nibblers will freeze the same amount of other nibblers, ",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Bats",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Bats",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots",
+        "section": "Bats",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Main Tile",
+        "section": "Bats",
+        "description": "Indicate the main tile for multi-tile NPC\u0027s. This tile is used for and pathfinding.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Blobs",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Blob Detection Tick",
+        "section": "Blobs",
+        "description": "Show a prayer indicator (default: magic) for the tick on which the blob will detect prayer",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Blob Death Location",
+        "section": "Blobs",
+        "description": "Highlight the death tiles with a tick countdown until mini-blobs spawn",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Blob Death Color",
+        "section": "Blobs",
+        "description": "Color for blob death location outline",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Fade Tile",
+        "section": "Blobs",
+        "description": "Fades the death tile for a smoother transition.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Blobs",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots",
+        "section": "Blobs",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Main Tile",
+        "section": "Blobs",
+        "description": "Indicate the main tile for multi-tile NPC\u0027s. This tile is used for pathfinding.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Meleers",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Meleers",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Dig Timer",
+        "section": "Meleers",
+        "description": "Draws the amount of ticks before the melee will begin the dig animation.\\n",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Tick Draw Threshold",
+        "section": "Meleers",
+        "description": "Number at which the dig timer should be drawn",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tick Danger Threshold",
+        "section": "Meleers",
+        "description": "Number at which the dig timer should be dangerous",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Dig Safe Color",
+        "section": "Meleers",
+        "description": "Color for melee when can not dig",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Dig Danger Color",
+        "section": "Meleers",
+        "description": "Color for melee when it can dig",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Font size",
+        "section": "Meleers",
+        "description": "Font size to use under the melee",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Safespots",
+        "section": "Meleers",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Main Tile",
+        "section": "Meleers",
+        "description": "Indicate the main tile for multi-tile NPC\u0027s. This tile is used for pathfinding.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Rangers",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Rangers",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots",
+        "section": "Rangers",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Main Tile",
+        "section": "Rangers",
+        "description": "Indicate the main tile for multi-tile NPC\u0027s. This tile is used for pathfinding.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Magers",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Magers",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots",
+        "section": "Magers",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Main Tile",
+        "section": "Magers",
+        "description": "Indicate the main tile for multi-tile NPC\u0027s. This tile is used for pathfinding.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Jad Healers",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Jad Healers",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots",
+        "section": "Jad Healers",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Active Healers",
+        "section": "Jad Healers",
+        "description": "Indicate healers that are still healing Jad",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Helper",
+        "section": "Jad",
+        "description": "Indicate the correct prayer when this NPC attacks",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Jad",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots (Melee Range Only)",
+        "section": "Jad",
+        "description": "Enable or disable safespot calculation for this specific NPC. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Active Healers (UNTESTED)",
+        "section": "Zuk Healers",
+        "description": "Indicate healers that are still healing Zuk",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on NPC",
+        "section": "Zuk",
+        "description": "Draws the amount of ticks before an NPC is going to attack on the NPC",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safespots (Before Healers)",
+        "section": "Zuk",
+        "description": "Indicate the zuk shield safespots. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect. Shield must go back and forth at least 1 time before the predict option will work.",
+        "type": "InfernoZukShieldDisplayMode",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Safespots (After Healers)",
+        "section": "Zuk",
+        "description": "Indicate the zuk shield safespots. \u0027Tile Safespots\u0027 in the \u0027Safespots\u0027 category needs to be turned on for this to take effect.",
+        "type": "InfernoZukShieldDisplayMode",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Hide On Death",
+        "section": "Zuk",
+        "description": "Hide TzKal-Zuk on death animation",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks on Zuk Shield",
+        "section": "Zuk",
+        "description": "Draws the amount of ticks before Zuk attacks on the floating shield",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
       }
     ],
     "priceDetails": {
