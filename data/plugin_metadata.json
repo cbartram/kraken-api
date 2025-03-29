@@ -4011,5 +4011,469 @@
       "year": 5000
     },
     "tier": 3
+  },
+  {
+    "name": "Nex",
+    "title": "Nex",
+    "description": "Timers, Overlays, prayers, counters, cough tracker and more for Nex!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/nex.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Flash on null attack",
+        "section": "General",
+        "description": "Flash screen when attacking and invulnerable",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer helper",
+        "section": "General",
+        "description": "Displays the correct prayer to use at various points in the fight.",
+        "type": "PrayerDisplay",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Always Show Prayer Helper",
+        "section": "General",
+        "description": "Render prayer helper at all time, even when other inventory tabs are open.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate when Correct Prayer",
+        "section": "General",
+        "description": "Show a green box around prayer when its correct",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Indicate Nex",
+        "section": "General",
+        "description": "Indicate when you should or should not be attacking Nex",
+        "type": "VulnerabilityDisplay",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Indicate Minion",
+        "section": "General",
+        "description": "Indicate when you should attack a minion",
+        "type": "VulnerabilityDisplay",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Invulnerable Color",
+        "section": "General",
+        "description": "Color for when something is invulnerable",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Invulnerable Width",
+        "section": "General",
+        "description": "Size for outline",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Vulnerable Color",
+        "section": "General",
+        "description": "Color for vulnerable things",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Vulnerable Width",
+        "section": "General",
+        "description": "Size for outline",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Invulnerable Nex Ticks",
+        "section": "General",
+        "description": "if we know how many ticks before shes clickable",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks Font Size",
+        "section": "General",
+        "description": "size of le font",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Nex HP %",
+        "section": "General",
+        "description": "Draw nex HP per phase",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Minion HP %",
+        "section": "General",
+        "description": "Draw minion HP",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "HP Font Size",
+        "section": "General",
+        "description": "size of next hp",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Indicate Tank",
+        "section": "General",
+        "description": "Highlight the tile of the current tank",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Tank Color",
+        "section": "General",
+        "description": "Color for tank tile when it is not you",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tank Color Personal",
+        "section": "General",
+        "description": "Color for tank tile when it is you",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Indicate Nex Range",
+        "section": "General",
+        "description": "Highlight the tiles where standing on or inside will allow nex to deal damage to you.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Range Color",
+        "section": "General",
+        "description": "Color for the tiles",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Dash Lane Highlight",
+        "section": "General",
+        "description": "Draw dash lane aoe",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Dash Ticks",
+        "section": "General",
+        "description": "Draw ticks on ice trap",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Dash Color",
+        "section": "General",
+        "description": "Color ya idiot",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Hide healthy players",
+        "section": "Smoke Settings",
+        "description": "Hides all players that are not coughing",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Hide above #",
+        "section": "Smoke Settings",
+        "description": "Hides all players when more than set number are in room",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Cough tiles highlight",
+        "section": "Smoke Settings",
+        "description": "Shows the tiles that will make you sick",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Cough Color",
+        "section": "Smoke Settings",
+        "description": "Color for sickness highlight",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Healthy tiles highlight",
+        "section": "Smoke Settings",
+        "description": "Shows the tiles that will spread the sick when you have it",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Health Color",
+        "section": "Smoke Settings",
+        "description": "Color for healthy highlight",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Shadows highlight",
+        "section": "Shadow Phase",
+        "description": "Shows the ticks until portals will damage you",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Shadows Tick Counter",
+        "section": "Shadow Phase",
+        "description": "Displays the number of ticks until shadows do damage",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Shadows Color",
+        "section": "Shadow Phase",
+        "description": "Color the area highlighted by shadows",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Flash if danger",
+        "section": "Shadow Phase",
+        "description": "will flash with shadow color if they spawn and you are in danger",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Sacrifice Safe Line",
+        "section": "Blood Phase",
+        "description": "Highlight the tiles where you wont heal nex. please report back any bugs",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Safe Color",
+        "section": "Blood Phase",
+        "description": "Area where sacrafice will heal nex",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Ice Trap Highlight",
+        "section": "Ice Phase",
+        "description": "Draw ice trap",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ice Trap Ticks",
+        "section": "Ice Phase",
+        "description": "Draw ticks on ice trap",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ice Color",
+        "section": "Ice Phase",
+        "description": "Color the area highlighted by ice",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Indicate Contain This!",
+        "section": "Ice Phase",
+        "description": "Highlight the tiles where you gunna get smacked",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Contain Trap Ticks",
+        "section": "Ice Phase",
+        "description": "Draw ticks on ice trap",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Contain AOE Color",
+        "section": "Ice Phase",
+        "description": "Stop reading these",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Indicate Death AOE",
+        "section": "Zaros Phase",
+        "description": "Highlight the tiles where you gunna get smacked",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Death AOE Color",
+        "section": "Zaros Phase",
+        "description": "Stop reading these",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Ticks: Tank Switch",
+        "section": "Zaros Phase",
+        "description": "countdown until tank switches",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ticks: Prayer Switch",
+        "section": "Zaros Phase",
+        "description": "countdown until nex\u0027s prayer switches",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Z offset",
+        "section": "Zaros Phase",
+        "description": "how far down to render below hp (if hp is present)",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      }
+    ],
+    "priceDetails": {
+      "month": 200,
+      "threeMonth": 500,
+      "year": 1000
+    },
+    "tier": 2
   }
 ]
