@@ -50,13 +50,13 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid hardware id"})
 	}
 
-	log.Infof("req body plugins: %v", reqBody.Plugins)
-
 	validPlugins := make(map[string]string)
 	for _, plugin := range user.Plugins {
 		log.Infof("validating plugin: %s", plugin.Name)
 
-		if user.InFreeTrialPeriod() {
+		// Do not require a license key for trial plugins however, continue to verify plugins
+		// the user has purchased with their license key
+		if user.InFreeTrialPeriod() && plugin.TrialPlugin && !util.IsPluginExpired(plugin.ExpirationTimestamp) {
 			log.Infof("user: %s has a plugin: %s in free trial period.", user.DiscordUsername, plugin.Name)
 			validPlugins[plugin.Name] = user.FreeTrialEndTime.Format(time.RFC3339)
 			continue
@@ -70,10 +70,7 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 
 		if plugin.LicenseKey != licenseKeyToValidate {
 			log.Errorf("plugin %s has an invalid license key: %s, valid license key is: %s, user in free trial period: %v", plugin.Name, licenseKeyToValidate, plugin.LicenseKey, user.InFreeTrialPeriod())
-			if !user.InFreeTrialPeriod() {
-				log.Infof("user is not in free trial period, plugin: %s is invalid", plugin.Name)
-				continue
-			}
+			continue
 		}
 
 		validPlugins[plugin.Name] = plugin.ExpirationTimestamp.Format(time.RFC3339)
