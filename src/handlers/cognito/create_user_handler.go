@@ -12,6 +12,7 @@ import (
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
+	"time"
 )
 
 type CreateUserRequestHandler struct{}
@@ -93,6 +94,10 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 				{Value: hardwareId},
 			},
 			Plugins: []model.Plugin{},
+			// These Fields will be updated by the /free-trial endpoint
+			UsedFreeTrial:      false,
+			FreeTrialStartTime: time.Now(),
+			FreeTrialEndTime:   time.Now(),
 		}
 
 		tx := w.Database.Create(&newUser)

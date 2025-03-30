@@ -40,16 +40,19 @@ func Connect() *gorm.DB {
 
 // User represents a user of the system
 type User struct {
-	ID              uint           `gorm:"primaryKey" json:"id"`
-	DiscordUsername string         `gorm:"column:discord_username" json:"discordUsername,omitempty"`
-	Email           string         `gorm:"column:email" json:"email,omitempty"`
-	AvatarId        string         `gorm:"column:avatar_id" json:"avatarId"`
-	Tokens          int64          `gorm:"column:tokens;default:0" json:"tokens"`
-	DiscordID       string         `gorm:"column:discord_id;uniqueIndex" json:"discordId,omitempty"`
-	CustomerId      string         `gorm:"column:customer_id;uniqueIndex" json:"customerId,omitempty"`
-	CreatedAt       time.Time      `json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
-	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	ID                 uint           `gorm:"primaryKey" json:"id"`
+	DiscordUsername    string         `gorm:"column:discord_username" json:"discordUsername,omitempty"`
+	Email              string         `gorm:"column:email" json:"email,omitempty"`
+	AvatarId           string         `gorm:"column:avatar_id" json:"avatarId"`
+	Tokens             int64          `gorm:"column:tokens;default:0" json:"tokens"`
+	DiscordID          string         `gorm:"column:discord_id;uniqueIndex" json:"discordId,omitempty"`
+	CustomerId         string         `gorm:"column:customer_id;uniqueIndex" json:"customerId,omitempty"`
+	UsedFreeTrial      bool           `gorm:"column:used_free_trial" json:"usedFreeTrial"`
+	FreeTrialStartTime time.Time      `gorm:"column:free_trial_start_time" json:"freeTrialStartTime"`
+	FreeTrialEndTime   time.Time      `gorm:"column:free_trial_end_time" json:"freeTrialEndTime"`
+	CreatedAt          time.Time      `json:"createdAt"`
+	UpdatedAt          time.Time      `json:"updatedAt"`
+	DeletedAt          gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 
 	// Relations
 	Credentials CognitoCredentials `gorm:"foreignKey:UserID" json:"credentials,omitempty"`
@@ -71,6 +74,10 @@ func GetUser(discordId string, db *gorm.DB) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func (u User) InFreeTrialPeriod() bool {
+	return u.UsedFreeTrial == true && time.Now().After(u.FreeTrialStartTime) && time.Now().Before(u.FreeTrialEndTime)
 }
 
 func (User) TableName() string {
@@ -111,6 +118,7 @@ type Plugin struct {
 	ExpirationTimestamp time.Time      `gorm:"column:expiration_timestamp" json:"expirationTimestamp"`
 	S3JarFilePath       string         `gorm:"column:s3_jar_file_path" json:"s3JarFilePath"`
 	LicenseKey          string         `gorm:"column:license_key;uniqueIndex" json:"licenseKey"`
+	TrialPlugin         bool           `gorm:"column:trial_plugin" json:"trialPlugin"`
 	CreatedAt           time.Time      `json:"createdAt"`
 	UpdatedAt           time.Time      `json:"updatedAt"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`

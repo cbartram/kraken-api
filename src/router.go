@@ -78,6 +78,11 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, w)
 	})
 
+	pluginGroup.POST("/free-trial", AuthMiddleware(w), func(c *gin.Context) {
+		h := plugin.FreeTrialHandler{}
+		h.HandleRequest(c, w)
+	})
+
 	pluginGroup.POST("/create-presigned-url", AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.PresignedUrlHandler{}
 		h.HandleRequest(c, ctx, w)

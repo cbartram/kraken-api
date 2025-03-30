@@ -56,6 +56,12 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		return
 	}
 
+	if user.InFreeTrialPeriod() {
+		log.Errorf("user: %s cannot purchase plugins during their free trial period: ", user.DiscordUsername)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Free Trial Plugin Purchase", "message": "You cannot purchase plugins in your free trial period. You already have access to all plugins."})
+		return
+	}
+
 	user.Tokens -= int64(price)
 
 	// Validate plugin name. Request body will send something like:
@@ -124,6 +130,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
 		DeletedAt:           gorm.DeletedAt{},
+		TrialPlugin:         false,
 		User:                *user,
 	}
 

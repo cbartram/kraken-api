@@ -55,6 +55,13 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 	validPlugins := make(map[string]string)
 	for _, plugin := range user.Plugins {
 		log.Infof("validating plugin: %s", plugin.Name)
+
+		if user.InFreeTrialPeriod() {
+			log.Infof("user: %s has a plugin: %s in free trial period.", user.DiscordUsername, plugin.Name)
+			validPlugins[plugin.Name] = user.FreeTrialEndTime.Format(time.RFC3339)
+			continue
+		}
+
 		licenseKeyToValidate, exists := reqBody.Plugins[plugin.Name]
 		if !exists {
 			log.Errorf("plugin %s owned by user but not found in request", plugin.Name)
@@ -62,8 +69,11 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 		}
 
 		if plugin.LicenseKey != licenseKeyToValidate {
-			log.Errorf("plugin %s has an invalid license key: %s, valid license key is: %s", plugin.Name, licenseKeyToValidate, plugin.LicenseKey)
-			continue
+			log.Errorf("plugin %s has an invalid license key: %s, valid license key is: %s, user in free trial period: %v", plugin.Name, licenseKeyToValidate, plugin.LicenseKey, user.InFreeTrialPeriod())
+			if !user.InFreeTrialPeriod() {
+				log.Infof("user is not in free trial period, plugin: %s is invalid", plugin.Name)
+				continue
+			}
 		}
 
 		validPlugins[plugin.Name] = plugin.ExpirationTimestamp.Format(time.RFC3339)

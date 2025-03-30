@@ -21,6 +21,19 @@ const SignedUrlDurationSeconds = 300
 
 type PresignedUrlHandler struct{}
 
+type PresignedUrlResponse struct {
+	URL          string      `json:"URL"`
+	Method       string      `json:"Method"`
+	SignedHeader http.Header `json:"SignedHeader"`
+	TrialPlugin  bool        `json:"isTrialPlugin"`
+}
+
+type PresignedURLResult struct {
+	URL    *v4.PresignedHTTPRequest
+	Plugin *model.Plugin
+	Error  error
+}
+
 // HandleRequest Handles the /api/v1/plugin/presigned-url route which the service calls to generate pre-signed urls
 // to download plugin JAR files from S3. Note: this method does NOT validate license keys for plugins only that
 // plugins are not expired. All non-expired plugins will have presigned urls and be loadable by the service. License
@@ -37,6 +50,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 	hwid := c.Query("hardwareId")
 	if len(hwid) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "must provide hardwareId query parameter"})
+		return
 	}
 
 	devPlugins, err := strconv.ParseBool(c.Query("dev"))
@@ -58,12 +72,33 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		return
 	}
 
-	var preSignedUrls []v4.PresignedHTTPRequest
+	var preSignedUrls []PresignedUrlResponse
 
 	results := make(chan PresignedURLResult, len(user.Plugins))
 	var wg sync.WaitGroup
+	var expiredPluginIDs []uint
+	var activePlugins []*model.Plugin
 
 	for _, plugin := range user.Plugins {
+		if plugin.TrialPlugin && util.IsPluginExpired(plugin.ExpirationTimestamp) {
+			log.Infof("user: %s has expired trial plugin: %s", user.DiscordUsername, plugin.Name)
+			expiredPluginIDs = append(expiredPluginIDs, plugin.ID)
+		} else {
+			activePlugins = append(activePlugins, &plugin)
+		}
+	}
+
+	if len(expiredPluginIDs) > 0 {
+		if err := w.Database.Unscoped().Where("id IN ?", expiredPluginIDs).Delete(&model.Plugin{}).Error; err != nil {
+			log.Errorf("failed to delete expired trial plugins: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to delete expired trial plugins: %v", err)})
+			return
+		} else {
+			log.Infof("deleted %d expired trial plugins for user: %s", len(expiredPluginIDs), user.DiscordUsername)
+		}
+	}
+
+	for _, plugin := range activePlugins {
 		wg.Add(1)
 		go GeneratePreSignedURL(
 			ctx,
@@ -83,26 +118,26 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 	// Note: This will return partial results if some S3 calls fails for any reason.
 	for result := range results {
 		if result.Error != nil {
-			log.Errorf("error generating presigned url: %s", err)
+			log.Errorf("error generating presigned url for plugin: %s err: %s ", result.Plugin.Name, err)
 			continue
 		}
 		if result.URL != nil {
-			preSignedUrls = append(preSignedUrls, *result.URL)
+			preSignedUrls = append(preSignedUrls, PresignedUrlResponse{
+				URL:          result.URL.URL,
+				Method:       result.URL.Method,
+				SignedHeader: result.URL.SignedHeader,
+				TrialPlugin:  result.Plugin.TrialPlugin,
+			})
 		}
 	}
 
 	c.JSON(http.StatusOK, preSignedUrls)
 }
 
-type PresignedURLResult struct {
-	URL   *v4.PresignedHTTPRequest
-	Error error
-}
-
 func GeneratePreSignedURL(
 	ctx context.Context,
 	s3 *service.S3Service,
-	plugin model.Plugin,
+	plugin *model.Plugin,
 	devPlugins bool,
 	wg *sync.WaitGroup,
 	results chan<- PresignedURLResult,
@@ -110,10 +145,9 @@ func GeneratePreSignedURL(
 	defer wg.Done()
 
 	log.Infof("generating presigned url for plugin: %s, expires at: %s, license key: %s for user id: %d", plugin.Name, plugin.ExpirationTimestamp, plugin.LicenseKey, plugin.UserID)
-
 	if util.IsPluginExpired(plugin.ExpirationTimestamp) {
 		log.Infof("plugin: %s is expired with timestamp: %s when current time is: %s", plugin.Name, plugin.ExpirationTimestamp, time.Now().Format(time.RFC3339))
-		results <- PresignedURLResult{nil, errors.New(fmt.Sprintf("plugin: %s is expired", plugin.Name))}
+		results <- PresignedURLResult{nil, plugin, errors.New(fmt.Sprintf("plugin: %s is expired", plugin.Name))}
 		return
 	}
 
@@ -127,18 +161,18 @@ func GeneratePreSignedURL(
 	exists, name, err := s3.GetLatestVersion(prefix)
 	if err != nil || !exists {
 		log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin.Name, err)
-		results <- PresignedURLResult{nil, err}
+		results <- PresignedURLResult{nil, plugin, err}
 		return
 	}
 
 	url, err := s3.CreatePresignedUrl(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
 	if err != nil {
 		log.Errorf("error creating presigned url for plugin: %s.jar with prefix: %s", name, prefix)
-		results <- PresignedURLResult{nil, err}
+		results <- PresignedURLResult{nil, plugin, err}
 		return
 	}
 
 	log.Infof("generated pre-signed url for: plugin: %s, %d seconds, url: %s",
 		name, SignedUrlDurationSeconds, url.URL)
-	results <- PresignedURLResult{url, nil}
+	results <- PresignedURLResult{url, plugin, nil}
 }
