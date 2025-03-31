@@ -4475,5 +4475,207 @@
       "year": 1000
     },
     "tier": 2
+  },
+  {
+    "name": "Grotesque-Guardians",
+    "title": "Grotesque Guardians",
+    "description": "Timers, Overlays, prayers, counters, and more for the Grotesque Guardians slayer boss!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/gargoyle.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Prayer widget tick counter",
+        "section": "Tick counters",
+        "description": "Enable prayer widget tick counter overlay.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer Guitar Hero mode",
+        "section": "Tick counters",
+        "description": "Enable Guitar Hero mode for prayers.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Dusk tick counter",
+        "section": "Tick counters",
+        "description": "Show tick counter on Dusk.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Font size",
+        "section": "Tick counters",
+        "description": "Adjust the font size of the Dusk tick counter.",
+        "type": "int",
+        "isBool": false,
+        "values": [
+          "12"
+        ]
+      },
+      {
+        "name": "Font style",
+        "section": "Tick counters",
+        "description": "Bold/Italics/Plain",
+        "type": "FontStyle",
+        "isBool": false,
+        "values": [
+          "BOLD",
+          "ITALIC",
+          "PLAIN"
+        ]
+      },
+      {
+        "name": "Font color",
+        "section": "Tick counters",
+        "description": "Color of the Dusk ticker counter font.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Outline gargoyle tiles",
+        "section": "Outlines",
+        "description": "Outline gargoyle tiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Tile outline width",
+        "section": "Outlines",
+        "description": "Change the width of the tile outline.",
+        "type": "int",
+        "isBool": false,
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      {
+        "name": "Tile outline color",
+        "section": "Outlines",
+        "description": "Change the color of the tile outline.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Outline gargoyle invulnerability",
+        "section": "Outlines",
+        "description": "Outline gargoyle npcs when invulnerable.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Outline width",
+        "section": "Outlines",
+        "description": "Change the width of the outline.",
+        "type": "int",
+        "isBool": false,
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      {
+        "name": "Outline color",
+        "section": "Outlines",
+        "description": "Change the color of the outline.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Outline graphics objects",
+        "section": "Outlines",
+        "description": "Outline the damage tiles during Phase 3.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Outline width",
+        "section": "Outlines",
+        "description": "Change the width of the graphics objects outline.",
+        "type": "int",
+        "isBool": false,
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      {
+        "name": "Outline color",
+        "section": "Outlines",
+        "description": "Change the color of the graphics objects outline.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Flash on Danger",
+        "section": "Other",
+        "description": "Flash the screen if danger tile spawns under you.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Flash color",
+        "section": "Other",
+        "description": "Change the color of the flash.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      }
+    ],
+    "priceDetails": {
+      "month":  100,
+      "threeMonth":  250,
+      "year":  700
+    },
+    "tier": 1
   }
 ]
