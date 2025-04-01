@@ -4677,5 +4677,106 @@
       "year":  700
     },
     "tier": 1
+  },
+  {
+    "name": "Zalcano-Extended",
+    "title": "Zalcano Extended",
+    "description": "Overlays, counters, and advanced pathfinding for Zalcano!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/zalcano.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Danger Pinwheels",
+        "section": "Pinwheels",
+        "description": "Show a ground marker for dangerous pinwheel tiles",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Highlight Safe Pinwheels",
+        "section": "Pinwheels",
+        "description": "Show a ground marker for safe pinwheel tiles",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show falling Rock Tiles",
+        "section": "Rocks",
+        "description": "Show a ground marker for falling rock tiles",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show falling Rock Counter",
+        "section": "Rocks",
+        "description": "Show a tick counter counting down until the falling rocks land",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Glowing Rocks Highlight",
+        "section": "Rocks",
+        "description": "Colors the glowing rock red when Zalcano is about to destroy it.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show shortest safe path",
+        "section": "Pathing",
+        "description": "Show the shortest safe path to furnace/altar. Shows destination based on Tephra type in inventory.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Only During Pinwheels",
+        "section": "Pathing",
+        "description": "Highlight the shortest safe path only while dangerous pinwheels are summoned.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      }
+    ],
+    "priceDetails": {
+      "month":  100,
+      "threeMonth":  250,
+      "year":  700
+    },
+    "tier": 1
   }
 ]
