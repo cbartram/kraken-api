@@ -10,6 +10,7 @@ import (
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -68,7 +69,7 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 			continue
 		}
 
-		if plugin.LicenseKey != licenseKeyToValidate {
+		if plugin.LicenseKey != strings.TrimSpace(licenseKeyToValidate) {
 			log.Errorf("plugin %s has an invalid license key: %s, valid license key is: %s, user in free trial period: %v", plugin.Name, licenseKeyToValidate, plugin.LicenseKey, user.InFreeTrialPeriod())
 			continue
 		}
