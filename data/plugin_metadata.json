@@ -4778,5 +4778,48 @@
       "year":  700
     },
     "tier": 1
+  },
+  {
+    "name": "Smith-Helper",
+    "title": "Smithing Helper",
+    "description": "potato mode for easy smithing!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/smithing.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Easy Mode",
+        "section": "",
+        "description": "Make smithing easy by increasing the size of the UI for items to smith.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Select Item",
+        "section": "",
+        "description": "Select an Item to Smith",
+        "type": "SmithingItem",
+        "isBool": false,
+        "values": []
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
 ]
