@@ -39,7 +39,8 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 	// PluginName in this case is the Plugin Pack Name
 	plugins, err := w.PluginStore.GetPluginsInPack(reqBody.PluginName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong", "message": "could not find plugins in pack: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Something went wrong", "message": "could not find plugins in pack: " + err.Error()})
+		return
 	}
 
 	tx := w.Database.Begin()
@@ -81,6 +82,7 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 		log.Errorf("batch purchase failed, transaction rolled back")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "One or more plugin purchases failed",
+			"message": "One or more plugin purchases failed for your plugin pack. You were not charged and no plugins were purchased. Feel free to try again.",
 			"results": results,
 		})
 		return

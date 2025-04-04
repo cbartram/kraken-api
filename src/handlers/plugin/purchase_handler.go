@@ -142,18 +142,13 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 				msg := fmt.Sprintf("user: %s attempted to purchase plugin: %s, but plugin is already owned and not expired",
 					ctx.User.DiscordUsername, purchaseReq.PluginName)
 				log.Errorf(msg)
-				return nil, http.StatusBadRequest, errors.New("user already owns plugin (not expired):" + purchaseReq.PluginName)
+				return nil, http.StatusBadRequest, errors.New("user already owns non-expired plugin: " + purchaseReq.PluginName)
 			} else {
-				// User is renewing the plugin
+				// User is renewing the plugin. We do not generate a new license key for a plugin renewal. This may change in the future
+				// but for now it ensures users don't have to change anything in their plugin configuration when they renew.
 				ctx.User.Plugins[i].ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
 				ctx.User.Plugins[i].UpdatedAt = time.Now()
-				licenseKey, err := util.GenerateLicenseKey()
-				if err != nil {
-					log.Errorf("failed to generate license key: %v", err)
-					return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to generate a license key"), err)
-				}
-				ctx.User.Plugins[i].LicenseKey = licenseKey
-				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license: %s",
+				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license (existing): %s",
 					ctx.User.DiscordUsername,
 					purchaseReq.PluginName,
 					ctx.User.Plugins[i].ExpirationTimestamp,
