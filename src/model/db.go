@@ -284,3 +284,154 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 
 	return nil
 }
+
+func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB) error {
+	// Read the JSON file
+	jsonData, err := os.ReadFile(jsonFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read JSON file: %w", err)
+	}
+
+	// Define a struct to match the JSON structure
+	type PluginPackInput struct {
+		Name         string       `json:"name"`
+		Title        string       `json:"title"`
+		Description  string       `json:"description"`
+		ImageUrl     string       `json:"imageUrl"`
+		Discount     float32      `json:"discount"`
+		Active       bool         `json:"active"`
+		Plugins      []string     `json:"plugins"`
+		PriceDetails PriceDetails `json:"priceDetails"`
+	}
+
+	// Unmarshal the JSON data
+	var pluginPackInputs []PluginPackInput
+	if err := json.Unmarshal(jsonData, &pluginPackInputs); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON data: %w", err)
+	}
+
+	// Begin a transaction
+	tx := db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("failed to begin transaction: %w", tx.Error)
+	}
+
+	for _, packInput := range pluginPackInputs {
+		// Check if the pack already exists
+		var existingPack PluginPack
+		result := tx.Where("name = ?", packInput.Name).First(&existingPack)
+
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// Create new pack
+			pack := PluginPack{
+				Name:        packInput.Name,
+				Title:       packInput.Title,
+				Description: packInput.Description,
+				ImageUrl:    packInput.ImageUrl,
+				Discount:    packInput.Discount,
+				Active:      packInput.Active,
+			}
+
+			// Create the plugin pack
+			if err := tx.Create(&pack).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to create plugin pack: %w", err)
+			}
+
+			// Create the price details - explicitly set PluginMetadataID to zero/NULL
+			priceDetails := PriceDetails{
+				Month:            packInput.PriceDetails.Month,
+				ThreeMonth:       packInput.PriceDetails.ThreeMonth,
+				Year:             packInput.PriceDetails.Year,
+				PluginPackID:     pack.ID,
+				PluginMetadataID: 0, // Explicitly set to zero so GORM will treat it as NULL
+			}
+
+			// Use SQL that doesn't include PluginMetadataID in the INSERT statement
+			if err := tx.Omit("PluginMetadataID").Create(&priceDetails).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to create price details: %w", err)
+			}
+
+			// Link the plugins to the pack
+			for _, pluginName := range packInput.Plugins {
+				// Find the plugin metadata by name
+				var pluginMetadata PluginMetadata
+				if err := tx.Where("name = ?", pluginName).First(&pluginMetadata).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to find plugin metadata '%s': %w", pluginName, err)
+				}
+
+				// Create the pack item
+				packItem := PluginPackItem{
+					PackID:           pack.ID,
+					PluginMetadataID: pluginMetadata.ID,
+				}
+				if err := tx.Create(&packItem).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to create plugin pack item: %w", err)
+				}
+			}
+		} else if result.Error != nil {
+			tx.Rollback()
+			return fmt.Errorf("error checking for existing plugin pack: %w", result.Error)
+		} else {
+			// Pack exists, update it
+			existingPack.Title = packInput.Title
+			existingPack.Description = packInput.Description
+			existingPack.ImageUrl = packInput.ImageUrl
+			existingPack.Discount = packInput.Discount
+			existingPack.Active = packInput.Active
+
+			if err := tx.Save(&existingPack).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to update plugin pack: %w", err)
+			}
+
+			// Update price details - make sure we're not updating the PluginMetadataID
+			if err := tx.Model(&PriceDetails{}).
+				Where("plugin_pack_id = ?", existingPack.ID).
+				Updates(map[string]interface{}{
+					"month":       packInput.PriceDetails.Month,
+					"three_month": packInput.PriceDetails.ThreeMonth,
+					"year":        packInput.PriceDetails.Year,
+				}).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to update price details: %w", err)
+			}
+
+			// Delete existing pack items
+			if err := tx.Where("pack_id = ?", existingPack.ID).Delete(&PluginPackItem{}).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to delete existing plugin pack items: %w", err)
+			}
+
+			// Re-add the plugins
+			for _, pluginName := range packInput.Plugins {
+				// Find the plugin metadata by name
+				var pluginMetadata PluginMetadata
+				if err := tx.Where("name = ?", pluginName).First(&pluginMetadata).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to find plugin metadata '%s': %w", pluginName, err)
+				}
+
+				// Create the pack item
+				packItem := PluginPackItem{
+					PackID:           existingPack.ID,
+					PluginMetadataID: pluginMetadata.ID,
+				}
+				if err := tx.Create(&packItem).Error; err != nil {
+					tx.Rollback()
+					return fmt.Errorf("failed to create plugin pack item: %w", err)
+				}
+			}
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}

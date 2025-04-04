@@ -6,7 +6,7 @@
     "imageUrl": "https://kraken-plugins.duckdns.org/raids_pack.png",
     "discount": 0,
     "active": true,
-    "plugins": [],
+    "plugins": ["Cox-Helper", "Theatre-of-Blood", "ToA-Extended"],
     "priceDetails": {
       "month":  1200,
       "threeMonth":  2500,
@@ -20,11 +20,11 @@
     "imageUrl": "https://kraken-plugins.duckdns.org/slayer.png",
     "discount": 0,
     "active": true,
-    "plugins": [],
+    "plugins": ["Cerberus", "Alchemical-Hydra", "Vorkath"],
     "priceDetails": {
-      "month": 300,
-      "threeMonth": 700,
-      "year": 1500
+      "month": 500,
+      "threeMonth": 900,
+      "year": 2000
     }
   }
 ]
