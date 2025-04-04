@@ -29,6 +29,9 @@ func Connect() *gorm.DB {
 		&PluginMetadata{},
 		&PluginConfig{},
 		&PriceDetails{},
+		&PluginPack{},
+		&PluginPackItem{},
+		&UserPluginPack{},
 	)
 
 	if err != nil {
@@ -58,6 +61,7 @@ type User struct {
 	Credentials CognitoCredentials `gorm:"foreignKey:UserID" json:"credentials,omitempty"`
 	Plugins     []Plugin           `gorm:"foreignKey:UserID" json:"plugins"`
 	HardwareIDs []HardwareID       `gorm:"foreignKey:UserID" json:"hardwareIds"`
+	PluginPacks []UserPluginPack   `gorm:"foreignKey:UserID" json:"pluginPacks"`
 }
 
 func GetUser(discordId string, db *gorm.DB) (*User, error) {
@@ -65,6 +69,7 @@ func GetUser(discordId string, db *gorm.DB) (*User, error) {
 	tx := db.
 		Preload("HardwareIDs").
 		Preload("Plugins").
+		Preload("PluginPacks").
 		Preload("Credentials").
 		Where("discord_id = ?", discordId).
 		First(&user)
@@ -74,6 +79,62 @@ func GetUser(discordId string, db *gorm.DB) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+// PluginPack represents a collection of plugins sold together
+type PluginPack struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Name        string         `gorm:"column:name;not null" json:"name"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	ImageUrl    string         `json:"imageUrl"`
+	Discount    float32        `gorm:"column:discount;default:0" json:"discount"` // Percentage discount when buying the pack
+	Active      bool           `gorm:"column:active;default:true" json:"active"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+
+	// Relations
+	Items        []PluginPackItem `gorm:"foreignKey:PackID" json:"items"`
+	PriceDetails PriceDetails     `gorm:"foreignKey:PluginPackID" json:"priceDetails"`
+}
+
+// PluginPackItem represents a plugin that belongs to a pack
+type PluginPackItem struct {
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	PackID           uint           `gorm:"column:pack_id;index" json:"packId"`
+	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index" json:"pluginMetadataId"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+
+	// Relations
+	PluginMetadata PluginMetadata `gorm:"foreignKey:PluginMetadataID" json:"pluginMetadata"`
+}
+
+// UserPluginPack represents a plugin pack purchased by a user
+type UserPluginPack struct {
+	ID                  uint           `gorm:"primaryKey" json:"id"`
+	UserID              uint           `gorm:"column:user_id;index" json:"userId"`
+	PluginPackID        uint           `gorm:"column:plugin_pack_id;index" json:"pluginPackId"`
+	ExpirationTimestamp time.Time      `gorm:"column:expiration_timestamp" json:"expirationTimestamp"`
+	LicenseKey          string         `gorm:"column:license_key;uniqueIndex" json:"licenseKey"`
+	CreatedAt           time.Time      `json:"createdAt"`
+	UpdatedAt           time.Time      `json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+
+	// Relations
+	User       User       `gorm:"foreignKey:UserID" json:"-"`
+	PluginPack PluginPack `gorm:"foreignKey:PluginPackID" json:"pluginPack"`
+}
+
+type PriceDetails struct {
+	ID               uint `gorm:"primaryKey" json:"id"`
+	Month            int  `json:"month"`
+	ThreeMonth       int  `json:"threeMonth"`
+	Year             int  `json:"year"`
+	PluginMetadataID uint `json:"pluginMetadataId,omitempty"`
+	PluginPackID     uint `json:"pluginPackId,omitempty"`
 }
 
 func (u User) InFreeTrialPeriod() bool {
@@ -130,14 +191,6 @@ func (Plugin) TableName() string {
 	return "plugins"
 }
 
-type PriceDetails struct {
-	ID               uint `gorm:"primaryKey" json:"id"`
-	Month            int  `json:"month"`
-	ThreeMonth       int  `json:"threeMonth"`
-	Year             int  `json:"year"`
-	PluginMetadataID uint `json:"pluginMetadataId"`
-}
-
 type PluginMetadata struct {
 	ID                   uint           `gorm:"primaryKey" json:"id"`
 	Name                 string         `gorm:"uniqueIndex" json:"name"`
@@ -169,13 +222,11 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 		return fmt.Errorf("failed to read JSON file: %w", err)
 	}
 
-	// Parse the JSON into a slice of your structs
 	var pluginMetadataList []PluginMetadata
 	if err := json.Unmarshal(jsonData, &pluginMetadataList); err != nil {
 		return fmt.Errorf("failed to unmarshal JSON data: %w", err)
 	}
 
-	// Begin a transaction
 	tx := db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("failed to begin transaction: %w", tx.Error)
@@ -188,116 +239,8 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 		var existingPlugin PluginMetadata
 		result := tx.Where("name = ?", plugin.Name).First(&existingPlugin)
 
-		if result.Error == nil {
-			// Plugin exists, update it
-			plugin.ID = existingPlugin.ID // Keep the same ID
-
-			// Store references for relationship handling
-			priceDetails := plugin.PriceDetails
-			configOptions := plugin.ConfigurationOptions
-			plugin.ConfigurationOptions = nil
-
-			// Update the main plugin metadata
-			if err := tx.Model(&existingPlugin).Updates(map[string]interface{}{
-				"title":       plugin.Title,
-				"description": plugin.Description,
-				"image_url":   plugin.ImageUrl,
-				"video_url":   plugin.VideoUrl,
-				"top_pick":    plugin.TopPick,
-				"tier":        plugin.Tier,
-			}).Error; err != nil {
-				tx.Rollback()
-				return fmt.Errorf("failed to update plugin metadata: %w", err)
-			}
-
-			// Handle PriceDetails (update or create)
-			var existingPriceDetails PriceDetails
-			if err := tx.Where("plugin_metadata_id = ?", existingPlugin.ID).First(&existingPriceDetails).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					// Create new price details if not exists
-					priceDetails.PluginMetadataID = existingPlugin.ID
-					if err := tx.Create(&priceDetails).Error; err != nil {
-						tx.Rollback()
-						return fmt.Errorf("failed to create price details: %w", err)
-					}
-				} else {
-					tx.Rollback()
-					return fmt.Errorf("failed to query price details: %w", err)
-				}
-			} else {
-				// Update existing price details
-				if err := tx.Model(&existingPriceDetails).Updates(map[string]interface{}{
-					"month":       priceDetails.Month,
-					"three_month": priceDetails.ThreeMonth,
-					"year":        priceDetails.Year,
-				}).Error; err != nil {
-					tx.Rollback()
-					return fmt.Errorf("failed to update price details: %w", err)
-				}
-			}
-
-			// Handle ConfigurationOptions (more complex as it's one-to-many)
-			// First, get all existing config options
-			var existingConfigOptions []PluginConfig
-			if err := tx.Where("plugin_metadata_id = ?", existingPlugin.ID).Find(&existingConfigOptions).Error; err != nil {
-				tx.Rollback()
-				return fmt.Errorf("failed to query existing config options: %w", err)
-			}
-
-			// Create a map for easier lookup
-			existingConfigMap := make(map[string]PluginConfig)
-			for _, config := range existingConfigOptions {
-				existingConfigMap[config.Name] = config
-			}
-
-			// Process each config option
-			for j := range configOptions {
-				// Handle the Values slice to string conversion
-				if len(configOptions[j].ValuesSlice) > 0 {
-					valuesData, err := json.Marshal(configOptions[j].ValuesSlice)
-					if err != nil {
-						tx.Rollback()
-						return fmt.Errorf("failed to marshal values: %w", err)
-					}
-					configOptions[j].Values = string(valuesData)
-				}
-
-				configOptions[j].PluginMetadataID = existingPlugin.ID
-
-				// Check if this config exists
-				if existingConfig, exists := existingConfigMap[configOptions[j].Name]; exists {
-					// Update existing config
-					if err := tx.Model(&existingConfig).Updates(map[string]interface{}{
-						"section":     configOptions[j].Section,
-						"description": configOptions[j].Description,
-						"type":        configOptions[j].Type,
-						"is_bool":     configOptions[j].IsBool,
-						"values":      configOptions[j].Values,
-					}).Error; err != nil {
-						tx.Rollback()
-						return fmt.Errorf("failed to update config option: %w", err)
-					}
-
-					// Remove from map to track which ones we've processed
-					delete(existingConfigMap, configOptions[j].Name)
-				} else {
-					// Create new config option
-					if err := tx.Create(&configOptions[j]).Error; err != nil {
-						tx.Rollback()
-						return fmt.Errorf("failed to create config option: %w", err)
-					}
-				}
-			}
-
-			for _, remainingConfig := range existingConfigMap {
-				if err := tx.Delete(&remainingConfig).Error; err != nil {
-					tx.Rollback()
-					return fmt.Errorf("failed to delete obsolete config option: %w", err)
-				}
-			}
-
-		} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			// Plugin doesn't exist, create it (similar to original function)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// Plugin doesn't exist, create it
 			priceDetails := plugin.PriceDetails
 			configOptions := plugin.ConfigurationOptions
 			plugin.ConfigurationOptions = nil
@@ -330,13 +273,11 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 				}
 			}
 		} else {
-			// Some other error occurred
 			tx.Rollback()
 			return fmt.Errorf("error checking for existing plugin: %w", result.Error)
 		}
 	}
 
-	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}

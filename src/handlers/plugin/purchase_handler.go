@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -32,15 +33,6 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		return
 	}
 
-	price, err := w.PluginStore.GetPrice(reqBody.PluginName, service.Period(reqBody.PurchaseDuration))
-	if err != nil {
-		log.Errorf("could not get plugin from store: %s", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "could not get plugin from store: " + err.Error()})
-		return
-	}
-
-	purchaseDurationDays := util.PurchaseDurationToDays(reqBody.PurchaseDuration)
-
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")
@@ -49,63 +41,130 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	}
 
 	user := tmp.(*model.User)
-	if user.Tokens < int64(price) {
-		err := fmt.Sprintf("user does not have enough tokens to purchase: %s, has tokens: %d, needs tokens: %d", reqBody.PluginName, user.Tokens, price)
+
+	tx := w.Database.Begin()
+	if tx.Error != nil {
+		log.Errorf("failed to begin transaction: %s", tx.Error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin db transaction"})
+		return
+	}
+
+	purchaseCtx := NewPurchaseContext(user, tx, w)
+	plugin, status, err := purchaseCtx.PurchasePlugin(&reqBody)
+
+	if err != nil {
+		tx.Rollback()
+		c.JSON(status, gin.H{"error": "Something went wrong purchasing: " + reqBody.PluginName, "message": err.Error()})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		log.Errorf("failed to commit transaction: %s", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to complete purchase", "message": err.Error()})
+		return
+	}
+
+	log.Infof("plugin: %s purchase for user: %s was successful", plugin.Name, user.DiscordUsername)
+
+	c.JSON(http.StatusOK, gin.H{
+		"licenseKey":          plugin.LicenseKey,
+		"pluginName":          plugin.Name,
+		"expirationTimestamp": plugin.ExpirationTimestamp.Format(time.RFC3339),
+	})
+}
+
+// PurchaseContext holds the state for a plugin purchase operation
+type PurchaseContext struct {
+	User    *model.User
+	DB      *gorm.DB
+	Wrapper *service.Wrapper
+}
+
+// NewPurchaseContext creates a new purchase context
+func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper) *PurchaseContext {
+	return &PurchaseContext{
+		User:    user,
+		DB:      tx,
+		Wrapper: w,
+	}
+}
+
+// PurchasePlugin purchases a single plugin
+func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequest) (*model.Plugin, int, error) {
+	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration))
+	if err != nil {
+		log.Errorf("could not get plugin from store: %s", err)
+		return nil, http.StatusBadRequest, err
+	}
+
+	purchaseDurationDays := util.PurchaseDurationToDays(purchaseReq.PurchaseDuration)
+
+	if ctx.User.Tokens < int64(price) {
+		err := fmt.Sprintf("user does not have enough tokens to purchase: %s, has tokens: %d, needs tokens: %d",
+			purchaseReq.PluginName, ctx.User.Tokens, price)
 		log.Error(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Not enough tokens", "message": err})
-		return
+		return nil, http.StatusBadRequest, errors.New(err)
 	}
 
-	if user.InFreeTrialPeriod() {
-		log.Errorf("user: %s cannot purchase plugins during their free trial period: ", user.DiscordUsername)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Free Trial Plugin Purchase", "message": "You cannot purchase plugins in your free trial period. You already have access to all plugins."})
-		return
+	if ctx.User.InFreeTrialPeriod() {
+		msg := fmt.Sprintf("user: %s cannot purchase plugins during their free trial period", ctx.User.DiscordUsername)
+		log.Errorf(msg)
+		return nil, http.StatusBadRequest, errors.New(msg)
 	}
 
-	user.Tokens -= int64(price)
-
-	// Validate plugin name. Request body will send something like:
-	// "Alchemical-Hydra". We check s3 for a file that starts with the prefix: "Alchemical-Hydra"
-	// if found we return the full name without .jar i.e "Alchemical-Hydra-1.0.0-all". This way, plugin developers
-	// are free to update versions without impacting how plugins are purchased.
-	exists, _, err = w.S3Service.GetLatestVersion(fmt.Sprintf("plugins/%s", reqBody.PluginName))
+	// Validate plugin name
+	exists, _, err := ctx.Wrapper.S3Service.GetLatestVersion(fmt.Sprintf("plugins/%s", purchaseReq.PluginName))
 	if err != nil || !exists {
-		log.Errorf("error: failed to list plugin objects in s3 bucket or plugin does not exist: object exists: %v, error: %s,", exists, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to list plugins or plugin does not exist"})
-		return
+		msg := fmt.Sprintf("failed to list plugin objects in s3 bucket or plugin does not exist: object exists: %v, error: %s",
+			exists, err)
+		log.Errorf(msg)
+		return nil, http.StatusBadRequest, errors.New(msg)
 	}
 
-	for i, ownedPlugin := range user.Plugins {
-		if strings.ToLower(user.Plugins[i].Name) == strings.ToLower(reqBody.PluginName) {
-			log.Infof("plugin already exists: %s and expires: %s, is expired: %v", user.Plugins[i].Name, user.Plugins[i].ExpirationTimestamp.Format(time.RFC3339), util.IsPluginExpired(user.Plugins[i].ExpirationTimestamp))
-			if !util.IsPluginExpired(user.Plugins[i].ExpirationTimestamp) {
-				log.Infof("user: %s attempted to purchase plugin: %s, but plugin is already owned and not expired: ", user.DiscordUsername, reqBody.PluginName)
-				c.JSON(http.StatusBadRequest, gin.H{"error": "user already owns plugin (not expired): " + reqBody.PluginName})
-				return
+	// Reduce user tokens
+	ctx.User.Tokens -= int64(price)
+
+	// Save user tokens to DB within the transaction
+	if err := ctx.DB.Save(ctx.User).Error; err != nil {
+		log.Errorf("failed to save user tokens to db: %s", err)
+		return nil, http.StatusInternalServerError, errors.New("failed to save user tokens to db")
+	}
+
+	// Check if user already owns this plugin
+	for i, ownedPlugin := range ctx.User.Plugins {
+		if strings.ToLower(ctx.User.Plugins[i].Name) == strings.ToLower(purchaseReq.PluginName) {
+			log.Infof("plugin already exists: %s and expires: %s, is expired: %v",
+				ctx.User.Plugins[i].Name,
+				ctx.User.Plugins[i].ExpirationTimestamp.Format(time.RFC3339),
+				util.IsPluginExpired(ctx.User.Plugins[i].ExpirationTimestamp))
+
+			if !util.IsPluginExpired(ctx.User.Plugins[i].ExpirationTimestamp) {
+				msg := fmt.Sprintf("user: %s attempted to purchase plugin: %s, but plugin is already owned and not expired",
+					ctx.User.DiscordUsername, purchaseReq.PluginName)
+				log.Errorf(msg)
+				return nil, http.StatusBadRequest, errors.New("user already owns plugin (not expired):" + purchaseReq.PluginName)
 			} else {
 				// User is renewing the plugin
-				user.Plugins[i].ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
-				user.Plugins[i].UpdatedAt = time.Now()
+				ctx.User.Plugins[i].ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
+				ctx.User.Plugins[i].UpdatedAt = time.Now()
 				licenseKey, err := util.GenerateLicenseKey()
 				if err != nil {
-					log.Errorf("error: failed to generate license key: %v", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate license key: " + err.Error()})
-					return
+					log.Errorf("failed to generate license key: %v", err)
+					return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to generate a license key"), err)
 				}
-				user.Plugins[i].LicenseKey = licenseKey
-				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license: %s", user.DiscordUsername, reqBody.PluginName, user.Plugins[i].ExpirationTimestamp, user.Plugins[i].LicenseKey)
-				tx := w.Database.Save(&user.Plugins[i])
-				if tx.Error != nil {
-					log.Errorf("error: failed to save plugin to db: %v", tx.Error)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to renew plugin: " + reqBody.PluginName})
-					return
+				ctx.User.Plugins[i].LicenseKey = licenseKey
+				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license: %s",
+					ctx.User.DiscordUsername,
+					purchaseReq.PluginName,
+					ctx.User.Plugins[i].ExpirationTimestamp,
+					ctx.User.Plugins[i].LicenseKey)
+
+				if err := ctx.DB.Save(&ctx.User.Plugins[i]).Error; err != nil {
+					log.Errorf("failed to save plugin to db: %v", err)
+					return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to save plugin to db"), err)
 				}
-				c.JSON(http.StatusOK, gin.H{
-					"licenseKey":          licenseKey,
-					"pluginName":          reqBody.PluginName,
-					"expirationTimestamp": ownedPlugin.ExpirationTimestamp.Format(time.RFC3339),
-				})
-				return
+
+				return &ownedPlugin, http.StatusOK, nil
 			}
 		}
 	}
@@ -113,46 +172,31 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	// User's first time purchasing the plugin
 	licenseKey, err := util.GenerateLicenseKey()
 	if err != nil {
-		log.Errorf("error: failed to generate license key: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate license key: " + err.Error()})
-		return
+		log.Errorf("failed to generate license key: %v", err)
+		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to generate a license key"), err)
 	}
 
 	expirationTime := time.Now().AddDate(0, 0, purchaseDurationDays)
-	log.Infof("plugin has been purchased for: %d days and will expire at: %s", purchaseDurationDays, expirationTime.Format(time.RFC3339))
+	log.Infof("plugin has been purchased for: %d days and will expire at: %s",
+		purchaseDurationDays, expirationTime.Format(time.RFC3339))
 
 	plugin := model.Plugin{
-		UserID:              user.ID,
-		Name:                reqBody.PluginName,
+		UserID:              ctx.User.ID,
+		Name:                purchaseReq.PluginName,
 		ExpirationTimestamp: expirationTime,
-		S3JarFilePath:       fmt.Sprintf("s3://kraken-plugins/plugins/%s", reqBody.PluginName),
+		S3JarFilePath:       fmt.Sprintf("s3://kraken-plugins/plugins/%s", purchaseReq.PluginName),
 		LicenseKey:          licenseKey,
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
 		DeletedAt:           gorm.DeletedAt{},
 		TrialPlugin:         false,
-		User:                *user,
+		User:                *ctx.User,
 	}
 
-	tx := w.Database.Save(&user)
-	if tx.Error != nil {
-		log.Errorf("error: failed to save user tokens to db: %s", tx.Error.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save user tokens to db: " + reqBody.PluginName})
-		return
+	if err := ctx.DB.Create(&plugin).Error; err != nil {
+		log.Errorf("error: failed to save plugin to db: %s", err)
+		return nil, http.StatusInternalServerError, errors.New("failed to save plugin to db")
 	}
 
-	tx = w.Database.Create(&plugin)
-	if tx.Error != nil {
-		log.Errorf("error: failed to save plugin to db: %s", tx.Error.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save plugin to db: " + reqBody.PluginName})
-		return
-	}
-
-	log.Infof("plugin: %s purchase for user: %s was successful", plugin.Name, user.DiscordUsername)
-
-	c.JSON(http.StatusOK, gin.H{
-		"licenseKey":          licenseKey,
-		"pluginName":          reqBody.PluginName,
-		"expirationTimestamp": plugin.ExpirationTimestamp.Format(time.RFC3339),
-	})
+	return &plugin, http.StatusOK, nil
 }

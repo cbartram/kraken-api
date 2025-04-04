@@ -93,6 +93,11 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, w)
 	})
 
+	pluginGroup.POST("/purchase-pack", AuthMiddleware(w), func(c *gin.Context) {
+		h := plugin.PurchasePluginPackHandler{}
+		h.HandleRequest(c, w)
+	})
+
 	pluginGroup.POST("/validate", AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.ValidatePluginHandler{}
 		h.HandleRequest(c, ctx, w)

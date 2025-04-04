@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Raids-Pack",
+    "title": "Raids Pack",
+    "description": "Plugins to assist with prayers, bosses, and puzzles for all 3 OSRS Raids!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/raids_pack.png",
+    "discount": 0,
+    "active": true,
+    "plugins": [],
+    "priceDetails": {
+      "month":  1200,
+      "threeMonth":  2500,
+      "year":  12000
+    }
+  },
+  {
+    "name": "Slayer-Pack",
+    "title": "Slayer Pack",
+    "description": "Plugins to assist with Slayer bosses!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/slayer.png",
+    "discount": 0,
+    "active": true,
+    "plugins": [],
+    "priceDetails": {
+      "month": 300,
+      "threeMonth": 700,
+      "year": 1500
+    }
+  }
+]
