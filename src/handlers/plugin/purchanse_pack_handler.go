@@ -2,12 +2,14 @@ package plugin
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -53,6 +55,7 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 	purchaseCtx := NewPurchaseContext(user, tx, w)
 	results := make([]gin.H, 0, len(plugins))
 	hasErrors := false
+	var errorMessages []string
 
 	for _, plugin := range plugins {
 		p, status, err := purchaseCtx.PurchasePlugin(&model.PurchasePluginRequest{
@@ -67,6 +70,8 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 
 		if err != nil {
 			hasErrors = true
+			errorMsg := fmt.Sprintf("%s - %s", plugin.Name, err.Error())
+			errorMessages = append(errorMessages, errorMsg)
 			result["error"] = err.Error()
 			result["status"] = status
 		} else {
@@ -82,7 +87,7 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 		log.Errorf("batch purchase failed, transaction rolled back")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "One or more plugin purchases failed",
-			"message": "One or more plugin purchases failed for your plugin pack. You were not charged and no plugins were purchased. Feel free to try again.",
+			"message": "Here's what we know: " + strings.Join(errorMessages, ", "),
 			"results": results,
 		})
 		return
