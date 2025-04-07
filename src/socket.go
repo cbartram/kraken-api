@@ -3,8 +3,7 @@ package src
 import (
 	"bufio"
 	"crypto/aes"
-	"crypto/cipher"
-	"crypto/sha256"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -15,9 +14,8 @@ import (
 	"time"
 )
 
-// Constants that match the Java client
 const (
-	PasswordSalt = "kr4k3n" // Must match PASSWORD_SALT in the Java client
+	PasswordSalt = "9#jx[VHk_<44nK$%0PbOTCcJA6Jy(o"
 )
 
 // Packet headers that match the Java client's SocketPacket constants
@@ -46,13 +44,11 @@ type Room struct {
 	mutex   sync.RWMutex
 }
 
-// Server manages all rooms and connections
 type SocketServer struct {
 	rooms map[string]*Room
 	mutex sync.RWMutex
 }
 
-// Create a new Socketserver
 func NewSocketServer() *SocketServer {
 	return &SocketServer{
 		rooms: make(map[string]*Room),
@@ -107,76 +103,106 @@ func (r *Room) getAllClients() []*Client {
 
 // Hash implements SHA256 encryption
 func Hash(text string) string {
-	hasher := sha256.New()
+	hasher := sha1.New()
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-// Functions for AES-256 encryption and decryption
-func createCipher(key string) (cipher.Block, error) {
-	// Generate a 32-byte key from the password using SHA-256
-	hasher := sha256.New()
-	hasher.Write([]byte(key))
-	return aes.NewCipher(hasher.Sum(nil))
+// PKCS5Padding adds padding to the data
+func PKCS5Padding(data []byte, blockSize int) []byte {
+	padding := blockSize - len(data)%blockSize
+	padtext := make([]byte, padding)
+	for i := range padtext {
+		padtext[i] = byte(padding)
+	}
+	return append(data, padtext...)
 }
 
-func EncryptAES(key, plaintext string) string {
-	block, err := createCipher(key)
+// PKCS5Unpadding removes padding from the data
+func PKCS5Unpadding(data []byte) []byte {
+	length := len(data)
+	if length == 0 {
+		return data
+	}
+
+	padding := int(data[length-1])
+	if padding > length {
+		return data // Invalid padding, return original data
+	}
+	return data[:length-padding]
+}
+
+// GenerateAESKey generates a 16-byte key using SHA1
+func GenerateAESKey(secret string) []byte {
+	// Generate key using SHA1 as in Java implementation
+	hasher := sha1.New()
+	hasher.Write([]byte(secret))
+	key := hasher.Sum(nil)
+
+	// Truncate to 16 bytes (128 bits for AES)
+	return key[:16]
+}
+
+// EncryptAES encrypts plaintext using AES/ECB/PKCS5Padding
+func EncryptAES(secret, plaintext string) string {
+	// Generate key
+	key := GenerateAESKey(secret)
+
+	// Create cipher
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		log.Println("Encryption error:", err)
 		return ""
 	}
 
-	// Create IV (we'll use first 16 bytes of the hashed key as IV)
-	hasher := sha256.New()
-	hasher.Write([]byte(key))
-	iv := hasher.Sum(nil)[:16]
+	// Add padding
+	data := PKCS5Padding([]byte(plaintext), block.BlockSize())
 
-	// Pad plaintext to be a multiple of block size
-	padding := aes.BlockSize - (len(plaintext) % aes.BlockSize)
-	padtext := plaintext + strings.Repeat(string(byte(padding)), padding)
+	// ECB mode encryption
+	encrypted := make([]byte, len(data))
+	size := block.BlockSize()
 
-	// Encrypt
-	ciphertext := make([]byte, len(padtext))
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(ciphertext, []byte(padtext))
+	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
+		block.Encrypt(encrypted[bs:be], data[bs:be])
+	}
 
 	// Convert to base64
-	return base64.StdEncoding.EncodeToString(ciphertext)
+	return base64.StdEncoding.EncodeToString(encrypted)
 }
 
-func DecryptAES(key, ciphertext string) string {
+// DecryptAES decrypts ciphertext using AES/ECB/PKCS5Padding
+func DecryptAES(secret, ciphertext string) string {
 	// Decode base64
 	data, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
-		log.Println("Decryption error:", err)
+		log.Println("Decryption base64 error:", err)
 		return ""
 	}
 
-	block, err := createCipher(key)
+	// Generate key
+	key := GenerateAESKey(secret)
+
+	// Create cipher
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		log.Println("Decryption error:", err)
+		log.Println("Decryption cipher error:", err)
 		return ""
 	}
 
-	// Create IV (same as in encrypt)
-	hasher := sha256.New()
-	hasher.Write([]byte(key))
-	iv := hasher.Sum(nil)[:16]
+	// ECB mode decryption
+	decrypted := make([]byte, len(data))
+	size := block.BlockSize()
 
-	// Decrypt
-	mode := cipher.NewCBCDecrypter(block, iv)
-	mode.CryptBlocks(data, data)
+	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
+		block.Decrypt(decrypted[bs:be], data[bs:be])
+	}
 
-	// Unpad
-	padding := int(data[len(data)-1])
-	return string(data[:len(data)-padding])
+	// Remove padding
+	return string(PKCS5Unpadding(decrypted))
 }
 
 // Handle a client connection
 func handleClient(conn net.Conn, server *SocketServer) {
-	defer conn.Close()
-
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
 
@@ -219,6 +245,7 @@ func handleClient(conn net.Conn, server *SocketServer) {
 		log.Errorf("missing player name")
 		return
 	}
+	log.Infof("JOIN packet header: %s, room: %s, name: %s", header, roomID, encryptedName)
 
 	// Get the room
 	room := server.getRoom(roomID)
@@ -228,16 +255,15 @@ func handleClient(conn net.Conn, server *SocketServer) {
 	client.encryptedName = encryptedName
 
 	// Decrypt the player name for server-side logging
-	password := strings.Replace(roomID, Hash(PasswordSalt), "", 1)
-	key := password + PasswordSalt
-	client.name = DecryptAES(key, encryptedName)
+	// TODO The room id is SHA256 encrypted but we can't decrypt it correctly? so then we cant decrypt player names correctly
+	// etc... gotta figure out how this works.
+
+	//password := strings.Replace(roomID, Hash(PasswordSalt), "", 1)
+	//key := password + PasswordSalt
+	client.name = DecryptAES(roomID, encryptedName)
 
 	log.Infof("player %s joined room %s", client.name, roomID)
-
-	// Add the client to the room
 	room.addClient(client)
-
-	// Notify all clients that this client joined
 	notifyJoin(room, client)
 
 	// Process messages from the client
@@ -273,9 +299,16 @@ func notifyJoin(room *Room, joiningClient *Client) {
 
 	jsonString := string(jsonData) + "\n"
 
+	log.Infof("notifying client join to all parties")
 	for _, client := range clients {
-		client.writer.WriteString(jsonString)
-		client.writer.Flush()
+		_, err := client.writer.WriteString(jsonString)
+		if err != nil {
+			log.Errorf("error writing join packet for client: %s, %v", client.name, err)
+		}
+		err = client.writer.Flush()
+		if err != nil {
+			log.Errorf("error flushing join packet for client: %s, %v", client.name, err)
+		}
 	}
 }
 
@@ -303,15 +336,21 @@ func notifyLeave(room *Room, leavingClient *Client) {
 	// Convert to JSON and send to all clients
 	jsonData, err := json.Marshal(leavePacket)
 	if err != nil {
-		log.Println("Error creating leave packet:", err)
+		log.Errorf("error creating leave packet: %v", err)
 		return
 	}
 
 	jsonString := string(jsonData) + "\n"
 
 	for _, client := range clients {
-		client.writer.WriteString(jsonString)
-		client.writer.Flush()
+		_, err := client.writer.WriteString(jsonString)
+		if err != nil {
+			log.Errorf("error writing join packet for client: %s, %v", client.name, err)
+		}
+		err = client.writer.Flush()
+		if err != nil {
+			log.Errorf("error flushing join packet for client: %s, %v", client.name, err)
+		}
 	}
 }
 
@@ -323,7 +362,10 @@ func processClientMessages(client *Client, room *Room) {
 		reader := client.reader
 
 		// Set a read deadline for detecting disconnects
-		conn.SetReadDeadline(time.Now().Add(35 * time.Second))
+		err := conn.SetReadDeadline(time.Now().Add(35 * time.Second))
+		if err != nil {
+			log.Errorf("failed to set read deadline: %v", err)
+		}
 
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -360,8 +402,14 @@ func processClientMessages(client *Client, room *Room) {
 			// Forward the packet to all clients in the room
 			clients := room.getAllClients()
 			for _, c := range clients {
-				c.writer.WriteString(line)
-				c.writer.Flush()
+				_, err := c.writer.WriteString(line)
+				if err != nil {
+					log.Errorf("error writing join packet for client: %s, %v", c.name, err)
+				}
+				err = c.writer.Flush()
+				if err != nil {
+					log.Errorf("error flushing join packet for client: %s, %v", c.name, err)
+				}
 			}
 
 		default:
@@ -391,21 +439,19 @@ func monitorConnection(client *Client, room *Room, server *SocketServer) {
 func RegisterNewSocketServer() {
 	server := NewSocketServer()
 
-	listener, err := net.Listen("tcp", ":26388")
+	listener, err := net.Listen("tcp", "localhost:26388")
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 
 	log.Infof("Socket server started on :26388")
-	go func() {
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				log.Errorf("failed to accept connections to socket server: %v", err)
-				continue
-			}
-
-			go handleClient(conn, server)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Errorf("failed to accept connections to socket server: %v", err)
+			continue
 		}
-	}()
+
+		go handleClient(conn, server)
+	}
 }
