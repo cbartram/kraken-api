@@ -8,11 +8,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
-	"gorm.io/gorm"
 	"io"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
-	"kraken-api/src/util"
 	"net/http"
 	"time"
 )
@@ -103,24 +101,6 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			FreeTrialEndTime:   time.Now(),
 		}
 
-		license, err := util.GenerateLicenseKey()
-		if err != nil {
-			log.Errorf("error generating license key: %s", err)
-		}
-
-		socketPlugin := model.Plugin{
-			UserID:              newUser.ID,
-			Name:                "Socket",
-			ExpirationTimestamp: time.Now().AddDate(110, 0, 0),
-			S3JarFilePath:       "s3://kraken-plugins/plugins/Socket",
-			LicenseKey:          license,
-			TrialPlugin:         false,
-			CreatedAt:           time.Now(),
-			UpdatedAt:           time.Now(),
-			DeletedAt:           gorm.DeletedAt{},
-			User:                newUser,
-		}
-
 		createUser := w.Database.Create(&newUser)
 		if createUser.Error != nil {
 			log.Errorf("error while creating new user: %v", tx.Error)
@@ -131,15 +111,6 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			return
 		}
 
-		createSocket := w.Database.Create(&socketPlugin)
-		if createSocket.Error != nil {
-			log.Errorf("error while creating new user socket plugin: %v", tx.Error)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "error while creating new user socket plugin: " + tx.Error.Error(),
-			})
-			tx.Rollback()
-			return
-		}
 		tx.Commit()
 		c.JSON(http.StatusOK, newUser)
 	} else {

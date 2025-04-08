@@ -95,7 +95,7 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 		}
 
 		version, err := util.ParseVersion(key)
-		logrus.Infof("version: %v for object key: %s", version, key)
+		logrus.Debugf("version: %v for object key: %s", version, key)
 		if err != nil {
 			// Skip objects with invalid version format
 			logrus.Infof("unable to parse version for object: %s", key)
@@ -114,7 +114,7 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 
 	// Return the object's key trimmed of its .jar extension
 	name := strings.TrimSuffix(latestKey, ".jar")
-	logrus.Infof("latest version: %s for plugin: %s", name, prefix)
+	logrus.Debugf("latest version: %s for plugin: %s", name, prefix)
 	return true, name, nil
 }
 

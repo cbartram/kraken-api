@@ -1,13 +1,11 @@
 package plugin
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"kraken-api/src/model"
-	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"strings"
@@ -23,7 +21,7 @@ type ValidatePluginRequest struct {
 
 // HandleRequest Validates that the plugin license keys's derived from the licenseKey field on a plugin's configuration
 // match what was generated when the plugin was purchased.
-func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
+func (v *ValidatePluginHandler) HandleRequest(c *gin.Context) {
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -52,6 +50,16 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, ctx context.Contex
 	}
 
 	validPlugins := make(map[string]string)
+
+	// Special case: Socket comes pre-packaged with socket-sotetseg plugin and requires no license key to validate. If
+	// Socket is included in the request automatically validate it. TODO This may have potential for abuse if people
+	// find a way to name another Plugin like ToB -> "Socket"
+	_, ok := reqBody.Plugins["Socket"]
+	if ok {
+		log.Infof("validation request contains: Socket plugin, auto validating")
+		validPlugins["Socket"] = time.Now().AddDate(15, 0, 0).Format(time.RFC3339)
+	}
+
 	for _, plugin := range user.Plugins {
 		log.Infof("validating plugin: %s", plugin.Name)
 

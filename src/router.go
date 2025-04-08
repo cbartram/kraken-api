@@ -105,7 +105,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 
 	pluginGroup.POST("/validate", AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.ValidatePluginHandler{}
-		h.HandleRequest(c, ctx, w)
+		h.HandleRequest(c)
 	})
 
 	userGroup.POST("/create", func(c *gin.Context) {
