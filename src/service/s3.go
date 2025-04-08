@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/sirupsen/logrus"
 	"kraken-api/src/util"
 	"log"
 	"strings"
@@ -56,21 +57,54 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 		return false, "", nil
 	}
 
+	// Extract the plugin name from the prefix (assume format is "plugins/PluginName")
+	pluginName := prefix
+	if parts := strings.Split(prefix, "/"); len(parts) > 1 {
+		pluginName = parts[len(parts)-1]
+	}
+
 	// Find object with latest version
 	var latestVersion *util.Version
 	var latestKey string
 
 	for _, obj := range result.Contents {
-		version, err := util.ParseVersion(*obj.Key)
+		key := *obj.Key
+		// Skip this object if it doesn't match the exact plugin pattern
+		// Check if the key is in the format: prefix-version.jar or prefix-version
+		baseName := strings.TrimSuffix(key, ".jar")
+
+		// Split by dash to check the plugin name
+		parts := strings.Split(baseName, "-")
+		if len(parts) < 2 {
+			logrus.Infof("skipping object with invalid format: %s", key)
+			continue
+		}
+
+		// Get the object's plugin name part (everything before the versions)
+		// Handle case where prefix is "plugins/PluginName"
+		objPluginPath := strings.Join(parts[:len(parts)-1], "-")
+		objPluginName := objPluginPath
+		if pathParts := strings.Split(objPluginPath, "/"); len(pathParts) > 1 {
+			objPluginName = pathParts[len(pathParts)-1]
+		}
+
+		// Only consider objects that match the exact plugin name
+		if objPluginName != pluginName {
+			logrus.Infof("skipping object with different plugin name: %s (looking for: %s)", objPluginName, pluginName)
+			continue
+		}
+
+		version, err := util.ParseVersion(key)
+		logrus.Infof("version: %v for object key: %s", version, key)
 		if err != nil {
 			// Skip objects with invalid version format
-			log.Printf("unable to parse version for object: %s", *obj.Key)
+			logrus.Infof("unable to parse version for object: %s", key)
 			continue
 		}
 
 		if latestVersion == nil || version.IsGreaterThan(*latestVersion) {
 			latestVersion = version
-			latestKey = *obj.Key
+			latestKey = key
 		}
 	}
 
@@ -80,6 +114,7 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 
 	// Return the object's key trimmed of its .jar extension
 	name := strings.TrimSuffix(latestKey, ".jar")
+	logrus.Infof("latest version: %s for plugin: %s", name, prefix)
 	return true, name, nil
 }
 
