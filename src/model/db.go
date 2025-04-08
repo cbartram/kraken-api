@@ -15,12 +15,15 @@ func Connect() *gorm.DB {
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:               fmt.Sprintf("%s:%s@tcp(%s:3306)/kraken?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("MYSQL_USER"), os.Getenv("MYSQL_PASSWORD"), os.Getenv("MYSQL_HOST")),
 		DefaultStringSize: 256,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
+	log.Infof("migrating database")
 	err = db.AutoMigrate(
 		&User{},
 		&CognitoCredentials{},
@@ -28,7 +31,8 @@ func Connect() *gorm.DB {
 		&HardwareID{},
 		&PluginMetadata{},
 		&PluginConfig{},
-		&PriceDetails{},
+		&PluginPackPriceDetails{},
+		&PluginMetadataPriceDetails{},
 		&PluginPack{},
 		&PluginPackItem{},
 		&UserPluginPack{},
@@ -37,7 +41,6 @@ func Connect() *gorm.DB {
 	if err != nil {
 		log.Fatalf("failed to run database migrations: %v", err)
 	}
-
 	return db
 }
 
@@ -95,8 +98,8 @@ type PluginPack struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 
 	// Relations
-	Items        []PluginPackItem `gorm:"foreignKey:PackID" json:"items"`
-	PriceDetails PriceDetails     `gorm:"foreignKey:PluginPackID" json:"priceDetails"`
+	Items        []PluginPackItem       `gorm:"foreignKey:PackID" json:"items"`
+	PriceDetails PluginPackPriceDetails `gorm:"foreignKey:PluginPackID" json:"priceDetails"`
 }
 
 // PluginPackItem represents a plugin that belongs to a pack
@@ -128,13 +131,35 @@ type UserPluginPack struct {
 	PluginPack PluginPack `gorm:"foreignKey:PluginPackID" json:"pluginPack"`
 }
 
-type PriceDetails struct {
-	ID               uint `gorm:"primaryKey" json:"id"`
-	Month            int  `json:"month"`
-	ThreeMonth       int  `json:"threeMonth"`
-	Year             int  `json:"year"`
-	PluginMetadataID uint `json:"pluginMetadataId,omitempty"`
-	PluginPackID     uint `json:"pluginPackId,omitempty"`
+type PluginMetadataPriceDetails struct {
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	Month            int            `json:"month"`
+	ThreeMonth       int            `json:"threeMonth"`
+	Year             int            `json:"year"`
+	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index;not null" json:"pluginMetadataId"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}
+
+func (p PluginMetadataPriceDetails) TableName() string {
+	return "plugin_metadata_price_details"
+}
+
+// PluginPackPriceDetails specifically for pack pricing
+type PluginPackPriceDetails struct {
+	ID           uint           `gorm:"primaryKey" json:"id"`
+	Month        int            `json:"month"`
+	ThreeMonth   int            `json:"threeMonth"`
+	Year         int            `json:"year"`
+	PluginPackID uint           `gorm:"column:plugin_pack_id;index;not null" json:"pluginPackId"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+}
+
+func (p PluginPackPriceDetails) TableName() string {
+	return "plugin_pack_price_details"
 }
 
 func (u User) InFreeTrialPeriod() bool {
@@ -192,16 +217,16 @@ func (Plugin) TableName() string {
 }
 
 type PluginMetadata struct {
-	ID                   uint           `gorm:"primaryKey" json:"id"`
-	Name                 string         `gorm:"uniqueIndex" json:"name"`
-	Title                string         `json:"title"`
-	Description          string         `json:"description"`
-	ImageUrl             string         `json:"imageUrl"`
-	VideoUrl             string         `json:"videoUrl"`
-	TopPick              bool           `json:"topPick"`
-	ConfigurationOptions []PluginConfig `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"` // One-to-many relationship
-	PriceDetails         PriceDetails   `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`         // One-to-one relationship
-	Tier                 int            `json:"tier"`
+	ID                   uint                       `gorm:"primaryKey" json:"id"`
+	Name                 string                     `gorm:"uniqueIndex" json:"name"`
+	Title                string                     `json:"title"`
+	Description          string                     `json:"description"`
+	ImageUrl             string                     `json:"imageUrl"`
+	VideoUrl             string                     `json:"videoUrl"`
+	TopPick              bool                       `json:"topPick"`
+	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"` // One-to-many relationship
+	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`         // One-to-one relationship
+	Tier                 int                        `json:"tier"`
 }
 
 type PluginConfig struct {
@@ -237,8 +262,13 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 
 		// Check if the plugin already exists by Name (which should be unique)
 		var existingPlugin PluginMetadata
+		log.Debugf("finding plugin: %s", plugin.Name)
 		result := tx.Where("name = ?", plugin.Name).First(&existingPlugin)
 
+		if result.Error == nil {
+			log.Debugf("plugin already exists: %s", plugin.Name)
+			continue
+		}
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// Plugin doesn't exist, create it
 			priceDetails := plugin.PriceDetails
@@ -274,7 +304,7 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 			}
 		} else {
 			tx.Rollback()
-			return fmt.Errorf("error checking for existing plugin: %w", result.Error)
+			return fmt.Errorf("error checking for existing plugin: %v", result.Error)
 		}
 	}
 
@@ -294,14 +324,14 @@ func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB) error {
 
 	// Define a struct to match the JSON structure
 	type PluginPackInput struct {
-		Name         string       `json:"name"`
-		Title        string       `json:"title"`
-		Description  string       `json:"description"`
-		ImageUrl     string       `json:"imageUrl"`
-		Discount     float32      `json:"discount"`
-		Active       bool         `json:"active"`
-		Plugins      []string     `json:"plugins"`
-		PriceDetails PriceDetails `json:"priceDetails"`
+		Name         string                 `json:"name"`
+		Title        string                 `json:"title"`
+		Description  string                 `json:"description"`
+		ImageUrl     string                 `json:"imageUrl"`
+		Discount     float32                `json:"discount"`
+		Active       bool                   `json:"active"`
+		Plugins      []string               `json:"plugins"`
+		PriceDetails PluginPackPriceDetails `json:"priceDetails"`
 	}
 
 	// Unmarshal the JSON data
@@ -321,6 +351,11 @@ func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB) error {
 		var existingPack PluginPack
 		result := tx.Where("name = ?", packInput.Name).First(&existingPack)
 
+		if result.Error == nil {
+			log.Debugf("pack already exists: %s", packInput.Name)
+			continue
+		}
+
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// Create new pack
 			pack := PluginPack{
@@ -339,12 +374,11 @@ func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB) error {
 			}
 
 			// Create the price details - explicitly set PluginMetadataID to zero/NULL
-			priceDetails := PriceDetails{
-				Month:            packInput.PriceDetails.Month,
-				ThreeMonth:       packInput.PriceDetails.ThreeMonth,
-				Year:             packInput.PriceDetails.Year,
-				PluginPackID:     pack.ID,
-				PluginMetadataID: 0, // Explicitly set to zero so GORM will treat it as NULL
+			priceDetails := PluginPackPriceDetails{
+				Month:        packInput.PriceDetails.Month,
+				ThreeMonth:   packInput.PriceDetails.ThreeMonth,
+				Year:         packInput.PriceDetails.Year,
+				PluginPackID: pack.ID,
 			}
 
 			// Use SQL that doesn't include PluginMetadataID in the INSERT statement
@@ -389,7 +423,7 @@ func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB) error {
 			}
 
 			// Update price details - make sure we're not updating the PluginMetadataID
-			if err := tx.Model(&PriceDetails{}).
+			if err := tx.Model(&PluginPackPriceDetails{}).
 				Where("plugin_pack_id = ?", existingPack.ID).
 				Updates(map[string]interface{}{
 					"month":       packInput.PriceDetails.Month,
