@@ -4821,5 +4821,214 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Socket-Sotetseg",
+    "title": "Socket Sotetseg",
+    "description": "Extended plugin handler for Sotetseg in the Theatre of Blood.",
+    "imageUrl": "https://kraken-plugins.duckdns.org/sotetseg.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tile Color",
+        "section": "",
+        "description": "The color of the tiles.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tile Transparency",
+        "section": "",
+        "description": "The color transparency of the tiles. Ranges from 0 to 255, inclusive.",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tile Outline Color",
+        "section": "",
+        "description": "The color of the outline of the tiles.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Tile Outline Size",
+        "section": "",
+        "description": "The size of the outline of the tiles.",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Flash Screen on Chosen",
+        "section": "",
+        "description": "Flash your screen when you\u0027re chosen to run the maze",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Hide Screen Flash",
+        "section": "",
+        "description": "Remove the white flash when you\u0027re teleported at the start of the maze phase",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Solve the Maze",
+        "section": "",
+        "description": "Adds an overlay for the best way to run Soteseg maze",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Add Numbers",
+        "section": "",
+        "description": "Adds number overlay to tiles you need to click",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Add Outline",
+        "section": "",
+        "description": "Adds tile highlight to tiles you need to click",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Tile Outline Color",
+        "section": "",
+        "description": "The color of the outline of the highlighted tiles",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Show Between Maze Splits",
+        "section": "",
+        "description": "Shows time between mazes",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show Maze Splits",
+        "section": "",
+        "description": "Shows maze splits",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show Detailed Splits",
+        "section": "",
+        "description": "Adds extra information to splits",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Time Splits Message Color",
+        "section": "",
+        "description": "Color of splits in chat box",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Sotetseg Instance Timer",
+        "section": "",
+        "description": "Show when Soteseg can be attacked after the maze",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Instance Timer On Player",
+        "section": "",
+        "description": "Show when Soteseg can be attacked after the maze",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Add Chosen Text",
+        "section": "",
+        "description": "Adds the text from the config below onto the screen when you\u0027ve been chosen to run the maze",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Custom Chosen Text",
+        "section": "",
+        "description": "Adds the text from this config onto the screen when you\u0027ve been chosen to run the maze",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Chosen Text Duration",
+        "section": "",
+        "description": "How long the chosen text should stay on the screen",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
 ]

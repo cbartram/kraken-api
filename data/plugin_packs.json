@@ -6,10 +6,10 @@
     "imageUrl": "https://kraken-plugins.duckdns.org/raids_pack.png",
     "discount": 0,
     "active": true,
-    "plugins": ["Cox-Helper", "Theatre-of-Blood", "ToA-Extended"],
+    "plugins": ["Cox-Helper", "Theatre-of-Blood", "ToA-Extended", "Socket-Sotetseg"],
     "priceDetails": {
-      "month":  1200,
-      "threeMonth":  2500,
+      "month":  1300,
+      "threeMonth":  2600,
       "year":  12000
     }
   },
