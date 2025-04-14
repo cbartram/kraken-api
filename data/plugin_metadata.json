@@ -4825,7 +4825,7 @@
   {
     "name": "Socket-Sotetseg",
     "title": "Socket Sotetseg",
-    "description": "Extended plugin handler for Sotetseg in the Theatre of Blood.",
+    "description": "Extended plugin handler for Sotetseg in the Theatre of Blood. This plugin comes pre-packaged with the \"Socket\" plugin as it's required for Maze solving functionality. Create a unique passphrase and share it with your friends in the Socket plugin, then when you enter the Sotetseg maze it will show the solution to anyone in the party!",
     "imageUrl": "https://kraken-plugins.duckdns.org/sotetseg.png",
     "videoUrl": "",
     "topPick": false,
@@ -5022,6 +5022,86 @@
         "type": "int",
         "isBool": false,
         "values": []
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
+  },
+  {
+    "name": "Hueycoatl",
+    "title": "Hueycoatl",
+    "description": "All in one plugin for Hueycoatl, prayers, tick timers, highlights and more!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/huey.png",
+    "videoUrl": "",
+    "topPick": true,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Lightning",
+        "section": "Overlays",
+        "description": "Highlights Hueycoatl's lightning attack on the ground.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Lightning Tick Counter",
+        "section": "Overlays",
+        "description": "Show a tick counter for Hueycoatl's lightning attack.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Mountain Move Tick Counter",
+        "section": "Overlays",
+        "description": "Show a tick counter for when to click to move up the mountain.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Show Prayer Infobox",
+        "section": "Prayer",
+        "description": "Show an infobox telling you what to pray.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Show Prayer Widget",
+        "section": "Prayer",
+        "description": "Show a widget in the prayer tab telling you what to pray.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Show Tick Timers",
+        "section": "Prayer",
+        "description": "Show tick timers on the widget for when an attack will hit.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
+      },
+      {
+        "name": "Descending Prayer Boxes",
+        "section": "Prayer",
+        "description": "Show a \"guitar hero\" mode of prayers letting you know when to pray.",
+        "type": "Boolean",
+        "isBool": true,
+        "values": ["true", "false"]
       }
     ],
     "priceDetails": {

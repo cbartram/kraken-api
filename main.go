@@ -57,10 +57,10 @@ func main() {
 
 	// TODO This shouldn't be part of the image. This should be a separate script that's run when creating
 	// new plugins and basically just be sql since its a data loader
-	//err = model.ImportOrUpdatePluginMetadata("./data/plugin_metadata.json", w.Database)
-	//if err != nil {
-	//	logrus.Fatalf("failed to import plugin metadata: %v", err)
-	//}
+	err = model.ImportOrUpdatePluginMetadata("./data/plugin_metadata.json", w.Database)
+	if err != nil {
+		logrus.Fatalf("failed to import plugin metadata: %v", err)
+	}
 	//
 	//err = model.ImportOrUpdatePluginPacks("./data/plugin_packs.json", w.Database)
 	//if err != nil {
