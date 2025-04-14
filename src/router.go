@@ -118,5 +118,10 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c)
 	})
 
+	userGroup.POST("/jagex/link", AuthMiddleware(w), func(c *gin.Context) {
+		h := cognito.JagexLinkHandler{}
+		h.HandleRequest(c, w)
+	})
+
 	return r
 }

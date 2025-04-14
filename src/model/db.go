@@ -56,6 +56,9 @@ type User struct {
 	UsedFreeTrial      bool           `gorm:"column:used_free_trial" json:"usedFreeTrial"`
 	FreeTrialStartTime time.Time      `gorm:"column:free_trial_start_time" json:"freeTrialStartTime"`
 	FreeTrialEndTime   time.Time      `gorm:"column:free_trial_end_time" json:"freeTrialEndTime"`
+	JagexCharacterId   string         `gorm:"column:jagex_character_id" json:"jagexCharacterId"`
+	JagexSessionId     string         `gorm:"column:jagex_session_id" json:"jagexSessionId"`
+	JagexDisplayName   string         `gorm:"column:jagex_display_name" json:"jagexDisplayName"`
 	CreatedAt          time.Time      `json:"createdAt"`
 	UpdatedAt          time.Time      `json:"updatedAt"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`

@@ -80,11 +80,14 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 
 		tx := w.Database.Begin()
 		newUser := model.User{
-			DiscordUsername: reqBody.DiscordUsername,
-			Email:           reqBody.DiscordEmail,
-			DiscordID:       reqBody.DiscordID,
-			AvatarId:        reqBody.AvatarID,
-			CustomerId:      cust.ID,
+			DiscordUsername:  reqBody.DiscordUsername,
+			Email:            reqBody.DiscordEmail,
+			DiscordID:        reqBody.DiscordID,
+			AvatarId:         reqBody.AvatarID,
+			CustomerId:       cust.ID,
+			JagexCharacterId: "",
+			JagexSessionId:   "",
+			JagexDisplayName: "",
 			Credentials: model.CognitoCredentials{
 				RefreshToken:    *creds.RefreshToken,
 				AccessToken:     *creds.AccessToken,
