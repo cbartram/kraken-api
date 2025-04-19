@@ -5110,5 +5110,198 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Perilous-Moons",
+    "title": "Perilous Moons",
+    "description": "All in one plugin for Perilous moons including tick timers, highlights, special attack helpers and more for each boss!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/moons.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Glyph Tiles",
+        "section": "Overlay",
+        "description": "Displays the safe tiles where your player should stand for attacking the moons.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Glyph Highlight Color",
+        "section": "Overlay",
+        "description": "The color to highlight the glyphs on the ground.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Glyph Highlight Outline",
+        "section": "Overlay",
+        "description": "The color to highlight the outline of the glyphs on the ground.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Clone Attack Tiles",
+        "section": "Eclipse Moon",
+        "description": "Highlights the tile you should click to properly face the Eclipse moon during the clone attack.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Highlight Ray Shield Area",
+        "section": "Eclipse Moon",
+        "description": "Highlights the area you must walk around when using the ray shield.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ray Shield Ticks",
+        "section": "Eclipse Moon",
+        "description": "Shows the number of ticks you must wait until clicking to move with the ray shield.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Highlight Icicles",
+        "section": "Blue Moon",
+        "description": "Highlights the icicle game objects during the weapon freeze special.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Icicle Tick Counter",
+        "section": "Blue Moon",
+        "description": "Adds a tick counter for when icicles are about to explode.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Highlight Tornadoes",
+        "section": "Blue Moon",
+        "description": "Highlights tornado tiles.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Hide Tornadoes",
+        "section": "Blue Moon",
+        "description": "Hides the tornado game objects. Use with: \\",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Icicle Highlight Color",
+        "section": "Blue Moon",
+        "description": "The color to highlight the icicle on the ground.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Icicle Highlight Outline",
+        "section": "Blue Moon",
+        "description": "The color to highlight the outline of the icicles on the ground.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Blood",
+        "section": "Blood Moon",
+        "description": "Highlights the blood pools during the blood rain special attack.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Blood Pool Highlight Color",
+        "section": "Blood Moon",
+        "description": "The color to highlight the blood pools on the ground.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Blood Pool Outline Color",
+        "section": "Blood Moon",
+        "description": "The color to highlight the outline of the blood pools on the ground.",
+        "type": "Color",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Jaguar Safe Tiles",
+        "section": "Blood Moon",
+        "description": "Highlights the safe tiles on the tick they become safe during the Jaguar special attack.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Jaguar Tick Counter",
+        "section": "Blood Moon",
+        "description": "Shows a tick counter for when to move during the jaguar special.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
 ]
