@@ -26,5 +26,19 @@
       "threeMonth": 900,
       "year": 2000
     }
+  },
+  {
+    "name": "Entry-Bossing-Pack",
+    "title": "Entry Bossing Pack",
+    "description": "Plugins to assist with getting you into PvM for the first time!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/scurrius.png",
+    "discount": 0,
+    "active": true,
+    "plugins": ["Scurrius", "Perilous-Moons", "Hueycoatl"],
+    "priceDetails": {
+      "month": 500,
+      "threeMonth": 900,
+      "year": 2000
+    }
   }
 ]

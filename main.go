@@ -62,10 +62,10 @@ func main() {
 		logrus.Fatalf("failed to import plugin metadata: %v", err)
 	}
 	//
-	//err = model.ImportOrUpdatePluginPacks("./data/plugin_packs.json", w.Database)
-	//if err != nil {
-	//	logrus.Fatalf("failed to import plugin packs: %v", err)
-	//}
+	err = model.ImportOrUpdatePluginPacks("./data/plugin_packs.json", w.Database)
+	if err != nil {
+		logrus.Fatalf("failed to import plugin packs: %v", err)
+	}
 
 	// Registers a new go routine listening to the stripe-webhooks channel. New messages are enqueued when the /api/v1/stripe/webhook
 	// endpoint is called and this function consumes the messages with a 3-second delay in between each message resolving eventual consistency
