@@ -47,6 +47,17 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 		RequireSpecial: true,
 	})
 
+	if createUserPayload.DiscordEmail == "" || &createUserPayload.DiscordEmail == nil {
+		log.Infof("no discord email or email provided setting to default value")
+		hash, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
+			Length:        10,
+			RequireUpper:  true,
+			RequireLower:  true,
+			RequireNumber: true,
+		})
+		createUserPayload.DiscordEmail = fmt.Sprintf("unknown-%s@discord.com", hash)
+	}
+
 	attributes := []types.AttributeType{
 		{
 			Name:  aws.String("email"),
