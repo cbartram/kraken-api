@@ -52,6 +52,8 @@ func (h *CheckoutSessionHandler) HandleRequest(c *gin.Context) {
 		return
 	}
 
+	log.Infof("found price: %v for lookup key: %s", foundPrice, lookupKey)
+
 	host := util.GetHostname()
 	params := &stripe.CheckoutSessionParams{
 		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type WebhookHandler struct{}
@@ -71,7 +72,11 @@ func (w *WebhookHandler) HandleRequest(c *gin.Context, wrapper *service.Wrapper)
 		return
 	}
 
-	endpointSecret := os.Getenv("STRIPE_ENDPOINT_SECRET")
+	if os.Getenv("STRIPE_ENDPOINT_SECRET") == "" {
+		log.Fatalf("STRIPE_ENDPOINT_SECRET environment variable not set")
+	}
+
+	endpointSecret := strings.TrimSpace(os.Getenv("STRIPE_ENDPOINT_SECRET"))
 	signatureHeader := c.GetHeader("Stripe-Signature")
 	event, err := webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
 	if err != nil {

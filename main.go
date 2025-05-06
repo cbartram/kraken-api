@@ -12,6 +12,7 @@ import (
 	"kraken-api/src/service"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -43,7 +44,12 @@ func main() {
 
 	db := model.Connect()
 
-	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	key := os.Getenv("STRIPE_SECRET_KEY")
+	if key == "" {
+		log.Fatal("Missing STRIPE_SECRET_KEY environment variable")
+	}
+	stripe.Key = strings.TrimSpace(key)
+	logrus.Infof("stripe key loaded: %s****", stripe.Key[0:12])
 
 	w := service.Wrapper{
 		DiscordService:  discordService,
