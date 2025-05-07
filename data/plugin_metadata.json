@@ -5415,5 +5415,130 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Dagannoth-Kings",
+    "title": "Dagannoth Kings",
+    "description": "All in one plugin for the Dagannoth Kings. Includes highlights, overlays, tick counters, prayers and more!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/dks.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Prayer infobox overlay",
+        "section": "Settings",
+        "description": "Infobox overlay with prayer to activate.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Prayer widget overlay",
+        "section": "Settings",
+        "description": "Overlay prayer widget with tick timer.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Guitar hero overlay",
+        "section": "Settings",
+        "description": "Render \"Guitar Hero\" style prayer overlay.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show NPC tick counter",
+        "section": "Settings",
+        "description": "Show tick counters on NPCs.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Ignore non-attacking NPCs",
+        "section": "Settings",
+        "description": "Ignore NPCs that are not attacking you.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Show NPC tile outlines",
+        "section": "Settings",
+        "description": "Show tile outlines for NPCs.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Font style",
+        "section": "Font",
+        "description": "Plain | Bold | Italics",
+        "type": "string",
+        "isBool": false,
+        "values": [
+          "PLAIN",
+          "BOLD",
+          "ITALICS"
+        ]
+      },
+      {
+        "name": "Font size",
+        "section": "Font",
+        "description": "Font size for timers.",
+        "type": "number",
+        "isBool": false,
+        "min": 14,
+        "max": 40,
+        "default": 20
+      },
+      {
+        "name": "Font shadow",
+        "section": "Font",
+        "description": "Add shadow to font.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
+
+
 ]
