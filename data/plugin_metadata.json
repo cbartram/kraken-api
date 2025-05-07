@@ -5538,7 +5538,111 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Vetion",
+    "title": "Vetion",
+    "description": "All in one plugin for Vetion and Calvarion. Includes highlights, overlays, tick counters and more!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/dks.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Show Attack Counter",
+        "section": "Highlights",
+        "description": "Show a tick counter for when Vetion will attack next.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Highlight Hellhounds",
+        "section": "Highlights",
+        "description": "Highlight Hellhounds when they spawn",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Hellhound Color",
+        "section": "Highlights",
+        "description": "Choose a color for highlighting hellhounds.",
+        "type": "color",
+        "isBool": false,
+        "default": "0,128,255,150"
+      },
+      {
+        "name": "Highlight Lightning",
+        "section": "Highlights",
+        "description": "Highlights dangerous tiles where lightning will strike.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Danger Color",
+        "section": "Highlights",
+        "description": "Choose a color for dangerous tiles like lightning or shield bash.",
+        "type": "color",
+        "isBool": false,
+        "default": "255,0,38,120"
+      },
+      {
+        "name": "Lightning Tick Counter",
+        "section": "Highlights",
+        "description": "Draws a tick counter for when the lightning will strike.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Highlight Shield Bash",
+        "section": "Highlights",
+        "description": "Highlights dangerous tiles for Vetions shield bash attack.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Shield Bash Tick Counter",
+        "section": "Highlights",
+        "description": "Draws a tick counter for when the shield bash will hit.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
-
-
 ]
