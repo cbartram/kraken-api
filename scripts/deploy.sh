@@ -40,3 +40,12 @@ fi
 
 echo -e "${GREEN}✅ Docker image pushed successfully${NC}"
 echo -e "${GREEN}Image pushed: ${IMAGE_NAME}${NC}"
+
+read -p "🚀 Deploy to PRODUCTION? (y/n): " -n 1 -r
+echo  # Move to new line
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    helm upgrade kraken-api ./manifests/kraken-api/ -f ./manifests/kraken-api/values.yaml
+    echo "✅ Production deployment complete!"
+else
+    echo "⏩ Skipping production deployment."
+fi
