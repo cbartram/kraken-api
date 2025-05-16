@@ -99,6 +99,8 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 
 	purchaseDurationDays := util.PurchaseDurationToDays(purchaseReq.PurchaseDuration)
 
+	log.Infof("Attempting plugin purchase for user: %s, plugin: %s, duration: %v", ctx.User.DiscordUsername, purchaseReq.PluginName, purchaseReq.PurchaseDuration)
+
 	if ctx.User.Tokens < int64(price) {
 		err := fmt.Sprintf("user does not have enough tokens to purchase: %s, has tokens: %d, needs tokens: %d",
 			purchaseReq.PluginName, ctx.User.Tokens, price)
