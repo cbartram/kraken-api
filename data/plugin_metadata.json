@@ -5691,5 +5691,109 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Yama",
+    "title": "Yama",
+    "description": "All in one plugin for Yama including tick counters, highlights and more! Never struggle with P3 fireballs, judges, or void flares again!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/yama.png",
+    "videoUrl": "",
+    "topPick": true,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Firestreaks",
+        "section": "Yama",
+        "description": "Highlight the tiles where the fire streaks are.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Firestreak Length",
+        "section": "Yama",
+        "description": "The number of ticks to let the fire streaks render for. Longer values leave long trails of highlighted tiles.",
+        "type": "int",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "P3 Firebombs",
+        "section": "Yama",
+        "description": "Highlight safe tiles for the Phase 3 firebombs.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Void Flare Counter",
+        "section": "Yama",
+        "description": "Draw a tick counter until the void flares explode.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Fireball Overlay",
+        "section": "Judge",
+        "description": "Shows an overlay of where the Judge's fireball will land.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Fireball Counter",
+        "section": "Judge",
+        "description": "Draw a counter showing how many ticks until the fireball lands and does damage",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Fire Wave Overlay",
+        "section": "Judge",
+        "description": "Highlights the fire waves the judge attacks with during the hopscotch phase.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Show Prayer Widget",
+        "section": "Prayer",
+        "description": "Show a widget in the prayer tab telling you what to pray.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Show Tick Timers",
+        "section": "Prayer",
+        "description": "Show tick timers on the widget for when an attack will hit.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Descending Prayer Boxes",
+        "section": "Prayer",
+        "description": "Show a \"guitar hero\" mode of prayers letting you know when to pray.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      }
+    ],
+    "priceDetails": {
+      "month": 200,
+      "threeMonth": 500,
+      "year": 1000
+    },
+    "tier": 2
   }
 ]
