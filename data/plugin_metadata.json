@@ -5645,7 +5645,6 @@
     },
     "tier": 1
   },
-
   {
     "name": "Tormented-Demons",
     "title": "Tormented Demons",
@@ -5795,5 +5794,89 @@
       "year": 1000
     },
     "tier": 2
+  },
+  {
+    "name": "Duke-Helper",
+    "title": "Duke Helper",
+    "description": "All in one plugin for Duke Succellus showing lightning highlights, vent timers, duke attack ticks, extremity ticks and more!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/duke.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": null,
+        "description": "License key required to enable the plugin.",
+        "type": "string",
+        "isBool": false
+      },
+      {
+        "name": "Ice Color",
+        "section": "Colors",
+        "description": "The coloring for the tiles that will do damage with Duke's auto ice attack.",
+        "type": "color",
+        "isBool": false,
+        "default": "#e60d2b"
+      },
+      {
+        "name": "Ice Falls Color",
+        "section": "Colors",
+        "description": "The coloring for the ice fall attack which stuns your player during the prep phase.",
+        "type": "color",
+        "isBool": false,
+        "default": "#e60d2b"
+      },
+      {
+        "name": "Highlight Ice Falls",
+        "section": "Highlights",
+        "description": "Highlights the ice fall attack which stuns your player during the prep phase.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"],
+        "default": "false"
+      },
+      {
+        "name": "Duke Attack Counter",
+        "section": "Tick Counters",
+        "description": "Draws a tick counter for when Duke's auto ice attack will occur.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"],
+        "default": "false"
+      },
+      {
+        "name": "Ice Fall",
+        "section": "Tick Counters",
+        "description": "Draws a tick counter for when ice fall will strike during the prep phase.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"],
+        "default": "false"
+      },
+      {
+        "name": "Vents",
+        "section": "Tick Counters",
+        "description": "Draws a tick counter for the current vents and shows when the next vent will open.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"],
+        "default": "false"
+      },
+      {
+        "name": "Extremities",
+        "section": "Tick Counters",
+        "description": "Draws a tick counter for the extremities when they are about to open their eyes and attack.",
+        "type": "boolean",
+        "isBool": true,
+        "values": ["true", "false"],
+        "default": "false"
+      }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
 ]
