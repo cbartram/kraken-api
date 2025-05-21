@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"kraken-api/src/model"
+	"sync"
+	"time"
 )
 
 type Period string
@@ -17,12 +19,18 @@ const (
 )
 
 type PluginStore struct {
-	db *gorm.DB
+	db            *gorm.DB
+	cacheMu       sync.Mutex
+	cache         map[string]string
+	cacheTime     time.Time
+	cacheDuration time.Duration
 }
 
 func NewPluginStore(db *gorm.DB) *PluginStore {
 	return &PluginStore{
-		db: db,
+		db:            db,
+		cache:         make(map[string]string),
+		cacheDuration: 6 * time.Hour,
 	}
 }
 
@@ -34,6 +42,37 @@ func (s *PluginStore) GetPlugins() []model.PluginMetadata {
 		Find(&tmp)
 
 	return tmp
+}
+
+func (s *PluginStore) GetPluginVersion(name string, service *S3Service) (string, error) {
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+
+	// If cache is valid, use it
+	if time.Since(s.cacheTime) < s.cacheDuration {
+		version, ok := s.cache[name]
+		if ok {
+			return version, nil
+		}
+		// Cache valid but plugin not found
+		return "", errors.New("plugin not found in cache for: " + name)
+	}
+
+	// If is not cached get all from S3
+	pluginVersionMap, err := service.GetAllLatestVersion()
+	if err != nil {
+		return "", err
+	}
+
+	s.cache = pluginVersionMap
+	s.cacheTime = time.Now()
+
+	version, ok := pluginVersionMap[name]
+	if !ok {
+		return "", errors.New("plugin not found after cache refresh for: " + name)
+	}
+
+	return version, nil
 }
 
 // GetPluginsInPack Returns all plugins that are part of a specific plugin pack
@@ -66,7 +105,7 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 }
 
 // GetPlugin Returns a single plugin given the plugin name. If no plugin with the given name is found it returns an error.
-func (s *PluginStore) GetPlugin(name string) (*model.PluginMetadata, error) {
+func (s *PluginStore) GetPlugin(name string, service *S3Service) (*model.PluginMetadata, error) {
 	plugin := &model.PluginMetadata{}
 
 	tx := s.db.Where("name = ?", name).
@@ -78,12 +117,19 @@ func (s *PluginStore) GetPlugin(name string) (*model.PluginMetadata, error) {
 		log.Errorf("failed to find plugin with name: %s, err: %v", name, tx.Error)
 		return nil, errors.New("failed to find plugin with name: " + name)
 	}
+
+	version, err := s.GetPluginVersion(name, service)
+	if err != nil {
+		return nil, err
+	}
+
+	plugin.Version = version
 	return plugin, nil
 }
 
 // GetPrice returns the price for a specific plugin and period
-func (s *PluginStore) GetPrice(pluginName string, period Period) (int, error) {
-	plugin, err := s.GetPlugin(pluginName)
+func (s *PluginStore) GetPrice(pluginName string, period Period, service *S3Service) (int, error) {
+	plugin, err := s.GetPlugin(pluginName, service)
 	if err != nil {
 		return 0, err
 	}

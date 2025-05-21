@@ -54,7 +54,11 @@ func GetHostname() string {
 
 // ParseVersion extracts version from object name
 func ParseVersion(objectName string) (*Version, error) {
-	// Extract version using regex
+	if !strings.HasSuffix(objectName, ".jar") {
+		log.Infof("object name must end with .jar, skipping")
+		return nil, nil
+	}
+
 	re := regexp.MustCompile(`-(\d+)\.(\d+)\.(\d+)\.jar$`)
 	matches := re.FindStringSubmatch(objectName)
 
@@ -97,6 +101,10 @@ func (v Version) IsGreaterThan(other Version) bool {
 		return v.Minor > other.Minor
 	}
 	return v.Patch > other.Patch
+}
+
+func (v Version) ToString() string {
+	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
 
 func GetUserAttributeString(attributes []types.AttributeType, attributeName string) string {

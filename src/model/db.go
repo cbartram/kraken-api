@@ -227,6 +227,8 @@ type PluginMetadata struct {
 	ImageUrl             string                     `json:"imageUrl"`
 	VideoUrl             string                     `json:"videoUrl"`
 	TopPick              bool                       `json:"topPick"`
+	IsInBeta             bool                       `json:"isInBeta"`
+	Version              string                     `gorm:"-" json:"version"`
 	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"` // One-to-many relationship
 	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`         // One-to-one relationship
 	Tier                 int                        `json:"tier"`

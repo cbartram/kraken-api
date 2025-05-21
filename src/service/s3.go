@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/sirupsen/logrus"
 	"kraken-api/src/util"
@@ -38,6 +39,72 @@ func MakeS3Service(bucketName string) (*S3Service, error) {
 		S3Client:      s3Client,
 		PresignClient: s3.NewPresignClient(s3Client),
 	}, nil
+}
+
+// GetAllLatestVersion Returns the latest version for all plugins in S3.
+func (p *S3Service) GetAllLatestVersion() (map[string]string, error) {
+	input := &s3.ListObjectsV2Input{
+		Bucket: aws.String(p.BucketName),
+		Prefix: aws.String("plugins"),
+	}
+	var plugins = make(map[string]string)
+
+	result, err := p.S3Client.ListObjectsV2(context.TODO(), input)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result.Contents) == 0 {
+		return nil, errors.New("no plugins found in the /plugins directory in S3")
+	}
+
+	for _, obj := range result.Contents {
+		key := *obj.Key
+
+		if !strings.HasSuffix(key, ".jar") {
+			logrus.Debugf("skipping as plugin is not a jar: %s", key)
+			continue
+		}
+
+		pluginNameVersion := ""
+		if parts := strings.Split(key, "/"); len(parts) > 1 {
+			pluginNameVersion = parts[len(parts)-1]
+		}
+
+		lastDash := strings.LastIndex(pluginNameVersion, "-")
+		if lastDash == -1 {
+			logrus.Infof("skipping as plugin cannot be parsed, no \"-\" between plugin name and version: %s", key)
+			continue
+		}
+
+		pluginName := pluginNameVersion[:lastDash]
+
+		version, err := util.ParseVersion(pluginNameVersion) // use pluginNameVersion, not full S3 key
+		if err != nil {
+			logrus.Infof("unable to parse version for object: %s", key)
+			continue
+		}
+
+		// Compare with existing version, if any
+		currentVersionStr, exists := plugins[pluginName]
+		if !exists {
+			plugins[pluginName] = version.ToString()
+			continue
+		}
+
+		currentVersion, err := util.ParseVersion(pluginName + "-" + currentVersionStr + ".jar")
+		if err != nil {
+			logrus.Warnf("invalid stored version for %s: %s", pluginName, currentVersionStr)
+			plugins[pluginName] = version.ToString()
+			continue
+		}
+
+		if version.IsGreaterThan(*currentVersion) {
+			plugins[pluginName] = version.ToString()
+		}
+	}
+
+	return plugins, nil
 }
 
 // GetLatestVersion Returns true if an object with a given prefix exists in the S3 bucket, false otherwise. This

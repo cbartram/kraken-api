@@ -91,7 +91,7 @@ func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper) *Purc
 
 // PurchasePlugin purchases a single plugin
 func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequest) (*model.Plugin, int, error) {
-	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration))
+	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration), ctx.Wrapper.S3Service)
 	if err != nil {
 		log.Errorf("could not get plugin from store: %s", err)
 		return nil, http.StatusBadRequest, err
