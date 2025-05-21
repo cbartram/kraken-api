@@ -173,7 +173,21 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to generate a license key"), err)
 	}
 
-	expirationTime := time.Now().AddDate(0, 0, purchaseDurationDays)
+	dbPlugin, err := ctx.Wrapper.PluginStore.GetPlugin(purchaseReq.PluginName, ctx.Wrapper.S3Service)
+	if err != nil {
+		log.Errorf("failed to get plugin from store: %s", err)
+		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to get plugin from store name: "+purchaseReq.PluginName), err)
+	}
+
+	var expirationTime time.Time
+	if dbPlugin.IsInBeta {
+		log.Infof("plugin: %s is in beta, adding 3 years to expiration time.", purchaseReq.PluginName)
+		expirationTime = time.Now().AddDate(3, 0, 0)
+	} else {
+		log.Infof("plugin is not beta. setting expiration time in days: %d", purchaseDurationDays)
+		expirationTime = time.Now().AddDate(0, 0, purchaseDurationDays)
+	}
+
 	log.Infof("plugin has been purchased for: %d days and will expire at: %s",
 		purchaseDurationDays, expirationTime.Format(time.RFC3339))
 

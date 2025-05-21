@@ -64,6 +64,33 @@ URL expires.
 
 Once the classes are loaded into memory the plugin can be registered with RuneLite and starts normally.
 
+## Revoking Plugin Access & Beta Plugins
+
+Currently, there is no automated process for handling beta plugins. They are purchased with 0 tokens the same as normal plugins. When it comes time
+to release it live you will need to run a script like this:
+
+```mysql
+-- Define the plugin name you want to update
+SET @plugin_name = 'some_plugin_name';
+
+-- 1. Revoke all user access to the plugin by deleting from the `plugins` table
+DELETE FROM plugins
+WHERE name = @plugin_name;
+
+-- 2. Update `is_in_beta` to false in `plugin_metadata`
+UPDATE plugin_metadata
+SET is_in_beta = FALSE
+WHERE name = @plugin_name;
+
+-- 3. Update the plugin pricing in `plugin_metadata_price_details`
+UPDATE plugin_metadata_price_details pd
+    JOIN plugin_metadata pm ON pd.plugin_metadata_id = pm.id
+SET pd.month = 1000,
+    pd.three_month = 2700,
+    pd.year = 10000
+WHERE pm.name = @plugin_name;
+```
+
 ## Discord Tools
 
 Since plugin purchases are managed through the Discord ticketing system we have a special tool which makes generating
