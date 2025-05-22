@@ -5,10 +5,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"kraken-api/src/handlers"
-	"kraken-api/src/handlers/admin"
 	"kraken-api/src/handlers/cognito"
 	"kraken-api/src/handlers/payment"
 	"kraken-api/src/handlers/plugin"
+	"kraken-api/src/handlers/sale"
 	"kraken-api/src/service"
 	"log"
 	"net/http"
@@ -39,7 +39,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	r.Use(CORSMiddleware(), LogrusMiddleware(logger))
 
 	apiGroup := r.Group("/api/v1")
-	adminGroup := apiGroup.Group("/admin")
+	saleGroup := apiGroup.Group("/sale")
 	userGroup := apiGroup.Group("/user")
 	pluginGroup := apiGroup.Group("/plugin")
 	stripeGroup := apiGroup.Group("/stripe")
@@ -50,8 +50,13 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		})
 	})
 
-	adminGroup.POST("/sale/create", AuthMiddleware(w), func(c *gin.Context) {
-		h := admin.CreateSaleHandler{}
+	saleGroup.POST("/create", AuthMiddleware(w), func(c *gin.Context) {
+		h := sale.CreateSaleHandler{}
+		h.HandleRequest(c, w)
+	})
+
+	saleGroup.GET("/", func(c *gin.Context) {
+		h := sale.GetSaleHandler{}
 		h.HandleRequest(c, w)
 	})
 

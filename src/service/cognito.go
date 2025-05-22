@@ -122,7 +122,7 @@ func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, pa
 		AuthParameters: authParams,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error initiating admin user/pass auth with user pool: %w", err)
+		return nil, fmt.Errorf("error initiating sale user/pass auth with user pool: %w", err)
 	}
 
 	return result.AuthenticationResult, nil

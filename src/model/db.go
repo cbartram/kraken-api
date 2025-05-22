@@ -267,11 +267,11 @@ type PluginSale struct {
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 
-	SaleItems []PluginSaleItem `gorm:"foreignKey:SaleID" json:"saleItems"`
+	SaleItems []PluginSaleItem `gorm:"foreignKey:SaleID" json:"-"`
 
 	// This is included so this struct can be used as a request body when creating new sales. This field has no bearing on the
 	// plugin/sale association in the db.
-	PluginNames []string `gorm:"-" json:"pluginNames"`
+	PluginNames []string `gorm:"-" json:"pluginNames,omitempty"`
 }
 
 // PluginSaleItem represents which plugins are included in a sale

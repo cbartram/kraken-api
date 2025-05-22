@@ -1,4 +1,4 @@
-package admin
+package sale
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func (cr *CreateSaleHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 
 	log.Infof("user: %#v", user)
 	if user.DiscordUsername != "runewraith" || user.DiscordID != "215299779352068097" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not admin"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not sale"})
 		return
 	}
 
