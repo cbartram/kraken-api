@@ -117,6 +117,15 @@ func GetUserAttributeString(attributes []types.AttributeType, attributeName stri
 	return ""
 }
 
+// CalculateDiscountedPrice Calculates the discounted price given a percentage discount and the original price of the plugin.
+func CalculateDiscountedPrice(originalPrice int, discountPercent float32) int {
+	if discountPercent <= 0 {
+		return originalPrice
+	}
+	discountAmount := float32(originalPrice) * (discountPercent / 100.0)
+	return int(float32(originalPrice) - discountAmount)
+}
+
 // GenerateLicenseKey generates a random license key in the format "XXXXX-XXXXX-XXXXX-XXXXX"
 func GenerateLicenseKey() (string, error) {
 	totalChars := sectionSize * numSections

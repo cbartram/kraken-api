@@ -36,6 +36,8 @@ func Connect() *gorm.DB {
 		&PluginPack{},
 		&PluginPackItem{},
 		&UserPluginPack{},
+		&PluginSale{},
+		&PluginSaleItem{},
 	)
 
 	if err != nil {
@@ -135,10 +137,16 @@ type UserPluginPack struct {
 }
 
 type PluginMetadataPriceDetails struct {
-	ID               uint           `gorm:"primaryKey" json:"id"`
-	Month            int            `json:"month"`
-	ThreeMonth       int            `json:"threeMonth"`
-	Year             int            `json:"year"`
+	ID         uint `gorm:"primaryKey" json:"id"`
+	Month      int  `json:"month"`
+	ThreeMonth int  `json:"threeMonth"`
+	Year       int  `json:"year"`
+
+	// In a JSON serialized response additional metadata about the sale price for a plugin can be included optionally in the response.
+	// If a sale is not happening for a plugin these fields can be safely ignored and will not be returned in the response.
+	SaleMonth        int            `gorm:"-" json:"saleMonth,omitempty"`
+	SaleThreeMonth   int            `gorm:"-" json:"saleThreeMonth,omitempty"`
+	SaleYear         int            `gorm:"-" json:"saleYear,omitempty"`
 	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index;not null" json:"pluginMetadataId"`
 	CreatedAt        time.Time      `json:"createdAt"`
 	UpdatedAt        time.Time      `json:"updatedAt"`
@@ -229,8 +237,9 @@ type PluginMetadata struct {
 	TopPick              bool                       `json:"topPick"`
 	IsInBeta             bool                       `json:"isInBeta"`
 	Version              string                     `gorm:"-" json:"version"`
-	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"` // One-to-many relationship
-	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`         // One-to-one relationship
+	SaleDiscount         float32                    `gorm:"-" json:"saleDiscount"` // Sale discounts are pulled from the db but included only in API responses not on actual rows in db.
+	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"`
+	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`
 	Tier                 int                        `json:"tier"`
 }
 
@@ -241,9 +250,102 @@ type PluginConfig struct {
 	Description      string   `json:"description"`
 	Type             string   `json:"type"`
 	IsBool           bool     `json:"isBool"`
-	Values           string   `gorm:"type:text" json:"-"` // Store as JSON string in DB
-	ValuesSlice      []string `gorm:"-" json:"values"`    // For JSON serialization
-	PluginMetadataID uint     `json:"pluginMetadataId"`   // Foreign key reference
+	Values           string   `gorm:"type:text" json:"-"`
+	ValuesSlice      []string `gorm:"-" json:"values"`
+	PluginMetadataID uint     `json:"pluginMetadataId"`
+}
+
+type PluginSale struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Name        string         `gorm:"column:name;not null" json:"name"`            // e.g., "Black Friday Sale", "Summer Special"
+	Description string         `gorm:"column:description" json:"description"`       // Optional description
+	Discount    float32        `gorm:"column:discount;not null" json:"discount"`    // Percentage discount (0-100)
+	StartTime   time.Time      `gorm:"column:start_time;not null" json:"startTime"` // When sale begins
+	EndTime     time.Time      `gorm:"column:end_time;not null" json:"endTime"`     // When sale ends
+	Active      bool           `gorm:"column:active;default:true" json:"active"`    // Admin can manually disable
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+
+	SaleItems []PluginSaleItem `gorm:"foreignKey:SaleID" json:"saleItems"`
+
+	// This is included so this struct can be used as a request body when creating new sales. This field has no bearing on the
+	// plugin/sale association in the db.
+	PluginNames []string `gorm:"-" json:"pluginNames"`
+}
+
+// PluginSaleItem represents which plugins are included in a sale
+type PluginSaleItem struct {
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	SaleID           uint           `gorm:"column:sale_id;index;not null" json:"saleId"`
+	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index;not null" json:"pluginMetadataId"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+
+	Sale           PluginSale     `gorm:"foreignKey:SaleID" json:"sale"`
+	PluginMetadata PluginMetadata `gorm:"foreignKey:PluginMetadataID" json:"pluginMetadata"`
+}
+
+// IsCurrentlyActive Returns true when a sale is currently active and false otherwise
+func (ps *PluginSale) IsCurrentlyActive() bool {
+	now := time.Now()
+	return ps.Active && now.After(ps.StartTime) && now.Before(ps.EndTime)
+}
+
+// GetCurrentSaleDiscount returns a percentage discount of a sale for a given plugin
+func (pm *PluginMetadata) GetCurrentSaleDiscount(db *gorm.DB) (float32, error) {
+	var sale PluginSale
+	now := time.Now()
+
+	result := db.Joins("JOIN plugin_sale_items ON plugin_sales.id = plugin_sale_items.sale_id").
+		Where("plugin_sale_items.plugin_metadata_id = ? AND plugin_sales.active = true AND plugin_sales.start_time <= ? AND plugin_sales.end_time >= ?",
+							pm.ID, now, now).
+		Order("plugin_sales.discount DESC"). // Get highest discount if multiple sales apply
+		First(&sale)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, result.Error
+	}
+
+	if sale.IsCurrentlyActive() {
+		return sale.Discount, nil
+	}
+
+	return 0, nil
+}
+
+// GetActiveSalesLookup calculates all active sales as a lookup map
+func GetActiveSalesLookup(db *gorm.DB) (map[uint]float32, error) {
+	now := time.Now()
+	lookup := make(map[uint]float32)
+
+	// Single query to get all active sales with their plugin associations
+	var results []struct {
+		PluginMetadataID uint    `json:"plugin_metadata_id"`
+		Discount         float32 `json:"discount"`
+	}
+
+	err := db.Table("plugin_sales").
+		Select("plugin_sale_items.plugin_metadata_id, MAX(plugin_sales.discount) as discount").
+		Joins("JOIN plugin_sale_items ON plugin_sales.id = plugin_sale_items.sale_id").
+		Where("plugin_sales.active = true AND plugin_sales.start_time <= ? AND plugin_sales.end_time >= ?", now, now).
+		Group("plugin_sale_items.plugin_metadata_id").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Build the lookup map
+	for _, result := range results {
+		lookup[result.PluginMetadataID] = result.Discount
+	}
+
+	return lookup, nil
 }
 
 func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
