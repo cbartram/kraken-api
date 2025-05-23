@@ -50,7 +50,7 @@ func (e *EmailHandler) HandleRequest(c *gin.Context) {
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
 
-	emailSubject := "Support Request: " + reqBody.Subject
+	emailSubject := reqBody.Subject
 	emailBody := "User: " + user.DiscordID + "\r\n" +
 		"Customer Id: " + user.CustomerId + "\r\n" +
 		"User Email: " + user.Email + "\r\n" +

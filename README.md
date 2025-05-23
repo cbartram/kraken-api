@@ -55,6 +55,13 @@ aws lambda update-function-code --function-name kraken-api --zip-file fileb://de
 
 You can also run `./scripts/deploy.sh` to build, zip, and upload the function to AWS.
 
+# Management
+
+The following sections describe how you can manage and configure Kraken plugins elements like:
+- Plugin Sales
+- Beta plugins
+- Adding plugins
+
 ## Plugin Verification & Loading
 
 When the Kraken client needs to load a plugin it will make a request on behalf of the authenticated user to generate
@@ -89,6 +96,26 @@ SET pd.month = 1000,
     pd.three_month = 2700,
     pd.year = 10000
 WHERE pm.name = @plugin_name;
+```
+
+## Sales
+
+To create a new sale for a set of plugins run the following API route. Note: this must be done with the owners discord OAuth token which prevents
+normal users from creating plugin sales (for obvious reasons).
+
+```shell
+curl --location 'https://kraken-plugins.duckdns.org/api/v1/sale/create' \
+--header 'Authorization: Basic <base64(discord_id:refresh_token)>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "name": "Summer Sale",
+    "description": "Get ready to grind this summer with a 30% off on all plugins!",
+    "discount": 30,
+    "startTime": "2025-05-22T10:00:00Z",
+    "endTime": "2025-06-01T22:00:00Z",
+    "active": true,
+    "pluginNames": ["Alchemical-Hydra", "Cerberus", "Zulrah"]
+}'
 ```
 
 ## Discord Tools
