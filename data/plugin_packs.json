@@ -40,5 +40,19 @@
       "threeMonth": 900,
       "year": 2000
     }
+  },
+  {
+    "name": "Tzhaar-Pack",
+    "title": "Tzhaar Pack",
+    "description": "Plugins to assist with both the fight caves and inferno for all! This pack makes any melee cape a cakewalk!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/tzhaar.png",
+    "discount": 0,
+    "active": true,
+    "plugins": ["Inferno", "Fight-Caves"],
+    "priceDetails": {
+      "month": 600,
+      "threeMonth": 1100,
+      "year": 5100
+    }
   }
 ]

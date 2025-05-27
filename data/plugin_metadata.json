@@ -5878,5 +5878,73 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Fight-Caves",
+    "title": "Fight Caves",
+    "description": "Displays current and upcoming wave monsters in the Fight Caves and what to pray at TzTok-Jad",
+    "imageUrl": "https://kraken-plugins.duckdns.org/fightcaves.png",
+    "videoUrl": "",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": null,
+        "description": "License key required to enable the plugin.",
+        "type": "string",
+        "isBool": false
+      },
+        {
+          "name": "Wave display",
+          "section": "Features",
+          "description": "Shows monsters that will spawn on the selected wave(s).",
+          "type": "enum",
+          "enumType": "WaveDisplayMode",
+          "default": "BOTH",
+          "isBool": false
+        },
+        {
+          "name": "Tick Timers in Prayer",
+          "section": "Features",
+          "description": "Adds an overlay to the Prayer Interface with the ticks until next attack for that prayer.",
+          "type": "boolean",
+          "default": true,
+          "isBool": true
+        },
+        {
+          "name": "Font Style",
+          "section": "Text",
+          "description": "Plain | Bold | Italics",
+          "type": "enum",
+          "enumType": "FontStyle",
+          "default": "BOLD",
+          "isBool": false
+        },
+        {
+          "name": "Text Size",
+          "section": "Text",
+          "description": "Text Size for Timers.",
+          "type": "number",
+          "units": "pixels",
+          "min": 14,
+          "max": 40,
+          "default": 32,
+          "isBool": false
+        },
+        {
+          "name": "Shadows",
+          "section": "Text",
+          "description": "Adds Shadows to text.",
+          "type": "boolean",
+          "default": false,
+          "isBool": true
+        }
+    ],
+    "priceDetails": {
+      "month":  50,
+      "threeMonth":  100,
+      "year":  300
+    },
+    "tier": 1
   }
 ]
