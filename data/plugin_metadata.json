@@ -16,6 +16,17 @@
         "values": []
       },
       {
+        "name": "LizardMan Acid",
+        "section": "LizardMan Shamanas",
+        "description": "Places an overlay around where the lizardman shaman acid will land and do damage.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
         "name": "Muttadile Marker",
         "section": "Muttadile",
         "description": "Places an overlay around muttadiles showing their melee range.",
@@ -30,6 +41,17 @@
         "name": "Tekton Marker",
         "section": "Tekton",
         "description": "Places an overlay around Tekton showing his melee range.",
+        "type": "boolean",
+        "isBool": true,
+        "values": [
+          "true",
+          "false"
+        ]
+      },
+      {
+        "name": "Tekton Fireballs",
+        "section": "Tekton",
+        "description": "Places an overlay around where the tekton fireballs will do damage.",
         "type": "boolean",
         "isBool": true,
         "values": [
