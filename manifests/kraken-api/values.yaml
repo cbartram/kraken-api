@@ -20,7 +20,7 @@ image:
 
 serviceAccountName: kraken-api-sa
 
-service::q
+service:
   type: ClusterIP
   port: 80
   targetPort: 8080

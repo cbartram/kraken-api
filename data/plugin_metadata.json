@@ -4,7 +4,7 @@
     "title": "Chambers Helper",
     "description": "Tracks Olm rotations, specials, tick counters, and various boss helpers for CoX.",
     "imageUrl": "https://kraken-plugins.duckdns.org/olm.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/_1HOqzIFwis",
     "topPick": true,
     "configurationOptions": [
       {
@@ -257,7 +257,7 @@
     "title": "Theatre of Blood",
     "description": "All in one plugin for Theatre of Blood. Maiden attack ticks, Nylo menu entry swaps, aggressive nylo highlights, bloat timers, Sote prayer and maze overlay, tick eat timers, Verzik crab identifier and more!",
     "imageUrl": "https://kraken-plugins.duckdns.org/tob.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/TegxE8XDqlw",
     "topPick": true,
     "configurationOptions": [
       {
@@ -1114,7 +1114,7 @@
     "title": "Gauntlet Extended",
     "description": "Additional helpers for the gauntlet and corrupted gauntlet tracking hunleff prayer and attacks. Resource highlights, demi-boss highlights, resource tracking and more.",
     "imageUrl": "https://kraken-plugins.duckdns.org/gauntlet.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/5E79-JNNreQ",
     "topPick": true,
     "configurationOptions": [
       {
@@ -1674,7 +1674,7 @@
     "title": "Zulrah",
     "description": "Tracks Zulrah rotations, snakelings, where to stand, where to move, and what to pray.",
     "imageUrl": "https://kraken-plugins.duckdns.org/zulrah.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/SrHMu48B7J0",
     "topPick": false,
     "configurationOptions": [
       {
@@ -1946,7 +1946,7 @@
     "title": "Nightmare of Ashihama",
     "description": "All in one plugin for Nightmare and Phosani's Nightmare which tracks prayers, parasites, special attacks, pillar health and more.",
     "imageUrl": "https://kraken-plugins.duckdns.org/nightmare.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/iTOnTgXE-J8",
     "topPick": false,
     "configurationOptions": [
       {
@@ -2379,7 +2379,7 @@
     "title": "Vorkath",
     "description": "Tracks acid, woox walk paths, and vorkaths special attack count.",
     "imageUrl": "https://kraken-plugins.duckdns.org/vorkath.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/aYscC21NcUU",
     "topPick": false,
     "configurationOptions": [
       {
@@ -2735,7 +2735,7 @@
     "title": "Tombs of Amascut Extended",
     "description": "A plugin for Tombs of Amascut with extended features like overlays for: prayers, graphics, counters, entity hiding, and boss mechanics.",
     "imageUrl": "https://kraken-plugins.duckdns.org/toa.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/4eaVOv5PTS0",
     "topPick": true,
     "configurationOptions": [
       {
@@ -4683,7 +4683,7 @@
     "title": "Zalcano Extended",
     "description": "Overlays, counters, and advanced pathfinding for Zalcano!",
     "imageUrl": "https://kraken-plugins.duckdns.org/zalcano.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/2NyJEGb1tE0",
     "topPick": false,
     "configurationOptions": [
       {
@@ -4784,7 +4784,7 @@
     "title": "Smithing Helper",
     "description": "potato mode for easy smithing!",
     "imageUrl": "https://kraken-plugins.duckdns.org/smithing.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/5LKx5SLM3os",
     "topPick": false,
     "configurationOptions": [
       {
