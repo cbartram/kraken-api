@@ -20,11 +20,11 @@
     "imageUrl": "https://kraken-plugins.duckdns.org/slayer.png",
     "discount": 0,
     "active": true,
-    "plugins": ["Cerberus", "Alchemical-Hydra", "Vorkath", "Tormented-Demons"],
+    "plugins": ["Cerberus", "Alchemical-Hydra", "Vorkath", "Tormented-Demons", "Araxxor"],
     "priceDetails": {
-      "month": 600,
-      "threeMonth": 1000,
-      "year": 2100
+      "month": 1000,
+      "threeMonth": 1500,
+      "year": 3500
     }
   },
   {

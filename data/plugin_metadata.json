@@ -4503,7 +4503,7 @@
     "title": "Grotesque Guardians",
     "description": "Timers, Overlays, prayers, counters, and more for the Grotesque Guardians slayer boss!",
     "imageUrl": "https://kraken-plugins.duckdns.org/gargoyle.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/HzEKiNWzsIc",
     "topPick": false,
     "configurationOptions": [
       {
@@ -5058,7 +5058,7 @@
     "title": "Hueycoatl",
     "description": "All in one plugin for Hueycoatl, prayers, tick timers, highlights and more!",
     "imageUrl": "https://kraken-plugins.duckdns.org/huey.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/9vU51i5EY7Q",
     "topPick": true,
     "configurationOptions": [
       {
@@ -5138,7 +5138,7 @@
     "title": "Perilous Moons",
     "description": "All in one plugin for Perilous moons including tick timers, highlights, special attack helpers and more for each boss!",
     "imageUrl": "https://kraken-plugins.duckdns.org/moons.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/KmXgp1QbYNg",
     "topPick": false,
     "configurationOptions": [
       {
@@ -5331,7 +5331,7 @@
     "title": "Scurrius",
     "description": "All in one plugin for Scurrius the Rat King. Prayer overlays, highlights, tick timers for rubble and more!",
     "imageUrl": "https://kraken-plugins.duckdns.org/scurrius.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/hTFW5yH7A9o",
     "topPick": false,
     "configurationOptions": [
       {
@@ -5566,7 +5566,7 @@
     "title": "Vetion",
     "description": "All in one plugin for Vetion and Calvarion. Includes highlights, overlays, tick counters and more!",
     "imageUrl": "https://kraken-plugins.duckdns.org/vetion.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/NEJTNcT658I",
     "topPick": false,
     "configurationOptions": [
       {
@@ -5672,7 +5672,7 @@
     "title": "Tormented Demons",
     "description": "All in one plugin for Tormented demons with a tick counter for the bind and fireball highlights!",
     "imageUrl": "https://kraken-plugins.duckdns.org/tormenteddemon.png",
-    "videoUrl": "",
+    "videoUrl": "https://youtu.be/dRf4Lwte7FU",
     "topPick": false,
     "configurationOptions": [
       {
@@ -5968,5 +5968,69 @@
       "year":  300
     },
     "tier": 1
+  },
+  {
+    "name": "Araxxor",
+    "title": "Araxxor",
+    "description": "Timers, Overlays and more for swiftly dealing with this spidery slayer boss!",
+    "imageUrl": "https://kraken-plugins.duckdns.org/araxxor.png",
+    "videoUrl": "https://youtu.be/X208Nbrxh8E",
+    "topPick": false,
+    "configurationOptions": [
+      {
+        "name": "License Key",
+        "section": "",
+        "description": "License key required to enable the plugin.",
+        "type": "String",
+        "isBool": false,
+        "values": []
+      },
+      {
+        "name": "Highlight Acid Tiles",
+        "section": "Highlights",
+        "description": "Highlights tiles that have been infected by acid.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Highlight Acid Splatter Tiles",
+        "section": "Highlights",
+        "description": "Highlights tiles that WILL be affected by the acid splatter or acid missile special attacks.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Araxxor Attack Counter",
+        "section": "Tick Counters",
+        "description": "Draws a tick counter for when Araxxors attack will occur. Turns green when the next attack is a special.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Venom Drip Timer",
+        "section": "Tick Counters",
+        "description": "Draws a tick counter for when the venom drip on your player will wear off.",
+        "type": "boolean",
+        "isBool": true,
+        "values": []
+      },
+      {
+        "name": "Special Attack Indicator",
+        "section": "Tick Counters",
+        "description": "Draws text on the screen indicating which Araxxor special attack will be used: venom drip, ball, or splatter.",
+        "type": "SpecialAttackIndicator",
+        "isBool": false,
+        "values": ["OFF", "SHORT", "LONG"]
+      }
+    ],
+    "priceDetails": {
+      "month": 200,
+      "threeMonth": 500,
+      "year": 1000
+    },
+    "tier": 2
   }
 ]
