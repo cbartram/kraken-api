@@ -1,10 +1,12 @@
 name: kraken-api
 frontendServiceName: kraken-frontend-service
+minioServiceName: minio-svc
 namespace: kraken
 replicaCount: 1
 
 s3:
   bucketName: kraken-plugins
+  endpoint: minio-kraken.duckdns.org
 
 db:
   host: "kraken-db.kraken.svc.cluster.local"

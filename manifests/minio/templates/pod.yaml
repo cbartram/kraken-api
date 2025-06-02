@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: {{.Values.name}}
+  name: {{.Values.name}}
+  namespace: {{.Values.name}}
+spec:
+  containers:
+  - name: {{.Values.name}}
+    image: {{.Values.image.repository}}:{{.Values.image.tag}}
+    ports:
+      - containerPort: 9000
+        name: api
+      - containerPort: 9090
+        name: console
+    command:
+    - /bin/bash
+    - -c
+    env:
+      - name: MINIO_ROOT_USER
+        valueFrom:
+          secretKeyRef:
+            name: minio-secrets
+            key:  MINIO_ROOT_USER
+      - name: MINIO_ROOT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: minio-secrets
+            key: MINIO_ROOT_PASSWORD
+    args: 
+    - minio server /data --console-address :9090
+    volumeMounts:
+      {{- toYaml .Values.volumeMounts | nindent 12 }}
+  volumes:
+    {{- toYaml .Values.volumes | nindent 8 }}

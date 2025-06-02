@@ -28,6 +28,8 @@ spec:
             - {{.Values.service.targetPort | quote }}
           envFrom:
             - secretRef:
+                name: minio-secrets
+            - secretRef:
                 name: cognito-secrets
             - secretRef:
                 name: discord-secrets

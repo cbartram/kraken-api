@@ -3,63 +3,75 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/sirupsen/logrus"
-	"kraken-api/src/util"
-	"log"
+	"fmt"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/sirupsen/logrus"
+	"kraken-api/src/util"
 )
 
-// Presigner encapsulates the Amazon Simple Storage Service (Amazon S3) presign actions
-// used in the examples.
-// It contains PresignClient, a service that is used to presign requests to Amazon S3.
-// Presigned requests contain temporary credentials and can be made from any HTTP service.
-type S3Service struct {
-	BucketName    string
-	S3Client      *s3.Client
-	PresignClient *s3.PresignClient
+// MinIOService encapsulates MinIO operations for object storage
+type MinIOService struct {
+	BucketName string
+	Client     *minio.Client
+	Endpoint   string
+	UseSSL     bool
 }
 
-func MakeS3Service(bucketName string) (*S3Service, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("us-east-1"),
-	)
+// MakeMinIOService creates a new MinIO service instance
+func MakeMinIOService(bucketName, endpoint string) (*MinIOService, error) {
+	username := os.Getenv("MINIO_ROOT_USER")
+	password := os.Getenv("MINIO_ROOT_PASSWORD")
+
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(username, password, ""),
+		Secure: true,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
 	}
 
-	s3Client := s3.NewFromConfig(cfg)
-	return &S3Service{
-		BucketName:    bucketName,
-		S3Client:      s3Client,
-		PresignClient: s3.NewPresignClient(s3Client),
+	ctx := context.Background()
+	exists, err := minioClient.BucketExists(ctx, bucketName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check bucket existence: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("bucket %s does not exist", bucketName)
+	}
+
+	return &MinIOService{
+		BucketName: bucketName,
+		Client:     minioClient,
+		Endpoint:   endpoint,
+		UseSSL:     true,
 	}, nil
 }
 
-// GetAllLatestVersion Returns the latest version for all plugins in S3.
-func (p *S3Service) GetAllLatestVersion() (map[string]string, error) {
-	input := &s3.ListObjectsV2Input{
-		Bucket: aws.String(p.BucketName),
-		Prefix: aws.String("plugins"),
-	}
+// GetAllLatestVersion Returns the latest version for all plugins in MinIO.
+func (m *MinIOService) GetAllLatestVersion() (map[string]string, error) {
+	ctx := context.Background()
 	var plugins = make(map[string]string)
 
-	result, err := p.S3Client.ListObjectsV2(context.TODO(), input)
-	if err != nil {
-		return nil, err
-	}
+	// List objects with prefix "plugins"
+	objectCh := m.Client.ListObjects(ctx, m.BucketName, minio.ListObjectsOptions{
+		Prefix:    "plugins",
+		Recursive: true,
+	})
 
-	if len(result.Contents) == 0 {
-		return nil, errors.New("no plugins found in the /plugins directory in S3")
-	}
+	objectCount := 0
+	for object := range objectCh {
+		if object.Err != nil {
+			return nil, fmt.Errorf("error listing objects: %w", object.Err)
+		}
 
-	for _, obj := range result.Contents {
-		key := *obj.Key
+		objectCount++
+		key := object.Key
 
 		if !strings.HasSuffix(key, ".jar") {
 			logrus.Debugf("skipping as plugin is not a jar: %s", key)
@@ -79,7 +91,7 @@ func (p *S3Service) GetAllLatestVersion() (map[string]string, error) {
 
 		pluginName := pluginNameVersion[:lastDash]
 
-		version, err := util.ParseVersion(pluginNameVersion) // use pluginNameVersion, not full S3 key
+		version, err := util.ParseVersion(pluginNameVersion) // use pluginNameVersion, not full key
 		if err != nil {
 			logrus.Infof("unable to parse version for object: %s", key)
 			continue
@@ -104,25 +116,22 @@ func (p *S3Service) GetAllLatestVersion() (map[string]string, error) {
 		}
 	}
 
+	if objectCount == 0 {
+		return nil, errors.New("no plugins found in the /plugins directory")
+	}
+
 	return plugins, nil
 }
 
-// GetLatestVersion Returns true if an object with a given prefix exists in the S3 bucket, false otherwise. This
-// function automatically trims any *.jar extension off of the S3 object name if it exists.
-func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
-	input := &s3.ListObjectsV2Input{
-		Bucket: aws.String(p.BucketName),
-		Prefix: aws.String(prefix),
-	}
+// GetLatestVersion Returns true if an object with a given prefix exists in MinIO, false otherwise.
+func (m *MinIOService) GetLatestVersion(prefix string) (bool, string, error) {
+	ctx := context.Background()
 
-	result, err := p.S3Client.ListObjectsV2(context.TODO(), input)
-	if err != nil {
-		return false, "", err
-	}
-
-	if len(result.Contents) == 0 {
-		return false, "", nil
-	}
+	// List objects with the given prefix
+	objectCh := m.Client.ListObjects(ctx, m.BucketName, minio.ListObjectsOptions{
+		Prefix:    prefix,
+		Recursive: true,
+	})
 
 	// Extract the plugin name from the prefix (assume format is "plugins/PluginName")
 	pluginName := prefix
@@ -133,11 +142,17 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 	// Find object with latest version
 	var latestVersion *util.Version
 	var latestKey string
+	objectCount := 0
 
-	for _, obj := range result.Contents {
-		key := *obj.Key
+	for object := range objectCh {
+		if object.Err != nil {
+			return false, "", fmt.Errorf("error listing objects: %w", object.Err)
+		}
+
+		objectCount++
+		key := object.Key
+
 		// Skip this object if it doesn't match the exact plugin pattern
-		// Check if the key is in the format: prefix-version.jar or prefix-version
 		baseName := strings.TrimSuffix(key, ".jar")
 
 		// Split by dash to check the plugin name
@@ -148,7 +163,6 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 		}
 
 		// Get the object's plugin name part (everything before the versions)
-		// Handle case where prefix is "plugins/PluginName"
 		objPluginPath := strings.Join(parts[:len(parts)-1], "-")
 		objPluginName := objPluginPath
 		if pathParts := strings.Split(objPluginPath, "/"); len(pathParts) > 1 {
@@ -164,7 +178,6 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 		version, err := util.ParseVersion(key)
 		logrus.Debugf("version: %v for object key: %s", version, key)
 		if err != nil {
-			// Skip objects with invalid version format
 			logrus.Infof("unable to parse version for object: %s", key)
 			continue
 		}
@@ -175,7 +188,13 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 		}
 	}
 
+	if objectCount == 0 {
+		logrus.Infof("object count is 0, skipping object with invalid format: %s", prefix)
+		return false, "", nil
+	}
+
 	if latestKey == "" {
+		logrus.Infof("latest key is blank, skipping object with invalid format: %s", prefix)
 		return false, "", nil
 	}
 
@@ -185,60 +204,78 @@ func (p *S3Service) GetLatestVersion(prefix string) (bool, string, error) {
 	return true, name, nil
 }
 
-// CreatePresignedUrl makes a presigned request that can be used to get an object from a bucket.
-// The presigned request is valid for the specified number of seconds.
-func (p *S3Service) CreatePresignedUrl(ctx context.Context, objectKey string, lifetimeSecs int64) (*v4.PresignedHTTPRequest, error) {
-	request, err := p.PresignClient.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(p.BucketName),
-		Key:    aws.String(objectKey),
-	}, func(opts *s3.PresignOptions) {
-		opts.Expires = time.Duration(lifetimeSecs * int64(time.Second))
-	})
+// CreatePresignedUrl creates a presigned URL for downloading an object
+func (m *MinIOService) CreatePresignedUrl(ctx context.Context, objectKey string, lifetimeSecs int64) (*url.URL, error) {
+	expires := time.Duration(lifetimeSecs) * time.Second
+
+	presignedURL, err := m.Client.PresignedGetObject(ctx, m.BucketName, objectKey, expires, nil)
 	if err != nil {
-		log.Printf("Couldn't get a presigned request to get %v:%v. Here's why: %v\n",
-			p.BucketName, objectKey, err)
+		logrus.Errorf("Couldn't get a presigned URL to get %v:%v. err: %v",
+			m.BucketName, objectKey, err)
+		return nil, err
 	}
-	return request, err
+
+	return presignedURL, nil
 }
 
-// PutObject makes a presigned request that can be used to put an object in a bucket.
-// The presigned request is valid for the specified number of seconds.
-func (p *S3Service) PutObject(
-	ctx context.Context, bucketName string, objectKey string, lifetimeSecs int64) (*v4.PresignedHTTPRequest, error) {
-	request, err := p.PresignClient.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectKey),
-	}, func(opts *s3.PresignOptions) {
-		opts.Expires = time.Duration(lifetimeSecs * int64(time.Second))
-	})
+// PutObject creates a presigned URL for uploading an object
+func (m *MinIOService) PutObject(ctx context.Context, bucketName string, objectKey string, lifetimeSecs int64) (*url.URL, error) {
+	expires := time.Duration(lifetimeSecs) * time.Second
+
+	presignedURL, err := m.Client.PresignedPutObject(ctx, bucketName, objectKey, expires)
 	if err != nil {
-		log.Printf("Couldn't get a presigned request to put %v:%v. Here's why: %v\n",
+		logrus.Errorf("Couldn't get a presigned URL to put %v:%v. err: %v",
 			bucketName, objectKey, err)
+		return nil, err
 	}
-	return request, err
+
+	return presignedURL, nil
 }
 
-// DeleteObject makes a presigned request that can be used to delete an object from a bucket.
-func (p *S3Service) DeleteObject(ctx context.Context, bucketName string, objectKey string) (*v4.PresignedHTTPRequest, error) {
-	request, err := p.PresignClient.PresignDeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectKey),
-	})
+// DeleteObject creates a presigned URL for deleting an object (Note: MinIO doesn't support presigned DELETE)
+// This method performs the delete operation directly instead
+func (m *MinIOService) DeleteObject(ctx context.Context, bucketName string, objectKey string) error {
+	err := m.Client.RemoveObject(ctx, bucketName, objectKey, minio.RemoveObjectOptions{})
 	if err != nil {
-		log.Printf("Couldn't get a presigned request to delete object %v. Here's why: %v\n", objectKey, err)
+		logrus.Errorf("Couldn't delete object %v. err: %v", objectKey, err)
+		return err
 	}
-	return request, err
+
+	logrus.Infof("Successfully deleted object %v from bucket %v", objectKey, bucketName)
+	return nil
 }
 
-func (p *S3Service) PresignPostObject(ctx context.Context, bucketName string, objectKey string, lifetimeSecs int64) (*s3.PresignedPostRequest, error) {
-	request, err := p.PresignClient.PresignPostObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectKey),
-	}, func(options *s3.PresignPostOptions) {
-		options.Expires = time.Duration(lifetimeSecs) * time.Second
-	})
+// MakeBucketPublic sets a bucket policy to make it publicly readable
+func (m *MinIOService) MakeBucketPublic(ctx context.Context, bucketName string) error {
+	// Policy that allows public read access to all objects in the bucket
+	policy := fmt.Sprintf(`{
+		"Version": "2012-10-17",
+		"Statement": [
+			{
+				"Effect": "Allow",
+				"Principal": {
+					"AWS": ["*"]
+				},
+				"Action": ["s3:GetObject"],
+				"Resource": ["arn:aws:s3:::%s/*"]
+			}
+		]
+	}`, bucketName)
+
+	err := m.Client.SetBucketPolicy(ctx, bucketName, policy)
 	if err != nil {
-		log.Printf("Couldn't get a presigned post request to put %v:%v. Here's why: %v\n", bucketName, objectKey, err)
+		return fmt.Errorf("failed to set bucket policy for %s: %w", bucketName, err)
 	}
-	return request, nil
+
+	logrus.Infof("Successfully made bucket %s public\n", bucketName)
+	return nil
+}
+
+// GetPublicURL returns the public URL for an object (when bucket is public)
+func (m *MinIOService) GetPublicURL(objectKey string) string {
+	protocol := "http"
+	if m.UseSSL {
+		protocol = "https"
+	}
+	return fmt.Sprintf("%s://%s/%s/%s", protocol, m.Endpoint, m.BucketName, objectKey)
 }

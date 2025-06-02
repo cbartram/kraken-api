@@ -44,7 +44,7 @@ func (s *PluginStore) GetPlugins() []model.PluginMetadata {
 	return tmp
 }
 
-func (s *PluginStore) GetPluginVersion(name string, service *S3Service) (string, error) {
+func (s *PluginStore) GetPluginVersion(name string, service *MinIOService) (string, error) {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
 
@@ -105,7 +105,7 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 }
 
 // GetPlugin Returns a single plugin given the plugin name. If no plugin with the given name is found it returns an error.
-func (s *PluginStore) GetPlugin(name string, service *S3Service) (*model.PluginMetadata, error) {
+func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.PluginMetadata, error) {
 	plugin := &model.PluginMetadata{}
 
 	tx := s.db.Where("name = ?", name).
@@ -128,7 +128,7 @@ func (s *PluginStore) GetPlugin(name string, service *S3Service) (*model.PluginM
 }
 
 // GetPrice returns the price for a specific plugin and period
-func (s *PluginStore) GetPrice(pluginName string, period Period, service *S3Service) (int, error) {
+func (s *PluginStore) GetPrice(pluginName string, period Period, service *MinIOService) (int, error) {
 	plugin, err := s.GetPlugin(pluginName, service)
 	if err != nil {
 		return 0, err

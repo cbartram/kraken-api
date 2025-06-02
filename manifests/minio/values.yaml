@@ -1,0 +1,23 @@
+name: minio
+pvc:
+  size: 10Gi
+
+image:
+  repository: quay.io/minio/minio
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+volumes:
+  - name: minio-storage
+    persistentVolumeClaim:
+      claimName: minio-pvc
+
+volumeMounts:
+  - name: minio-storage
+    mountPath: /data
+

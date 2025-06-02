@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to make discord service: %v", err)
 	}
-	s3Service, err := service.MakeS3Service(os.Getenv("BUCKET_NAME"))
+	s3Service, err := service.MakeMinIOService(os.Getenv("BUCKET_NAME"), os.Getenv("MINIO_ENDPOINT"))
 	if err != nil {
 		logrus.Fatalf("failed to create S3 service: %v", err)
 	}

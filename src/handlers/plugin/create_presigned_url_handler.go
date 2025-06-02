@@ -11,6 +11,7 @@ import (
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -22,14 +23,12 @@ const SignedUrlDurationSeconds = 300
 type PresignedUrlHandler struct{}
 
 type PresignedUrlResponse struct {
-	URL          string      `json:"URL"`
-	Method       string      `json:"Method"`
-	SignedHeader http.Header `json:"SignedHeader"`
-	TrialPlugin  bool        `json:"isTrialPlugin"`
+	URL         string `json:"URL"`
+	TrialPlugin bool   `json:"isTrialPlugin"`
 }
 
 type PresignedURLResult struct {
-	URL    *v4.PresignedHTTPRequest
+	URL    *url.URL
 	Plugin *model.Plugin
 	Error  error
 }
@@ -123,10 +122,8 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		}
 		if result.URL != nil {
 			preSignedUrls = append(preSignedUrls, PresignedUrlResponse{
-				URL:          result.URL.URL,
-				Method:       result.URL.Method,
-				SignedHeader: result.URL.SignedHeader,
-				TrialPlugin:  result.Plugin.TrialPlugin,
+				URL:         result.URL.String(),
+				TrialPlugin: result.Plugin.TrialPlugin,
 			})
 		}
 	}
@@ -136,7 +133,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 
 func GeneratePreSignedURL(
 	ctx context.Context,
-	s3 *service.S3Service,
+	s3 *service.MinIOService,
 	plugin *model.Plugin,
 	devPlugins bool,
 	wg *sync.WaitGroup,
@@ -173,6 +170,6 @@ func GeneratePreSignedURL(
 	}
 
 	log.Infof("generated pre-signed url for: plugin: %s, %d seconds, url: %s",
-		name, SignedUrlDurationSeconds, url.URL)
+		name, SignedUrlDurationSeconds, url)
 	results <- PresignedURLResult{url, plugin, nil}
 }
