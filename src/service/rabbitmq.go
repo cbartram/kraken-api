@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"os"
 	"time"
@@ -16,6 +16,7 @@ type Message struct {
 }
 
 type RabbitMqService struct {
+	log            *zap.SugaredLogger
 	Connection     *amqp.Connection
 	ConsumeChannel *amqp.Channel
 	PublishChannel *amqp.Channel
@@ -24,7 +25,7 @@ type RabbitMqService struct {
 	routingName    string
 }
 
-func MakeRabbitMQService(exchangeName, routingKey string) (*RabbitMqService, error) {
+func MakeRabbitMQService(exchangeName, routingKey string, log *zap.SugaredLogger) (*RabbitMqService, error) {
 	credentials := fmt.Sprintf("%s:%s", os.Getenv("RABBITMQ_DEFAULT_USER"), os.Getenv("RABBITMQ_DEFAULT_PASS"))
 	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s@%s/", credentials, os.Getenv("RABBITMQ_BASE_URL")))
 	if err != nil {
@@ -89,6 +90,7 @@ func MakeRabbitMQService(exchangeName, routingKey string) (*RabbitMqService, err
 	}
 
 	return &RabbitMqService{
+		log:            log,
 		Connection:     conn,
 		ConsumeChannel: ch,
 		PublishChannel: pubChan,
@@ -101,7 +103,7 @@ func MakeRabbitMQService(exchangeName, routingKey string) (*RabbitMqService, err
 func (r *RabbitMqService) PublishMessage(message *Message) error {
 	messageBytes, err := json.Marshal(message)
 	if err != nil {
-		log.Errorf("failed to publish message: %v", err)
+		r.log.Errorf("failed to publish message: %v", err)
 		return err
 	}
 
@@ -117,7 +119,7 @@ func (r *RabbitMqService) PublishMessage(message *Message) error {
 	)
 }
 
-func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *gorm.DB), delay time.Duration, db *gorm.DB) error {
+func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *gorm.DB, log *zap.SugaredLogger), delay time.Duration, db *gorm.DB) error {
 	msgs, err := r.ConsumeChannel.Consume(
 		r.Queue.Name,
 		"",
@@ -128,7 +130,7 @@ func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *go
 		nil,
 	)
 	if err != nil {
-		log.Errorf("error starting consumer: %v", err)
+		r.log.Errorf("error starting consumer: %v", err)
 		r.Connection.Close()
 		return err
 	}
@@ -138,10 +140,10 @@ func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *go
 			time.Sleep(delay)
 			var message Message
 			if err := json.Unmarshal(msg.Body, &message); err != nil {
-				log.Errorf("error unmarshaling stripe websocket message: %v", err)
+				r.log.Errorf("error unmarshaling stripe websocket message: %v", err)
 				continue
 			}
-			consumer(message, db)
+			consumer(message, db, r.log)
 		}
 	}()
 

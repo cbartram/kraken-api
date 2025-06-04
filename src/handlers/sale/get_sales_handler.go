@@ -3,6 +3,7 @@ package sale
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
@@ -13,7 +14,10 @@ type GetSaleHandler struct{}
 
 func (h *GetSaleHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	sales, err := GetActiveSales(w.Database)
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
+
 	if err != nil {
+		log.Errorf("failed to get active sales: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get sales: " + err.Error()})
 		return
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
-	log "github.com/sirupsen/logrus"
 	"kraken-api/src/model"
 	"os"
 	"regexp"
@@ -38,7 +37,6 @@ func PurchaseDurationToDays(purchaseDuration string) int {
 	case "yearly":
 		return 366
 	}
-	log.Infof("Invalid purchase duration: %s", purchaseDuration)
 	return 0
 }
 
@@ -55,7 +53,6 @@ func GetHostname() string {
 // ParseVersion extracts version from object name
 func ParseVersion(objectName string) (*Version, error) {
 	if !strings.HasSuffix(objectName, ".jar") {
-		log.Infof("object name must end with .jar, skipping")
 		return nil, nil
 	}
 

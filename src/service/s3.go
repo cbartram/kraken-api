@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net/url"
 	"os"
 	"strings"
@@ -11,12 +12,12 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/sirupsen/logrus"
 	"kraken-api/src/util"
 )
 
 // MinIOService encapsulates MinIO operations for object storage
 type MinIOService struct {
+	log        *zap.SugaredLogger
 	BucketName string
 	Client     *minio.Client
 	Endpoint   string
@@ -24,7 +25,7 @@ type MinIOService struct {
 }
 
 // MakeMinIOService creates a new MinIO service instance
-func MakeMinIOService(bucketName, endpoint string) (*MinIOService, error) {
+func MakeMinIOService(bucketName, endpoint string, log *zap.SugaredLogger) (*MinIOService, error) {
 	username := os.Getenv("MINIO_ROOT_USER")
 	password := os.Getenv("MINIO_ROOT_PASSWORD")
 
@@ -46,6 +47,7 @@ func MakeMinIOService(bucketName, endpoint string) (*MinIOService, error) {
 	}
 
 	return &MinIOService{
+		log:        log,
 		BucketName: bucketName,
 		Client:     minioClient,
 		Endpoint:   endpoint,
@@ -74,7 +76,7 @@ func (m *MinIOService) GetAllLatestVersion() (map[string]string, error) {
 		key := object.Key
 
 		if !strings.HasSuffix(key, ".jar") {
-			logrus.Debugf("skipping as plugin is not a jar: %s", key)
+			m.log.Debugf("skipping as plugin is not a jar: %s", key)
 			continue
 		}
 
@@ -85,7 +87,7 @@ func (m *MinIOService) GetAllLatestVersion() (map[string]string, error) {
 
 		lastDash := strings.LastIndex(pluginNameVersion, "-")
 		if lastDash == -1 {
-			logrus.Infof("skipping as plugin cannot be parsed, no \"-\" between plugin name and version: %s", key)
+			m.log.Infof("skipping as plugin cannot be parsed, no \"-\" between plugin name and version: %s", key)
 			continue
 		}
 
@@ -93,7 +95,7 @@ func (m *MinIOService) GetAllLatestVersion() (map[string]string, error) {
 
 		version, err := util.ParseVersion(pluginNameVersion) // use pluginNameVersion, not full key
 		if err != nil {
-			logrus.Infof("unable to parse version for object: %s", key)
+			m.log.Errorf("unable to parse version for object: %s", key)
 			continue
 		}
 
@@ -106,7 +108,7 @@ func (m *MinIOService) GetAllLatestVersion() (map[string]string, error) {
 
 		currentVersion, err := util.ParseVersion(pluginName + "-" + currentVersionStr + ".jar")
 		if err != nil {
-			logrus.Warnf("invalid stored version for %s: %s", pluginName, currentVersionStr)
+			m.log.Warnf("invalid stored version for %s: %s", pluginName, currentVersionStr)
 			plugins[pluginName] = version.ToString()
 			continue
 		}
@@ -158,7 +160,7 @@ func (m *MinIOService) GetLatestVersion(prefix string) (bool, string, error) {
 		// Split by dash to check the plugin name
 		parts := strings.Split(baseName, "-")
 		if len(parts) < 2 {
-			logrus.Infof("skipping object with invalid format: %s", key)
+			m.log.Infof("skipping object with invalid format: %s", key)
 			continue
 		}
 
@@ -171,14 +173,14 @@ func (m *MinIOService) GetLatestVersion(prefix string) (bool, string, error) {
 
 		// Only consider objects that match the exact plugin name
 		if objPluginName != pluginName {
-			logrus.Infof("skipping object with different plugin name: %s (looking for: %s)", objPluginName, pluginName)
+			m.log.Infof("skipping object with different plugin name: %s (looking for: %s)", objPluginName, pluginName)
 			continue
 		}
 
 		version, err := util.ParseVersion(key)
-		logrus.Debugf("version: %v for object key: %s", version, key)
+		m.log.Debugf("version: %v for object key: %s", version, key)
 		if err != nil {
-			logrus.Infof("unable to parse version for object: %s", key)
+			m.log.Infof("unable to parse version for object: %s", key)
 			continue
 		}
 
@@ -189,18 +191,18 @@ func (m *MinIOService) GetLatestVersion(prefix string) (bool, string, error) {
 	}
 
 	if objectCount == 0 {
-		logrus.Infof("object count is 0, skipping object with invalid format: %s", prefix)
+		m.log.Infof("object count is 0, skipping object with invalid format: %s", prefix)
 		return false, "", nil
 	}
 
 	if latestKey == "" {
-		logrus.Infof("latest key is blank, skipping object with invalid format: %s", prefix)
+		m.log.Infof("latest key is blank, skipping object with invalid format: %s", prefix)
 		return false, "", nil
 	}
 
 	// Return the object's key trimmed of its .jar extension
 	name := strings.TrimSuffix(latestKey, ".jar")
-	logrus.Debugf("latest version: %s for plugin: %s", name, prefix)
+	m.log.Debugf("latest version: %s for plugin: %s", name, prefix)
 	return true, name, nil
 }
 
@@ -210,7 +212,7 @@ func (m *MinIOService) CreatePresignedUrl(ctx context.Context, objectKey string,
 
 	presignedURL, err := m.Client.PresignedGetObject(ctx, m.BucketName, objectKey, expires, nil)
 	if err != nil {
-		logrus.Errorf("Couldn't get a presigned URL to get %v:%v. err: %v",
+		m.log.Errorf("failed to get a presigned URL to for plugin: %v:%v. err: %v",
 			m.BucketName, objectKey, err)
 		return nil, err
 	}
@@ -224,7 +226,7 @@ func (m *MinIOService) PutObject(ctx context.Context, bucketName string, objectK
 
 	presignedURL, err := m.Client.PresignedPutObject(ctx, bucketName, objectKey, expires)
 	if err != nil {
-		logrus.Errorf("Couldn't get a presigned URL to put %v:%v. err: %v",
+		m.log.Errorf("Couldn't get a presigned URL to put %v:%v. err: %v",
 			bucketName, objectKey, err)
 		return nil, err
 	}
@@ -237,45 +239,10 @@ func (m *MinIOService) PutObject(ctx context.Context, bucketName string, objectK
 func (m *MinIOService) DeleteObject(ctx context.Context, bucketName string, objectKey string) error {
 	err := m.Client.RemoveObject(ctx, bucketName, objectKey, minio.RemoveObjectOptions{})
 	if err != nil {
-		logrus.Errorf("Couldn't delete object %v. err: %v", objectKey, err)
+		m.log.Errorf("failed to delete object %v. err: %v", objectKey, err)
 		return err
 	}
 
-	logrus.Infof("Successfully deleted object %v from bucket %v", objectKey, bucketName)
+	m.log.Infof("successfully deleted object %v from bucket %v", objectKey, bucketName)
 	return nil
-}
-
-// MakeBucketPublic sets a bucket policy to make it publicly readable
-func (m *MinIOService) MakeBucketPublic(ctx context.Context, bucketName string) error {
-	// Policy that allows public read access to all objects in the bucket
-	policy := fmt.Sprintf(`{
-		"Version": "2012-10-17",
-		"Statement": [
-			{
-				"Effect": "Allow",
-				"Principal": {
-					"AWS": ["*"]
-				},
-				"Action": ["s3:GetObject"],
-				"Resource": ["arn:aws:s3:::%s/*"]
-			}
-		]
-	}`, bucketName)
-
-	err := m.Client.SetBucketPolicy(ctx, bucketName, policy)
-	if err != nil {
-		return fmt.Errorf("failed to set bucket policy for %s: %w", bucketName, err)
-	}
-
-	logrus.Infof("Successfully made bucket %s public\n", bucketName)
-	return nil
-}
-
-// GetPublicURL returns the public URL for an object (when bucket is public)
-func (m *MinIOService) GetPublicURL(objectKey string) string {
-	protocol := "http"
-	if m.UseSSL {
-		protocol = "https"
-	}
-	return fmt.Sprintf("%s://%s/%s/%s", protocol, m.Endpoint, m.BucketName, objectKey)
 }

@@ -6,7 +6,8 @@ import (
 	"fmt"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
@@ -38,6 +39,7 @@ type PresignedURLResult struct {
 // plugins are not expired. All non-expired plugins will have presigned urls and be loadable by the service. License
 // key validation happens in the /api/v1/plugin/validate-license endpoint before a loaded plugin is started.
 func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")
@@ -101,6 +103,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		wg.Add(1)
 		go GeneratePreSignedURL(
 			ctx,
+			w.Logger,
 			w.S3Service,
 			plugin,
 			devPlugins,
@@ -133,6 +136,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 
 func GeneratePreSignedURL(
 	ctx context.Context,
+	log *zap.SugaredLogger,
 	s3 *service.MinIOService,
 	plugin *model.Plugin,
 	devPlugins bool,

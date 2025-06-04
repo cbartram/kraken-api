@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/webhook"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"io"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 
 type WebhookHandler struct{}
 
-func ConsumeMessageWithDelay(message service.Message, db *gorm.DB) {
+func ConsumeMessageWithDelay(message service.Message, db *gorm.DB, log *zap.SugaredLogger) {
 	log.Infof("processing rabbitmq message type: %s", message.Type)
 
 	switch message.Type {
@@ -65,6 +66,7 @@ func ConsumeMessageWithDelay(message service.Message, db *gorm.DB) {
 }
 
 func (w *WebhookHandler) HandleRequest(c *gin.Context, wrapper *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, wrapper.Logger)
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)

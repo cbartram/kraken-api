@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -19,7 +19,8 @@ type SupportRequest struct {
 	Subject string `json:"subject" binding:"required"`
 }
 
-func (e *EmailHandler) HandleRequest(c *gin.Context) {
+func (e *EmailHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := GetLoggerWithTrace(c, w.Logger)
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)

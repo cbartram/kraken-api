@@ -3,7 +3,7 @@ package plugin
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
@@ -14,6 +14,7 @@ import (
 type FreeTrialHandler struct{}
 
 func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")

@@ -3,9 +3,10 @@ package plugin
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"io"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"strings"
@@ -21,7 +22,8 @@ type ValidatePluginRequest struct {
 
 // HandleRequest Validates that the plugin license keys's derived from the licenseKey field on a plugin's configuration
 // match what was generated when the plugin was purchased.
-func (v *ValidatePluginHandler) HandleRequest(c *gin.Context) {
+func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)

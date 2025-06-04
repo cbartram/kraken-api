@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
@@ -16,6 +15,7 @@ type DiscordRequestHandler struct{}
 // HandleRequest Handles the /api/v1/discord/oauth route which the service calls to trade a code for an OAuth
 // access token.
 func (h *DiscordRequestHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := GetLoggerWithTrace(c, w.Logger)
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)

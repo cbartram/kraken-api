@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"kraken-api/src/service"
 	"net/http"
 )
@@ -17,6 +16,7 @@ type ClientBootstrapHandler struct{}
 // HandleRequest Handles the /api/v1/plugin/pre-signed-url route which the service calls to generate pre-signed urls
 // to download the kraken-client JAR file from S3.
 func (b *ClientBootstrapHandler) HandleRequest(c *gin.Context, ctx context.Context, w *service.Wrapper) {
+	log := GetLoggerWithTrace(c, w.Logger)
 	exists, name, err := w.S3Service.GetLatestVersion("client/")
 	if err != nil || !exists {
 		log.Errorf("error: kraken client with prefix: kraken-client- does not exist or error: %s", err)

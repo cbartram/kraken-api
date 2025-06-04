@@ -3,18 +3,20 @@ package payment
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
+	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 )
 
 type CheckoutSessionHandler struct{}
 
-func (h *CheckoutSessionHandler) HandleRequest(c *gin.Context) {
+func (h *CheckoutSessionHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	lookupKey, ok := c.GetQuery("key")
 	var foundPrice *stripe.Price
 

@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
@@ -12,6 +12,7 @@ import (
 type PluginMetadataHandler struct{}
 
 func (p *PluginMetadataHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	name := c.Query("name")
 
 	if name == "" {

@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"io"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
@@ -20,6 +21,7 @@ type PurchaseHandler struct{}
 
 // HandleRequest Handles the /api/v1/plugin/purchase API route.
 func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -49,7 +51,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		return
 	}
 
-	purchaseCtx := NewPurchaseContext(user, tx, w)
+	purchaseCtx := NewPurchaseContext(user, tx, w, log)
 	plugin, status, err := purchaseCtx.PurchasePlugin(&reqBody)
 
 	if err != nil {
@@ -78,11 +80,15 @@ type PurchaseContext struct {
 	User    *model.User
 	DB      *gorm.DB
 	Wrapper *service.Wrapper
+	Log     *zap.SugaredLogger
 }
 
-// NewPurchaseContext creates a new purchase context
-func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper) *PurchaseContext {
+// NewPurchaseContext creates a new purchase context. Although there is a logger on the service wrapper instead
+// we pass in a logger because it will have the trace id structured logging from the middleware executed before this in
+// the request handler chain.
+func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper, log *zap.SugaredLogger) *PurchaseContext {
 	return &PurchaseContext{
+		Log:     log,
 		User:    user,
 		DB:      tx,
 		Wrapper: w,
@@ -93,24 +99,24 @@ func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper) *Purc
 func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequest) (*model.Plugin, int, error) {
 	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration), ctx.Wrapper.S3Service)
 	if err != nil {
-		log.Errorf("could not get plugin from store: %s", err)
+		ctx.Log.Errorf("could not get plugin from store: %s", err)
 		return nil, http.StatusBadRequest, err
 	}
 
 	purchaseDurationDays := util.PurchaseDurationToDays(purchaseReq.PurchaseDuration)
 
-	log.Infof("Attempting plugin purchase for user: %s, plugin: %s, duration: %v", ctx.User.DiscordUsername, purchaseReq.PluginName, purchaseReq.PurchaseDuration)
+	ctx.Log.Infof("Attempting plugin purchase for user: %s, plugin: %s, duration: %v", ctx.User.DiscordUsername, purchaseReq.PluginName, purchaseReq.PurchaseDuration)
 
 	if ctx.User.Tokens < int64(price) {
 		err := fmt.Sprintf("user does not have enough tokens to purchase: %s, has tokens: %d, needs tokens: %d",
 			purchaseReq.PluginName, ctx.User.Tokens, price)
-		log.Error(err)
+		ctx.Log.Error(err)
 		return nil, http.StatusBadRequest, errors.New(err)
 	}
 
 	if ctx.User.InFreeTrialPeriod() {
 		msg := fmt.Sprintf("user: %s cannot purchase plugins during their free trial period", ctx.User.DiscordUsername)
-		log.Errorf(msg)
+		ctx.Log.Errorf(msg)
 		return nil, http.StatusBadRequest, errors.New(msg)
 	}
 
@@ -119,23 +125,21 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 	if err != nil || !exists {
 		msg := fmt.Sprintf("failed to list plugin objects in s3 bucket or plugin does not exist: object exists: %v, error: %s",
 			exists, err)
-		log.Errorf(msg)
+		ctx.Log.Errorf(msg)
 		return nil, http.StatusBadRequest, errors.New(msg)
 	}
 
-	// Reduce user tokens
 	ctx.User.Tokens -= int64(price)
 
-	// Save user tokens to DB within the transaction
 	if err := ctx.DB.Save(ctx.User).Error; err != nil {
-		log.Errorf("failed to save user tokens to db: %s", err)
+		ctx.Log.Errorf("failed to save user tokens to db: %s", err)
 		return nil, http.StatusInternalServerError, errors.New("failed to save user tokens to db")
 	}
 
 	// Check if user already owns this plugin
 	for i, ownedPlugin := range ctx.User.Plugins {
 		if strings.ToLower(ctx.User.Plugins[i].Name) == strings.ToLower(purchaseReq.PluginName) {
-			log.Infof("plugin already exists: %s and expires: %s, is expired: %v",
+			ctx.Log.Infof("plugin already exists: %s and expires: %s, is expired: %v",
 				ctx.User.Plugins[i].Name,
 				ctx.User.Plugins[i].ExpirationTimestamp.Format(time.RFC3339),
 				util.IsPluginExpired(ctx.User.Plugins[i].ExpirationTimestamp))
@@ -143,21 +147,21 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 			if !util.IsPluginExpired(ctx.User.Plugins[i].ExpirationTimestamp) {
 				msg := fmt.Sprintf("user: %s attempted to purchase plugin: %s, but plugin is already owned and not expired",
 					ctx.User.DiscordUsername, purchaseReq.PluginName)
-				log.Errorf(msg)
+				ctx.Log.Errorf(msg)
 				return nil, http.StatusBadRequest, errors.New("user already owns non-expired plugin: " + purchaseReq.PluginName)
 			} else {
 				// User is renewing the plugin. We do not generate a new license key for a plugin renewal. This may change in the future
 				// but for now it ensures users don't have to change anything in their plugin configuration when they renew.
 				ctx.User.Plugins[i].ExpirationTimestamp = time.Now().AddDate(0, 0, purchaseDurationDays)
 				ctx.User.Plugins[i].UpdatedAt = time.Now()
-				log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license (existing): %s",
+				ctx.Log.Infof("user: %s is renewing plugin: %s, expiration time: %s, license (existing): %s",
 					ctx.User.DiscordUsername,
 					purchaseReq.PluginName,
 					ctx.User.Plugins[i].ExpirationTimestamp,
 					ctx.User.Plugins[i].LicenseKey)
 
 				if err := ctx.DB.Save(&ctx.User.Plugins[i]).Error; err != nil {
-					log.Errorf("failed to save plugin to db: %v", err)
+					ctx.Log.Errorf("failed to save plugin to db: %v", err)
 					return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to save plugin to db"), err)
 				}
 
@@ -169,26 +173,26 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 	// User's first time purchasing the plugin
 	licenseKey, err := util.GenerateLicenseKey()
 	if err != nil {
-		log.Errorf("failed to generate license key: %v", err)
+		ctx.Log.Errorf("failed to generate license key: %v", err)
 		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to generate a license key"), err)
 	}
 
 	dbPlugin, err := ctx.Wrapper.PluginStore.GetPlugin(purchaseReq.PluginName, ctx.Wrapper.S3Service)
 	if err != nil {
-		log.Errorf("failed to get plugin from store: %s", err)
+		ctx.Log.Errorf("failed to get plugin from store: %s", err)
 		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to get plugin from store name: "+purchaseReq.PluginName), err)
 	}
 
 	var expirationTime time.Time
 	if dbPlugin.IsInBeta {
-		log.Infof("plugin: %s is in beta, adding 3 years to expiration time.", purchaseReq.PluginName)
+		ctx.Log.Infof("plugin: %s is in beta, adding 3 years to expiration time.", purchaseReq.PluginName)
 		expirationTime = time.Now().AddDate(3, 0, 0)
 	} else {
-		log.Infof("plugin is not beta. setting expiration time in days: %d", purchaseDurationDays)
+		ctx.Log.Infof("plugin is not beta. setting expiration time in days: %d", purchaseDurationDays)
 		expirationTime = time.Now().AddDate(0, 0, purchaseDurationDays)
 	}
 
-	log.Infof("plugin has been purchased for: %d days and will expire at: %s",
+	ctx.Log.Infof("plugin has been purchased for: %d days and will expire at: %s",
 		purchaseDurationDays, expirationTime.Format(time.RFC3339))
 
 	plugin := model.Plugin{
@@ -205,7 +209,7 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 	}
 
 	if err := ctx.DB.Create(&plugin).Error; err != nil {
-		log.Errorf("error: failed to save plugin to db: %s", err)
+		ctx.Log.Errorf("error: failed to save plugin to db: %s", err)
 		return nil, http.StatusInternalServerError, errors.New("failed to save plugin to db")
 	}
 

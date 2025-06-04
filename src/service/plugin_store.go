@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"kraken-api/src/model"
 	"sync"
@@ -114,7 +113,6 @@ func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.Plug
 		First(plugin)
 
 	if tx.Error != nil {
-		log.Errorf("failed to find plugin with name: %s, err: %v", name, tx.Error)
 		return nil, errors.New("failed to find plugin with name: " + name)
 	}
 
@@ -167,7 +165,6 @@ func (s *PluginStore) GetPluginPack(name string) (*model.PluginPack, error) {
 		First(pack)
 
 	if tx.Error != nil {
-		log.Errorf("failed to find plugin pack with name: %s, err: %v", name, tx.Error)
 		return nil, fmt.Errorf("failed to find plugin pack with name: %s", name)
 	}
 

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"kraken-api/src/model"
 	"kraken-api/src/util"
@@ -17,6 +17,7 @@ import (
 
 // CognitoService handles AWS Cognito authentication operations
 type CognitoService struct {
+	log           *zap.SugaredLogger
 	cognitoClient *cognitoidentityprovider.Client
 	userPoolID    string
 	clientID      string
@@ -24,13 +25,14 @@ type CognitoService struct {
 }
 
 // MakeCognitoService creates a new instance of CognitoAuthManager
-func MakeCognitoService() *CognitoService {
+func MakeCognitoService(log *zap.SugaredLogger) *CognitoService {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Errorf("error loading default aws config: %s", err)
 	}
 
 	return &CognitoService{
+		log:           log,
 		cognitoClient: cognitoidentityprovider.NewFromConfig(cfg),
 		userPoolID:    os.Getenv("USER_POOL_ID"),
 		clientID:      os.Getenv("COGNITO_CLIENT_ID"),
@@ -48,7 +50,7 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 	})
 
 	if createUserPayload.DiscordEmail == "" || &createUserPayload.DiscordEmail == nil {
-		log.Infof("no discord email or email provided setting to default value")
+		m.log.Infof("no discord email or email provided setting to default value")
 		hash, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
 			Length:        10,
 			RequireUpper:  true,
@@ -138,17 +140,17 @@ func (m *CognitoService) RefreshSession(ctx context.Context, discordID string) (
 	})
 
 	if err != nil {
-		log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
+		m.log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to get user for discord id: %s", discordID))
 	}
 
 	password := util.GetUserAttributeString(user.UserAttributes, "custom:temporary_password")
 
-	log.Infof("auth user: %s with password", discordID)
+	m.log.Infof("auth user: %s with password", discordID)
 	auth, err := m.initiateAuthUserPass(ctx, discordID, password)
 
 	if err != nil {
-		log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
+		m.log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to auth with user/pass for discord id: %s", discordID))
 	}
 
@@ -173,13 +175,13 @@ func (m *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *str
 	})
 
 	if err != nil {
-		log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
+		m.log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
 		return nil, err
 	}
 
 	user, err := model.GetUser(*userId, db)
 	if err != nil {
-		log.Errorf("could not get user from db: %v", err)
+		m.log.Errorf("could not get user from db: %v", err)
 		return nil, err
 	}
 

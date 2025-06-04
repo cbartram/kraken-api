@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"io"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
@@ -16,6 +16,7 @@ type CreateSaleHandler struct{}
 
 func (cr *CreateSaleHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	tmp, exists := c.Get("user")
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	if !exists {
 		log.Errorf("user not found in context")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found in context"})

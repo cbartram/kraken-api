@@ -3,40 +3,23 @@ package src
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"kraken-api/src/handlers"
 	"kraken-api/src/handlers/cognito"
 	"kraken-api/src/handlers/payment"
 	"kraken-api/src/handlers/plugin"
 	"kraken-api/src/handlers/sale"
 	"kraken-api/src/service"
-	"log"
 	"net/http"
 	"os"
 )
 
 func NewRouter(w *service.Wrapper) *gin.Engine {
 	ctx := context.Background()
-	logger := logrus.New()
-	logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: false,
-	})
-
-	logLevel, err := logrus.ParseLevel(os.Getenv("LOG_LEVEL"))
-	if err != nil {
-		logLevel = logrus.InfoLevel
-	}
-
-	log.SetOutput(os.Stdout)
-	logrus.SetLevel(logLevel)
 
 	r := gin.New()
-
-	gin.DefaultWriter = logger.Writer()
-	gin.DefaultErrorWriter = logger.Writer()
 	gin.SetMode(gin.ReleaseMode)
 
-	r.Use(CORSMiddleware(), LogrusMiddleware(logger))
+	r.Use(handlers.CORSMiddleware(), handlers.TraceIDMiddleware(), handlers.LoggingMiddlewareWithTrace(w.Logger))
 
 	apiGroup := r.Group("/api/v1")
 	saleGroup := apiGroup.Group("/sale")
@@ -50,7 +33,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		})
 	})
 
-	saleGroup.POST("/create", AuthMiddleware(w), func(c *gin.Context) {
+	saleGroup.POST("/create", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := sale.CreateSaleHandler{}
 		h.HandleRequest(c, w)
 	})
@@ -70,14 +53,14 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, ctx, w)
 	})
 
-	apiGroup.POST("/support/send-message", AuthMiddleware(w), func(c *gin.Context) {
+	apiGroup.POST("/support/send-message", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := handlers.EmailHandler{}
-		h.HandleRequest(c)
+		h.HandleRequest(c, w)
 	})
 
-	stripeGroup.GET("/checkout-session", AuthMiddleware(w), func(c *gin.Context) {
+	stripeGroup.GET("/checkout-session", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := payment.CheckoutSessionHandler{}
-		h.HandleRequest(c)
+		h.HandleRequest(c, w)
 	})
 
 	stripeGroup.POST("/webhook", func(c *gin.Context) {
@@ -95,29 +78,29 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, w)
 	})
 
-	pluginGroup.POST("/free-trial", AuthMiddleware(w), func(c *gin.Context) {
+	pluginGroup.POST("/free-trial", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.FreeTrialHandler{}
 		h.HandleRequest(c, w)
 	})
 
-	pluginGroup.POST("/create-presigned-url", AuthMiddleware(w), func(c *gin.Context) {
+	pluginGroup.POST("/create-presigned-url", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.PresignedUrlHandler{}
 		h.HandleRequest(c, ctx, w)
 	})
 
-	pluginGroup.POST("/purchase", AuthMiddleware(w), func(c *gin.Context) {
+	pluginGroup.POST("/purchase", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.PurchaseHandler{}
 		h.HandleRequest(c, w)
 	})
 
-	pluginGroup.POST("/purchase-pack", AuthMiddleware(w), func(c *gin.Context) {
+	pluginGroup.POST("/purchase-pack", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.PurchasePluginPackHandler{}
 		h.HandleRequest(c, w)
 	})
 
-	pluginGroup.POST("/validate", AuthMiddleware(w), func(c *gin.Context) {
+	pluginGroup.POST("/validate", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := plugin.ValidatePluginHandler{}
-		h.HandleRequest(c)
+		h.HandleRequest(c, w)
 	})
 
 	userGroup.POST("/create", func(c *gin.Context) {
@@ -125,12 +108,12 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, ctx, w)
 	})
 
-	userGroup.GET("/", AuthMiddleware(w), func(c *gin.Context) {
+	userGroup.GET("/", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := cognito.AuthHandler{}
-		h.HandleRequest(c)
+		h.HandleRequest(c, w)
 	})
 
-	userGroup.POST("/jagex/link", AuthMiddleware(w), func(c *gin.Context) {
+	userGroup.POST("/jagex/link", handlers.AuthMiddleware(w), func(c *gin.Context) {
 		h := cognito.JagexLinkHandler{}
 		h.HandleRequest(c, w)
 	})

@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"io"
 	"kraken-api/src/model"
 	"net/http"
@@ -20,6 +20,7 @@ const (
 
 // DiscordService handles OAuth2 authentication and API calls
 type DiscordService struct {
+	log          *zap.SugaredLogger
 	clientID     string
 	clientSecret string
 	httpClient   *http.Client
@@ -36,7 +37,7 @@ type UserResponse struct {
 }
 
 // MakeDiscordService creates a new Discord service
-func MakeDiscordService() (*DiscordService, error) {
+func MakeDiscordService(log *zap.SugaredLogger) (*DiscordService, error) {
 	clientID := os.Getenv("DISCORD_CLIENT_ID")
 	clientSecret := os.Getenv("DISCORD_CLIENT_SECRET")
 
@@ -45,6 +46,7 @@ func MakeDiscordService() (*DiscordService, error) {
 	}
 
 	return &DiscordService{
+		log:          log,
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		httpClient:   &http.Client{},
@@ -58,12 +60,12 @@ func (c *DiscordService) ExchangeCodeForToken(code, redirectUri string) (*model.
 	data.Set("code", code)
 	data.Set("redirect_uri", redirectUri)
 
-	log.Infof("Making POST request to: %s with redirect uri: %s and code: %s", discordTokenEndpoint, redirectUri, code)
+	c.log.Infof("Making POST request to: %s with redirect uri: %s and code: %s", discordTokenEndpoint, redirectUri, code)
 
 	// Create request
 	req, err := http.NewRequest("POST", discordTokenEndpoint, strings.NewReader(data.Encode()))
 	if err != nil {
-		log.Errorf("error creating post to discord api %s: %s", discordTokenEndpoint, err)
+		c.log.Errorf("error creating post to discord api %s: %s", discordTokenEndpoint, err)
 		return nil, fmt.Errorf("failed to create POST request: %w", err)
 	}
 
@@ -73,7 +75,7 @@ func (c *DiscordService) ExchangeCodeForToken(code, redirectUri string) (*model.
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Errorf("error making post to discord api %s: %s", discordTokenEndpoint, err)
+		c.log.Errorf("error making post to discord api %s: %s", discordTokenEndpoint, err)
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -81,15 +83,15 @@ func (c *DiscordService) ExchangeCodeForToken(code, redirectUri string) (*model.
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		bodyString := string(bodyBytes)
-		log.Errorf("unexpected status code from discord API: %d message: %s", resp.StatusCode, bodyString)
+		c.log.Errorf("unexpected status code from discord API: %d message: %s", resp.StatusCode, bodyString)
 		return nil, fmt.Errorf("discord API returned status: %d message: %s", resp.StatusCode, bodyString)
 	}
 
-	log.Infof("discord access token http status code: %d", resp.StatusCode)
+	c.log.Infof("discord access token http status code: %d", resp.StatusCode)
 
 	var tokenResp model.DiscordTokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		log.Errorf("failed to deserialize discord response body into model.DiscordTokenResponse object: %s", err)
+		c.log.Errorf("failed to deserialize discord response body into model.DiscordTokenResponse object: %s", err)
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 

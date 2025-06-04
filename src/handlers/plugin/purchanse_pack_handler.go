@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"io"
+	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
@@ -16,6 +16,7 @@ import (
 type PurchasePluginPackHandler struct{}
 
 func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
+	log := handlers.GetLoggerWithTrace(c, w.Logger)
 	bodyRaw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Errorf("could not read body from request: %s", err)
@@ -52,7 +53,7 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 		return
 	}
 
-	purchaseCtx := NewPurchaseContext(user, tx, w)
+	purchaseCtx := NewPurchaseContext(user, tx, w, log)
 	results := make([]gin.H, 0, len(plugins))
 	hasErrors := false
 	var errorMessages []string

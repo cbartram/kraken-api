@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
 	"time"
 )
 
-func Connect() *gorm.DB {
+func Connect(log *zap.SugaredLogger) *gorm.DB {
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:               fmt.Sprintf("%s:%s@tcp(%s:3306)/kraken?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("MYSQL_USER"), os.Getenv("MYSQL_PASSWORD"), os.Getenv("MYSQL_HOST")),
 		DefaultStringSize: 256,
@@ -348,7 +348,7 @@ func GetActiveSalesLookup(db *gorm.DB) (map[uint]float32, error) {
 	return lookup, nil
 }
 
-func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
+func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB, log *zap.SugaredLogger) error {
 	jsonData, err := os.ReadFile(jsonFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read JSON file: %w", err)
@@ -422,7 +422,7 @@ func ImportOrUpdatePluginMetadata(jsonFilePath string, db *gorm.DB) error {
 	return nil
 }
 
-func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB) error {
+func ImportOrUpdatePluginPacks(jsonFilePath string, db *gorm.DB, log *zap.SugaredLogger) error {
 	// Read the JSON file
 	jsonData, err := os.ReadFile(jsonFilePath)
 	if err != nil {

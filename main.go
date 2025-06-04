@@ -4,19 +4,28 @@ import (
 	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
 	"github.com/stripe/stripe-go/v81"
+	"go.uber.org/zap"
 	"kraken-api/src"
 	"kraken-api/src/handlers/payment"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
-	"log"
 	"os"
 	"strings"
 	"time"
 )
 
 func main() {
+	logLevel := os.Getenv("LOG_LEVEL")
+	var logger *zap.Logger
+	if strings.ToUpper(logLevel) == "INFO" || strings.ToUpper(logLevel) == "DEBUG" {
+		logger, _ = zap.NewDevelopment()
+	} else {
+		logger, _ = zap.NewProduction()
+	}
+	defer logger.Sync()
+	log := logger.Sugar()
+
 	ginMode := os.Getenv("GIN_MODE")
 	port := flag.String("port", "8080", "port to listen on")
 	flag.Parse()
@@ -29,32 +38,32 @@ func main() {
 		}
 	}
 
-	discordService, err := service.MakeDiscordService()
+	discordService, err := service.MakeDiscordService(log)
 	if err != nil {
 		log.Fatalf("failed to make discord service: %v", err)
 	}
-	s3Service, err := service.MakeMinIOService(os.Getenv("BUCKET_NAME"), os.Getenv("MINIO_ENDPOINT"))
+	s3Service, err := service.MakeMinIOService(os.Getenv("BUCKET_NAME"), os.Getenv("MINIO_ENDPOINT"), log)
 	if err != nil {
-		logrus.Fatalf("failed to create S3 service: %v", err)
+		log.Fatalf("failed to create S3 service: %v", err)
 	}
-	rabbitMqService, err := service.MakeRabbitMQService("stripe-webhooks-kraken", "stripe-webhooks-kraken")
+	rabbitMqService, err := service.MakeRabbitMQService("stripe-webhooks-kraken", "stripe-webhooks-kraken", log)
 	if err != nil {
-		logrus.Fatalf("failed to make rabbitmq service: %v", err)
+		log.Fatalf("failed to make rabbitmq service: %v", err)
 	}
 
-	db := model.Connect()
+	db := model.Connect(log)
 
 	key := os.Getenv("STRIPE_SECRET_KEY")
 	if key == "" {
 		log.Fatal("Missing STRIPE_SECRET_KEY environment variable")
 	}
 	stripe.Key = strings.TrimSpace(key)
-	logrus.Infof("stripe key loaded: %s****", stripe.Key[0:12])
 
 	w := service.Wrapper{
+		Logger:          log,
 		DiscordService:  discordService,
 		S3Service:       s3Service,
-		CognitoService:  service.MakeCognitoService(),
+		CognitoService:  service.MakeCognitoService(log),
 		Database:        db,
 		RabbitMqService: rabbitMqService,
 		PluginStore:     service.NewPluginStore(db),
@@ -63,14 +72,14 @@ func main() {
 
 	// TODO This shouldn't be part of the image. This should be a separate script that's run when creating
 	// new plugins and basically just be sql since its a data loader
-	err = model.ImportOrUpdatePluginMetadata("./data/plugin_metadata.json", w.Database)
+	err = model.ImportOrUpdatePluginMetadata("./data/plugin_metadata.json", w.Database, log)
 	if err != nil {
-		logrus.Fatalf("failed to import plugin metadata: %v", err)
+		log.Fatalf("failed to import plugin metadata: %v", err)
 	}
 	//
-	err = model.ImportOrUpdatePluginPacks("./data/plugin_packs.json", w.Database)
+	err = model.ImportOrUpdatePluginPacks("./data/plugin_packs.json", w.Database, log)
 	if err != nil {
-		logrus.Fatalf("failed to import plugin packs: %v", err)
+		log.Fatalf("failed to import plugin packs: %v", err)
 	}
 
 	// Registers a new go routine listening to the stripe-webhooks channel. New messages are enqueued when the /api/v1/stripe/webhook
@@ -78,15 +87,15 @@ func main() {
 	// issues with both cognito and stripe when many events are sent at checkout.
 	err = rabbitMqService.RegisterConsumer(payment.ConsumeMessageWithDelay, 3*time.Second, w.Database)
 	if err != nil {
-		logrus.Errorf("failed to register stripe webhook message consumer: %v", err)
+		log.Errorf("failed to register stripe webhook message consumer: %v", err)
 	}
 
 	defer func() {
-		logrus.Infof("Closing rabbitmq connection and channel")
+		log.Infof("closing rabbitmq connection and channel")
 		rabbitMqService.Close()
 	}()
 
-	log.Printf("Server Listening on port %s", *port)
+	log.Infof("server listening on port %s", *port)
 	err = router.Run(fmt.Sprintf(":%v", *port))
 	if err != nil {
 		log.Fatal("failed to run http server: " + err.Error())

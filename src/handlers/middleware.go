@@ -1,26 +1,75 @@
-package src
+package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"kraken-api/src/service"
 	"net/http"
 	"strings"
 )
 
-func LogrusMiddleware(logger *logrus.Logger) gin.HandlerFunc {
+const (
+	TraceIDKey    = "trace-id"
+	TraceIDHeader = "X-Trace-ID"
+)
+
+// generateTraceID creates a random trace ID
+func generateTraceID() string {
+	bytes := make([]byte, 16) // 128-bit trace ID
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+
+// TraceIDMiddleware generates or extracts trace ID and adds it to context
+func TraceIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.URL.Path != "/api/v1/health" {
-			logger.WithFields(logrus.Fields{
-				"user-agent": c.Request.UserAgent(),
-				"error":      c.Errors.ByType(gin.ErrorTypePrivate).String(),
-			}).Infof("[%s] %s: ", c.Request.Method, c.Request.URL.Path)
+		traceID := c.GetHeader(TraceIDHeader)
+
+		if traceID == "" {
+			traceID = generateTraceID()
 		}
+
+		c.Set(TraceIDKey, traceID)
+		c.Header(TraceIDHeader, traceID)
+
+		ctx := context.WithValue(c.Request.Context(), TraceIDKey, traceID)
+		c.Request = c.Request.WithContext(ctx)
+
 		c.Next()
 	}
+}
+
+func LoggingMiddlewareWithTrace(logger *zap.SugaredLogger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.URL.Path != "/api/v1/health" {
+			c.Next()
+
+			traceID := c.GetString(TraceIDKey)
+			errorString := c.Errors.ByType(gin.ErrorTypePrivate).String()
+
+			logger.Infow("",
+				"trace-id", traceID,
+				"method", c.Request.Method,
+				"path", c.Request.URL.Path,
+				"status-code", c.Writer.Status(),
+				"user-agent", c.Request.UserAgent(),
+				"client-ip", c.ClientIP(),
+				"error", errorString,
+			)
+		} else {
+			c.Next()
+		}
+	}
+}
+
+func GetLoggerWithTrace(c *gin.Context, baseLogger *zap.SugaredLogger) *zap.SugaredLogger {
+	traceID := c.GetString(TraceIDKey)
+	return baseLogger.With("trace-id", traceID)
 }
 
 func CORSMiddleware() gin.HandlerFunc {
@@ -73,7 +122,7 @@ func AuthMiddleware(w *service.Wrapper) gin.HandlerFunc {
 		discordID := credentials[0]
 		refreshToken := credentials[1]
 
-		logrus.Infof("authenticating user with discord id: %s", discordID)
+		w.Logger.Infof("authenticating user with discord id: %s", discordID)
 		user, err := w.CognitoService.AuthUser(context.Background(), &refreshToken, &discordID, w.Database)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("could not authenticate user with refresh token: %s", err)})
