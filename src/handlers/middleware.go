@@ -20,7 +20,7 @@ const (
 
 // generateTraceID creates a random trace ID
 func generateTraceID() string {
-	bytes := make([]byte, 16) // 128-bit trace ID
+	bytes := make([]byte, 4) // 32-bit trace ID
 	rand.Read(bytes)
 	return hex.EncodeToString(bytes)
 }
@@ -47,11 +47,7 @@ func TraceIDMiddleware() gin.HandlerFunc {
 func LoggingMiddlewareWithTrace(logger *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path != "/api/v1/health" {
-			c.Next()
-
 			traceID := c.GetString(TraceIDKey)
-			errorString := c.Errors.ByType(gin.ErrorTypePrivate).String()
-
 			logger.Infow("",
 				"trace-id", traceID,
 				"method", c.Request.Method,
@@ -59,11 +55,9 @@ func LoggingMiddlewareWithTrace(logger *zap.SugaredLogger) gin.HandlerFunc {
 				"status-code", c.Writer.Status(),
 				"user-agent", c.Request.UserAgent(),
 				"client-ip", c.ClientIP(),
-				"error", errorString,
 			)
-		} else {
-			c.Next()
 		}
+		c.Next()
 	}
 }
 

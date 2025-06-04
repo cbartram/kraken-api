@@ -25,7 +25,7 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	user := tmp.(*model.User)
 
 	if user.UsedFreeTrial {
-		log.Errorf("user: %s has already consumed free trial", user.DiscordUsername)
+		log.Infof("user: %s has already consumed free trial", user.DiscordUsername)
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "user has already consumed free trial"})
 		return
 	}

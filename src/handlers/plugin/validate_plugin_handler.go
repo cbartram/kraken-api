@@ -75,12 +75,12 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 
 		licenseKeyToValidate, exists := reqBody.Plugins[plugin.Name]
 		if !exists {
-			log.Errorf("plugin %s owned by user but not found in request", plugin.Name)
+			log.Infof("plugin %s owned by user but not found in request", plugin.Name)
 			continue
 		}
 
 		if plugin.LicenseKey != strings.TrimSpace(licenseKeyToValidate) {
-			log.Errorf("plugin %s has an invalid license key: %s, valid license key is: %s, user in free trial period: %v", plugin.Name, licenseKeyToValidate, plugin.LicenseKey, user.InFreeTrialPeriod())
+			log.Infof("plugin %s has an invalid license key: %s, valid license key is: %s, user in free trial period: %v", plugin.Name, licenseKeyToValidate, plugin.LicenseKey, user.InFreeTrialPeriod())
 			continue
 		}
 

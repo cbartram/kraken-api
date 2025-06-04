@@ -120,7 +120,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 	// Note: This will return partial results if some S3 calls fails for any reason.
 	for result := range results {
 		if result.Error != nil {
-			log.Errorf("error generating presigned url for plugin: %s err: %s ", result.Plugin.Name, err)
+			log.Infof("error generating presigned url for plugin: %s err: %v", result.Plugin.Name, result.Error)
 			continue
 		}
 		if result.URL != nil {

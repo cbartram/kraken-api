@@ -10,6 +10,8 @@ data:
   BUCKET_NAME: {{ .Values.s3.bucketName | quote }}
   MINIO_ENDPOINT: {{ .Values.s3.endpoint | quote }}
   GIN_MODE: "release"
+  # Enables json based logs in prod with trace ids
+  LOG_LEVEL: "ERROR"
   RABBITMQ_BASE_URL: {{ .Values.api.rabbitmqBaseUrl | quote }}
   API_BASE_URL: {{ .Values.api.baseUrl | quote }}
   MYSQL_HOST: {{ .Values.db.host | quote }}
