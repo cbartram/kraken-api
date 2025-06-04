@@ -38,7 +38,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{.Values.frontendServiceName}}
+                name: {{.Values.service.frontendServiceName}}
                 port:
                   number: {{.Values.service.port}}
     - host: minio-kraken-console.duckdns.org

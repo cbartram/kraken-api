@@ -1,6 +1,4 @@
 name: kraken-api
-frontendServiceName: kraken-frontend-service
-minioServiceName: minio-svc
 namespace: kraken
 replicaCount: 1
 
@@ -18,11 +16,12 @@ api:
 image:
   repository: cbartram/kraken-api
   pullPolicy: IfNotPresent
-  tag: "0.0.66"
+  tag: "0.0.68"
 
 serviceAccountName: kraken-api-sa
 
 service:
+  frontendServiceName: kraken-frontend-service
   type: ClusterIP
   port: 80
   targetPort: 8080

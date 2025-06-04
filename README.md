@@ -9,8 +9,6 @@ Client](https://github.com/cbartram/kraken-client). This API handles:
 - Allowing JAR file plugin downloads
 - Validating running plugins
 
-This API requires that you have an AWS account with a lambda function, API gateway, and S3 bucket setup to fully utilize this.
-
 ## Getting Started
 
 To get started clone this project and run a gradle build:
@@ -25,9 +23,6 @@ gradle build
 
 This project requires Go v1.23.2 installed on your system. You can install [Go here](https://go.dev/doc/install).
 
-If you plan to run this as a lambda function you will need an AWS account, credentials, and the AWS CLI v2 installed on
-your machine.
-
 ### Running
 
 Build this application by running the following: 
@@ -37,23 +32,9 @@ export GOOS=linux
 export GOARCH=amd64
 export CGO_ENABLED=0
 
-go build -tags lambda.norpc -o bootstrap main.go
+go build -o bootstrap main.go
 ```
 *Note: `GOOS` should always be linux regardless of which OS you are running on.*
-
-Next zip the binary so it can be uploaded to the lambda servers. 
-
-```shell
-zip deployment.zip bootstrap
-```
-
-Finally upload the binary to AWS Lambda so it can be executed:
-
-```shell
-aws lambda update-function-code --function-name kraken-api --zip-file fileb://deployment.zip --color on --output table
-```
-
-You can also run `./scripts/deploy.sh` to build, zip, and upload the function to AWS.
 
 # Management
 
@@ -74,7 +55,7 @@ Once the classes are loaded into memory the plugin can be registered with RuneLi
 ## Revoking Plugin Access & Beta Plugins
 
 Currently, there is no automated process for handling beta plugins. They are purchased with 0 tokens the same as normal plugins. When it comes time
-to release it live you will need to run a script like this:
+to release it live you will need to run a script like this in order to revoke user access to their beta plugins:
 
 ```mysql
 -- Define the plugin name you want to update
@@ -117,27 +98,6 @@ curl --location 'https://kraken-plugins.duckdns.org/api/v1/sale/create' \
     "pluginNames": ["Alchemical-Hydra", "Cerberus", "Zulrah"]
 }'
 ```
-
-## Discord Tools
-
-Since plugin purchases are managed through the Discord ticketing system we have a special tool which makes generating
-license keys easy. Make sure you have [JQ installed](https://github.com/jqlang/jq) on your system.
-
-Run:
-
-```shell
-./scripts/discord_grant_plugin.sh <discord_user_id> <refresh_token>
-```
-
-The discord id can be found in the discord support ticket for the user while the refresh token can be found for the user in
-the AWS cognito console.
-
-The tool will also prompt for the plugin name and a valid integer duration where the plugin is active. Make sure the name
-matches a prefix of the JAR file in S3. i.e:
-
-- "Alchemical-Hydra"
-- "Cox-Helper"
-- etc...
 
 ## API Plugin Fetching Sequence
 
