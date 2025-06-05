@@ -36,21 +36,34 @@ go build -o bootstrap main.go
 ```
 *Note: `GOOS` should always be linux regardless of which OS you are running on.*
 
+## Deployment
+
+Deployment is managed through Kubernetes. To package and deploy the container you can run the
+deployment script: `./scripts/deploy.sh 0.0.1` with a new image tag. 
+
+This script will both build and release the API. Check that it was successful with `kubectl get pods`. You should
+see a running pod called `kraken-api`.
+
 # Management
 
 The following sections describe how you can manage and configure Kraken plugins elements like:
+- Adding plugins
 - Plugin Sales
 - Beta plugins
-- Adding plugins
 
-## Plugin Verification & Loading
+## Adding Plugins
 
-When the Kraken client needs to load a plugin it will make a request on behalf of the authenticated user to generate
-signed URL's for plugin JAR files in S3. Signed URL's provide temporary (30s) access to JAR files. Once a signed URL is 
-generated the client will read the JAR file directly into memory and load each Kraken Plugin class from the JAR before the signed
-URL expires. 
-
-Once the classes are loaded into memory the plugin can be registered with RuneLite and starts normally.
+- Start by adding the plugin source code to the [Kraken Plugins Repo](https://github.com/cbartram/kraken-plugins)
+  - Confirm the source builds and a JAR is produced
+  - Deploy the jar file from the [Kraken Plugins Repo](https://github.com/cbartram/kraken-plugins) using `./scripts/deploy.sh` (Note: this will also deploy any other queued plugin updates)
+- Within the [Kraken Plugins Repo](https://github.com/cbartram/kraken-db) in the `/data` folder add plugin metadata to `plugin_metadata.json`
+  - If this plugin will be part of a plugin pack add it to `plugin_packs.json` as well
+  - Create an unlisted YouTube video showcasing the plugin and add the url to the metadata
+  - Add an image name for the plugin like: `zuk.png`
+- In [Kraken Frontend](https://github.com/cbartram/kraken-frontend) find a suitable picture for the plugin and put it in the `/src/public` folder name it the same as what is in the metadata like: `zuk.png`.
+  - Re-deploy the frontend with `./scripts/deploy.sh x.y.z`
+- In the Kraken DB repo run the following to update the metadata in prod:
+  - `./main -db-name kraken -db-user kraken -db-password <password> -db-port 30306 -db-host kraken-db.duckdns.org`
 
 ## Revoking Plugin Access & Beta Plugins
 
@@ -99,59 +112,9 @@ curl --location 'https://kraken-plugins.duckdns.org/api/v1/sale/create' \
 }'
 ```
 
-## API Plugin Fetching Sequence
-
-The following sequence diagram details the process of validating requests and generating a signed url that can be
-used to fetch plugin JAR files.
-
-```
-sequenceDiagram
-    participant Client as Kraken Client
-    participant Cognito as AWS Cognito
-    participant API as API Gateway/Lambda
-    participant S3 as S3 Bucket
-    
-    Note over Client,S3: Authentication Flow
-    Client->>Cognito: 1. User Login
-    Cognito-->>Client: 2. ID Token + Access Token
-    
-    Note over Client,S3: Plugin Download Flow
-    Client->>API: 3. Request Plugin Download (ID Token)
-    API->>Cognito: 4. Validate Token
-    API->>Cognito: 5. Get user attributes
-    Cognito-->>API: 6. custom:purchased_plugins
-    
-    Note over API: 7. Verify plugin access
-    
-    alt Plugin access allowed
-        API->>S3: 8a. Generate pre-signed URL
-        API-->>Client: 9a. Return pre-signed URL
-        Client->>S3: 10a. Download plugin using pre-signed URL
-    else Plugin access denied
-        API-->>Client: 8b. Access Denied
-    end
-```
-
-There are a few layers of additional security beyond signed URL's for plugin downloads:
-
-- First, the plugin expiration timestamp is checked before any signed URL's are generated and returned to the client Thus, after a plugin expires it should
-no longer be loaded into the client. 
-- Second, users will enter a license key for each plugin they purchase. An additional API
-call is made to the server to validate the users license key **after** the plugin is loaded but **before** the plugin is registered with RuneLite & started
-- Finally, when a license key is generated during the plugin purchase process a hardware ID is associated with it. When the API call is made to validate the license
-the hardware ID is also sent to verify that the plugin is: not expired, valid license, and running on the right hardware.
-
 ## Running the tests
 
 No tests yet.
-
-## Deployment
-
-Deployment is managed through AWS lambda and API gateway. To package and upload the go binary to Lambda you can run the
-deployment script: `./scripts/deploy.sh` with proper AWS credentials.
-
-To make any adjustments to the API spec (i.e adding a new route, removing a route, or updating an HTTP method)
-you will need to deploy the stage within the API Gateway console in AWS.
 
 ## Built With
 
