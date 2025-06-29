@@ -94,6 +94,11 @@ func (c *Crypto) GeneratePassword(config PasswordConfig) (string, error) {
 		allChars += specialChars
 	}
 
+	if allChars == "" {
+		// If no requirements set, default to upper + lower + numbers
+		allChars = upperChars + lowerChars + numberChars + specialChars
+	}
+
 	remainingLength := config.Length - len(requiredChars)
 	if remainingLength < 0 {
 		return "", errors.New("password length too short to satisfy requirements")

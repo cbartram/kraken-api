@@ -37,7 +37,7 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 	}
 
 	// We want to assert that the user does not exist before we create it.
-	user, err := model.GetUser(reqBody.DiscordID, w.Database)
+	user, err := w.UserRepository.GetUser(reqBody.DiscordID, w.Database)
 
 	if err != nil {
 		log.Infof("no user found with id: %s, creating user", reqBody.DiscordID)

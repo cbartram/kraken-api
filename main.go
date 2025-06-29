@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v81"
 	"go.uber.org/zap"
@@ -59,14 +62,22 @@ func main() {
 	}
 	stripe.Key = strings.TrimSpace(key)
 
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Errorf("error loading default aws config: %s", err)
+	}
+
+	client := cognitoidentityprovider.NewFromConfig(cfg)
+
 	w := service.Wrapper{
 		Logger:          log,
 		DiscordService:  discordService,
 		S3Service:       s3Service,
-		CognitoService:  service.MakeCognitoService(log),
+		CognitoService:  service.MakeCognitoService(log, client),
 		Database:        db,
 		RabbitMqService: rabbitMqService,
 		PluginStore:     service.NewPluginStore(db),
+		UserRepository:  &model.DefaultUserRepository{},
 	}
 	router := src.NewRouter(&w)
 

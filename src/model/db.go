@@ -71,7 +71,15 @@ type User struct {
 	PluginPacks []UserPluginPack   `gorm:"foreignKey:UserID" json:"pluginPacks"`
 }
 
-func GetUser(discordId string, db *gorm.DB) (*User, error) {
+// UserRepository This interface and implementing struct are required for mocking during unit tests.
+type UserRepository interface {
+	GetUser(discordId string, db *gorm.DB) (*User, error)
+}
+
+type DefaultUserRepository struct{}
+
+// GetUser Retrieves a user and associated plugin metadata from the database.
+func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB) (*User, error) {
 	var user User
 	tx := db.
 		Preload("HardwareIDs").

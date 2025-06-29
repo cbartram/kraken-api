@@ -15,32 +15,42 @@ import (
 	"os"
 )
 
+type CognitoClient interface {
+	AdminCreateUser(ctx context.Context, params *cognitoidentityprovider.AdminCreateUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminCreateUserOutput, error)
+	AdminSetUserPassword(ctx context.Context, params *cognitoidentityprovider.AdminSetUserPasswordInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminSetUserPasswordOutput, error)
+	AdminInitiateAuth(ctx context.Context, params *cognitoidentityprovider.AdminInitiateAuthInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminInitiateAuthOutput, error)
+	AdminGetUser(ctx context.Context, params *cognitoidentityprovider.AdminGetUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminGetUserOutput, error)
+}
+
 // CognitoService handles AWS Cognito authentication operations
 type CognitoService struct {
 	log           *zap.SugaredLogger
-	cognitoClient *cognitoidentityprovider.Client
+	cognitoClient CognitoClient
+	userRepo      model.UserRepository
 	userPoolID    string
 	clientID      string
 	clientSecret  string
 }
 
 // MakeCognitoService creates a new instance of CognitoAuthManager
-func MakeCognitoService(log *zap.SugaredLogger) *CognitoService {
+func MakeCognitoService(log *zap.SugaredLogger, client CognitoClient) *CognitoService {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Errorf("error loading default aws config: %s", err)
 	}
 
+	cognitoidentityprovider.NewFromConfig(cfg)
 	return &CognitoService{
 		log:           log,
-		cognitoClient: cognitoidentityprovider.NewFromConfig(cfg),
+		cognitoClient: client,
+		userRepo:      &model.DefaultUserRepository{},
 		userPoolID:    os.Getenv("USER_POOL_ID"),
 		clientID:      os.Getenv("COGNITO_CLIENT_ID"),
 		clientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),
 	}
 }
 
-func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayload *model.CognitoCreateUserRequest) (*types.AuthenticationResultType, error) {
+func (c *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayload *model.CognitoCreateUserRequest) (*types.AuthenticationResultType, error) {
 	password, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
 		Length:         15,
 		RequireUpper:   true,
@@ -50,7 +60,7 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 	})
 
 	if createUserPayload.DiscordEmail == "" || &createUserPayload.DiscordEmail == nil {
-		m.log.Infof("no discord email or email provided setting to default value")
+		c.log.Infof("no discord email or email provided setting to default value")
 		hash, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
 			Length:        10,
 			RequireUpper:  true,
@@ -79,8 +89,8 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 		},
 	}
 
-	_, err := m.cognitoClient.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-		UserPoolId:        aws.String(m.userPoolID),
+	_, err := c.cognitoClient.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
+		UserPoolId:        aws.String(c.userPoolID),
 		Username:          aws.String(createUserPayload.DiscordID),
 		UserAttributes:    attributes,
 		MessageAction:     types.MessageActionTypeSuppress,
@@ -93,8 +103,8 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 
 	// Set a permanent password although users will never actually log in with a user/pass combo. The Kraken service will use the Cognito refresh token
 	// to try and get an access token for the user and authenticate with the access token.
-	_, err = m.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-		UserPoolId: aws.String(m.userPoolID),
+	_, err = c.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+		UserPoolId: aws.String(c.userPoolID),
 		Username:   aws.String(createUserPayload.DiscordID),
 		Password:   aws.String(password),
 		Permanent:  true,
@@ -104,22 +114,22 @@ func (m *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 	}
 
 	// Initialize auth session
-	return m.initiateAuthUserPass(ctx, createUserPayload.DiscordID, password)
+	return c.InitiateAuthUserPass(ctx, createUserPayload.DiscordID, password)
 }
 
-// initiateAuthUserPass Happens when a user is initially created with the user pool and uses username + generated pass to login
+// InitiateAuthUserPass Happens when a user is initially created with the user pool and uses username + generated pass to login
 // The cognito refresh token and access token will be returned in the response along with the discord refresh and access
 // token.
-func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, password string) (*types.AuthenticationResultType, error) {
+func (c *CognitoService) InitiateAuthUserPass(ctx context.Context, discordID, password string) (*types.AuthenticationResultType, error) {
 	authParams := map[string]string{
 		"USERNAME":    discordID,
 		"PASSWORD":    password,
-		"SECRET_HASH": util.MakeCrypto().MakeCognitoSecretHash(discordID, m.clientID, m.clientSecret),
+		"SECRET_HASH": util.MakeCrypto().MakeCognitoSecretHash(discordID, c.clientID, c.clientSecret),
 	}
 
-	result, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-		UserPoolId:     aws.String(m.userPoolID),
-		ClientId:       aws.String(m.clientID),
+	result, err := c.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+		UserPoolId:     aws.String(c.userPoolID),
+		ClientId:       aws.String(c.clientID),
 		AuthFlow:       types.AuthFlowTypeAdminUserPasswordAuth,
 		AuthParameters: authParams,
 	})
@@ -133,24 +143,24 @@ func (m *CognitoService) initiateAuthUserPass(ctx context.Context, discordID, pa
 // RefreshSession This method is called when a refresh token is about to expire and a new one needs to be generated.
 // There is no direct way to get a new refresh token without a users password. Since we do not store the password we set
 // must reset the password and re-auth to get a new refresh token.
-func (m *CognitoService) RefreshSession(ctx context.Context, discordID string) (*model.CognitoCredentials, error) {
-	user, err := m.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-		UserPoolId: aws.String(m.userPoolID),
+func (c *CognitoService) RefreshSession(ctx context.Context, discordID string) (*model.CognitoCredentials, error) {
+	user, err := c.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
+		UserPoolId: aws.String(c.userPoolID),
 		Username:   &discordID,
 	})
 
 	if err != nil {
-		m.log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
+		c.log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to get user for discord id: %s", discordID))
 	}
 
 	password := util.GetUserAttributeString(user.UserAttributes, "custom:temporary_password")
 
-	m.log.Infof("auth user: %s with password", discordID)
-	auth, err := m.initiateAuthUserPass(ctx, discordID, password)
+	c.log.Infof("auth user: %s with password", discordID)
+	auth, err := c.InitiateAuthUserPass(ctx, discordID, password)
 
 	if err != nil {
-		m.log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
+		c.log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to auth with user/pass for discord id: %s", discordID))
 	}
 
@@ -163,25 +173,25 @@ func (m *CognitoService) RefreshSession(ctx context.Context, discordID string) (
 
 }
 
-func (m *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string, db *gorm.DB) (*model.User, error) {
-	auth, err := m.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-		UserPoolId: aws.String(m.userPoolID),
-		ClientId:   aws.String(m.clientID),
+func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string, db *gorm.DB) (*model.User, error) {
+	auth, err := c.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+		UserPoolId: aws.String(c.userPoolID),
+		ClientId:   aws.String(c.clientID),
 		AuthFlow:   types.AuthFlowTypeRefreshTokenAuth,
 		AuthParameters: map[string]string{
 			"REFRESH_TOKEN": *refreshToken,
-			"SECRET_HASH":   util.MakeCrypto().MakeCognitoSecretHash(*userId, m.clientID, m.clientSecret),
+			"SECRET_HASH":   util.MakeCrypto().MakeCognitoSecretHash(*userId, c.clientID, c.clientSecret),
 		},
 	})
 
 	if err != nil {
-		m.log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
+		c.log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
 		return nil, err
 	}
 
-	user, err := model.GetUser(*userId, db)
+	user, err := c.userRepo.GetUser(*userId, db)
 	if err != nil {
-		m.log.Errorf("could not get user from db: %v", err)
+		c.log.Errorf("could not get user from db: %v", err)
 		return nil, err
 	}
 

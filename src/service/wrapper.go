@@ -3,6 +3,7 @@ package service
 import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"kraken-api/src/model"
 )
 
 type Wrapper struct {
@@ -13,4 +14,5 @@ type Wrapper struct {
 	Database        *gorm.DB
 	RabbitMqService *RabbitMqService
 	PluginStore     *PluginStore
+	UserRepository  model.UserRepository
 }
