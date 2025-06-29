@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/joho/godotenv"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stripe/stripe-go/v81"
 	"go.uber.org/zap"
 	"kraken-api/src"
@@ -45,7 +47,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to make discord service: %v", err)
 	}
-	s3Service, err := service.MakeMinIOService(os.Getenv("BUCKET_NAME"), os.Getenv("MINIO_ENDPOINT"), log)
+
+	username := os.Getenv("MINIO_ROOT_USER")
+	password := os.Getenv("MINIO_ROOT_PASSWORD")
+
+	minioClient, err := minio.New(os.Getenv("MINIO_ENDPOINT"), &minio.Options{
+		Creds:  credentials.NewStaticV4(username, password, ""),
+		Secure: true,
+	})
+
+	if err != nil {
+		log.Fatalf("failed to create MinIO client: %v", err)
+	}
+
+	s3Service, err := service.MakeMinIOService(os.Getenv("BUCKET_NAME"), os.Getenv("MINIO_ENDPOINT"), minioClient, log)
 	if err != nil {
 		log.Fatalf("failed to create S3 service: %v", err)
 	}

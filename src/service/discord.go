@@ -12,10 +12,9 @@ import (
 	"strings"
 )
 
-const (
+var (
 	discordAPIEndpoint   = "https://discord.com/api"
 	discordTokenEndpoint = discordAPIEndpoint + "/oauth2/token"
-	discordUserEndpoint  = discordAPIEndpoint + "/users/@me"
 )
 
 // DiscordService handles OAuth2 authentication and API calls

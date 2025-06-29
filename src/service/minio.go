@@ -6,39 +6,34 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"kraken-api/src/util"
 )
+
+type MinioClient interface {
+	BucketExists(ctx context.Context, bucketName string) (bool, error)
+	ListObjects(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
+	PresignedGetObject(ctx context.Context, bucketName, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error)
+	PresignedPutObject(ctx context.Context, bucketName, objectName string, expiry time.Duration) (*url.URL, error)
+	RemoveObject(ctx context.Context, bucketName, objectName string, opts minio.RemoveObjectOptions) error
+}
 
 // MinIOService encapsulates MinIO operations for object storage
 type MinIOService struct {
 	log        *zap.SugaredLogger
 	BucketName string
-	Client     *minio.Client
+	Client     MinioClient
 	Endpoint   string
 	UseSSL     bool
 }
 
 // MakeMinIOService creates a new MinIO service instance
-func MakeMinIOService(bucketName, endpoint string, log *zap.SugaredLogger) (*MinIOService, error) {
-	username := os.Getenv("MINIO_ROOT_USER")
-	password := os.Getenv("MINIO_ROOT_PASSWORD")
-
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(username, password, ""),
-		Secure: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
-	}
-
+func MakeMinIOService(bucketName, endpoint string, client MinioClient, log *zap.SugaredLogger) (*MinIOService, error) {
 	ctx := context.Background()
-	exists, err := minioClient.BucketExists(ctx, bucketName)
+	exists, err := client.BucketExists(ctx, bucketName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check bucket existence: %w", err)
 	}
@@ -49,7 +44,7 @@ func MakeMinIOService(bucketName, endpoint string, log *zap.SugaredLogger) (*Min
 	return &MinIOService{
 		log:        log,
 		BucketName: bucketName,
-		Client:     minioClient,
+		Client:     client,
 		Endpoint:   endpoint,
 		UseSSL:     true,
 	}, nil
