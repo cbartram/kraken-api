@@ -2,11 +2,9 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"os"
 	"time"
 )
 
@@ -15,24 +13,31 @@ type Message struct {
 	Body []byte `json:"content"`
 }
 
+type Connectable interface {
+	Channel() (*amqp.Channel, error)
+	Close() error
+}
+
+type Channelable interface {
+	ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args amqp.Table) error
+	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	QueueBind(name, key, exchange string, noWait bool, args amqp.Table) error
+	Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
+	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
+	Close() error
+}
+
 type RabbitMqService struct {
 	log            *zap.SugaredLogger
-	Connection     *amqp.Connection
-	ConsumeChannel *amqp.Channel
-	PublishChannel *amqp.Channel
+	Connection     Connectable
+	ConsumeChannel Channelable
+	PublishChannel Channelable
 	Queue          *amqp.Queue
 	exchangeName   string
 	routingName    string
 }
 
-func MakeRabbitMQService(exchangeName, routingKey string, log *zap.SugaredLogger) (*RabbitMqService, error) {
-	credentials := fmt.Sprintf("%s:%s", os.Getenv("RABBITMQ_DEFAULT_USER"), os.Getenv("RABBITMQ_DEFAULT_PASS"))
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s@%s/", credentials, os.Getenv("RABBITMQ_BASE_URL")))
-	if err != nil {
-		log.Errorf("failed to connect to RabbitMQ: %v", err)
-		return nil, err
-	}
-
+func MakeRabbitMQService(exchangeName, routingKey string, conn Connectable, log *zap.SugaredLogger) (*RabbitMqService, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Errorf("failed to open consume channel: %v", err)
