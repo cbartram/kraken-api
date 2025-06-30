@@ -30,6 +30,16 @@ func (m *MockConnection) Close() error {
 	return args.Error(0)
 }
 
+func (m *MockConnection) IsClosed() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
+func (m *MockConnection) NotifyClose(receiver chan *amqp.Error) chan *amqp.Error {
+	args := m.Called(receiver)
+	return args.Get(0).(chan *amqp.Error)
+}
+
 type MockChannel struct {
 	mock.Mock
 }
@@ -54,14 +64,29 @@ func (m *MockChannel) Publish(exchange, key string, mandatory, immediate bool, m
 	return mockArgs.Error(0)
 }
 
-func (m *MockChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
-	mockArgs := m.Called(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
-	return mockArgs.Get(0).(<-chan amqp.Delivery), mockArgs.Error(1)
+func (m *MockChannel) IsClosed() bool {
+	mockArgs := m.Called()
+	return mockArgs.Get(0).(bool)
+}
+
+func (m *MockChannel) NotifyClose(receiver chan *amqp.Error) chan *amqp.Error {
+	mockArgs := m.Called(receiver)
+	return mockArgs.Get(0).(chan *amqp.Error)
+}
+
+func (m *MockChannel) Qos(prefetchCount, prefetchSize int, global bool) error {
+	mockArgs := m.Called(prefetchCount, prefetchSize, global)
+	return mockArgs.Error(0)
 }
 
 func (m *MockChannel) Close() error {
 	mockArgs := m.Called()
 	return mockArgs.Error(0)
+}
+
+func (m *MockChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
+	mockArgs := m.Called(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
+	return mockArgs.Get(0).(<-chan amqp.Delivery), mockArgs.Error(1)
 }
 
 // Test helper functions

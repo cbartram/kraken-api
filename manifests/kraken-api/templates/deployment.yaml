@@ -37,6 +37,9 @@ spec:
                 name: mysql-secrets
             - secretRef:
                 name: aws-secrets
+            # Uncomment below to test stripe with test secrets and not charge real cards 18,500
+            #- secretRef:
+            #    name: stripe-secrets-test
             - secretRef:
                 name: stripe-secrets
             - secretRef:

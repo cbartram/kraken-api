@@ -112,9 +112,37 @@ curl --location 'https://kraken-plugins.duckdns.org/api/v1/sale/create' \
 }'
 ```
 
+## Testing with Stripe
+
+Stripe checkout is used to direct users to the stripe checkout page. Afterwards, a series of webhooks will be fired to let the Kraken API know if the purchase
+was successful or not. These webhooks are enqueued into a rabbitmq queue and processed sequentially to update our database with additional tokens.
+
+To test this process locally run Note: only local events sent via stripe cli will work with this: 
+
+```shell
+# Start RabbitMQ docker container locally
+docker run --env=RABBITMQ_DEFAULT_USER=kraken --env=RABBITMQ_DEFAULT_PASS=<PASSWORD> --env=RABBITMQ_VERSION=4.0.7 --env=RABBITMQ_HOME=/opt/rabbitmq --env=HOME=/var/lib/rabbitmq --volume=/var/lib/rabbitmq --network=bridge -p 15672:15672 -p 5672:5672 --restart=no --runtime=runc -d rabbitmq:4.0.7-management
+
+# Login to stripe (tokens expire every 90 days)
+stripe login
+stripe listen --forward-to localhost:8080/api/v1/stripe/webhook
+
+# In the .env file update the stripe webhook signing secret:
+STRIPE_ENDPOINT_SECRET=<secret from stripe listen command>
+
+# Start frontend and go through checkout process
+npm run dev
+
+# tail server logs to see enqueued results
+go ./main
+```
+
+To test the actual workflow you will need to re-deploy the API with `stripe-secrets-test` env vars being injected into the helm manifests. Note:
+You may also have to update the customer id in the database.
+
 ## Running the tests
 
-No tests yet.
+`go test -v ./...`
 
 ## Built With
 

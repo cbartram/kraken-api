@@ -9,7 +9,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stripe/stripe-go/v81"
 	"go.uber.org/zap"
 	"kraken-api/src"
@@ -66,12 +65,12 @@ func main() {
 		log.Fatalf("failed to create S3 service: %v", err)
 	}
 
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s@%s/", fmt.Sprintf("%s:%s", os.Getenv("RABBITMQ_DEFAULT_USER"), os.Getenv("RABBITMQ_DEFAULT_PASS")), os.Getenv("RABBITMQ_BASE_URL")))
+	conn := fmt.Sprintf("amqp://%s@%s/?heartbeat=10", fmt.Sprintf("%s:%s", os.Getenv("RABBITMQ_DEFAULT_USER"), os.Getenv("RABBITMQ_DEFAULT_PASS")), os.Getenv("RABBITMQ_BASE_URL"))
 	if err != nil {
 		log.Fatalf("failed to connect to RabbitMQ: %v", err)
 	}
 
-	rabbitMqService, err := service.MakeRabbitMQService("stripe-webhooks-kraken", "stripe-webhooks-kraken", conn, log)
+	rabbitMqService, err := service.MakeRabbitMQService(conn, "stripe-webhooks-kraken", "stripe-webhooks-kraken", log)
 	if err != nil {
 		log.Fatalf("failed to make rabbitmq service: %v", err)
 	}
