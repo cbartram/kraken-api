@@ -51,21 +51,16 @@ func (m *MockCognitoClient) AdminGetUser(ctx context.Context, params *cognitoide
 	return args.Get(0).(*cognitoidentityprovider.AdminGetUserOutput), args.Error(1)
 }
 
-// MockDB is a mock implementation of GORM DB
-type MockDB struct {
-	mock.Mock
-}
-
 // Helper function to create a test CognitoService with mocked client
 func createTestCognitoService(mockClient *MockCognitoClient, mockRepo *MockUserRepository) *CognitoService {
 	logger := zap.NewNop().Sugar()
 	return &CognitoService{
-		log:           logger,
-		cognitoClient: mockClient,
-		userRepo:      mockRepo,
-		userPoolID:    "test-user-pool-id",
-		clientID:      "test-client-id",
-		clientSecret:  "test-client-secret",
+		Log:           logger,
+		CognitoClient: mockClient,
+		UserRepo:      mockRepo,
+		UserPoolID:    "test-user-pool-id",
+		ClientID:      "test-client-id",
+		ClientSecret:  "test-client-secret",
 	}
 }
 

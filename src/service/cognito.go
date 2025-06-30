@@ -24,12 +24,12 @@ type CognitoClient interface {
 
 // CognitoService handles AWS Cognito authentication operations
 type CognitoService struct {
-	log           *zap.SugaredLogger
-	cognitoClient CognitoClient
-	userRepo      model.UserRepository
-	userPoolID    string
-	clientID      string
-	clientSecret  string
+	Log           *zap.SugaredLogger
+	CognitoClient CognitoClient
+	UserRepo      model.UserRepository
+	UserPoolID    string
+	ClientID      string
+	ClientSecret  string
 }
 
 // MakeCognitoService creates a new instance of CognitoAuthManager
@@ -41,12 +41,12 @@ func MakeCognitoService(log *zap.SugaredLogger, client CognitoClient) *CognitoSe
 
 	cognitoidentityprovider.NewFromConfig(cfg)
 	return &CognitoService{
-		log:           log,
-		cognitoClient: client,
-		userRepo:      &model.DefaultUserRepository{},
-		userPoolID:    os.Getenv("USER_POOL_ID"),
-		clientID:      os.Getenv("COGNITO_CLIENT_ID"),
-		clientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),
+		Log:           log,
+		CognitoClient: client,
+		UserRepo:      &model.DefaultUserRepository{},
+		UserPoolID:    os.Getenv("USER_POOL_ID"),
+		ClientID:      os.Getenv("COGNITO_CLIENT_ID"),
+		ClientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),
 	}
 }
 
@@ -60,7 +60,7 @@ func (c *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 	})
 
 	if createUserPayload.DiscordEmail == "" || &createUserPayload.DiscordEmail == nil {
-		c.log.Infof("no discord email or email provided setting to default value")
+		c.Log.Infof("no discord email or email provided setting to default value")
 		hash, _ := util.MakeCrypto().GeneratePassword(util.PasswordConfig{
 			Length:        10,
 			RequireUpper:  true,
@@ -89,8 +89,8 @@ func (c *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 		},
 	}
 
-	_, err := c.cognitoClient.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-		UserPoolId:        aws.String(c.userPoolID),
+	_, err := c.CognitoClient.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
+		UserPoolId:        aws.String(c.UserPoolID),
 		Username:          aws.String(createUserPayload.DiscordID),
 		UserAttributes:    attributes,
 		MessageAction:     types.MessageActionTypeSuppress,
@@ -103,8 +103,8 @@ func (c *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 
 	// Set a permanent password although users will never actually log in with a user/pass combo. The Kraken service will use the Cognito refresh token
 	// to try and get an access token for the user and authenticate with the access token.
-	_, err = c.cognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-		UserPoolId: aws.String(c.userPoolID),
+	_, err = c.CognitoClient.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+		UserPoolId: aws.String(c.UserPoolID),
 		Username:   aws.String(createUserPayload.DiscordID),
 		Password:   aws.String(password),
 		Permanent:  true,
@@ -124,12 +124,12 @@ func (c *CognitoService) InitiateAuthUserPass(ctx context.Context, discordID, pa
 	authParams := map[string]string{
 		"USERNAME":    discordID,
 		"PASSWORD":    password,
-		"SECRET_HASH": util.MakeCrypto().MakeCognitoSecretHash(discordID, c.clientID, c.clientSecret),
+		"SECRET_HASH": util.MakeCrypto().MakeCognitoSecretHash(discordID, c.ClientID, c.ClientSecret),
 	}
 
-	result, err := c.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-		UserPoolId:     aws.String(c.userPoolID),
-		ClientId:       aws.String(c.clientID),
+	result, err := c.CognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+		UserPoolId:     aws.String(c.UserPoolID),
+		ClientId:       aws.String(c.ClientID),
 		AuthFlow:       types.AuthFlowTypeAdminUserPasswordAuth,
 		AuthParameters: authParams,
 	})
@@ -144,23 +144,23 @@ func (c *CognitoService) InitiateAuthUserPass(ctx context.Context, discordID, pa
 // There is no direct way to get a new refresh token without a users password. Since we do not store the password we set
 // must reset the password and re-auth to get a new refresh token.
 func (c *CognitoService) RefreshSession(ctx context.Context, discordID string) (*model.CognitoCredentials, error) {
-	user, err := c.cognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-		UserPoolId: aws.String(c.userPoolID),
+	user, err := c.CognitoClient.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
+		UserPoolId: aws.String(c.UserPoolID),
 		Username:   &discordID,
 	})
 
 	if err != nil {
-		c.log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
+		c.Log.Errorf("error: failed to get user attributes with for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to get user for discord id: %s", discordID))
 	}
 
 	password := util.GetUserAttributeString(user.UserAttributes, "custom:temporary_password")
 
-	c.log.Infof("auth user: %s with password", discordID)
+	c.Log.Infof("auth user: %s with password", discordID)
 	auth, err := c.InitiateAuthUserPass(ctx, discordID, password)
 
 	if err != nil {
-		c.log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
+		c.Log.Errorf("error: failed to auth with user/pass for discord id: %s", discordID)
 		return nil, errors.New(fmt.Sprintf("error: failed to auth with user/pass for discord id: %s", discordID))
 	}
 
@@ -174,24 +174,24 @@ func (c *CognitoService) RefreshSession(ctx context.Context, discordID string) (
 }
 
 func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string, db *gorm.DB) (*model.User, error) {
-	auth, err := c.cognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-		UserPoolId: aws.String(c.userPoolID),
-		ClientId:   aws.String(c.clientID),
+	auth, err := c.CognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+		UserPoolId: aws.String(c.UserPoolID),
+		ClientId:   aws.String(c.ClientID),
 		AuthFlow:   types.AuthFlowTypeRefreshTokenAuth,
 		AuthParameters: map[string]string{
 			"REFRESH_TOKEN": *refreshToken,
-			"SECRET_HASH":   util.MakeCrypto().MakeCognitoSecretHash(*userId, c.clientID, c.clientSecret),
+			"SECRET_HASH":   util.MakeCrypto().MakeCognitoSecretHash(*userId, c.ClientID, c.ClientSecret),
 		},
 	})
 
 	if err != nil {
-		c.log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
+		c.Log.Errorf("error auth: user %s could not be authenticated: %v", *userId, err)
 		return nil, err
 	}
 
-	user, err := c.userRepo.GetUser(*userId, db)
+	user, err := c.UserRepo.GetUser(*userId, db)
 	if err != nil {
-		c.log.Errorf("could not get user from db: %v", err)
+		c.Log.Errorf("could not get user from db: %v", err)
 		return nil, err
 	}
 

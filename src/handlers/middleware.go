@@ -18,8 +18,8 @@ const (
 	TraceIDHeader = "X-Trace-ID"
 )
 
-// generateTraceID creates a random trace ID
-func generateTraceID() string {
+// GenerateTraceID creates a random trace ID
+func GenerateTraceID() string {
 	bytes := make([]byte, 4) // 32-bit trace ID
 	rand.Read(bytes)
 	return hex.EncodeToString(bytes)
@@ -31,7 +31,7 @@ func TraceIDMiddleware() gin.HandlerFunc {
 		traceID := c.GetHeader(TraceIDHeader)
 
 		if traceID == "" {
-			traceID = generateTraceID()
+			traceID = GenerateTraceID()
 		}
 
 		c.Set(TraceIDKey, traceID)
