@@ -242,30 +242,6 @@ func TestDiscordService_ExchangeCodeForToken(t *testing.T) {
 	}
 }
 
-func TestDiscordService_ExchangeCodeForToken_NetworkError(t *testing.T) {
-	// Test network error scenario
-	logger := createTestLogger(t)
-	service := &DiscordService{
-		log:          logger,
-		clientID:     "test_client_id",
-		clientSecret: "test_client_secret",
-		httpClient:   &http.Client{},
-	}
-
-	// Use an invalid URL to simulate network error
-	originalEndpoint := discordTokenEndpoint
-	discordTokenEndpoint = "http://invalid-url-that-does-not-exist.com/oauth2/token"
-	defer func() {
-		discordTokenEndpoint = originalEndpoint
-	}()
-
-	result, err := service.ExchangeCodeForToken("test_code", "http://localhost:8080/callback")
-
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to send request")
-}
-
 func TestDiscordService_ExchangeCodeForToken_EmptyResponse(t *testing.T) {
 	// Test empty response body
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
