@@ -66,6 +66,13 @@ jobs:
             sudo mv kubectl /usr/local/bin/
             kubectl version --client
       - run:
+          name: Setup kubectl
+          command: |
+            echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
+            chmod 600 ~/.kube/config
+            kubectl config view
+            kubectl cluster-info
+      - run:
           name: Deploy to Kubernetes with Helm
           command: |
             IMAGE_NAME=$(cat /tmp/docker_image_name)
