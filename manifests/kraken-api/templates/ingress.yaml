@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: kraken-ingress
+  name: api-ingress
   namespace: {{.Values.namespace}}
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -20,10 +20,10 @@ spec:
         - kraken-plugins.duckdns.org
       secretName: kraken-tls
     - hosts:
-        - minio-kraken.duckdns.org
-        - minio-kraken-console.duckdns.org
-      secretName: minio-tls
+        - argocd-kraken.duckdns.org
+      secretName: argocd-tls
   rules:
+
     - host: kraken-plugins.duckdns.org
       http:
         paths:
@@ -41,24 +41,14 @@ spec:
                 name: {{.Values.service.frontendServiceName}}
                 port:
                   number: {{.Values.service.port}}
-    - host: minio-kraken-console.duckdns.org
+    - host: argocd-kraken.duckdns.org
       http:
         paths:
           - backend:
               service:
-                name: minio-console-proxy
+                name: argocd-server-proxy
                 port:
-                  number: 9090
-            path: /
-            pathType: Prefix
-    - host: minio-kraken.duckdns.org
-      http:
-        paths:
-          - backend:
-              service:
-                name: minio-api-proxy
-                port:
-                  number: 9000
+                  number: 80
             path: /
             pathType: Prefix
 
