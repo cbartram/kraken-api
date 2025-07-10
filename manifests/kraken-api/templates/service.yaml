@@ -12,3 +12,16 @@ spec:
       targetPort: {{.Values.service.targetPort}}
       protocol: TCP
       name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server-proxy
+  namespace: {{.Values.namespace}}
+spec:
+  type: ExternalName
+  externalName: argocd-server.argocd.svc.cluster.local
+  ports:
+    - name: https
+      port: 80
+      targetPort: 80

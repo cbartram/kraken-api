@@ -1,0 +1,20 @@
+namespace: minio
+replicaCount: 1
+
+image:
+  repository: quay.io/minio/minio
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  type: ClusterIP
+  apiPort: 9000
+  consolePort: 9090
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 512Mi

@@ -37,6 +37,7 @@ jobs:
             docker push "$IMAGE_NAME"
 
             echo "$IMAGE_NAME" > /tmp/docker_image_name
+            echo "$TAG" > /tmp/docker_tag
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -53,38 +54,20 @@ jobs:
       - attach_workspace:
           at: /tmp
       - run:
-          name: Install Helm
+          name: Install ArgoCD CLI
           command: |
-            curl https://get.helm.sh/helm-v3.12.3-linux-amd64.tar.gz | tar xz
-            sudo mv linux-amd64/helm /usr/local/bin/helm
-            helm version
+            URL=https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            [ -w /usr/local/bin ] && SUDO="" || SUDO=sudo
+            $SUDO curl --insecure -sSL -o /usr/local/bin/argocd $URL
+            $SUDO chmod +x /usr/local/bin/argocd
+            
+            argocd login https://argocd-kraken.duckdns.org --insecure --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD
       - run:
-          name: Install kubectl
-          command: |
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            chmod +x kubectl
-            sudo mv kubectl /usr/local/bin/
-            kubectl version --client
+          name: Manual sync
+          command: argocd app sync kraken-api
       - run:
-          name: Setup kubectl
-          command: |
-            echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
-            chmod 600 ~/.kube/config
-            kubectl config view
-            kubectl cluster-info
-      - run:
-          name: Deploy to Kubernetes with Helm
-          command: |
-            IMAGE_NAME=$(cat /tmp/docker_image_name)
-            echo "Deploying image: $IMAGE_NAME"
-
-            helm upgrade kraken-api ./manifests/kraken-api \
-              -f ./manifests/kraken-api/values.yaml \
-              --set image.repository=cbartram/kraken-api \
-              --set image.tag=$(echo $IMAGE_NAME | cut -d':' -f2) \
-              --install \
-              --wait \
-              --timeout=300s
+          name: Wait for sync
+          command: argocd app wait kraken-api
 
 workflows:
   build-and-deploy:
