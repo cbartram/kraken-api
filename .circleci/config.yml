@@ -25,19 +25,23 @@ jobs:
       - run:
           name: Build and Push Docker Image
           command: |
-            if [ "$CIRCLE_BRANCH" = "main" ] || [ "$CIRCLE_BRANCH" = "master" ]; then
-              TAG="latest"
-            else
-              TAG=0.1.$CIRCLE_BUILD_NUM
-            fi
+            VERSION_TAG="0.1.$CIRCLE_BUILD_NUM"
+            IMAGE_NAME_VERSION="$DOCKER_USER/kraken-api:$VERSION_TAG"
 
-            IMAGE_NAME="$DOCKER_USER/kraken-api:$TAG"            
-            docker build . -f Dockerfile -t "$IMAGE_NAME"
+            docker build . -f Dockerfile -t "$IMAGE_NAME_VERSION"
             echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
-            docker push "$IMAGE_NAME"
+            docker push "$IMAGE_NAME_VERSION"
 
-            echo "$IMAGE_NAME" > /tmp/docker_image_name
-            echo "$TAG" > /tmp/docker_tag
+            # If main or master branch, also tag and push as latest
+            if [ "$CIRCLE_BRANCH" = "main" ] || [ "$CIRCLE_BRANCH" = "master" ]; then
+              IMAGE_NAME_LATEST="$DOCKER_USER/kraken-api:latest"
+              docker tag "$IMAGE_NAME_VERSION" "$IMAGE_NAME_LATEST"
+              docker push "$IMAGE_NAME_LATEST"
+            
+              echo "Pushing :latest tag"
+            else
+              echo "Pushing :$VERSION_TAG tag only, not latest"
+            fi
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -64,7 +68,9 @@ jobs:
             argocd login https://argocd-kraken.duckdns.org --insecure --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD
       - run:
           name: Manual sync
-          command: argocd app sync kraken-api
+          command: |
+            VERSION_TAG="0.1.$CIRCLE_BUILD_NUM"
+            argocd app sync kraken-api --helm-set image.tag=$VERSION_TAG
       - run:
           name: Wait for sync
           command: argocd app wait kraken-api
