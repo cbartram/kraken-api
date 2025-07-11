@@ -22,30 +22,6 @@ jobs:
       - run:
           name: Run Tests
           command: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v ./...
-      - run:
-          name: Build and Push Docker Image
-          command: |
-            VERSION_TAG="0.1.$CIRCLE_BUILD_NUM"
-            IMAGE_NAME_VERSION="$DOCKER_USER/kraken-api:$VERSION_TAG"
-
-            docker build . -f Dockerfile -t "$IMAGE_NAME_VERSION"
-            echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
-            docker push "$IMAGE_NAME_VERSION"
-
-            # If main or master branch, also tag and push as latest
-            if [ "$CIRCLE_BRANCH" = "main" ] || [ "$CIRCLE_BRANCH" = "master" ]; then
-              IMAGE_NAME_LATEST="$DOCKER_USER/kraken-api:latest"
-              docker tag "$IMAGE_NAME_VERSION" "$IMAGE_NAME_LATEST"
-              docker push "$IMAGE_NAME_LATEST"
-            
-              echo "Pushing :latest tag"
-            else
-              echo "Pushing :$VERSION_TAG tag only, not latest"
-            fi
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - docker_image_name
       - save_cache:
           key: go-mod-{{ checksum "go.sum" }}
           paths:
@@ -55,8 +31,6 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout
-      - attach_workspace:
-          at: /tmp
       - run:
           name: Install ArgoCD CLI
           command: |
@@ -66,6 +40,16 @@ jobs:
             $SUDO chmod +x /usr/local/bin/argocd
             
             argocd login https://argocd-kraken.duckdns.org --insecure --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD
+      - run:
+          name: Build and Push Docker Image
+          command: |
+            VERSION_TAG="0.1.$CIRCLE_BUILD_NUM"
+            IMAGE_NAME_VERSION="$DOCKER_USER/kraken-api:$VERSION_TAG"
+
+            docker build . -f Dockerfile -t "$IMAGE_NAME_VERSION" -t $DOCKER_USER/kraken-api:latest
+            echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
+            docker push "$IMAGE_NAME_VERSION"
+            docker push $DOCKER_USER/kraken-api:latest
       - run:
           name: Manual sync
           command: |
