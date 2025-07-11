@@ -30,6 +30,8 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
       - checkout
       - run:
           name: Install ArgoCD
