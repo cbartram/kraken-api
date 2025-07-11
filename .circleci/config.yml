@@ -57,7 +57,7 @@ jobs:
           command: |
             VERSION_TAG="0.1.$CIRCLE_BUILD_NUM"
             argocd app set kraken-api -p image.tag=$VERSION_TAG --grpc-web
-            argocd app sync kraken-api
+            argocd app sync kraken-api --prune
       - run:
           name: Deploy Complete
           command: argocd app wait kraken-api
