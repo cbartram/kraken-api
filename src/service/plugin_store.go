@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
+	"kraken-api/src/cache"
 	"kraken-api/src/model"
 	"sync"
 	"time"
@@ -21,13 +22,15 @@ type PluginStore struct {
 	db            *gorm.DB
 	cacheMu       sync.Mutex
 	cache         map[string]string
+	redisCache    *cache.RedisCache
 	cacheTime     time.Time
 	cacheDuration time.Duration
 }
 
-func NewPluginStore(db *gorm.DB) *PluginStore {
+func NewPluginStore(db *gorm.DB, cache *cache.RedisCache) *PluginStore {
 	return &PluginStore{
 		db:            db,
+		redisCache:    cache,
 		cache:         make(map[string]string),
 		cacheDuration: 6 * time.Hour,
 	}
@@ -35,6 +38,8 @@ func NewPluginStore(db *gorm.DB) *PluginStore {
 
 // GetPlugins Returns a list of all the plugin metadata
 func (s *PluginStore) GetPlugins() []model.PluginMetadata {
+	// key := "plugins:all"
+
 	tmp := make([]model.PluginMetadata, 0)
 	s.db.Preload("ConfigurationOptions").
 		Preload("PriceDetails").

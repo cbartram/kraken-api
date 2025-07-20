@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Values.redis.name }}-svc
+spec:
+  type: {{ .Values.redis.service.type }}
+  ports:
+    - port: {{ .Values.redis.service.port }}
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+    {{- if .Values.redis.metrics.enabled }}
+    - port: {{ .Values.redis.metrics.port }}
+      targetPort: {{ .Values.redis.metrics.port }}
+      protocol: TCP
+      name: metrics
+    {{- end }}
+  selector:
+    app: {{ .Values.redis.name }}

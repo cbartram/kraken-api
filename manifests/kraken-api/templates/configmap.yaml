@@ -15,3 +15,5 @@ data:
   RABBITMQ_BASE_URL: {{ .Values.api.rabbitmqBaseUrl | quote }}
   API_BASE_URL: {{ .Values.api.baseUrl | quote }}
   MYSQL_HOST: {{ .Values.db.host | quote }}
+  REDIS_HOST: {{ .Values.redis.name | quote }}-svc.{{ .Values.namespace }}.svc.cluster.local
+  REDIS_PORT: {{ .Values.redis.service.port | quote }}

@@ -12,6 +12,7 @@ import (
 	"github.com/stripe/stripe-go/v81"
 	"go.uber.org/zap"
 	"kraken-api/src"
+	"kraken-api/src/cache"
 	"kraken-api/src/handlers/payment"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
@@ -42,6 +43,16 @@ func main() {
 			log.Fatalf(fmt.Sprintf("error loading .env file: %v", err))
 		}
 	}
+
+	redisConfig := cache.CacheConfig{
+		Host:     os.Getenv("REDIS_HOST"),
+		Port:     os.Getenv("REDIS_PORT"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	}
+
+	redisCache := cache.NewRedisCache(redisConfig, log)
+	defer redisCache.Close()
 
 	discordService, err := service.MakeDiscordService(log)
 	if err != nil {
@@ -97,8 +108,12 @@ func main() {
 		CognitoService:  service.MakeCognitoService(log, client),
 		Database:        db,
 		RabbitMqService: rabbitMqService,
-		PluginStore:     service.NewPluginStore(db),
-		UserRepository:  &model.DefaultUserRepository{},
+		PluginStore:     service.NewPluginStore(db, redisCache),
+		UserRepository: &model.DefaultUserRepository{
+			Cache: redisCache,
+			Log:   log,
+		},
+		Cache: redisCache,
 	}
 	router := src.NewRouter(&w)
 

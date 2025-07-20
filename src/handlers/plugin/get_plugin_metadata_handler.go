@@ -19,7 +19,7 @@ func (p *PluginMetadataHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 		plugins := w.PluginStore.GetPlugins()
 
 		// Single efficient query to get all active sales
-		salesLookup, err := model.GetActiveSalesLookup(w.Database)
+		salesLookup, err := model.GetActiveSalesLookup(w.Database, w.Cache)
 		if err != nil {
 			log.Errorf("failed to get sales lookup: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load sales data"})
@@ -50,7 +50,7 @@ func (p *PluginMetadataHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 		return
 	}
 
-	sale, err := plugin.GetCurrentSaleDiscount(w.Database)
+	sale, err := plugin.GetCurrentSaleDiscount(w.Database, w.Cache)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get sale data: " + err.Error()})
 		return

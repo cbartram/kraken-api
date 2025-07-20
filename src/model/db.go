@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"kraken-api/src/cache"
 	"os"
 	"time"
 )
@@ -28,7 +29,9 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 		&CognitoCredentials{},
 		&Plugin{},
 		&HardwareID{},
-		&PluginMetadata{},
+		&PluginMetadata{
+			log: log,
+		},
 		&PluginConfig{},
 		&PluginPackPriceDetails{},
 		&PluginMetadataPriceDetails{},
@@ -76,11 +79,21 @@ type UserRepository interface {
 	GetUser(discordId string, db *gorm.DB) (*User, error)
 }
 
-type DefaultUserRepository struct{}
+type DefaultUserRepository struct {
+	Cache *cache.RedisCache
+	Log   *zap.SugaredLogger
+}
 
 // GetUser Retrieves a user and associated plugin metadata from the database.
 func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB) (*User, error) {
+	cacheKey := fmt.Sprintf("user:discord:%s", discordId)
 	var user User
+
+	if err := r.Cache.Get(cacheKey, &user); err == nil {
+		r.Log.Infof("cache hit for user: %s", discordId)
+		return &user, nil
+	}
+
 	tx := db.
 		Preload("HardwareIDs").
 		Preload("Plugins").
@@ -91,6 +104,10 @@ func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB) (*User, e
 
 	if tx.Error != nil {
 		return nil, tx.Error
+	}
+
+	if err := r.Cache.Set(cacheKey, &user, 15*time.Minute); err != nil {
+		r.Log.Infof("failed to cache user: %v", err)
 	}
 
 	return &user, nil
@@ -248,6 +265,7 @@ type PluginMetadata struct {
 	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"`
 	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`
 	Tier                 int                        `json:"tier"`
+	log                  *zap.SugaredLogger
 }
 
 type PluginConfig struct {
@@ -301,8 +319,18 @@ func (ps *PluginSale) IsCurrentlyActive() bool {
 }
 
 // GetCurrentSaleDiscount returns a percentage discount of a sale for a given plugin
-func (pm *PluginMetadata) GetCurrentSaleDiscount(db *gorm.DB) (float32, error) {
+func (pm *PluginMetadata) GetCurrentSaleDiscount(db *gorm.DB, cache *cache.RedisCache) (float32, error) {
+	cacheKey := fmt.Sprintf("plugin:%d:current_sale_discount", pm.ID)
+
 	var sale PluginSale
+
+	if err := cache.Get(cacheKey, &sale); err == nil {
+		pm.log.Infof("cache hit on get current sale discount for plugin %d", pm.ID)
+		if sale.IsCurrentlyActive() {
+			return sale.Discount, nil
+		}
+	}
+
 	now := time.Now()
 
 	result := db.Joins("JOIN plugin_sale_items ON plugin_sales.id = plugin_sale_items.sale_id").
@@ -319,6 +347,9 @@ func (pm *PluginMetadata) GetCurrentSaleDiscount(db *gorm.DB) (float32, error) {
 	}
 
 	if sale.IsCurrentlyActive() {
+		if err := cache.Set(cacheKey, &sale, 5*time.Minute); err != nil {
+			pm.log.Errorf("failed to cache current sale discount for plugin %d: %v", pm.ID, err)
+		}
 		return sale.Discount, nil
 	}
 
@@ -326,9 +357,15 @@ func (pm *PluginMetadata) GetCurrentSaleDiscount(db *gorm.DB) (float32, error) {
 }
 
 // GetActiveSalesLookup calculates all active sales as a lookup map
-func GetActiveSalesLookup(db *gorm.DB) (map[uint]float32, error) {
-	now := time.Now()
+func GetActiveSalesLookup(db *gorm.DB, cache *cache.RedisCache) (map[uint]float32, error) {
+	cacheKey := "sales:active:lookup"
+
 	lookup := make(map[uint]float32)
+	if err := cache.Get(cacheKey, &lookup); err == nil {
+		return lookup, nil
+	}
+
+	now := time.Now()
 
 	// Single query to get all active sales with their plugin associations
 	var results []struct {
@@ -352,5 +389,6 @@ func GetActiveSalesLookup(db *gorm.DB) (map[uint]float32, error) {
 		lookup[result.PluginMetadataID] = result.Discount
 	}
 
+	cache.Set(cacheKey, lookup, 5*time.Minute)
 	return lookup, nil
 }

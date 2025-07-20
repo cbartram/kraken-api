@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Values.redis.name}}-config
+  labels:
+    app: {{.Values.redis.name}}
+data:
+  redis.conf: |
+    bind 0.0.0.0
+    port 6379
+    timeout {{ .Values.redis.config.timeout }}
+    tcp-keepalive {{ .Values.redis.config.tcp_keepalive }}
+    maxmemory {{ .Values.redis.config.maxmemory }}
+    maxmemory-policy {{ .Values.redis.config.maxmemory_policy }}
+    save 900 1
+    save 300 10
+    save 60 10000
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data

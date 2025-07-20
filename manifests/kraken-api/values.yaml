@@ -13,6 +13,44 @@ api:
   rabbitmqBaseUrl: "rabbitmq.rabbitmq.svc.cluster.local:5672"
   baseUrl: "https://kraken-api.duckdns.org"
 
+redis:
+  name: redis
+
+  image:
+    repository: redis
+    tag: "8.0.3-alpine"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  persistence:
+    enabled: true
+    storageClass: "longhorn"
+    size: 8Gi
+
+  config:
+    maxmemory: "256mb"
+    maxmemory_policy: "allkeys-lru"
+    timeout: 300
+    tcp_keepalive: 60
+
+  service:
+    type: ClusterIP
+    port: 6379
+
+  metrics:
+    enabled: true
+    image:
+      repository: oliver006/redis_exporter
+      tag: "v1.45.0"
+    port: 9121
+
 image:
   repository: cbartram/kraken-api
   pullPolicy: IfNotPresent

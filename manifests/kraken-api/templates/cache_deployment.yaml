@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.redis.name }}
+  labels:
+    app: {{ .Values.redis.name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.redis.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.redis.name }}
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          ports:
+            - containerPort: 6379
+              name: redis
+          command:
+            - redis-server
+            - /etc/redis/redis.conf
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis
+            {{- if .Values.redis.persistence.enabled }}
+            - name: redis-data
+              mountPath: /data
+            {{- end }}
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+        {{- if .Values.redis.metrics.enabled }}
+        - name: redis-exporter
+          image: "{{ .Values.redis.metrics.image.repository }}:{{ .Values.redis.metrics.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.redis.metrics.port }}
+              name: metrics
+          env:
+            - name: REDIS_ADDR
+              value: "localhost:6379"
+        {{- end }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{.Values.redis.name}}-config
+        {{- if .Values.redis.persistence.enabled }}
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: {{.Values.redis.name}}-pvc
+        {{- end }}
