@@ -33,7 +33,7 @@ type CognitoService struct {
 }
 
 // MakeCognitoService creates a new instance of CognitoAuthManager
-func MakeCognitoService(log *zap.SugaredLogger, client CognitoClient) *CognitoService {
+func MakeCognitoService(log *zap.SugaredLogger, userRepository *model.DefaultUserRepository, client CognitoClient) *CognitoService {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Errorf("error loading default aws config: %s", err)
@@ -43,7 +43,7 @@ func MakeCognitoService(log *zap.SugaredLogger, client CognitoClient) *CognitoSe
 	return &CognitoService{
 		Log:           log,
 		CognitoClient: client,
-		UserRepo:      &model.DefaultUserRepository{},
+		UserRepo:      userRepository,
 		UserPoolID:    os.Getenv("USER_POOL_ID"),
 		ClientID:      os.Getenv("COGNITO_CLIENT_ID"),
 		ClientSecret:  os.Getenv("COGNITO_CLIENT_SECRET"),

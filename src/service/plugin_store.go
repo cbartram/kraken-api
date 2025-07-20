@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"kraken-api/src/cache"
 	"kraken-api/src/model"
@@ -25,51 +26,66 @@ type PluginStore struct {
 	redisCache    *cache.RedisCache
 	cacheTime     time.Time
 	cacheDuration time.Duration
+	log           *zap.SugaredLogger
 }
 
-func NewPluginStore(db *gorm.DB, cache *cache.RedisCache) *PluginStore {
+func NewPluginStore(db *gorm.DB, cache *cache.RedisCache, log *zap.SugaredLogger) *PluginStore {
 	return &PluginStore{
 		db:            db,
 		redisCache:    cache,
 		cache:         make(map[string]string),
-		cacheDuration: 6 * time.Hour,
+		cacheDuration: 20 * time.Minute,
+		log:           log,
 	}
 }
 
 // GetPlugins Returns a list of all the plugin metadata
 func (s *PluginStore) GetPlugins() []model.PluginMetadata {
-	// key := "plugins:all"
+	key := "pluginstore:metadata:all"
 
-	tmp := make([]model.PluginMetadata, 0)
+	plugins := make([]model.PluginMetadata, 0)
+	if err := s.redisCache.Get(key, &plugins); err == nil {
+		s.log.Infof("cache hit for key: %v", key)
+		return plugins
+	}
+
 	s.db.Preload("ConfigurationOptions").
 		Preload("PriceDetails").
-		Find(&tmp)
+		Find(&plugins)
 
-	return tmp
+	if err := s.redisCache.Set(key, &plugins, s.cacheDuration); err != nil {
+		s.log.Errorf("err caching plugins: %v", err)
+	}
+
+	return plugins
 }
 
 func (s *PluginStore) GetPluginVersion(name string, service *MinIOService) (string, error) {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
 
-	// If cache is valid, use it
-	if time.Since(s.cacheTime) < s.cacheDuration {
-		version, ok := s.cache[name]
-		if ok {
-			return version, nil
+	key := fmt.Sprintf("pluginstore:version:all")
+
+	var pluginVersionMap = make(map[string]string)
+	if err := s.redisCache.Get(key, &pluginVersionMap); err == nil {
+		s.log.Infof("cache hit for plugin version map: %v", key)
+		version, ok := pluginVersionMap[name]
+		if !ok {
+			s.log.Errorf("plugin version not found in cache for name: %v", name)
 		}
-		// Cache valid but plugin not found
-		return "", errors.New("plugin not found in cache for: " + name)
+		return version, nil
 	}
 
-	// If is not cached get all from S3
+	// If is not cached get all versions from S3
 	pluginVersionMap, err := service.GetAllLatestVersion()
 	if err != nil {
 		return "", err
 	}
 
-	s.cache = pluginVersionMap
-	s.cacheTime = time.Now()
+	// Store the plugin version map in cache
+	if err := s.redisCache.Set(key, &pluginVersionMap, s.cacheDuration); err != nil {
+		s.log.Errorf("error caching plugin version map: %v", err)
+	}
 
 	version, ok := pluginVersionMap[name]
 	if !ok {
@@ -79,9 +95,15 @@ func (s *PluginStore) GetPluginVersion(name string, service *MinIOService) (stri
 	return version, nil
 }
 
-// GetPluginsInPack Returns all plugins that are part of a specific plugin pack
 func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata, error) {
-	// First, find the plugin pack by name
+	key := fmt.Sprintf("pluginstore:packplugins:%s", packName)
+
+	var plugins []model.PluginMetadata
+	if err := s.redisCache.Get(key, &plugins); err == nil {
+		s.log.Infof("cache hit for plugins in pack: %v", key)
+		return plugins, nil
+	}
+
 	var pack model.PluginPack
 	if err := s.db.Where("name = ?", packName).First(&pack).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -90,7 +112,6 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 		return nil, fmt.Errorf("error finding plugin pack: %w", err)
 	}
 
-	// Get all plugin metadata items associated with this pack through the join table
 	var packItems []model.PluginPackItem
 	if err := s.db.Where("pack_id = ?", pack.ID).
 		Preload("PluginMetadata.ConfigurationOptions").
@@ -99,10 +120,13 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 		return nil, fmt.Errorf("error loading pack items: %w", err)
 	}
 
-	// Extract just the plugin metadata from the items
-	plugins := make([]model.PluginMetadata, len(packItems))
+	plugins = make([]model.PluginMetadata, len(packItems))
 	for i, item := range packItems {
 		plugins[i] = item.PluginMetadata
+	}
+
+	if err := s.redisCache.Set(key, &plugins, s.cacheDuration); err != nil {
+		s.log.Errorf("error caching plugins in pack: %v", err)
 	}
 
 	return plugins, nil
@@ -111,6 +135,14 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 // GetPlugin Returns a single plugin given the plugin name. If no plugin with the given name is found it returns an error.
 func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.PluginMetadata, error) {
 	plugin := &model.PluginMetadata{}
+
+	// We do have pluginstore:metadata:all in the cache, but we may not have a specific plugin in the cache
+	// This saves double cache lookups for both metadata and version
+	key := fmt.Sprintf("pluginstore:metadata:%s", name)
+	if err := s.redisCache.Get(key, &plugin); err == nil {
+		s.log.Infof("cache hit for single plugin with key: %v", key)
+		return plugin, nil
+	}
 
 	tx := s.db.Where("name = ?", name).
 		Preload("ConfigurationOptions").
@@ -127,6 +159,11 @@ func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.Plug
 	}
 
 	plugin.Version = version
+	err = s.redisCache.Set(key, plugin, s.cacheDuration)
+	if err != nil {
+		s.log.Errorf("error caching single plugin with key: %s err: %v", key, err)
+	}
+
 	return plugin, nil
 }
 
@@ -151,29 +188,52 @@ func (s *PluginStore) GetPrice(pluginName string, period Period, service *MinIOS
 
 // GetPluginPacks returns all available plugin packs
 func (s *PluginStore) GetPluginPacks() []model.PluginPack {
+	key := "pluginstore:packs:all"
+
 	var packs []model.PluginPack
+	if err := s.redisCache.Get(key, &packs); err == nil {
+		s.log.Infof("cache hit for all plugin packs: %v", key)
+		return packs
+	}
+
+	// Cache miss – fetch from DB
 	s.db.Preload("Items.PluginMetadata").
 		Preload("PriceDetails").
 		Where("active = ?", true).
 		Find(&packs)
+
+	if err := s.redisCache.Set(key, &packs, s.cacheDuration); err != nil {
+		s.log.Errorf("error caching all plugin packs: %v", err)
+	}
 
 	return packs
 }
 
 // GetPluginPack returns a specific plugin pack by name
 func (s *PluginStore) GetPluginPack(name string) (*model.PluginPack, error) {
-	pack := &model.PluginPack{}
+	key := fmt.Sprintf("pluginstore:pack:%s", name)
 
+	var pack model.PluginPack
+	if err := s.redisCache.Get(key, &pack); err == nil {
+		s.log.Infof("cache hit for plugin pack: %v", key)
+		return &pack, nil
+	}
+
+	// Cache miss – fetch from DB
 	tx := s.db.Where("name = ?", name).
 		Preload("Items.PluginMetadata").
 		Preload("PriceDetails").
-		First(pack)
+		First(&pack)
 
 	if tx.Error != nil {
 		return nil, fmt.Errorf("failed to find plugin pack with name: %s", name)
 	}
 
-	return pack, nil
+	if err := s.redisCache.Set(key, &pack, s.cacheDuration); err != nil {
+		s.log.Errorf("error caching plugin pack %s: %v", name, err)
+	}
+
+	return &pack, nil
 }
 
 // GetPackPrice returns the price for a specific plugin pack and period

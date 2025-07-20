@@ -101,19 +101,21 @@ func main() {
 
 	client := cognitoidentityprovider.NewFromConfig(cfg)
 
+	userRepo := &model.DefaultUserRepository{
+		Cache: redisCache,
+		Log:   log,
+	}
+
 	w := service.Wrapper{
 		Logger:          log,
 		DiscordService:  discordService,
 		S3Service:       s3Service,
-		CognitoService:  service.MakeCognitoService(log, client),
+		CognitoService:  service.MakeCognitoService(log, userRepo, client),
 		Database:        db,
 		RabbitMqService: rabbitMqService,
-		PluginStore:     service.NewPluginStore(db, redisCache),
-		UserRepository: &model.DefaultUserRepository{
-			Cache: redisCache,
-			Log:   log,
-		},
-		Cache: redisCache,
+		PluginStore:     service.NewPluginStore(db, redisCache, log),
+		UserRepository:  userRepo,
+		Cache:           redisCache,
 	}
 	router := src.NewRouter(&w)
 

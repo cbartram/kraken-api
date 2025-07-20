@@ -36,7 +36,7 @@ func NewRedisCache(config CacheConfig, log *zap.SugaredLogger) *RedisCache {
 		log.Fatalf("failed to connect to Redis: %v", err)
 	}
 
-	log.Infof("successful connection to redis cache")
+	log.Infof("Redis connection established successfully")
 
 	return &RedisCache{
 		client: rdb,

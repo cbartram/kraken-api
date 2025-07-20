@@ -231,13 +231,14 @@ func (HardwareID) TableName() string {
 	return "hardware_ids"
 }
 
-// Plugin represents a software plugin in the system
+// Plugin represents a software plugin in the system. We do not track the latest version of a plugin in this table because
+// maintaining state between MinIO and the database is not worth the complexity. Instead, we rely on the MinIO service to provide all versions
+// and the latest version of a plugin when requested.
 type Plugin struct {
 	ID                  uint           `gorm:"primaryKey" json:"id"`
 	UserID              uint           `gorm:"column:user_id;index" json:"userId"`
 	Name                string         `gorm:"column:name;index;not null" json:"name"`
 	ExpirationTimestamp time.Time      `gorm:"column:expiration_timestamp" json:"expirationTimestamp"`
-	S3JarFilePath       string         `gorm:"column:s3_jar_file_path" json:"s3JarFilePath"`
 	LicenseKey          string         `gorm:"column:license_key;uniqueIndex" json:"licenseKey"`
 	TrialPlugin         bool           `gorm:"column:trial_plugin" json:"trialPlugin"`
 	CreatedAt           time.Time      `json:"createdAt"`

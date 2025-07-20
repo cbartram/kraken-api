@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
@@ -89,7 +88,6 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 			UserID:              user.ID,
 			Name:                plugin.Name,
 			ExpirationTimestamp: endTime,
-			S3JarFilePath:       fmt.Sprintf("s3://kraken-plugins/plugins/%s", plugin.Name),
 			TrialPlugin:         true,
 			LicenseKey:          key,
 			CreatedAt:           time.Now(),

@@ -199,7 +199,6 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 		UserID:              ctx.User.ID,
 		Name:                purchaseReq.PluginName,
 		ExpirationTimestamp: expirationTime,
-		S3JarFilePath:       fmt.Sprintf("s3://kraken-plugins/plugins/%s", purchaseReq.PluginName),
 		LicenseKey:          licenseKey,
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
