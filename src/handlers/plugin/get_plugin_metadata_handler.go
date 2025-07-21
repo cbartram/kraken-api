@@ -44,7 +44,7 @@ func (p *PluginMetadataHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 	}
 
 	// Single plugin request - can still use the individual method for simplicity
-	plugin, err := w.PluginStore.GetPlugin(name, w.S3Service)
+	plugin, err := w.PluginStore.GetPlugin(name)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

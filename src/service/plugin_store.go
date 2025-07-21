@@ -51,6 +51,9 @@ func (s *PluginStore) GetPlugins() []model.PluginMetadata {
 
 	s.db.Preload("ConfigurationOptions").
 		Preload("PriceDetails").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("versions.id DESC") // Newer versions first
+		}).
 		Find(&plugins)
 
 	if err := s.redisCache.Set(key, &plugins, s.cacheDuration); err != nil {
@@ -116,6 +119,9 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 	if err := s.db.Where("pack_id = ?", pack.ID).
 		Preload("PluginMetadata.ConfigurationOptions").
 		Preload("PluginMetadata.PriceDetails").
+		Preload("PluginMetadata.Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("versions.id DESC") // Newer versions first
+		}).
 		Find(&packItems).Error; err != nil {
 		return nil, fmt.Errorf("error loading pack items: %w", err)
 	}
@@ -133,7 +139,7 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 }
 
 // GetPlugin Returns a single plugin given the plugin name. If no plugin with the given name is found it returns an error.
-func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.PluginMetadata, error) {
+func (s *PluginStore) GetPlugin(name string) (*model.PluginMetadata, error) {
 	plugin := &model.PluginMetadata{}
 
 	// We do have pluginstore:metadata:all in the cache, but we may not have a specific plugin in the cache
@@ -147,19 +153,16 @@ func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.Plug
 	tx := s.db.Where("name = ?", name).
 		Preload("ConfigurationOptions").
 		Preload("PriceDetails").
+		Preload("Versions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("versions.id DESC") // Newer versions first
+		}).
 		First(plugin)
 
 	if tx.Error != nil {
 		return nil, errors.New("failed to find plugin with name: " + name)
 	}
 
-	version, err := s.GetPluginVersion(name, service)
-	if err != nil {
-		return nil, err
-	}
-
-	plugin.Version = version
-	err = s.redisCache.Set(key, plugin, s.cacheDuration)
+	err := s.redisCache.Set(key, plugin, s.cacheDuration)
 	if err != nil {
 		s.log.Errorf("error caching single plugin with key: %s err: %v", key, err)
 	}
@@ -168,8 +171,8 @@ func (s *PluginStore) GetPlugin(name string, service *MinIOService) (*model.Plug
 }
 
 // GetPrice returns the price for a specific plugin and period
-func (s *PluginStore) GetPrice(pluginName string, period Period, service *MinIOService) (int, error) {
-	plugin, err := s.GetPlugin(pluginName, service)
+func (s *PluginStore) GetPrice(pluginName string, period Period) (int, error) {
+	plugin, err := s.GetPlugin(pluginName)
 	if err != nil {
 		return 0, err
 	}

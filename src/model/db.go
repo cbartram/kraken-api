@@ -23,7 +23,6 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
-	log.Infof("migrating database")
 	err = db.AutoMigrate(
 		&User{},
 		&CognitoCredentials{},
@@ -32,6 +31,7 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 		&PluginMetadata{
 			log: log,
 		},
+		&PluginVersion{},
 		&PluginConfig{},
 		&PluginPackPriceDetails{},
 		&PluginMetadataPriceDetails{},
@@ -261,12 +261,19 @@ type PluginMetadata struct {
 	VideoUrl             string                     `json:"videoUrl"`
 	TopPick              bool                       `json:"topPick"`
 	IsInBeta             bool                       `json:"isInBeta"`
-	Version              string                     `gorm:"-" json:"version"`
+	Versions             []PluginVersion            `gorm:"foreignKey:PluginMetadataID" json:"versions"`
 	SaleDiscount         float32                    `gorm:"-" json:"saleDiscount"` // Sale discounts are pulled from the db but included only in API responses not on actual rows in db.
 	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"`
 	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`
 	Tier                 int                        `json:"tier"`
 	log                  *zap.SugaredLogger
+}
+
+type PluginVersion struct {
+	ID               uint   `gorm:"primaryKey" json:"id"`
+	PluginMetadataID uint   `gorm:"column:plugin_metadata_id" json:"-"`
+	Version          string `json:"version"`
+	Latest           bool   `gorm:"column:latest;default:false" json:"latest"`
 }
 
 type PluginConfig struct {

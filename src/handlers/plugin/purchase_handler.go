@@ -97,7 +97,7 @@ func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper, log *
 
 // PurchasePlugin purchases a single plugin
 func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequest) (*model.Plugin, int, error) {
-	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration), ctx.Wrapper.S3Service)
+	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration))
 	if err != nil {
 		ctx.Log.Errorf("could not get plugin from store: %s", err)
 		return nil, http.StatusBadRequest, err
@@ -177,7 +177,7 @@ func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequ
 		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to generate a license key"), err)
 	}
 
-	dbPlugin, err := ctx.Wrapper.PluginStore.GetPlugin(purchaseReq.PluginName, ctx.Wrapper.S3Service)
+	dbPlugin, err := ctx.Wrapper.PluginStore.GetPlugin(purchaseReq.PluginName)
 	if err != nil {
 		ctx.Log.Errorf("failed to get plugin from store: %s", err)
 		return nil, http.StatusInternalServerError, errors.Join(errors.New("failed to get plugin from store name: "+purchaseReq.PluginName), err)
