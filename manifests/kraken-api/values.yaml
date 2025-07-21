@@ -30,6 +30,7 @@ redis:
       cpu: "500m"
 
   persistence:
+    name: redis-pvc
     enabled: true
     storageClass: "longhorn"
     size: 8Gi
@@ -43,6 +44,7 @@ redis:
   service:
     type: ClusterIP
     port: 6379
+    name: redis-svc
 
   metrics:
     enabled: true

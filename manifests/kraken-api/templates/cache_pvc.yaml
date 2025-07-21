@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.redis.name }}-pvc
+  name: {{ .Values.redis.persistence.name }}
   labels:
     app: {{ .Values.redis.name }}
 spec:
