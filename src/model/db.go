@@ -266,6 +266,7 @@ type PluginMetadata struct {
 	ConfigurationOptions []PluginConfig             `gorm:"foreignKey:PluginMetadataID" json:"configurationOptions"`
 	PriceDetails         PluginMetadataPriceDetails `gorm:"foreignKey:PluginMetadataID" json:"priceDetails"`
 	Tier                 int                        `json:"tier"`
+	LatestVersion        string                     `gorm:"-" json:"latestVersion"`
 	log                  *zap.SugaredLogger
 }
 

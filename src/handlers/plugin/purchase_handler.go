@@ -67,6 +67,12 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	}
 
 	log.Infof("plugin: %s purchase for user: %s was successful", plugin.Name, user.DiscordUsername)
+	err = w.Cache.Invalidate(fmt.Sprintf("user:discord:%s", user.DiscordID))
+	if err != nil {
+		// We log the error but do not return it to the user.
+		// The user cache invalidation is not critical to the purchase operation.
+		log.Errorf("failed to invalidate user cache for user: %s, error: %s", user.DiscordID, err)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"licenseKey":          plugin.LicenseKey,

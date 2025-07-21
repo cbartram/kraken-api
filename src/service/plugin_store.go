@@ -52,50 +52,23 @@ func (s *PluginStore) GetPlugins() []model.PluginMetadata {
 	s.db.Preload("ConfigurationOptions").
 		Preload("PriceDetails").
 		Preload("Versions", func(db *gorm.DB) *gorm.DB {
-			return db.Order("versions.id DESC") // Newer versions first
+			return db.Order("plugin_versions.id DESC") // Newer versions first
 		}).
 		Find(&plugins)
+
+	for i := range plugins {
+		for j := range plugins[i].Versions {
+			if plugins[i].Versions[j].Latest {
+				plugins[i].LatestVersion = plugins[i].Versions[j].Version
+			}
+		}
+	}
 
 	if err := s.redisCache.Set(key, &plugins, s.cacheDuration); err != nil {
 		s.log.Errorf("err caching plugins: %v", err)
 	}
 
 	return plugins
-}
-
-func (s *PluginStore) GetPluginVersion(name string, service *MinIOService) (string, error) {
-	s.cacheMu.Lock()
-	defer s.cacheMu.Unlock()
-
-	key := fmt.Sprintf("pluginstore:version:all")
-
-	var pluginVersionMap = make(map[string]string)
-	if err := s.redisCache.Get(key, &pluginVersionMap); err == nil {
-		s.log.Infof("cache hit for plugin version map: %v", key)
-		version, ok := pluginVersionMap[name]
-		if !ok {
-			s.log.Errorf("plugin version not found in cache for name: %v", name)
-		}
-		return version, nil
-	}
-
-	// If is not cached get all versions from S3
-	pluginVersionMap, err := service.GetAllLatestVersion()
-	if err != nil {
-		return "", err
-	}
-
-	// Store the plugin version map in cache
-	if err := s.redisCache.Set(key, &pluginVersionMap, s.cacheDuration); err != nil {
-		s.log.Errorf("error caching plugin version map: %v", err)
-	}
-
-	version, ok := pluginVersionMap[name]
-	if !ok {
-		return "", errors.New("plugin not found after cache refresh for: " + name)
-	}
-
-	return version, nil
 }
 
 func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata, error) {
@@ -120,7 +93,7 @@ func (s *PluginStore) GetPluginsInPack(packName string) ([]model.PluginMetadata,
 		Preload("PluginMetadata.ConfigurationOptions").
 		Preload("PluginMetadata.PriceDetails").
 		Preload("PluginMetadata.Versions", func(db *gorm.DB) *gorm.DB {
-			return db.Order("versions.id DESC") // Newer versions first
+			return db.Order("plugin_versions.id DESC") // Newer versions first
 		}).
 		Find(&packItems).Error; err != nil {
 		return nil, fmt.Errorf("error loading pack items: %w", err)
@@ -154,9 +127,15 @@ func (s *PluginStore) GetPlugin(name string) (*model.PluginMetadata, error) {
 		Preload("ConfigurationOptions").
 		Preload("PriceDetails").
 		Preload("Versions", func(db *gorm.DB) *gorm.DB {
-			return db.Order("versions.id DESC") // Newer versions first
+			return db.Order("plugin_versions.id DESC") // Newer versions first
 		}).
 		First(plugin)
+
+	for i := range plugin.Versions {
+		if plugin.Versions[i].Latest {
+			plugin.LatestVersion = plugin.Versions[i].Version
+		}
+	}
 
 	if tx.Error != nil {
 		return nil, errors.New("failed to find plugin with name: " + name)
@@ -222,7 +201,6 @@ func (s *PluginStore) GetPluginPack(name string) (*model.PluginPack, error) {
 		return &pack, nil
 	}
 
-	// Cache miss – fetch from DB
 	tx := s.db.Where("name = ?", name).
 		Preload("Items.PluginMetadata").
 		Preload("PriceDetails").

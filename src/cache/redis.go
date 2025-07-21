@@ -84,6 +84,15 @@ func (r *RedisCache) Exists(key string) bool {
 	return result > 0
 }
 
+func (r *RedisCache) Invalidate(key string) error {
+	result, _ := r.client.Exists(r.ctx, key).Result()
+	if result > 0 {
+		return r.Delete(key)
+	}
+
+	return nil
+}
+
 func (r *RedisCache) Close() error {
 	return r.client.Close()
 }
