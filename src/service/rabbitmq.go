@@ -6,6 +6,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"kraken-api/src/cache"
 	"sync"
 	"time"
 )
@@ -280,7 +281,7 @@ func (r *RabbitMqService) PublishMessage(message *Message) error {
 	return fmt.Errorf("failed to publish message after %d attempts: %v", maxRetries, err)
 }
 
-func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *gorm.DB, log *zap.SugaredLogger), delay time.Duration, db *gorm.DB) error {
+func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *gorm.DB, cache *cache.RedisCache, log *zap.SugaredLogger), delay time.Duration, w *Wrapper) error {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -334,8 +335,11 @@ func (r *RabbitMqService) RegisterConsumer(consumer func(message Message, db *go
 					}
 				}()
 
-				consumer(message, db, r.log)
-				msg.Ack(false)
+				consumer(message, w.Database, w.Cache, r.log)
+				err = msg.Ack(false)
+				if err != nil {
+					r.log.Errorf("error during message acknowledge: %v", err)
+				}
 			}()
 		}
 	}()

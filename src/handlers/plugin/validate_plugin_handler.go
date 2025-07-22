@@ -63,7 +63,7 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 	}
 
 	for _, plugin := range user.Plugins {
-		log.Infof("validating plugin: %s", plugin.Name)
+		log.Infof("validating plugin: %s, user: %s, in trial period: %v, trial plugin: %v, plugin active: %v", plugin.Name, user.DiscordUsername, user.InFreeTrialPeriod(), plugin.TrialPlugin, !util.IsPluginExpired(plugin.ExpirationTimestamp))
 
 		// Do not require a license key for trial plugins however, continue to verify plugins
 		// the user has purchased with their license key
@@ -75,7 +75,7 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 
 		licenseKeyToValidate, exists := reqBody.Plugins[plugin.Name]
 		if !exists {
-			log.Infof("plugin %s owned by user but not found in request", plugin.Name)
+			log.Infof("plugin %s found for user, but is likely expired: %s", plugin.Name, plugin.ExpirationTimestamp.Format(time.RFC3339))
 			continue
 		}
 

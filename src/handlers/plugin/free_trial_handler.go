@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
@@ -31,11 +32,6 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 
 	startTime := time.Now()
 	endTime := time.Now().Add(72 * time.Hour)
-
-	user.FreeTrialStartTime = startTime
-	user.FreeTrialEndTime = endTime
-	user.UsedFreeTrial = true
-
 	plugins := w.PluginStore.GetPlugins()
 
 	tx := w.Database.Begin()
@@ -75,12 +71,13 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	for _, plugin := range plugins {
 		// Skip if user already has purchased this plugin
 		if existingPluginMap[plugin.Name] {
+			log.Infof("[Free Trial] Skipping trial plugin %s for user %s, already owned", plugin.Name, user.DiscordUsername)
 			continue
 		}
 
 		key, err := util.GenerateLicenseKey()
 		if err != nil {
-			log.Errorf("failed to generate license key: %v", err)
+			log.Errorf("failed to generate license key for free trial plugin: %v", err)
 			continue
 		}
 
@@ -93,9 +90,11 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 			CreatedAt:           time.Now(),
 			User:                *user,
 		})
+		log.Infof("[Free Trial] Adding plugin %s for user %s, already owned", plugin.Name, user.DiscordUsername)
 	}
 
 	// Batch insert all new plugins in a single database call
+	log.Infof("Adding %v new trial plugins for user %s", len(newPlugins), user.DiscordUsername)
 	if len(newPlugins) > 0 {
 		if err := tx.CreateInBatches(newPlugins, 100).Error; err != nil {
 			tx.Rollback()
@@ -109,6 +108,11 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		log.Errorf("failed to commit transaction for free trial plugins: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "database error initiating free trial"})
 		return
+	}
+
+	err := w.Cache.Invalidate(fmt.Sprintf("user:discord:%s", user.DiscordID))
+	if err != nil {
+		log.Errorf("failed to invalidate cache for user %s: %v", user.DiscordUsername, err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

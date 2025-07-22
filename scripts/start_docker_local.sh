@@ -2,7 +2,7 @@
 
 source .env
 
-docker container prune -y
+docker container prune
 
 docker run -d \
   --name rabbitmq \

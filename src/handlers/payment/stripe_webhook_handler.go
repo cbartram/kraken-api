@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"io"
+	"kraken-api/src/cache"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
@@ -21,7 +22,7 @@ import (
 
 type WebhookHandler struct{}
 
-func ConsumeMessageWithDelay(message service.Message, db *gorm.DB, log *zap.SugaredLogger) {
+func ConsumeMessageWithDelay(message service.Message, db *gorm.DB, cache *cache.RedisCache, log *zap.SugaredLogger) {
 	log.Infof("processing rabbitmq message type: %s", message.Type)
 
 	switch message.Type {
@@ -30,7 +31,7 @@ func ConsumeMessageWithDelay(message service.Message, db *gorm.DB, log *zap.Suga
 		return
 	case "payment_intent.succeeded":
 		log.Infof("%s: customer payment success", message.Type)
-		if err := handlePaymentIntentSucceeded(message, db, log); err != nil {
+		if err := handlePaymentIntentSucceeded(message, db, cache, log); err != nil {
 			log.Errorf("failed to handle payment intent succeeded: %v", err)
 		}
 	default:
@@ -38,7 +39,7 @@ func ConsumeMessageWithDelay(message service.Message, db *gorm.DB, log *zap.Suga
 	}
 }
 
-func handlePaymentIntentSucceeded(message service.Message, db *gorm.DB, log *zap.SugaredLogger) error {
+func handlePaymentIntentSucceeded(message service.Message, db *gorm.DB, cache *cache.RedisCache, log *zap.SugaredLogger) error {
 	var payment stripe.PaymentIntent
 	if err := json.Unmarshal(message.Body, &payment); err != nil {
 		return fmt.Errorf("error parsing webhook json: %w", err)
@@ -82,6 +83,11 @@ func handlePaymentIntentSucceeded(message service.Message, db *gorm.DB, log *zap
 
 	if err := db.Save(&user).Error; err != nil {
 		return fmt.Errorf("failed to update user with stripe payment id %s: %w", payment.ID, err)
+	}
+
+	err = cache.Invalidate(fmt.Sprintf("user:discord:%s", user.DiscordID))
+	if err != nil {
+		log.Errorf("failed to invalidate cache for user %s: %v", user.DiscordUsername, err)
 	}
 
 	log.Infof("payment updated for user %s, id: %s, status: %s, tokens added: %d",
