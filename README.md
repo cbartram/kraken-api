@@ -125,13 +125,14 @@ docker run --env=RABBITMQ_DEFAULT_USER=kraken --env=RABBITMQ_DEFAULT_PASS=<PASSW
 
 # Login to stripe (tokens expire every 90 days)
 stripe login
-stripe listen --forward-to localhost:8080/api/v1/stripe/webhook
+stripe listen --forward-to localhost:8081/api/v1/stripe/webhook
 
 # In the .env file update the stripe webhook signing secret:
 STRIPE_ENDPOINT_SECRET=<secret from stripe listen command>
 
-# Start frontend and go through checkout process
-npm run dev
+# In a different terminal run the following to trigger a test purchase:
+stripe trigger payment_intent.succeeded
+# or failure stripe trigger payment_intent.payment_failed
 
 # tail server logs to see enqueued results
 go ./main

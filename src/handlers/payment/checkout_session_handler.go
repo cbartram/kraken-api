@@ -3,9 +3,9 @@ package payment
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/checkout/session"
-	"github.com/stripe/stripe-go/v81/price"
+	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v82/checkout/session"
+	"github.com/stripe/stripe-go/v82/price"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
