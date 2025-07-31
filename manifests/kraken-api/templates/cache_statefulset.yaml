@@ -40,12 +40,16 @@ spec:
           livenessProbe:
             exec:
               command:
+                - /bin/sh
+                - -c
                 - redis-cli -a $(cat /etc/redis-secret/redis-password) ping
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             exec:
               command:
+                - /bin/sh
+                - -c
                 - redis-cli -a $(cat /etc/redis-secret/redis-password) ping
             initialDelaySeconds: 5
             periodSeconds: 5
