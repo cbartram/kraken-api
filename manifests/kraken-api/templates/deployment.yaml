@@ -5,6 +5,7 @@ metadata:
   namespace: {{.Values.namespace}}
   labels:
     app: {{.Values.name}}
+    redis-client: "allowed"
 spec:
   revisionHistoryLimit: 1
   strategy:
@@ -17,6 +18,7 @@ spec:
     metadata:
       labels:
         app: {{.Values.name}}
+        redis-client: "allowed"
     spec:
       serviceAccountName: {{.Values.serviceAccountName}}
       containers:

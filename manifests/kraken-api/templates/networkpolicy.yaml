@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.redis.name }}-policy
+  labels:
+    app: {{ .Values.redis.name }}
+spec:
+  podSelector:
+    # Policy applies only to redis instances
+    matchLabels:
+      app: {{ .Values.redis.name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow access only from pods with the API label
+    - from:
+        - podSelector:
+            matchLabels:
+              app: {{ .Values.name }}
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow access from pods in the same namespace with specific label
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ .Values.namespace }}
+          podSelector:
+            matchLabels:
+              redis-client: "allowed"
+      ports:
+        - protocol: TCP
+          port: 6379
