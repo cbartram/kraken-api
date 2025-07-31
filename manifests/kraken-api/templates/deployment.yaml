@@ -40,7 +40,7 @@ spec:
                 name: mysql-secrets
             - secretRef:
                 name: aws-secrets
-            # Uncomment below to test stripe with test secrets and not charge real cards 18,500
+            # Uncomment below to test stripe with test secrets and not charge real cards
             #- secretRef:
             #    name: stripe-secrets-test
             - secretRef:
@@ -49,6 +49,8 @@ spec:
                 name: gmail-secrets
             - secretRef:
                 name: rabittmq-secrets
+            - secretRef:
+                name: redis-creds
             - configMapRef:
                 name: server-config
           ports:

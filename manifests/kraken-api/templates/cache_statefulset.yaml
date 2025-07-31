@@ -30,22 +30,35 @@ spec:
           volumeMounts:
             - name: redis-config
               mountPath: /etc/redis
+            - name: redis-secret
+              mountPath: /etc/redis-secret
+              readOnly: true
             {{- if .Values.redis.persistence.enabled }}
             - name: redis-data
               mountPath: /data
             {{- end }}
           livenessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - redis-cli -a $(cat /etc/redis-secret/redis-password) ping
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             exec:
               command:
-                - redis-cli
-                - ping
+                - /bin/bash
+                - -c
+                - redis-cli -a $(cat /etc/redis-secret/redis-password) ping
             initialDelaySeconds: 5
             periodSeconds: 5
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-creds
+                  key: REDIS_PASSWORD
         {{- if .Values.redis.metrics.enabled }}
         - name: redis-exporter
           image: "{{ .Values.redis.metrics.image.repository }}:{{ .Values.redis.metrics.image.tag }}"
@@ -55,11 +68,19 @@ spec:
           env:
             - name: REDIS_ADDR
               value: "localhost:6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-creds
+                  key: REDIS_PASSWORD
         {{- end }}
       volumes:
         - name: redis-config
           configMap:
             name: {{.Values.redis.name}}-config
+        - name: redis-secret
+          secret:
+            secretName: redis-creds
   {{- if .Values.redis.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

@@ -8,6 +8,7 @@ data:
   redis.conf: |
     bind 0.0.0.0
     port 6379
+    requirepass REDIS_PASSWORD_PLACEHOLDER
     timeout {{ .Values.redis.config.timeout }}
     tcp-keepalive {{ .Values.redis.config.tcp_keepalive }}
     maxmemory {{ .Values.redis.config.maxmemory }}
@@ -19,3 +20,12 @@ data:
     rdbchecksum yes
     dbfilename dump.rdb
     dir /data
+  init-redis.sh: |
+    #!/bin/bash
+    if [ -f /etc/redis-secret/redis-password ]; then
+      REDIS_PASSWORD=$(cat /etc/redis-secret/redis-password)
+      sed "s/REDIS_PASSWORD_PLACEHOLDER/$REDIS_PASSWORD/g" /etc/redis/redis.conf > /tmp/redis.conf
+      exec redis-server /tmp/redis.conf
+    else
+      exec redis-server /etc/redis/redis.conf
+    fi
