@@ -22,8 +22,10 @@ docker run -d \
   -p 3306:3306 \
   mysql:9.2.0
 
-docker run --name redis-cache \
+docker run -d \
+  --name redis-cache \
   -p 6379:6379 \
-  -v redis-data:/data \
-  -d redis:8.0.3-alpine \
-  redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+  -e REDIS_PASSWORD=$REDIS_PASSWORD
+  redis:8.0.3-alpine \
+  redis-server \
+  --requirepass $REDIS_PASSWORD

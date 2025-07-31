@@ -18,6 +18,7 @@ type RedisCache struct {
 type CacheConfig struct {
 	Host     string
 	Port     string
+	Username string
 	Password string
 	DB       int
 }
@@ -26,6 +27,7 @@ func NewRedisCache(config CacheConfig, log *zap.SugaredLogger) *RedisCache {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", config.Host, config.Port),
 		Password: config.Password,
+		Username: config.Username,
 		DB:       config.DB,
 	})
 
