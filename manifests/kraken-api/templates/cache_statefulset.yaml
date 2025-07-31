@@ -23,8 +23,8 @@ spec:
             - containerPort: {{.Values.service.port}}
               name: redis
           command:
-            - redis-server
-            - /etc/redis/redis.conf
+            - /bin/sh
+            - /etc/redis/init-redis.sh
           resources:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           volumeMounts:

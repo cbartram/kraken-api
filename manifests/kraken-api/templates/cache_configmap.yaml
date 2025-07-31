@@ -22,10 +22,11 @@ data:
     dir /data
   init-redis.sh: |
     #!/bin/sh
-    if [ -f /etc/redis-secret/redis-password ]; then
-      REDIS_PASSWORD=$(cat /etc/redis-secret/redis-password)
+    if [ -f /etc/redis-secret/REDIS_PASSWORD ]; then
+      REDIS_PASSWORD=$(cat /etc/redis-secret/REDIS_PASSWORD)
       sed "s/REDIS_PASSWORD_PLACEHOLDER/$REDIS_PASSWORD/g" /etc/redis/redis.conf > /tmp/redis.conf
       exec redis-server /tmp/redis.conf
     else
+      echo "No redis pass on filesystem, starting redis although clients may not be able to connect."
       exec redis-server /etc/redis/redis.conf
     fi
