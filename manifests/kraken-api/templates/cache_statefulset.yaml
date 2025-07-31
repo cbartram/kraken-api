@@ -1,10 +1,11 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Values.redis.name }}
   labels:
     app: {{ .Values.redis.name }}
 spec:
+  serviceName: {{ .Values.redis.service.name }}
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
@@ -19,7 +20,7 @@ spec:
           image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
           imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
           ports:
-            - containerPort: 6379
+            - containerPort: {{.Values.service.port}}
               name: redis
           command:
             - redis-server
@@ -59,8 +60,18 @@ spec:
         - name: redis-config
           configMap:
             name: {{.Values.redis.name}}-config
-        {{- if .Values.redis.persistence.enabled }}
-        - name: redis-data
-          persistentVolumeClaim:
-            claimName: {{.Values.redis.name}}-pvc
-        {{- end }}
+  {{- if .Values.redis.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: {{ .Values.redis.persistence.size | default "8Gi" }}
+        storageClassName: {{ .Values.redis.persistence.storageClass }}
+  {{- end }}
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate

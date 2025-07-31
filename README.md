@@ -114,7 +114,7 @@ curl --location 'https://kraken-plugins.duckdns.org/api/v1/sale/create' \
 
 ## Testing with Stripe
 
-Stripe checkout is used to direct users to the stripe checkout page. Afterwards, a series of webhooks will be fired to let the Kraken API know if the purchase
+Stripe checkout is used to direct users to the stripe checkout page. Afterward, a series of webhooks will be fired to let the Kraken API know if the purchase
 was successful or not. These webhooks are enqueued into a rabbitmq queue and processed sequentially to update our database with additional tokens.
 
 To test this process locally run Note: only local events sent via stripe cli will work with this: 
