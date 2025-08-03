@@ -165,6 +165,7 @@ type PluginMetadataPriceDetails struct {
 	Month      int  `json:"month"`
 	ThreeMonth int  `json:"threeMonth"`
 	Year       int  `json:"year"`
+	Lifetime   int  `json:"lifetime"`
 
 	// In a JSON serialized response additional metadata about the sale price for a plugin can be included optionally in the response.
 	// If a sale is not happening for a plugin these fields can be safely ignored and will not be returned in the response.
