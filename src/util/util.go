@@ -36,6 +36,8 @@ func PurchaseDurationToDays(purchaseDuration string) int {
 		return 96
 	case "yearly":
 		return 366
+	case "lifetime":
+		return 109500 // 300 years
 	}
 	return 0
 }

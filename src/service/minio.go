@@ -41,6 +41,8 @@ func MakeMinIOService(bucketName, endpoint string, client MinioClient, log *zap.
 		return nil, fmt.Errorf("bucket %s does not exist", bucketName)
 	}
 
+	log.Infof("MinIO connection establish successfully")
+
 	return &MinIOService{
 		log:        log,
 		BucketName: bucketName,

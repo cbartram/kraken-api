@@ -17,6 +17,7 @@ const (
 	Month      Period = "monthly"
 	ThreeMonth Period = "3-month"
 	Year       Period = "yearly"
+	Lifetime   Period = "lifetime"
 )
 
 type PluginStore struct {
@@ -163,6 +164,8 @@ func (s *PluginStore) GetPrice(pluginName string, period Period) (int, error) {
 		return plugin.PriceDetails.ThreeMonth, nil
 	case Year:
 		return plugin.PriceDetails.Year, nil
+	case Lifetime:
+		return plugin.PriceDetails.Lifetime, nil
 	default:
 		return 0, errors.New("invalid period, given: " + string(period))
 	}
