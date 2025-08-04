@@ -34,4 +34,5 @@ type CreatePresignedUrlRequestBatch struct {
 type PurchasePluginRequest struct {
 	PluginName       string `json:"pluginName"`
 	PurchaseDuration string `json:"purchaseDuration"`
+	IsPack           bool   `json:"-"`
 }

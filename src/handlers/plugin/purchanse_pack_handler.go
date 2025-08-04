@@ -62,6 +62,7 @@ func (plugin *PurchasePluginPackHandler) HandleRequest(c *gin.Context, w *servic
 		p, status, err := purchaseCtx.PurchasePlugin(&model.PurchasePluginRequest{
 			PluginName:       plugin.Name,
 			PurchaseDuration: reqBody.PurchaseDuration,
+			IsPack:           true,
 		})
 
 		result := gin.H{

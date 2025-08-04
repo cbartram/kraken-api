@@ -151,10 +151,14 @@ func (s *PluginStore) GetPlugin(name string) (*model.PluginMetadata, error) {
 }
 
 // GetPrice returns the price for a specific plugin and period
-func (s *PluginStore) GetPrice(pluginName string, period Period) (int, error) {
+func (s *PluginStore) GetPrice(pluginName string, period Period, isPack bool) (int, error) {
 	plugin, err := s.GetPlugin(pluginName)
 	if err != nil {
 		return 0, err
+	}
+
+	if isPack && period == Lifetime {
+		return 0, errors.New("plugin pack cannot be purchased with: 'lifetime' duration")
 	}
 
 	switch period {

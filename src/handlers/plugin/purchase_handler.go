@@ -34,7 +34,7 @@ func (p *PurchaseHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
-
+	reqBody.IsPack = false
 	tmp, exists := c.Get("user")
 	if !exists {
 		log.Errorf("user not found in context")
@@ -103,7 +103,7 @@ func NewPurchaseContext(user *model.User, tx *gorm.DB, w *service.Wrapper, log *
 
 // PurchasePlugin purchases a single plugin
 func (ctx *PurchaseContext) PurchasePlugin(purchaseReq *model.PurchasePluginRequest) (*model.Plugin, int, error) {
-	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration))
+	price, err := ctx.Wrapper.PluginStore.GetPrice(purchaseReq.PluginName, service.Period(purchaseReq.PurchaseDuration), purchaseReq.IsPack)
 	if err != nil {
 		ctx.Log.Errorf("could not get plugin from store: %s", err)
 		return nil, http.StatusBadRequest, err
