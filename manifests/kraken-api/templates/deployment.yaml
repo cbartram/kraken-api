@@ -49,8 +49,6 @@ spec:
                 name: gmail-secrets
             - secretRef:
                 name: rabittmq-secrets
-            - secretRef:
-                name: redis-creds
             - configMapRef:
                 name: server-config
           ports:

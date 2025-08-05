@@ -45,11 +45,9 @@ func main() {
 	}
 
 	redisConfig := cache.CacheConfig{
-		Host:     os.Getenv("REDIS_HOST"),
-		Port:     os.Getenv("REDIS_PORT"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-		Username: os.Getenv("REDIS_USERNAME"),
-		DB:       0,
+		Host: os.Getenv("REDIS_HOST"),
+		Port: os.Getenv("REDIS_PORT"),
+		DB:   0,
 	}
 
 	redisCache := cache.NewRedisCache(redisConfig, log)

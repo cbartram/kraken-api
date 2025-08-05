@@ -68,19 +68,11 @@ spec:
           env:
             - name: REDIS_ADDR
               value: "localhost:6379"
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: redis-creds
-                  key: REDIS_PASSWORD
         {{- end }}
       volumes:
         - name: redis-config
           configMap:
             name: {{.Values.redis.name}}-config
-        - name: redis-secret
-          secret:
-            secretName: redis-creds
   {{- if .Values.redis.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

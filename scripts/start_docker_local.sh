@@ -25,7 +25,5 @@ docker run -d \
 docker run -d \
   --name redis-cache \
   -p 6379:6379 \
-  -e REDIS_PASSWORD=$REDIS_PASSWORD
   redis:8.0.3-alpine \
-  redis-server \
-  --requirepass $REDIS_PASSWORD
+  redis-server
