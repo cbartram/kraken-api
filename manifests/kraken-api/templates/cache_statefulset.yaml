@@ -23,15 +23,12 @@ spec:
             - containerPort: {{.Values.service.port}}
               name: redis
           command:
-            - /bin/sh
-            - /etc/redis/init-redis.sh
+            - redis-server /etc/redis/redis.conf
           resources:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           volumeMounts:
             - name: redis-config
               mountPath: /etc/redis
-            - name: redis-secret
-              mountPath: /etc/redis-secret
               readOnly: true
             {{- if .Values.redis.persistence.enabled }}
             - name: redis-data
