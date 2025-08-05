@@ -36,19 +36,15 @@ spec:
               mountPath: /data
             {{- end }}
           livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - redis-cli ping
+            tcpSocket:
+              port: 6379
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             exec:
               command:
-                - /bin/sh
-                - -c
-                - redis-cli ping
+                - redis-cli
+                - ping
             initialDelaySeconds: 5
             periodSeconds: 5
         {{- if .Values.redis.metrics.enabled }}
