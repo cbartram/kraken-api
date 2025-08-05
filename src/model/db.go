@@ -45,6 +45,8 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 	if err != nil {
 		log.Fatalf("failed to run database migrations: %v", err)
 	}
+
+	log.Infof("MySQL connection established successfully (db migrated)")
 	return db
 }
 
