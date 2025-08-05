@@ -39,23 +39,17 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - redis-cli -a $(cat /etc/redis-secret/redis-password) ping
-            initialDelaySeconds: 30
+                - redis-cli ping
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             exec:
               command:
                 - /bin/sh
                 - -c
-                - redis-cli -a $(cat /etc/redis-secret/redis-password) ping
+                - redis-cli ping
             initialDelaySeconds: 5
             periodSeconds: 5
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: redis-creds
-                  key: REDIS_PASSWORD
         {{- if .Values.redis.metrics.enabled }}
         - name: redis-exporter
           image: "{{ .Values.redis.metrics.image.repository }}:{{ .Values.redis.metrics.image.tag }}"
