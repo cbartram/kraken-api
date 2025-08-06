@@ -103,6 +103,11 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			UsedFreeTrial:      false,
 			FreeTrialStartTime: time.Now(),
 			FreeTrialEndTime:   time.Now(),
+			Groups: []model.Group{
+				{
+					GroupName: "user",
+				},
+			},
 		}
 
 		createUser := w.Database.Create(&newUser)
@@ -153,6 +158,7 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 			IdToken:         creds.IdToken,
 			TokenExpiration: creds.TokenExpiration,
 		}
+
 		tx := w.Database.Save(&user)
 		if tx.Error != nil {
 			log.Errorf("error while saving existing user: %v", tx.Error)

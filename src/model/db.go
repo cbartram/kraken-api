@@ -25,6 +25,7 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 
 	err = db.AutoMigrate(
 		&User{},
+		&Group{},
 		&CognitoCredentials{},
 		&Plugin{},
 		&HardwareID{},
@@ -74,11 +75,14 @@ type User struct {
 	Plugins     []Plugin           `gorm:"foreignKey:UserID" json:"plugins"`
 	HardwareIDs []HardwareID       `gorm:"foreignKey:UserID" json:"hardwareIds"`
 	PluginPacks []UserPluginPack   `gorm:"foreignKey:UserID" json:"pluginPacks"`
+	Groups      []Group            `gorm:"foreignKey:UserID" json:"groups"`
 }
 
 // UserRepository This interface and implementing struct are required for mocking during unit tests.
 type UserRepository interface {
 	GetUser(discordId string, db *gorm.DB) (*User, error)
+	AddUserToGroup(userID uint, groupName string, db *gorm.DB) error
+	RemoveUserFromGroup(groupID uint, db *gorm.DB) error
 }
 
 type DefaultUserRepository struct {
@@ -101,6 +105,7 @@ func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB) (*User, e
 		Preload("Plugins").
 		Preload("PluginPacks").
 		Preload("Credentials").
+		Preload("Groups").
 		Where("discord_id = ?", discordId).
 		First(&user)
 
@@ -113,6 +118,29 @@ func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB) (*User, e
 	}
 
 	return &user, nil
+}
+
+func (r *DefaultUserRepository) AddUserToGroup(userID uint, groupName string, db *gorm.DB) error {
+	group := Group{
+		UserID:    userID,
+		GroupName: groupName,
+		CreatedAt: time.Now(),
+	}
+	return db.Create(&group).Error
+}
+
+func (r *DefaultUserRepository) RemoveUserFromGroup(groupID uint, db *gorm.DB) error {
+	return db.Delete(&Group{}, groupID).Error
+}
+
+type Group struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"column:user_id;index" json:"userId"`
+	GroupName string    `gorm:"column:group_name;size:100" json:"groupName"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Composite unique index to prevent duplicate user-group combinations
+	User User `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // PluginPack represents a collection of plugins sold together

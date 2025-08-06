@@ -21,6 +21,7 @@ type CognitoClient interface {
 	AdminInitiateAuth(ctx context.Context, params *cognitoidentityprovider.AdminInitiateAuthInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminInitiateAuthOutput, error)
 	AdminGetUser(ctx context.Context, params *cognitoidentityprovider.AdminGetUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminGetUserOutput, error)
 	AdminAddUserToGroup(ctx context.Context, params *cognitoidentityprovider.AdminAddUserToGroupInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminAddUserToGroupOutput, error)
+	AdminListGroupsForUser(ctx context.Context, params *cognitoidentityprovider.AdminListGroupsForUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminListGroupsForUserOutput, error)
 }
 
 // CognitoService handles AWS Cognito authentication operations
@@ -207,6 +208,57 @@ func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *str
 		return nil, err
 	}
 
+	// Synchronizes a users groups in cognito with the database
+	groups, err := c.GetUserGroupDetails(ctx, *userId)
+	if err != nil {
+		c.Log.Errorf("could not get user groups: %v", err)
+		return nil, err
+	}
+
+	// Build lookup maps
+	cognitoGroupMap := make(map[string]bool)
+	for _, group := range groups {
+		cognitoGroupMap[*group.GroupName] = true
+	}
+
+	dbGroupMap := make(map[string]model.Group)
+	for _, group := range user.Groups {
+		dbGroupMap[group.GroupName] = group
+	}
+
+	// Add missing Cognito groups to DB
+	for _, group := range groups {
+		if _, exists := dbGroupMap[*group.GroupName]; !exists {
+			err := c.UserRepo.AddUserToGroup(user.ID, *group.GroupName, db)
+			if err != nil {
+				c.Log.Errorf("error adding user %d to group %s: %v", user.ID, *group.GroupName, err)
+				return nil, err
+			}
+			c.Log.Infof("added user: %s to group: %s", user.DiscordUsername, *group.GroupName)
+		}
+	}
+
+	// Remove DB groups not in Cognito
+	for groupName, group := range dbGroupMap {
+		if !cognitoGroupMap[groupName] {
+			err := c.UserRepo.RemoveUserFromGroup(group.ID, db)
+			if err != nil {
+				c.Log.Errorf("error removing user %d from group %s: %v", user.ID, groupName, err)
+				return nil, err
+			}
+			c.Log.Infof("removed user: %s from group: %s", user.DiscordUsername, groupName)
+		}
+	}
+
+	// Clear and re-populate in memory groups
+	user.Groups = []model.Group{}
+	for _, group := range groups {
+		user.Groups = append(user.Groups, model.Group{
+			UserID:    user.ID,
+			GroupName: *group.GroupName,
+		})
+	}
+
 	user.Credentials = model.CognitoCredentials{
 		AccessToken:     *auth.AuthenticationResult.AccessToken,
 		RefreshToken:    *refreshToken,
@@ -215,4 +267,34 @@ func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *str
 	}
 
 	return user, nil
+}
+
+func (c *CognitoService) IsUserInGroup(ctx context.Context, userId, groupName string) (bool, error) {
+	groupsResp, err := c.CognitoClient.AdminListGroupsForUser(ctx, &cognitoidentityprovider.AdminListGroupsForUserInput{
+		UserPoolId: aws.String(c.UserPoolID),
+		Username:   aws.String(userId),
+	})
+	if err != nil {
+		return false, fmt.Errorf("error getting groups for user %s: %w", userId, err)
+	}
+
+	for _, group := range groupsResp.Groups {
+		if group.GroupName != nil && *group.GroupName == groupName {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (c *CognitoService) GetUserGroupDetails(ctx context.Context, userId string) ([]types.GroupType, error) {
+	groupsResp, err := c.CognitoClient.AdminListGroupsForUser(ctx, &cognitoidentityprovider.AdminListGroupsForUserInput{
+		UserPoolId: aws.String(c.UserPoolID),
+		Username:   aws.String(userId),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting groups for user %s: %w", userId, err)
+	}
+
+	return groupsResp.Groups, nil
 }
