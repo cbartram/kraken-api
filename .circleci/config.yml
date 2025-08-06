@@ -34,15 +34,6 @@ jobs:
           docker_layer_caching: true
       - checkout
       - run:
-          name: Install ArgoCD
-          command: |
-            URL=https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-            [ -w /usr/local/bin ] && SUDO="" || SUDO=sudo
-            $SUDO curl --insecure -sSL -o /usr/local/bin/argocd $URL
-            $SUDO chmod +x /usr/local/bin/argocd
-            
-            argocd login argocd-kraken.duckdns.org --insecure --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --grpc-web
-      - run:
           name: Build and Push Image
           command: |
             VERSION_TAG="0.1.$CIRCLE_BUILD_NUM"
@@ -52,6 +43,15 @@ jobs:
             echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
             docker push "$IMAGE_NAME_VERSION"
             docker push $DOCKER_USER/kraken-api:latest
+      - run:
+          name: Install ArgoCD
+          command: |
+            URL=https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            [ -w /usr/local/bin ] && SUDO="" || SUDO=sudo
+            $SUDO curl --insecure -sSL -o /usr/local/bin/argocd $URL
+            $SUDO chmod +x /usr/local/bin/argocd
+            
+            argocd login argocd-kraken.duckdns.org --insecure --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --grpc-web
       - run:
           name: Deploy
           command: |
