@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -31,6 +32,16 @@ func (m *MockUserRepository) GetUser(discordId string, db *gorm.DB) (*model.User
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
+func (m *MockUserRepository) AddUserToGroup(userID uint, groupName string, db *gorm.DB) error {
+	args := m.Called(userID, groupName, db)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) RemoveUserFromGroup(groupID uint, db *gorm.DB) error {
+	args := m.Called(groupID, db)
+	return args.Error(0)
+}
+
 func (m *MockCognitoClient) AdminCreateUser(ctx context.Context, params *cognitoidentityprovider.AdminCreateUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminCreateUserOutput, error) {
 	args := m.Called(ctx, params)
 	return args.Get(0).(*cognitoidentityprovider.AdminCreateUserOutput), args.Error(1)
@@ -49,6 +60,16 @@ func (m *MockCognitoClient) AdminInitiateAuth(ctx context.Context, params *cogni
 func (m *MockCognitoClient) AdminGetUser(ctx context.Context, params *cognitoidentityprovider.AdminGetUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminGetUserOutput, error) {
 	args := m.Called(ctx, params)
 	return args.Get(0).(*cognitoidentityprovider.AdminGetUserOutput), args.Error(1)
+}
+
+func (m *MockCognitoClient) AdminAddUserToGroup(ctx context.Context, params *cognitoidentityprovider.AdminAddUserToGroupInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminAddUserToGroupOutput, error) {
+	args := m.Called(ctx, params)
+	return args.Get(0).(*cognitoidentityprovider.AdminAddUserToGroupOutput), args.Error(1)
+}
+
+func (m *MockCognitoClient) AdminListGroupsForUser(ctx context.Context, params *cognitoidentityprovider.AdminListGroupsForUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminListGroupsForUserOutput, error) {
+	args := m.Called(ctx, params)
+	return args.Get(0).(*cognitoidentityprovider.AdminListGroupsForUserOutput), args.Error(1)
 }
 
 // Helper function to create a test CognitoService with mocked client
@@ -107,6 +128,12 @@ func TestCognitoService_CreateCognitoUser_Success(t *testing.T) {
 		AuthenticationResult: expectedAuthResult,
 	}, nil)
 
+	mockClient.On("AdminAddUserToGroup", ctx, mock.MatchedBy(func(input *cognitoidentityprovider.AdminAddUserToGroupInput) bool {
+		return true
+	})).Return(&cognitoidentityprovider.AdminAddUserToGroupOutput{
+		ResultMetadata: middleware.Metadata{},
+	}, nil)
+
 	// Execute test
 	result, err := service.CreateCognitoUser(ctx, createUserPayload)
 
@@ -159,6 +186,11 @@ func TestCognitoService_CreateCognitoUser_EmptyEmail(t *testing.T) {
 	mockClient.On("AdminSetUserPassword", ctx, mock.AnythingOfType("*cognitoidentityprovider.AdminSetUserPasswordInput")).Return(&cognitoidentityprovider.AdminSetUserPasswordOutput{}, nil)
 	mockClient.On("AdminInitiateAuth", ctx, mock.AnythingOfType("*cognitoidentityprovider.AdminInitiateAuthInput")).Return(&cognitoidentityprovider.AdminInitiateAuthOutput{
 		AuthenticationResult: expectedAuthResult,
+	}, nil)
+	mockClient.On("AdminAddUserToGroup", ctx, mock.MatchedBy(func(input *cognitoidentityprovider.AdminAddUserToGroupInput) bool {
+		return true
+	})).Return(&cognitoidentityprovider.AdminAddUserToGroupOutput{
+		ResultMetadata: middleware.Metadata{},
 	}, nil)
 
 	// Execute test
@@ -348,8 +380,23 @@ func TestCognitoService_AuthUser_Success(t *testing.T) {
 		AuthenticationResult: expectedAuthResult,
 	}, nil)
 
+	// Mock AdminListGroupsForUser - this gets the user's current groups
+	mockClient.On("AdminListGroupsForUser", ctx, mock.MatchedBy(func(input *cognitoidentityprovider.AdminListGroupsForUserInput) bool {
+		return *input.Username == userId && *input.UserPoolId == "test-user-pool-id"
+	})).Return(&cognitoidentityprovider.AdminListGroupsForUserOutput{
+		ResultMetadata: middleware.Metadata{},
+		Groups: []types.GroupType{
+			{
+				GroupName: aws.String("admin"),
+			},
+		},
+	}, nil)
+
 	// Mock GetUser
 	mockRepo.On("GetUser", userId, mockDB).Return(expectedUser, nil)
+
+	// Mock AddUserToGroup for each group returned by AdminListGroupsForUser
+	mockRepo.On("AddUserToGroup", uint(0), "admin", mockDB).Return(nil)
 
 	// Execute test
 	result, err := service.AuthUser(ctx, &refreshToken, &userId, mockDB)
@@ -366,6 +413,7 @@ func TestCognitoService_AuthUser_Success(t *testing.T) {
 	mockClient.AssertExpectations(t)
 	mockRepo.AssertExpectations(t)
 }
+
 func TestCognitoService_AuthUser_AuthError(t *testing.T) {
 	mockClient := &MockCognitoClient{}
 	service := createTestCognitoService(mockClient, &MockUserRepository{})
@@ -407,6 +455,7 @@ func BenchmarkCognitoService_CreateCognitoUser(b *testing.B) {
 		ExpiresIn:    *aws.Int32(3600),
 	}
 
+	// Set up mocks for benchmark
 	// Set up mocks for benchmark
 	mockClient.On("AdminCreateUser", mock.Anything, mock.Anything).Return(&cognitoidentityprovider.AdminCreateUserOutput{}, nil)
 	mockClient.On("AdminSetUserPassword", mock.Anything, mock.Anything).Return(&cognitoidentityprovider.AdminSetUserPasswordOutput{}, nil)
@@ -463,6 +512,11 @@ func TestCognitoService_CreateCognitoUser_EmailScenarios(t *testing.T) {
 			mockClient.On("AdminSetUserPassword", ctx, mock.AnythingOfType("*cognitoidentityprovider.AdminSetUserPasswordInput")).Return(&cognitoidentityprovider.AdminSetUserPasswordOutput{}, nil)
 			mockClient.On("AdminInitiateAuth", ctx, mock.AnythingOfType("*cognitoidentityprovider.AdminInitiateAuthInput")).Return(&cognitoidentityprovider.AdminInitiateAuthOutput{
 				AuthenticationResult: expectedAuthResult,
+			}, nil)
+			mockClient.On("AdminAddUserToGroup", ctx, mock.MatchedBy(func(input *cognitoidentityprovider.AdminAddUserToGroupInput) bool {
+				return true
+			})).Return(&cognitoidentityprovider.AdminAddUserToGroupOutput{
+				ResultMetadata: middleware.Metadata{},
 			}, nil)
 
 			result, err := service.CreateCognitoUser(ctx, createUserPayload)
