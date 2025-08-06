@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go.uber.org/zap"
+	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -30,26 +31,52 @@ type MinIOService struct {
 	UseSSL     bool
 }
 
+var maxRetries = 3
+var initialDelay = 100 * time.Millisecond
+var maxDelay = 5 * time.Second
+var backOffMultiplier = 2.0
+
 // MakeMinIOService creates a new MinIO service instance
 func MakeMinIOService(bucketName, endpoint string, client MinioClient, log *zap.SugaredLogger) (*MinIOService, error) {
 	ctx := context.Background()
-	exists, err := client.BucketExists(ctx, bucketName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check bucket existence: %w", err)
-	}
-	if !exists {
-		return nil, fmt.Errorf("bucket %s does not exist", bucketName)
+
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			// Calculate delay with exponential backoff
+			delay := time.Duration(float64(initialDelay) * math.Pow(backOffMultiplier, float64(attempt-1)))
+			if delay > maxDelay {
+				delay = maxDelay
+			}
+
+			log.Warnf("MinIO bucket check failed (attempt %d/%d), retrying in %v: %v",
+				attempt, maxRetries+1, delay, lastErr)
+			time.Sleep(delay)
+		}
+
+		exists, err := client.BucketExists(ctx, bucketName)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to check bucket existence: %w", err)
+			continue
+		}
+
+		if !exists {
+			// Bucket not existing is not a retryable error
+			return nil, fmt.Errorf("bucket %s does not exist", bucketName)
+		}
+
+		log.Infof("MinIO connection established successfully")
+		return &MinIOService{
+			log:        log,
+			BucketName: bucketName,
+			Client:     client,
+			Endpoint:   endpoint,
+			UseSSL:     true,
+		}, nil
 	}
 
-	log.Infof("MinIO connection establish successfully")
-
-	return &MinIOService{
-		log:        log,
-		BucketName: bucketName,
-		Client:     client,
-		Endpoint:   endpoint,
-		UseSSL:     true,
-	}, nil
+	return nil, fmt.Errorf("failed to establish MinIO connection after %d attempts: %w",
+		maxRetries+1, lastErr)
 }
 
 // GetAllLatestVersion Returns the latest version for all plugins in MinIO.

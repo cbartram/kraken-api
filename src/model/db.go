@@ -259,7 +259,7 @@ type PluginMetadata struct {
 	ID                   uint                       `gorm:"primaryKey" json:"id"`
 	Name                 string                     `gorm:"uniqueIndex" json:"name"`
 	Title                string                     `json:"title"`
-	Description          string                     `json:"description"`
+	Description          string                     `gorm:"type:text" json:"description"`
 	ImageUrl             string                     `json:"imageUrl"`
 	VideoUrl             string                     `json:"videoUrl"`
 	TopPick              bool                       `json:"topPick"`
@@ -284,7 +284,7 @@ type PluginConfig struct {
 	ID               uint     `gorm:"primaryKey" json:"id"`
 	Name             string   `json:"name"`
 	Section          string   `json:"section"`
-	Description      string   `json:"description"`
+	Description      string   `gorm:"type:text" json:"description"`
 	Type             string   `json:"type"`
 	IsBool           bool     `json:"isBool"`
 	Values           string   `gorm:"type:text" json:"-"`
@@ -294,12 +294,12 @@ type PluginConfig struct {
 
 type PluginSale struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
-	Name        string         `gorm:"column:name;not null" json:"name"`            // e.g., "Black Friday Sale", "Summer Special"
-	Description string         `gorm:"column:description" json:"description"`       // Optional description
-	Discount    float32        `gorm:"column:discount;not null" json:"discount"`    // Percentage discount (0-100)
-	StartTime   time.Time      `gorm:"column:start_time;not null" json:"startTime"` // When sale begins
-	EndTime     time.Time      `gorm:"column:end_time;not null" json:"endTime"`     // When sale ends
-	Active      bool           `gorm:"column:active;default:true" json:"active"`    // Admin can manually disable
+	Name        string         `gorm:"column:name;not null" json:"name"`                // e.g., "Black Friday Sale", "Summer Special"
+	Description string         `gorm:"column:description;type:text" json:"description"` // Optional description
+	Discount    float32        `gorm:"column:discount;not null" json:"discount"`        // Percentage discount (0-100)
+	StartTime   time.Time      `gorm:"column:start_time;not null" json:"startTime"`     // When sale begins
+	EndTime     time.Time      `gorm:"column:end_time;not null" json:"endTime"`         // When sale ends
+	Active      bool           `gorm:"column:active;default:true" json:"active"`        // Admin can manually disable
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
