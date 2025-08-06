@@ -34,6 +34,7 @@ func (p *PluginMetadataHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 				plugin.PriceDetails.SaleMonth = util.CalculateDiscountedPrice(plugin.PriceDetails.Month, discount)
 				plugin.PriceDetails.SaleThreeMonth = util.CalculateDiscountedPrice(plugin.PriceDetails.ThreeMonth, discount)
 				plugin.PriceDetails.SaleYear = util.CalculateDiscountedPrice(plugin.PriceDetails.Year, discount)
+				plugin.PriceDetails.SaleLifetime = util.CalculateDiscountedPrice(plugin.PriceDetails.Lifetime, discount)
 			}
 
 			response = append(response, plugin)
@@ -61,6 +62,7 @@ func (p *PluginMetadataHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 		plugin.PriceDetails.SaleMonth = util.CalculateDiscountedPrice(plugin.PriceDetails.Month, sale)
 		plugin.PriceDetails.SaleThreeMonth = util.CalculateDiscountedPrice(plugin.PriceDetails.ThreeMonth, sale)
 		plugin.PriceDetails.SaleYear = util.CalculateDiscountedPrice(plugin.PriceDetails.Year, sale)
+		plugin.PriceDetails.SaleLifetime = util.CalculateDiscountedPrice(plugin.PriceDetails.Lifetime, sale)
 	}
 
 	c.JSON(http.StatusOK, plugin)

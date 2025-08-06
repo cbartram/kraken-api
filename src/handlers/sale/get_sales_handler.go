@@ -29,8 +29,7 @@ func GetActiveSales(db *gorm.DB) ([]model.PluginSale, error) {
 	var sales []model.PluginSale
 	now := time.Now()
 
-	result := db.Preload("SaleItems").
-		//Preload("SaleItems.PluginMetadata").
+	result := db.Preload("SaleItems.PluginMetadata").
 		Where("active = true AND start_time <= ? AND end_time >= ?", now, now).
 		Find(&sales)
 

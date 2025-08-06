@@ -202,6 +202,7 @@ type PluginMetadataPriceDetails struct {
 	SaleMonth        int            `gorm:"-" json:"saleMonth,omitempty"`
 	SaleThreeMonth   int            `gorm:"-" json:"saleThreeMonth,omitempty"`
 	SaleYear         int            `gorm:"-" json:"saleYear,omitempty"`
+	SaleLifetime     int            `gorm:"-" json:"saleLifetime,omitempty"`
 	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index;not null" json:"pluginMetadataId"`
 	CreatedAt        time.Time      `json:"createdAt"`
 	UpdatedAt        time.Time      `json:"updatedAt"`
@@ -332,7 +333,8 @@ type PluginSale struct {
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 
-	SaleItems []PluginSaleItem `gorm:"foreignKey:SaleID" json:"-"`
+	// TODO Worried this may be required when creating plugins since this struct is used to both serialize json and return json
+	SaleItems []PluginSaleItem `gorm:"foreignKey:SaleID" json:"plugins"`
 
 	// This is included so this struct can be used as a request body when creating new sales. This field has no bearing on the
 	// plugin/sale association in the db.
@@ -341,14 +343,14 @@ type PluginSale struct {
 
 // PluginSaleItem represents which plugins are included in a sale
 type PluginSaleItem struct {
-	ID               uint           `gorm:"primaryKey" json:"id"`
-	SaleID           uint           `gorm:"column:sale_id;index;not null" json:"saleId"`
-	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index;not null" json:"pluginMetadataId"`
-	CreatedAt        time.Time      `json:"createdAt"`
-	UpdatedAt        time.Time      `json:"updatedAt"`
-	DeletedAt        gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	ID               uint           `gorm:"primaryKey" json:"-"`
+	SaleID           uint           `gorm:"column:sale_id;index;not null" json:"-"`
+	PluginMetadataID uint           `gorm:"column:plugin_metadata_id;index;not null" json:"-"`
+	CreatedAt        time.Time      `json:"-"`
+	UpdatedAt        time.Time      `json:"-"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-,omitempty"`
 
-	Sale           PluginSale     `gorm:"foreignKey:SaleID" json:"sale"`
+	Sale           PluginSale     `gorm:"foreignKey:SaleID" json:"-"`
 	PluginMetadata PluginMetadata `gorm:"foreignKey:PluginMetadataID" json:"pluginMetadata"`
 }
 

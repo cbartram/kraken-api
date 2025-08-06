@@ -24,10 +24,20 @@ func (cr *CreateSaleHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	}
 
 	user := tmp.(*model.User)
-
-	log.Infof("user: %#v", user)
 	if user.DiscordUsername != "runewraith" || user.DiscordID != "215299779352068097" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "user not sale"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user is not authorized to create sale"})
+		return
+	}
+
+	var hasAdmin = false
+	for _, group := range user.Groups {
+		if group.GroupName == "admin" {
+			hasAdmin = true
+		}
+	}
+
+	if !hasAdmin {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user is not authorized to create sale"})
 		return
 	}
 
