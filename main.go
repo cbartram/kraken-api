@@ -1,11 +1,8 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/joho/godotenv"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -92,14 +89,6 @@ func main() {
 		log.Fatal("Missing STRIPE_SECRET_KEY environment variable")
 	}
 	stripe.Key = strings.TrimSpace(key)
-
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		log.Errorf("error loading default aws config: %s", err)
-	}
-
-	client := cognitoidentityprovider.NewFromConfig(cfg)
-
 	userRepo := &model.DefaultUserRepository{
 		Cache: redisCache,
 		Log:   log,
@@ -109,7 +98,7 @@ func main() {
 		Logger:          log,
 		DiscordService:  discordService,
 		S3Service:       s3Service,
-		CognitoService:  service.MakeCognitoService(log, userRepo, client),
+		CognitoService:  service.MakeCognitoService(log, userRepo),
 		Database:        db,
 		RabbitMqService: rabbitMqService,
 		PluginStore:     service.NewPluginStore(db, redisCache, log),

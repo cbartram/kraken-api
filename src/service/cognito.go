@@ -20,6 +20,7 @@ type CognitoClient interface {
 	AdminSetUserPassword(ctx context.Context, params *cognitoidentityprovider.AdminSetUserPasswordInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminSetUserPasswordOutput, error)
 	AdminInitiateAuth(ctx context.Context, params *cognitoidentityprovider.AdminInitiateAuthInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminInitiateAuthOutput, error)
 	AdminGetUser(ctx context.Context, params *cognitoidentityprovider.AdminGetUserInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminGetUserOutput, error)
+	AdminAddUserToGroup(ctx context.Context, params *cognitoidentityprovider.AdminAddUserToGroupInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.AdminAddUserToGroupOutput, error)
 }
 
 // CognitoService handles AWS Cognito authentication operations
@@ -33,16 +34,15 @@ type CognitoService struct {
 }
 
 // MakeCognitoService creates a new instance of CognitoAuthManager
-func MakeCognitoService(log *zap.SugaredLogger, userRepository *model.DefaultUserRepository, client CognitoClient) *CognitoService {
+func MakeCognitoService(log *zap.SugaredLogger, userRepository *model.DefaultUserRepository) *CognitoService {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Errorf("error loading default aws config: %s", err)
 	}
 
-	cognitoidentityprovider.NewFromConfig(cfg)
 	return &CognitoService{
 		Log:           log,
-		CognitoClient: client,
+		CognitoClient: cognitoidentityprovider.NewFromConfig(cfg),
 		UserRepo:      userRepository,
 		UserPoolID:    os.Getenv("USER_POOL_ID"),
 		ClientID:      os.Getenv("COGNITO_CLIENT_ID"),
@@ -111,6 +111,18 @@ func (c *CognitoService) CreateCognitoUser(ctx context.Context, createUserPayloa
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error setting permanent password: %w", err)
+	}
+
+	_, err = c.CognitoClient.AdminAddUserToGroup(ctx, &cognitoidentityprovider.AdminAddUserToGroupInput{
+		UserPoolId: aws.String(c.UserPoolID),
+		Username:   aws.String(createUserPayload.DiscordID),
+		GroupName:  aws.String("user"),
+	})
+
+	if err != nil {
+		c.Log.Errorf("failed to add user %s to 'user' group: %v", createUserPayload.DiscordID, err)
+	} else {
+		c.Log.Infof("successfully added user %s to 'user' group", createUserPayload.DiscordUsername)
 	}
 
 	// Initialize auth session
