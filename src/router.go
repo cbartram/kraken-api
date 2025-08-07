@@ -2,15 +2,17 @@ package src
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"kraken-api/src/handlers"
 	"kraken-api/src/handlers/cognito"
+	"kraken-api/src/handlers/discord"
 	"kraken-api/src/handlers/payment"
 	"kraken-api/src/handlers/plugin"
 	"kraken-api/src/handlers/sale"
 	"kraken-api/src/service"
 	"net/http"
 	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
 func NewRouter(w *service.Wrapper) *gin.Engine {
@@ -26,6 +28,7 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 	userGroup := apiGroup.Group("/user")
 	pluginGroup := apiGroup.Group("/plugin")
 	stripeGroup := apiGroup.Group("/stripe")
+	discordGroup := apiGroup.Group("/discord")
 
 	apiGroup.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -43,9 +46,27 @@ func NewRouter(w *service.Wrapper) *gin.Engine {
 		h.HandleRequest(c, w)
 	})
 
-	apiGroup.POST("/discord/oauth", func(c *gin.Context) {
-		h := handlers.DiscordRequestHandler{}
+	discordGroup.POST("/oauth", func(c *gin.Context) {
+		h := discord.DiscordRequestHandler{}
 		h.HandleRequest(c, w)
+	})
+
+	discordGroup.POST("/create-ticket", handlers.AuthMiddleware(w), func(c *gin.Context) {
+		log := handlers.GetLoggerWithTrace(c, w.Logger)
+		h := discord.TicketHandler{
+			Log:   log,
+			Token: os.Getenv("DISCORD_BOT_TOKEN"),
+		}
+		h.HandleRequest(c)
+	})
+
+	discordGroup.DELETE("/close-ticket", handlers.AuthMiddleware(w), func(c *gin.Context) {
+		log := handlers.GetLoggerWithTrace(c, w.Logger)
+		h := discord.TicketHandler{
+			Log:   log,
+			Token: os.Getenv("DISCORD_BOT_TOKEN"),
+		}
+		h.HandleCloseTicket(c, w)
 	})
 
 	apiGroup.GET("/client-bootstrap", func(c *gin.Context) {

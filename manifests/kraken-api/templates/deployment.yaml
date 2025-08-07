@@ -37,6 +37,8 @@ spec:
             - secretRef:
                 name: discord-secrets
             - secretRef:
+                name: discord-bot-creds
+            - secretRef:
                 name: mysql-secrets
             - secretRef:
                 name: aws-secrets
