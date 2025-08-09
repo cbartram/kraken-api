@@ -3,12 +3,13 @@ package model
 import (
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"kraken-api/src/cache"
 	"os"
 	"time"
+
+	"go.uber.org/zap"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func Connect(log *zap.SugaredLogger) *gorm.DB {
@@ -80,7 +81,7 @@ type User struct {
 
 // UserRepository This interface and implementing struct are required for mocking during unit tests.
 type UserRepository interface {
-	GetUser(discordId string, db *gorm.DB) (*User, error)
+	GetUser(discordId string, db *gorm.DB, skipCache bool) (*User, error)
 	AddUserToGroup(userID uint, groupName string, db *gorm.DB) error
 	RemoveUserFromGroup(groupID uint, db *gorm.DB) error
 }
@@ -91,11 +92,11 @@ type DefaultUserRepository struct {
 }
 
 // GetUser Retrieves a user and associated plugin metadata from the database.
-func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB) (*User, error) {
+func (r *DefaultUserRepository) GetUser(discordId string, db *gorm.DB, skipCache bool) (*User, error) {
 	cacheKey := fmt.Sprintf("user:discord:%s", discordId)
 	var user User
 
-	if err := r.Cache.Get(cacheKey, &user); err == nil {
+	if err := r.Cache.Get(cacheKey, &user); err == nil && !skipCache {
 		r.Log.Infof("cache hit for user: %s", discordId)
 		return &user, nil
 	}

@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"kraken-api/src/model"
+	"kraken-api/src/util"
+	"os"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"kraken-api/src/model"
-	"kraken-api/src/util"
-	"os"
 )
 
 type CognitoClient interface {
@@ -186,7 +187,7 @@ func (c *CognitoService) RefreshSession(ctx context.Context, discordID string) (
 
 }
 
-func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string, db *gorm.DB) (*model.User, error) {
+func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *string, db *gorm.DB, skipCache bool) (*model.User, error) {
 	auth, err := c.CognitoClient.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 		UserPoolId: aws.String(c.UserPoolID),
 		ClientId:   aws.String(c.ClientID),
@@ -202,7 +203,7 @@ func (c *CognitoService) AuthUser(ctx context.Context, refreshToken, userId *str
 		return nil, err
 	}
 
-	user, err := c.UserRepo.GetUser(*userId, db)
+	user, err := c.UserRepo.GetUser(*userId, db, skipCache)
 	if err != nil {
 		c.Log.Errorf("could not get user from db: %v", err)
 		return nil, err

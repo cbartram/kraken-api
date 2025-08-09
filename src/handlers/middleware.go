@@ -6,11 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"kraken-api/src/service"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const (
@@ -84,7 +85,7 @@ func CORSMiddleware() gin.HandlerFunc {
 
 // AuthMiddleware is the custom authentication middleware that checks the Authorization header to ensure a given
 // discord id belong to a given refresh token.
-func AuthMiddleware(w *service.Wrapper) gin.HandlerFunc {
+func AuthMiddleware(w *service.Wrapper, skipCache bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -117,7 +118,7 @@ func AuthMiddleware(w *service.Wrapper) gin.HandlerFunc {
 		refreshToken := credentials[1]
 
 		w.Logger.Infof("authenticating user with discord id: %s", discordID)
-		user, err := w.CognitoService.AuthUser(context.Background(), &refreshToken, &discordID, w.Database)
+		user, err := w.CognitoService.AuthUser(context.Background(), &refreshToken, &discordID, w.Database, skipCache)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("could not authenticate user with refresh token: %s", err)})
 			return
