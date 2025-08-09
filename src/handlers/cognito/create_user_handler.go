@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/customer"
 	"io"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v82/customer"
 )
 
 type CreateUserRequestHandler struct{}
@@ -37,7 +38,7 @@ func (h *CreateUserRequestHandler) HandleRequest(c *gin.Context, ctx context.Con
 	}
 
 	// We want to assert that the user does not exist before we create it.
-	user, err := w.UserRepository.GetUser(reqBody.DiscordID, w.Database)
+	user, err := w.UserRepository.GetUser(reqBody.DiscordID, w.Database, false)
 
 	if err != nil {
 		log.Infof("no user found with id: %s, creating user", reqBody.DiscordID)

@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"kraken-api/src/model"
+	"testing"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
@@ -11,8 +14,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"kraken-api/src/model"
-	"testing"
 )
 
 // MockCognitoClient is a mock implementation of the Cognito client
@@ -24,8 +25,8 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
-func (m *MockUserRepository) GetUser(discordId string, db *gorm.DB) (*model.User, error) {
-	args := m.Called(discordId, db)
+func (m *MockUserRepository) GetUser(discordId string, db *gorm.DB, skipCache bool) (*model.User, error) {
+	args := m.Called(discordId, db, skipCache)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -393,13 +394,13 @@ func TestCognitoService_AuthUser_Success(t *testing.T) {
 	}, nil)
 
 	// Mock GetUser
-	mockRepo.On("GetUser", userId, mockDB).Return(expectedUser, nil)
+	mockRepo.On("GetUser", userId, mockDB, false).Return(expectedUser, nil)
 
 	// Mock AddUserToGroup for each group returned by AdminListGroupsForUser
 	mockRepo.On("AddUserToGroup", uint(0), "admin", mockDB).Return(nil)
 
 	// Execute test
-	result, err := service.AuthUser(ctx, &refreshToken, &userId, mockDB)
+	result, err := service.AuthUser(ctx, &refreshToken, &userId, mockDB, false)
 
 	// Assertions
 	assert.NoError(t, err)
@@ -427,7 +428,7 @@ func TestCognitoService_AuthUser_AuthError(t *testing.T) {
 	mockClient.On("AdminInitiateAuth", ctx, mock.AnythingOfType("*cognitoidentityprovider.AdminInitiateAuthInput")).Return((*cognitoidentityprovider.AdminInitiateAuthOutput)(nil), errors.New("auth failed"))
 
 	// Execute test - commented out since model.GetUser needs mocking
-	result, err := service.AuthUser(ctx, &refreshToken, &userId, mockDB)
+	result, err := service.AuthUser(ctx, &refreshToken, &userId, mockDB, false)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
