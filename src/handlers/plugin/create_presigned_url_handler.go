@@ -4,18 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"net/url"
-	"strconv"
 	"sync"
 	"time"
+
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // SignedUrlDurationSeconds The amount of time the signed URL is valid for to read plugin data from S3
@@ -54,13 +54,7 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 		return
 	}
 
-	devPlugins, err := strconv.ParseBool(c.Query("dev"))
-	if err != nil {
-		log.Errorf("Unable to parse boolean for dev plugins from val: %s", c.Query("dev"))
-		devPlugins = false
-	}
-
-	log.Infof("user provided hardware id: %s, loading dev plugins: %v", hwid, devPlugins)
+	log.Infof("user provided hardware id: %s", hwid)
 	if len(user.Plugins) == 0 {
 		log.Infof("user: %s has no purchased plugins, skipping presigned url generation", user.DiscordUsername)
 		c.JSON(http.StatusOK, []v4.PresignedHTTPRequest{})
@@ -106,7 +100,6 @@ func (p *PresignedUrlHandler) HandleRequest(c *gin.Context, ctx context.Context,
 			w.Logger,
 			w.S3Service,
 			plugin,
-			devPlugins,
 			&wg,
 			results,
 		)
@@ -139,7 +132,6 @@ func GeneratePreSignedURL(
 	log *zap.SugaredLogger,
 	s3 *service.MinIOService,
 	plugin *model.Plugin,
-	devPlugins bool,
 	wg *sync.WaitGroup,
 	results chan<- PresignedURLResult,
 ) {
@@ -152,13 +144,7 @@ func GeneratePreSignedURL(
 		return
 	}
 
-	var prefix string
-	if devPlugins {
-		prefix = fmt.Sprintf("dev/%s", plugin.Name)
-	} else {
-		prefix = fmt.Sprintf("plugins/%s", plugin.Name)
-	}
-
+	prefix := fmt.Sprintf("plugins/%s", plugin.Name)
 	exists, name, err := s3.GetLatestVersion(prefix)
 	if err != nil || !exists {
 		log.Errorf("error: plugin with prefix: %s does not exist or error: %s", plugin.Name, err)
@@ -166,7 +152,7 @@ func GeneratePreSignedURL(
 		return
 	}
 
-	url, err := s3.CreatePresignedUrl(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
+	presignedUrl, err := s3.CreatePresignedUrl(ctx, fmt.Sprintf("%s.jar", name), SignedUrlDurationSeconds)
 	if err != nil {
 		log.Errorf("error creating presigned url for plugin: %s.jar with prefix: %s", name, prefix)
 		results <- PresignedURLResult{nil, plugin, err}
@@ -174,6 +160,6 @@ func GeneratePreSignedURL(
 	}
 
 	log.Infof("generated pre-signed url for: plugin: %s, %d seconds, url: %s",
-		name, SignedUrlDurationSeconds, url)
-	results <- PresignedURLResult{url, plugin, nil}
+		name, SignedUrlDurationSeconds, presignedUrl)
+	results <- PresignedURLResult{presignedUrl, plugin, nil}
 }
