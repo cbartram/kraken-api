@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
@@ -11,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ValidatePluginHandler struct{}
@@ -75,7 +76,7 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 
 		licenseKeyToValidate, exists := reqBody.Plugins[plugin.Name]
 		if !exists {
-			log.Infof("plugin %s found for user, but is likely expired: %s", plugin.Name, plugin.ExpirationTimestamp.Format(time.RFC3339))
+			log.Infof("plugin %s found for user, but may be expired or mismatch betwen plugin name and db entry: %s", plugin.Name, plugin.ExpirationTimestamp.Format(time.RFC3339))
 			continue
 		}
 
