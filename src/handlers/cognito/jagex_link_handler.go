@@ -2,12 +2,13 @@ package cognito
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type JagexLinkHandler struct{}
@@ -16,6 +17,7 @@ type JagexLink struct {
 	JagexCharacterId string `json:"jagexCharacterId"`
 	JagexSessionId   string `json:"jagexSessionId"`
 	JagexDisplayName string `json:"jagexDisplayName"`
+	Ip               string `json:"ip"`
 }
 
 func (j *JagexLinkHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
@@ -50,6 +52,7 @@ func (j *JagexLinkHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	userModel.JagexCharacterId = reqBody.JagexCharacterId
 	userModel.JagexSessionId = reqBody.JagexSessionId
 	userModel.JagexDisplayName = reqBody.JagexDisplayName
+	userModel.Ip = reqBody.Ip
 
 	if err := w.Database.Save(userModel).Error; err != nil {
 		log.Errorf("failed to update user: %s", err)

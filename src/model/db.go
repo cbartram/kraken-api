@@ -67,6 +67,7 @@ type User struct {
 	JagexCharacterId   string         `gorm:"column:jagex_character_id" json:"jagexCharacterId"`
 	JagexSessionId     string         `gorm:"column:jagex_session_id" json:"jagexSessionId"`
 	JagexDisplayName   string         `gorm:"column:jagex_display_name" json:"jagexDisplayName"`
+	Ip                 string         `gorm:"column:ip_address" json:"ip"`
 	CreatedAt          time.Time      `json:"createdAt"`
 	UpdatedAt          time.Time      `json:"updatedAt"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
