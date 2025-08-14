@@ -2,13 +2,14 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"kraken-api/src/handlers"
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"kraken-api/src/util"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type FreeTrialHandler struct{}
@@ -31,7 +32,7 @@ func (f *FreeTrialHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	}
 
 	startTime := time.Now()
-	endTime := time.Now().Add(72 * time.Hour)
+	endTime := time.Now().Add(168 * time.Hour)
 	plugins := w.PluginStore.GetPlugins()
 
 	tx := w.Database.Begin()
