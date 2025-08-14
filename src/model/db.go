@@ -316,7 +316,6 @@ type PluginConfig struct {
 	Section          string   `json:"section"`
 	Description      string   `gorm:"type:text" json:"description"`
 	Type             string   `json:"type"`
-	IsBool           bool     `json:"isBool"`
 	Values           string   `gorm:"type:text" json:"-"`
 	ValuesSlice      []string `gorm:"-" json:"values"`
 	PluginMetadataID uint     `json:"pluginMetadataId"`
