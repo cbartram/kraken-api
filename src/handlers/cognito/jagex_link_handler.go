@@ -7,6 +7,7 @@ import (
 	"kraken-api/src/model"
 	"kraken-api/src/service"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,14 +54,15 @@ func (j *JagexLinkHandler) HandleRequest(c *gin.Context, w *service.Wrapper) {
 	userModel.JagexSessionId = reqBody.JagexSessionId
 	userModel.JagexDisplayName = reqBody.JagexDisplayName
 	userModel.Ip = reqBody.Ip
+	userModel.LastClientLoginTime = time.Now()
 
 	if err := w.Database.Save(userModel).Error; err != nil {
-		log.Errorf("failed to update user: %s", err)
+		log.Errorf("failed to update user during jagex acct link: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user: " + err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "user jagex account linked",
+		"message": "ok",
 	})
 }
