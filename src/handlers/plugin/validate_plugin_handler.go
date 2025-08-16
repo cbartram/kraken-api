@@ -54,29 +54,37 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 
 	validPlugins := make(map[string]string)
 
-	// Special case: Socket comes pre-packaged with socket-sotetseg plugin and requires no license key to validate. If
-	// Socket is included in the request automatically validate it. TODO This may have potential for abuse if people
-	// find a way to name another Plugin like ToB -> "Socket"
+	// Special case: Socket comes pre-packaged with socket-sotetseg plugin and requires no license key to validate
 	_, ok := reqBody.Plugins["Socket"]
 	if ok {
 		log.Infof("validation request contains: Socket plugin, auto validating")
 		validPlugins["Socket"] = time.Now().AddDate(15, 0, 0).Format(time.RFC3339)
 	}
 
+	// Collect expired trial plugins for batch deletion (async)
+	var expiredTrialPlugins []*model.Plugin
+
 	for _, plugin := range user.Plugins {
 		log.Infof("validating plugin: %s, user: %s, in trial period: %v, trial plugin: %v, plugin active: %v", plugin.Name, user.DiscordUsername, user.InFreeTrialPeriod(), plugin.TrialPlugin, !util.IsPluginExpired(plugin.ExpirationTimestamp))
 
-		// Do not require a license key for trial plugins however, continue to verify plugins
-		// the user has purchased with their license key
+		// Handle active trial plugins
 		if user.InFreeTrialPeriod() && plugin.TrialPlugin && !util.IsPluginExpired(plugin.ExpirationTimestamp) {
 			log.Infof("user: %s has a plugin: %s in free trial period.", user.DiscordUsername, plugin.Name)
 			validPlugins[plugin.Name] = user.FreeTrialEndTime.Format(time.RFC3339)
 			continue
 		}
 
+		// Collect expired trial plugins for cleanup but don't delete immediately
+		if !user.InFreeTrialPeriod() && plugin.TrialPlugin && util.IsPluginExpired(plugin.ExpirationTimestamp) {
+			log.Infof("user: %s has a trial plugin: %s that has expired, marking for cleanup", user.DiscordUsername, plugin.Name)
+			expiredTrialPlugins = append(expiredTrialPlugins, &plugin)
+			continue
+		}
+
+		// Validate license key for active plugins
 		licenseKeyToValidate, exists := reqBody.Plugins[plugin.Name]
 		if !exists {
-			log.Infof("plugin %s found for user, but may be expired or mismatch betwen plugin name and db entry: %s", plugin.Name, plugin.ExpirationTimestamp.Format(time.RFC3339))
+			log.Infof("plugin %s found for user, but may be expired or mismatch between plugin name and db entry: %s", plugin.Name, plugin.ExpirationTimestamp.Format(time.RFC3339))
 			continue
 		}
 
@@ -88,6 +96,34 @@ func (v *ValidatePluginHandler) HandleRequest(c *gin.Context, w *service.Wrapper
 		validPlugins[plugin.Name] = plugin.ExpirationTimestamp.Format(time.RFC3339)
 	}
 
+	// Perform async cleanup of expired trial plugins if any exist
+	if len(expiredTrialPlugins) > 0 {
+		go func() {
+			v.cleanupExpiredTrialPlugins(w, expiredTrialPlugins, user.DiscordUsername)
+		}()
+	}
+
 	log.Infof("%d/%d of the plugins for user: %s are valid", len(validPlugins), len(reqBody.Plugins), user.DiscordUsername)
 	c.JSON(http.StatusOK, validPlugins)
+}
+
+// cleanupExpiredTrialPlugins performs batch deletion of expired trial plugins asynchronously
+func (v *ValidatePluginHandler) cleanupExpiredTrialPlugins(w *service.Wrapper, expiredPlugins []*model.Plugin, username string) {
+	log := w.Logger
+	var failedDeletions []string
+	var pluginNames []string
+	for _, plugin := range expiredPlugins {
+		pluginNames = append(pluginNames, plugin.Name)
+		if err := w.Database.Unscoped().Delete(plugin); err.Error != nil {
+			log.Errorf("failed to delete expired trial plugin: %s for user: %s, error: %v", plugin.Name, username, err.Error)
+			failedDeletions = append(failedDeletions, plugin.Name)
+		}
+	}
+
+	if len(failedDeletions) > 0 {
+		log.Errorf("failed to delete %d/%d expired trial plugins for user: %s, failed plugins: %v",
+			len(failedDeletions), len(expiredPlugins), username, failedDeletions)
+	} else {
+		log.Infof("cleaned up %d expired trial plugins for user: %s, %v", len(expiredPlugins), username, pluginNames)
+	}
 }
