@@ -30,6 +30,7 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 		&CognitoCredentials{},
 		&Plugin{},
 		&HardwareID{},
+		&Character{},
 		&PluginMetadata{
 			log: log,
 		},
@@ -54,24 +55,20 @@ func Connect(log *zap.SugaredLogger) *gorm.DB {
 
 // User represents a user of the system
 type User struct {
-	ID                  uint           `gorm:"primaryKey" json:"id"`
-	DiscordUsername     string         `gorm:"column:discord_username" json:"discordUsername,omitempty"`
-	Email               string         `gorm:"column:email" json:"email,omitempty"`
-	AvatarId            string         `gorm:"column:avatar_id" json:"avatarId"`
-	Tokens              int64          `gorm:"column:tokens;default:0" json:"tokens"`
-	DiscordID           string         `gorm:"column:discord_id;uniqueIndex" json:"discordId,omitempty"`
-	CustomerId          string         `gorm:"column:customer_id;uniqueIndex" json:"customerId,omitempty"`
-	UsedFreeTrial       bool           `gorm:"column:used_free_trial" json:"usedFreeTrial"`
-	FreeTrialStartTime  time.Time      `gorm:"column:free_trial_start_time" json:"freeTrialStartTime"`
-	FreeTrialEndTime    time.Time      `gorm:"column:free_trial_end_time" json:"freeTrialEndTime"`
-	JagexCharacterId    string         `gorm:"column:jagex_character_id" json:"jagexCharacterId"`
-	JagexSessionId      string         `gorm:"column:jagex_session_id" json:"jagexSessionId"`
-	JagexDisplayName    string         `gorm:"column:jagex_display_name" json:"jagexDisplayName"`
-	Ip                  string         `gorm:"column:ip_address" json:"ip"`
-	LastClientLoginTime time.Time      `gorm:"column:last_client_login_time" json:"lastClientLoginTime"`
-	CreatedAt           time.Time      `json:"createdAt"`
-	UpdatedAt           time.Time      `json:"updatedAt"`
-	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	ID                 uint           `gorm:"primaryKey" json:"id"`
+	DiscordUsername    string         `gorm:"column:discord_username" json:"discordUsername,omitempty"`
+	Email              string         `gorm:"column:email" json:"email,omitempty"`
+	AvatarId           string         `gorm:"column:avatar_id" json:"avatarId"`
+	Tokens             int64          `gorm:"column:tokens;default:0" json:"tokens"`
+	DiscordID          string         `gorm:"column:discord_id;uniqueIndex" json:"discordId,omitempty"`
+	CustomerId         string         `gorm:"column:customer_id;uniqueIndex" json:"customerId,omitempty"`
+	UsedFreeTrial      bool           `gorm:"column:used_free_trial" json:"usedFreeTrial"`
+	FreeTrialStartTime time.Time      `gorm:"column:free_trial_start_time" json:"freeTrialStartTime"`
+	FreeTrialEndTime   time.Time      `gorm:"column:free_trial_end_time" json:"freeTrialEndTime"`
+	Ip                 string         `gorm:"column:ip_address" json:"ip"`
+	CreatedAt          time.Time      `json:"createdAt"`
+	UpdatedAt          time.Time      `json:"updatedAt"`
+	DeletedAt          gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
 
 	// Relations
 	Credentials CognitoCredentials `gorm:"foreignKey:UserID" json:"credentials,omitempty"`
@@ -79,6 +76,7 @@ type User struct {
 	HardwareIDs []HardwareID       `gorm:"foreignKey:UserID" json:"hardwareIds"`
 	PluginPacks []UserPluginPack   `gorm:"foreignKey:UserID" json:"pluginPacks"`
 	Groups      []Group            `gorm:"foreignKey:UserID" json:"groups"`
+	Characters  []Character        `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // UserRepository This interface and implementing struct are required for mocking during unit tests.
@@ -144,6 +142,18 @@ type Group struct {
 
 	// Composite unique index to prevent duplicate user-group combinations
 	User User `gorm:"foreignKey:UserID" json:"-"`
+}
+
+type Character struct {
+	ID                  uint      `gorm:"primaryKey" json:"id"`
+	UserID              uint      `gorm:"column:user_id;index" json:"userId"`
+	JagexCharacterId    string    `gorm:"column:jagex_character_id" json:"jagexCharacterId"`
+	JagexSessionId      string    `gorm:"column:jagex_session_id" json:"jagexSessionId"`
+	JagexDisplayName    string    `gorm:"column:jagex_display_name;index" json:"jagexDisplayName"`
+	LastClientLoginTime time.Time `gorm:"column:last_client_login_time" json:"lastClientLoginTime"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
+	User                User      `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // PluginPack represents a collection of plugins sold together
