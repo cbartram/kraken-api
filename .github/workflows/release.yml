@@ -33,6 +33,7 @@ jobs:
         run: |
           echo "Building project with version $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          chmod +x ./gradlew
           ./gradlew clean build
 
       - name: Collect commit messages since last tag
