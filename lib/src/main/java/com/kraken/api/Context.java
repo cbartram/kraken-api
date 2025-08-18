@@ -1,11 +1,23 @@
 package com.kraken.api;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.Random;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.input.VirtualMouse;
+import com.kraken.api.interaction.bank.BankService;
+import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.equipment.GearService;
+import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.prayer.PrayerService;
+import com.kraken.api.interaction.spells.SpellService;
+import com.kraken.api.interaction.ui.TabService;
+import com.kraken.api.interaction.ui.UIService;
+import com.kraken.api.interaction.widget.WidgetService;
 import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,36 +29,106 @@ import net.runelite.api.Point;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 
 import java.awt.*;
+import java.lang.reflect.Method;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.*;
 
 @Slf4j
 @Singleton
 public class Context {
 
-    @Inject
     @Getter
-    private Client client;
+    private final Client client;
 
-    @Inject
     @Getter
-    private ClientThread clientThread;
-
-    @Inject
-    private InventoryService inventoryService;
-
-    @Inject
-    private SleepService sleepService;
+    private final ClientThread clientThread;
+    private final InventoryService inventoryService;
+    private final SleepService sleepService;
+    private final Injector injector;
+    private final EventBus eventBus;
 
     @Getter
     @Setter
-    @Inject
     private VirtualMouse mouse;
 
+    @Getter
+    private boolean isRegistered = false;
+
     public static MenuEntry targetMenu;
+
+    private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
+            GearService.class,
+            BankService.class,
+            CameraService.class,
+            GameObjectService.class,
+            InventoryService.class,
+            MovementService.class,
+            NpcService.class,
+            PrayerService.class,
+            SpellService.class,
+            UIService.class,
+            TabService.class,
+            WidgetService.class
+    );
+
+    @Inject
+    public Context(final Client client, final ClientThread clientThread, final InventoryService inventoryService,
+                   final SleepService sleepService, final VirtualMouse mouse, final EventBus eventBus, final Injector injector) {
+        this.client = client;
+        this.clientThread = clientThread;
+        this.inventoryService = inventoryService;
+        this.sleepService = sleepService;
+        this.mouse = mouse;
+        this.injector = injector;
+        this.eventBus = eventBus;
+    }
+
+    public void register() {
+        try {
+            for (Class<?> clazz : EVENTBUS_LISTENERS) {
+                // Check if class has @Subscribe methods
+                for (Method method : clazz.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(Subscribe.class)) {
+                        Object handler = injector.getInstance(clazz);
+                        if (handler != null) {
+                            eventBus.register(handler);
+                            log.info("Registered class: {} with eventbus", clazz.getSimpleName());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error registering event handlers: {}", e.getMessage());
+            return;
+        }
+
+        isRegistered = true;
+    }
+
+    public void destroy() {
+        try {
+            for (Class<?> clazz : EVENTBUS_LISTENERS) {
+                for (Method method : clazz.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(Subscribe.class)) {
+                        Object handler = injector.getInstance(clazz);
+                        if (handler != null) {
+                            eventBus.unregister(handler);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error un-registering event handlers: {}", e.getMessage());
+            return;
+        }
+
+        isRegistered = false;
+    }
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {

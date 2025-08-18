@@ -1,5 +1,8 @@
 package com.kraken.api.core;
 
+import com.google.inject.Inject;
+import com.kraken.api.Context;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Executors;
@@ -9,10 +12,22 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public abstract class Script implements Scriptable {
+    // Any time a user extends this class, context will be injected registering the API Classes with the eventbus without
+    // the user needing to manually register them. This API expects to be running only within the context of a RuneLite client.
+    private final Context context;
+
     protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
     protected ScheduledFuture<?> scheduledFuture;
     private ScheduledFuture<?> mainScheduledFuture;
+
+    @Getter
     private volatile boolean running = false;
+
+    @Inject
+    public Script(final Context context) {
+        this.context = context;
+        this.context.register();
+    }
 
     /**
      * Called once before the script starts running.
@@ -46,6 +61,10 @@ public abstract class Script implements Scriptable {
         }
 
         running = true;
+        if(!this.context.isRegistered()) {
+            this.context.register();
+        }
+
         onStart();
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -94,6 +113,10 @@ public abstract class Script implements Scriptable {
             onEnd();
         } catch (Exception e) {
             log.error("Exception in script onEnd: {}", this.getClass().getSimpleName(), e);
+        }
+
+        if(this.context.isRegistered()) {
+            this.context.destroy();
         }
     }
 
