@@ -17,42 +17,124 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+
+---
+
+# 🚀 Getting Started (For Developers)
+
+Kraken API is designed to extend the RuneLite API with additional client-interaction utilities for writing automation based plugins that are compatible with RuneLite. If you are
+just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.duckdns.org](https://kraken-plugins.duckdns.org).
+
+### Prerequisites
+- [Java 11+](https://adoptium.net/) (JDK required)
+- [Gradle](https://gradle.org/) (wrapper included, no need to install globally)
+- [Git](https://git-scm.com/)
+- [RuneLite](https://runelite.net) (for testing and running plugins)
 
 
-# Current Plugins
+### Cloning the Repository
+```bash
+git clone https://github.com/cbartram/kraken-api.git
+cd kraken-api
+````
 
-To view, download, and enable plugins,
-check out our website at [kraken-plugins.duckdns.org](https://kraken-plugins.duckdns.org/plugins)
+### Building
 
+You can build the project with Gradle:
 
-## Built With
+```bash
+./gradlew clean build
+```
 
-- [Java](https://www.java.org/) - Programming Language Used
-- [InnoSetup](https://jrsoftware.org/isinfo.php) - Executable build software
-- [Gradle](https://gradle.org/) - Build Tool
+The output API `.jar` will be located in:
 
-## Contributing
+```
+./lib/build/libs/kraken-api-<version>.jar
+```
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code
-of conduct, and the process for submitting pull requests to us.
+### Running Tests
 
-## Versioning
+Run the full test suite with:
 
-We use [Semantic Versioning](http://semver.org/) for versioning. For the versions
-available, see the [tags on this
-repository](https://github.com/cbartram/kraken-launcher/tags).
+```bash
+./gradlew test
+```
 
-## License
+### Using Kraken API in Your Plugin
 
-This project is licensed under the [CC0 1.0 Universal](LICENSE.md)
-Creative Commons License - see the [LICENSE.md](LICENSE.md) file for
-details
+Add the dependency to your `build.gradle`:
 
-## Acknowledgments
+```gradle
+repositories {
+    mavenCentral()
+    maven { url "https://maven.pkg.github.com/cbartram/kraken-api" }
+}
 
-- RuneLite for making a great software! The SplashScreen, and most of this codebase was taken from RuneLite!
-- Microbot for highlighting clever ways to interact with the client and plugins.
+dependencies {
+    implementation group: 'com.github.cbartram', name:'kraken-api', version: '1.0.12'
+}
+```
+
+> ⚠️ You may need a GitHub token with `read:packages` permission to authenticate with the package registry.
+
+### Development Workflow
+
+1. Create a new branch from `master`
+2. Implement or update your plugin/feature for the API
+3. Add tests for new functionality
+4. Run `./gradlew build` to verify that the API builds and tests pass
+5. Commit your changes with a clear message `git commit -m "feat(api): Add feature X to Kraken API"`
+6. Open a Pull Request
+
+---
+
+## Deployment
+
+The Kraken API is automatically built and deployed via GitHub actions on every push to the `master` branch.
+The latest version can be found in the [releases](https://github.com/cbartram/kraken-api/releases) section of the repository.
+
+A deployment consists of:
+
+- Building the API JAR
+- Publishing a new version to the GitHub Releases section
+  - This will be picked up by jitpack.io for easy integration into other gradle projects.
+- Uploading the JAR file to the Minio storage server used by the Kraken Client at runtime.
+- (Optional) Updating the `bootstrap.json` in the Kraken Client to point to the latest version of the API JAR file
+- (Optional) Updating the build.gradle file in the Kraken Client to use the latest version of the API JAR file
+
+---
+
+## 🛠 Built With
+
+* [Java](https://www.java.org/) — Core language
+* [Gradle](https://gradle.org/) — Build tool
+* [RuneLite](https://runelite.net) — Used for as the backbone for the API
+
+---
+
+## 🤝 Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+---
+
+## 🔖 Versioning
+
+We use [Semantic Versioning](http://semver.org/).
+See the [tags on this repository](https://github.com/cbartram/kraken-api/tags) for available releases.
+
+---
+
+## 📜 License
+
+This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
+
+---
+
+## 🙏 Acknowledgments
+
+* **RuneLite** — The splash screen and much of the core codebase come from RuneLite.
+* **Microbot** — For clever ideas on client and plugin interaction.
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-api.svg?style=for-the-badge
 [contributors-url]: https://github.com/cbartram/kraken-api/graphs/contributors
@@ -62,6 +144,4 @@ details
 [stars-url]: https://github.com/cbartram/kraken-api/stargazers
 [issues-shield]: https://img.shields.io/github/issues/cbartram/kraken-api.svg?style=for-the-badge
 [issues-url]: https://github.com/cbartram/kraken-api/issues
-[license-shield]: https://img.shields.io/github/license/cbartram/kraken-api.svg?style=for-the-badge
-[license-url]: https://github.com/cbartram/kraken-api/blob/master/LICENSE.txt
 
