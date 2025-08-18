@@ -28,3 +28,8 @@ replay_pid*
 
 # Ignore Gradle build output directory
 build
+
+*.iml
+.idea
+.env
+.DS_STORE
