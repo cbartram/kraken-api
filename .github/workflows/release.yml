@@ -26,10 +26,14 @@ jobs:
           export VERSION="1.0.${GITHUB_RUN_NUMBER}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Build with Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          arguments: build
+
+      - name: Build project
+        run: |
+          echo "Building project with version $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          ./gradlew clean build
 
       - name: Collect commit messages since last tag
         id: changelog
