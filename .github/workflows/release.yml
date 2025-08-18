@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   build-release:
+    environment: Prod
     runs-on: ubuntu-latest
 
     steps:
@@ -74,7 +75,7 @@ jobs:
 
       - name: Configure MinIO client
         run: |
-          mc alias set s3 https://minio-kraken.duckdns.org ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
+          mc alias set s3 ${{secrets.MINIO_URL}} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
 
       - name: Upload JAR to MinIO
         run: |
