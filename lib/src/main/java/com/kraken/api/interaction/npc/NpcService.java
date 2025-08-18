@@ -1,0 +1,465 @@
+package com.kraken.api.interaction.npc;
+
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.kraken.api.core.AbstractService;
+import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.ui.UIService;
+import com.kraken.api.model.NewMenuEntry;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.HeadIcon;
+import net.runelite.api.MenuAction;
+import net.runelite.api.NPC;
+import net.runelite.api.NPCComposition;
+import net.runelite.api.coords.WorldPoint;
+
+import javax.annotation.Nullable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+@Slf4j
+@Singleton
+public class NpcService extends AbstractService {
+
+    @Inject
+    private CameraService cameraService;
+
+    @Inject
+    private UIService uiService;
+
+    /**
+     * Retrieves a stream of NPCs filtered by a given condition.
+     *
+     * <p>This method filters NPCs based on the specified predicate, allowing for flexible
+     * selection of NPCs based on various attributes such as name, interaction status, health, etc.</p>
+     *
+     * @param predicate A {@link Predicate} that defines the filtering condition for NPCs.
+     * @return A sorted {@link Stream} of {@link NPC} objects that match the given predicate.
+     */
+    public Stream<? extends NPC> getNpcs(Predicate<NPC> predicate) {
+        List<? extends NPC> npcList = Optional.of(context.getClient().getTopLevelWorldView().npcs().stream()
+                        .filter(Objects::nonNull)
+                        .filter(x -> x.getName() != null)
+                        .filter(predicate)
+                        .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(context.getClient().getLocalPlayer().getLocalLocation())))
+                        .collect(Collectors.toList()))
+                .orElse(new ArrayList<>());
+
+        return npcList.stream();
+    }
+
+    /**
+     * Retrieves a stream of all NPCs in the game world.
+     *
+     * <p>This method is a shorthand for {@link #getNpcs(Predicate)} that retrieves all
+     * NPCs without applying any filtering conditions.</p>
+     *
+     * @return A sorted {@link Stream} of all {@link NPC} objects in the game world.
+     */
+    public Stream<? extends NPC> getNpcs() {
+        return getNpcs(npc -> true);
+    }
+
+    /**
+     * Retrieves a stream of NPCs filtered by name.
+     *
+     * <p>This method searches for NPCs with a specified name and filters them based on
+     * whether the match should be exact or allow partial matches.</p>
+     *
+     * <p>Filtering behavior:</p>
+     * <ul>
+     *   <li>If {@code exact} is {@code true}, the NPC name must match exactly (case insensitive).</li>
+     *   <li>If {@code exact} is {@code false}, the NPC name must contain the given name (case insensitive).</li>
+     * </ul>
+     *
+     * @param name  The name of the NPC to search for.
+     * @param exact {@code true} to match the name exactly, {@code false} to allow partial matches.
+     * @return A {@link Stream} of {@link NPC} objects that match the given name criteria.
+     */
+    public Stream<? extends NPC> getNpcs(String name, boolean exact) {
+        if (name == null || name.isEmpty()) return Stream.empty();
+        return getNpcs(npc -> {
+            String npcName = npc.getName();
+            if (npcName == null || npcName.isEmpty()) return false;
+            return exact ? npcName.equalsIgnoreCase(name) : npcName.toLowerCase().contains(name.toLowerCase());
+        });
+    }
+
+    /**
+     * Retrieves a stream of NPCs filtered by partial name match.
+     *
+     * <p>This method is a shorthand for {@link #getNpcs(String, boolean)} with partial matching enabled.</p>
+     *
+     * @param name The name of the NPC to search for.
+     * @return A {@link Stream} of {@link NPC} objects whose names contain the given string.
+     */
+    public Stream<? extends NPC> getNpcs(String name) {
+        return getNpcs(name, false);
+    }
+
+    /**
+     * Retrieves a stream of NPCs filtered by their ID.
+     *
+     * @param id The unique identifier of the NPC to search for.
+     * @return A {@link Stream} of {@link NPC} objects that match the given NPC ID.
+     */
+    public Stream<? extends NPC> getNpcs(int id) {
+        return getNpcs().filter(x -> x.getId() == id);
+    }
+
+    /**
+     * Retrieves a stream of attackable NPCs.
+     *
+     * <p>This method filters NPCs based on the following conditions:</p>
+     * <ul>
+     *   <li>The NPC has a combat level greater than 0.</li>
+     *   <li>The NPC is not dead.</li>
+     *   <li>The NPC is not currently interacting with another entity unless the player is in a multi-combat area.</li>
+     * </ul>
+     *
+     * <p>The resulting stream of NPCs is sorted by proximity to the player, with closer NPCs appearing first.</p>
+     *
+     * @return A sorted {@link Stream} of {@link NPC} objects that the player can attack.
+     */
+    public Stream<? extends NPC> getAttackableNpcs() {
+        return getNpcs(npc -> npc.getCombatLevel() > 0 && !npc.isDead())
+                .filter(npc -> !npc.isInteracting())
+                .sorted(Comparator.comparingInt(value ->
+                        value.getLocalLocation().distanceTo(
+                                context.getClient().getLocalPlayer().getLocalLocation())));
+    }
+
+    /**
+     * Retrieves a stream of attackable NPCs based on specified criteria.
+     *
+     * <p>This method filters NPCs based on the following conditions:</p>
+     * <ul>
+     *   <li>The NPC has a combat level greater than 0.</li>
+     *   <li>The NPC is not dead.</li>
+     *   <li>If {@code reachable} is {@code true}, the NPC must be reachable from the player's current location.</li>
+     *   <li>The NPC is either not interacting with any entity or is interacting with the local player.</li>
+     * </ul>
+     *
+     * <p>The resulting stream of NPCs is sorted by proximity to the player, with closer NPCs appearing first.</p>
+     *
+     * @param reachable If {@code true}, only include NPCs that are reachable from the player's current location.
+     *                  If {@code false}, include all NPCs matching the other criteria regardless of reachability.
+     * @return A sorted {@link Stream} of {@link NPC} objects that the player can attack.
+     */
+    public Stream<? extends NPC> getAttackableNpcs(boolean reachable) {
+        return getNpcs(npc -> npc.getCombatLevel() > 0
+                && !npc.isDead()
+                && (!reachable || context.getClient().getLocalPlayer().getWorldLocation().distanceTo(npc.getWorldLocation()) < Integer.MAX_VALUE)
+                && (!npc.isInteracting() || Objects.equals(npc.getInteracting(), context.getClient().getLocalPlayer())))
+                .sorted(Comparator.comparingInt(value ->
+                        value.getLocalLocation().distanceTo(
+                                context.getClient().getLocalPlayer().getLocalLocation())));
+    }
+
+    /**
+     * Retrieves a stream of attackable NPCs filtered by name.
+     *
+     * <p>This method first filters NPCs based on attackable criteria, then applies name filtering:</p>
+     * <ul>
+     *   <li>The NPC must meet the conditions defined in {@link #getAttackableNpcs()}.</li>
+     *   <li>If {@code exact} is {@code true}, the NPC name must match exactly (case insensitive).</li>
+     *   <li>If {@code exact} is {@code false}, the NPC name must contain the given name (case insensitive).</li>
+     * </ul>
+     *
+     * @param name  The name of the NPC to search for.
+     * @param exact {@code true} to match the name exactly, {@code false} to allow partial matches.
+     * @return A sorted {@link Stream} of {@link NPC} objects that match the given name and are attackable.
+     */
+    public Stream<? extends NPC> getAttackableNpcs(String name, boolean exact) {
+        if (name == null || name.isEmpty()) return Stream.empty();
+        return getAttackableNpcs().filter(x -> {
+            String npcName = x.getName();
+            if (npcName == null || npcName.isEmpty()) return false;
+            return exact ? npcName.equalsIgnoreCase(name) : npcName.toLowerCase().contains(name.toLowerCase());
+        });
+    }
+
+    public Stream<? extends NPC> getAttackableNpcs(String name) {
+        return getAttackableNpcs(name, false);
+    }
+
+
+    /**
+     * Checks if this NPC is within a specified distance from the player.
+     * Uses client thread for safe access to player location.
+     *
+     * @param maxDistance Maximum distance in tiles
+     * @return true if within distance, false otherwise
+     */
+    public boolean isWithinDistanceFromPlayer(NPC npc, int maxDistance) {
+        return context.runOnClientThreadOptional(() -> npc.getLocalLocation().distanceTo(
+                context.getClient().getLocalPlayer().getLocalLocation()) <= maxDistance).orElse(false);
+    }
+
+    /**
+     * Gets the distance from this NPC to the player.
+     * Uses client thread for safe access to player location.
+     *
+     * @return Distance in tiles
+     */
+    public int getDistanceFromPlayer(NPC npc) {
+        return context.runOnClientThreadOptional(() -> npc.getLocalLocation().distanceTo(
+                context.getClient().getLocalPlayer().getLocalLocation())).orElse(Integer.MAX_VALUE);
+    }
+
+    /**
+     * Checks if this NPC is within a specified distance from a given location.
+     *
+     * @param anchor The anchor point
+     * @param maxDistance Maximum distance in tiles
+     * @return true if within distance, false otherwise
+     */
+    public boolean isWithinDistance(NPC npc, WorldPoint anchor, int maxDistance) {
+        if (anchor == null) return false;
+        return npc.getWorldLocation().distanceTo(anchor) <= maxDistance;
+    }
+
+    /**
+     * Checks if this NPC is currently interacting with the player.
+     * Uses client thread for safe access to player reference.
+     *
+     * @return true if interacting with player, false otherwise
+     */
+    public boolean isInteractingWithPlayer(NPC npc) {
+        return context.runOnClientThreadOptional(() -> npc.getInteracting() == context.getClient().getLocalPlayer()).orElse(false);
+    }
+
+    /**
+     * Checks if this NPC is currently moving.
+     *
+     * @return true if moving, false if idle
+     */
+    public boolean isMoving(NPC npc) {
+        return context.runOnClientThreadOptional(() ->
+                npc.getPoseAnimation() != npc.getIdlePoseAnimation()
+        ).orElse(false);
+    }
+
+    /**
+     * Gets the health percentage of this NPC.
+     *
+     * @return Health percentage (0-100), or -1 if unknown
+     */
+    public double getHealthPercentage(NPC npc) {
+        int ratio = npc.getHealthRatio();
+        int scale = npc.getHealthScale();
+
+        if (scale == 0) return -1;
+        return (double) ratio / (double) scale * 100.0;
+    }
+
+
+    /**
+     * Interacts with an NPC using a specified action.
+     *
+     * <p>This method performs interaction logic, including:</p>
+     * <ul>
+     *   <li>Checking if the NPC is reachable.</li>
+     *   <li>Handling cases where the bot repeatedly fails to reach the NPC.</li>
+     *   <li>Determining the correct {@link MenuAction} for the specified interaction.</li>
+     *   <li>Executing the interaction via the RuneLite menu system.</li>
+     * </ul>
+     *
+     * <p>If the NPC cannot be reached after multiple attempts, the bot will pause all scripts and notify the user.</p>
+     *
+     * @param npc    The {@link NPC} to interact with.
+     * @param action The action to perform on the NPC (e.g., "Talk-to", "Attack", "Trade").
+     * @return {@code true} if the interaction was successfully executed, {@code false} if the NPC was unreachable.
+     */
+    public boolean interact(NPC npc, String action) {
+        if (npc == null) return false;
+
+        try {
+            NPCComposition npcComposition = context.runOnClientThreadOptional(
+                    () -> context.getClient().getNpcDefinition(npc.getId())).orElse(null);
+
+            if (npcComposition == null || npcComposition.getActions() == null) {
+                log.error("Could not get NPC composition or actions for NPC: {}", npc.getName());
+                return false;
+            }
+
+            final int index;
+            String[] actions = npcComposition.getActions();
+
+            if (action == null || action.isBlank()) {
+                index = IntStream.range(0, actions.length)
+                        .filter(i -> actions[i] != null && !actions[i].isEmpty())
+                        .findFirst().orElse(-1);
+            } else {
+                final String finalAction = action;
+                index = IntStream.range(0, actions.length)
+                        .filter(i -> actions[i] != null && actions[i].equalsIgnoreCase(finalAction))
+                        .findFirst().orElse(-1);
+            }
+
+            final MenuAction menuAction = getMenuAction(index);
+            if (menuAction == null) {
+                if (index == -1 && !client.isWidgetSelected()) {
+                    log.warn("Action='{}' not found for NPC='{}'", action, npc.getName());
+                } else {
+                    log.error("Could not get menu action for Action='{}' on NPC='{}'", action, npc.getName());
+                }
+                return false;
+            }
+
+            action = actions[index];
+
+            if (!cameraService.isTileOnScreen(npc.getLocalLocation())) {
+                cameraService.turnTo(npc);
+            }
+
+            context.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action), uiService.getActorClickbox(npc));
+            return true;
+
+        } catch (Exception ex) {
+            log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves the corresponding {@link MenuAction} for a given interaction index.
+     *
+     * <p>This method determines which {@link MenuAction} should be used based on the provided
+     * menu index. It follows this order:</p>
+     * <ul>
+     *   <li>If a widget is currently selected, {@link MenuAction#WIDGET_TARGET_ON_NPC} is used.</li>
+     *   <li>If {@code index} is 0, the first NPC menu option is used.</li>
+     *   <li>If {@code index} is 1, the second NPC menu option is used.</li>
+     *   <li>If {@code index} is 2, the third NPC menu option is used.</li>
+     *   <li>If {@code index} is 3, the fourth NPC menu option is used.</li>
+     *   <li>If {@code index} is 4, the fifth NPC menu option is used.</li>
+     * </ul>
+     *
+     * @param index The menu index corresponding to the NPC interaction option (0-4).
+     * @return The corresponding {@link MenuAction}, or {@code null} if the index is invalid.
+     */
+    @Nullable
+    private MenuAction getMenuAction(int index) {
+        if (client.isWidgetSelected()) {
+            return MenuAction.WIDGET_TARGET_ON_NPC;
+        }
+
+        switch (index) {
+            case 0:
+                return MenuAction.NPC_FIRST_OPTION;
+            case 1:
+                return MenuAction.NPC_SECOND_OPTION;
+            case 2:
+                return MenuAction.NPC_THIRD_OPTION;
+            case 3:
+                return MenuAction.NPC_FOURTH_OPTION;
+            case 4:
+                return MenuAction.NPC_FIFTH_OPTION;
+            default:
+                return null;
+        }
+    }
+
+    private static HeadIcon headIconThruLengthEightArrays(NPC npc) throws IllegalAccessException {
+        Class<?>[] trying = new Class<?>[]{npc.getClass(),npc.getComposition().getClass()};
+        for (Class<?> aClass : trying) {
+            for (Field declaredField : aClass.getDeclaredFields()) {
+                Field[] decFields = declaredField.getType().getDeclaredFields();
+                if(decFields.length == 2) {
+                    if(decFields[0].getType().isArray()&&decFields[1].getType().isArray()){
+                        for (Field decField : decFields) {
+                            decField.setAccessible(true);
+                        }
+                        Object[] array1 = (Object[]) decFields[0].get(npc);
+                        Object[] array2 = (Object[]) decFields[1].get(npc);
+                        for (Field decField : decFields) {
+                            decField.setAccessible(false);
+                        }
+                        if(array1.length == 8 & array2.length == 8) {
+                            if(decFields[0].getType()==short[].class) {
+                                if((short)array1[0] == -1) {
+                                    return null;
+                                }
+                                return HeadIcon.values()[(short)array1[0]];
+                            }
+                            if((short)array2[0] == -1){
+                                return null;
+                            }
+                            return HeadIcon.values()[(short)array2[0]];
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @SneakyThrows
+    public static HeadIcon getHeadIcon(final NPC npc) {
+        if(npc == null) return null;
+        HeadIcon icon = getOldHeadIcon(npc);
+        if(icon != null) {
+            return icon;
+        }
+        icon = getOlderHeadicon(npc);
+        if(icon != null) {
+            return icon;
+        }
+        return headIconThruLengthEightArrays(npc);
+    }
+
+    @SneakyThrows
+    private static HeadIcon getOlderHeadicon(NPC npc){
+        Method getHeadIconMethod;
+        for (Method declaredMethod : npc.getComposition().getClass().getDeclaredMethods()) {
+            if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short.class && declaredMethod.getParameterCount() == 1) {
+                getHeadIconMethod = declaredMethod;
+                getHeadIconMethod.setAccessible(true);
+                short headIcon = -1;
+                try {
+                    headIcon = (short) getHeadIconMethod.invoke(npc.getComposition(), 0);
+                }catch (Exception e){
+                    //nothing
+                }
+                getHeadIconMethod.setAccessible(false);
+
+                if (headIcon == -1) {
+                    continue;
+                }
+                return HeadIcon.values()[headIcon];
+            }
+        }
+        return null;
+    }
+
+    @SneakyThrows
+    private static HeadIcon getOldHeadIcon(NPC npc) {
+        Method getHeadIconMethod;
+        for (Method declaredMethod : npc.getClass().getDeclaredMethods()) {
+            if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short[].class && declaredMethod.getParameterCount() == 0) {
+                getHeadIconMethod = declaredMethod;
+                getHeadIconMethod.setAccessible(true);
+                short[] headIcon = null;
+                try {
+                    headIcon = (short[]) getHeadIconMethod.invoke(npc);
+                } catch (Exception e) {
+                    //nothing
+                }
+                getHeadIconMethod.setAccessible(false);
+
+                if (headIcon == null) {
+                    continue;
+                }
+                return HeadIcon.values()[headIcon[0]];
+            }
+        }
+        return null;
+    }
+}

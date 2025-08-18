@@ -1,0 +1,51 @@
+plugins {
+    id 'java-library'
+}
+
+def projectVersion = '1.0.0'
+def runeLiteVersion = '1.11.14' // latest.release
+
+version = projectVersion
+
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'https://repo.runelite.net'
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
+    implementation("com.google.guava:guava:31.1-jre")
+    implementation("org.slf4j:slf4j-api:1.7.25")
+    implementation("org.slf4j:slf4j-simple:1.7.25")
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+
+    compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
+    testImplementation 'junit:junit:4.12'
+    testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
+    testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
+}
+
+testing {
+    suites {
+        test {
+            useJUnit('4.13.2')
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+jar {
+    archiveBaseName = 'kraken-api'
+    archiveVersion = projectVersion
+}
