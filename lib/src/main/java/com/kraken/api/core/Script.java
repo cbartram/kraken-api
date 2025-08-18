@@ -26,7 +26,6 @@ public abstract class Script implements Scriptable {
     @Inject
     public Script(final Context context) {
         this.context = context;
-        this.context.register();
     }
 
     /**
@@ -61,6 +60,7 @@ public abstract class Script implements Scriptable {
         }
 
         running = true;
+
         if(!this.context.isRegistered()) {
             this.context.register();
         }
