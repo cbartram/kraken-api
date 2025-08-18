@@ -1,11 +1,13 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
 }
 
 def projectVersion = '1.0.0'
 def runeLiteVersion = '1.11.14' // latest.release
 
 version = projectVersion
+project.version = projectVersion
 
 
 repositories {
@@ -48,4 +50,16 @@ java {
 jar {
     archiveBaseName = 'kraken-api'
     archiveVersion = projectVersion
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            groupId = 'com.github.cbartram'
+            artifactId = 'kraken-api'
+            version = project.version
+        }
+    }
 }
