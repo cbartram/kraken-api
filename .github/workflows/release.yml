@@ -70,5 +70,5 @@ jobs:
         run: |
           JAR_FILE=$(find lib/build/libs -name "kraken-api-*.jar" | head -n 1)
           curl -X PUT -T "$JAR_FILE" \
-            "${{ secrets.MINIO_URL }}/kraken-bootstrap-static/kraken-api-${VERSION}.jar" \
+            "https://minio-kraken.duckdns.org/kraken-bootstrap-static/kraken-api-${VERSION}.jar" \
             -u "${{ secrets.MINIO_ACCESS_KEY }}:${{ secrets.MINIO_SECRET_KEY }}"
