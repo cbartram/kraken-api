@@ -66,20 +66,18 @@ jobs:
           name: Release v${{ env.VERSION }}
           body: ${{ env.COMMITS }}
 
+      - name: Install MinIO client
+        run: |
+          wget https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          sudo mv mc /usr/local/bin/
 
-      - name: Minio Deploy
-        uses: lovellfelix/minio-deploy-action@v1
-        with:
-          endpoint: ${{ secrets.MINIO_URL }}
-          access_key: ${{ secrets.MINIO_ACCESS_KEY }}
-          secret_key: ${{ secrets.MINIO_SECRET_KEY }}
-          bucket: 'kraken-bootstrap-static'
-          source_dir: 'lib/build/libs'
-          target_dir: '/'
+      - name: Configure MinIO client
+        run: |
+          mc alias set s3 ${{ secrets.MINIO_URL }} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
 
-#      - name: Upload jar to MinIO
-#        run: |
-#          JAR_FILE=$(find lib/build/libs -name "kraken-api-*.jar" | head -n 1)
-#          curl -X PUT -T "$JAR_FILE" \
-#            "https://minio-kraken.duckdns.org/kraken-bootstrap-static/kraken-api-${VERSION}.jar" \
-#            -u "${{ secrets.MINIO_ACCESS_KEY }}:${{ secrets.MINIO_SECRET_KEY }}"
+      - name: Upload JAR to MinIO
+        run: |
+          JAR_FILE=$(find lib/build/libs -name "kraken-api-*.jar" | head -n 1)
+          echo "Uploading $JAR_FILE to MinIO..."
+          mc cp "$JAR_FILE" s3/kraken-bootstrap-static/kraken-api-${VERSION}.jar
