@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-def projectVersion = '1.0.0'
+def projectVersion = System.getenv("VERSION") ?: '1.0.0'
 def runeLiteVersion = '1.11.14' // latest.release
 
 version = projectVersion
