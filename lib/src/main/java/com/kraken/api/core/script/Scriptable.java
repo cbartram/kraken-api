@@ -1,4 +1,4 @@
-package com.kraken.api.core;
+package com.kraken.api.core.script;
 
 public interface Scriptable {
     public void onStart();

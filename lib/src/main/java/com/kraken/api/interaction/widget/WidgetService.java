@@ -2,7 +2,7 @@ package com.kraken.api.interaction.widget;
 
 
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.Random;
+import com.kraken.api.core.RandomService;
 import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class WidgetService extends AbstractService {
 
     public boolean clickWidget(Widget widget) {
         if (widget != null) {
-            context.getMouse().click(Random.randomPoint(widget.getBounds(), 0));
+            context.getMouse().click(RandomService.randomPoint(widget.getBounds(), 0));
             return true;
         }
         return false;
@@ -69,7 +69,7 @@ public class WidgetService extends AbstractService {
         Widget widget = context.runOnClientThreadOptional(() -> client.getWidget(id)).orElse(null);;
         if (widget == null) return false;
         if(widget.isHidden()) return false;
-        context.getMouse().click(Random.randomPoint(widget.getBounds(), 0));
+        context.getMouse().click(RandomService.randomPoint(widget.getBounds(), 0));
         return true;
     }
 

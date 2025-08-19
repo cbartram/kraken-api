@@ -355,7 +355,7 @@ public class CameraService extends AbstractService {
      * Determines whether the specified tile is centered on the screen within a given tolerance.
      * <p>
      * Projects the tile to screen space, computes its bounding rectangle, and then checks
-     * whether that rectangle lies entirely inside a centered “box” whose width and height
+     * whether that rectangle lies entirely inside a centered "box" whose width and height
      * are the given percentage of the viewport dimensions.
      * </p>
      *

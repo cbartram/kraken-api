@@ -1,10 +1,8 @@
 package com.kraken.api;
 
-import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.kraken.api.core.Random;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
@@ -27,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Point;
-import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.gameval.InventoryID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;

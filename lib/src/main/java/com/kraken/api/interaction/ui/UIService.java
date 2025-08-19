@@ -1,7 +1,7 @@
 package com.kraken.api.interaction.ui;
 
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.Random;
+import com.kraken.api.core.RandomService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Perspective;
@@ -12,6 +12,7 @@ import net.runelite.api.coords.LocalPoint;
 
 import javax.inject.Singleton;
 import java.awt.*;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -70,6 +71,6 @@ public class UIService extends AbstractService {
 
         if (!randomize) return new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY());
 
-        return Random.randomPointEx(new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY()), rectangle, 0.78);
+        return RandomService.randomPointEx(new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY()), rectangle, 0.78);
     }
 }

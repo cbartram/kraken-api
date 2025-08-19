@@ -2,13 +2,14 @@ package com.kraken.api.input;
 
 
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.Random;
+import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
 import net.runelite.api.GameState;
 
 import javax.inject.Inject;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.Random;
 
 import static java.awt.event.KeyEvent.CHAR_UNDEFINED;
 
@@ -65,7 +66,7 @@ public class KeyboardService extends AbstractService {
         withFocusCanvas(() -> {
             for (char c : word.toCharArray())
             {
-                int delay = Random.between(20, 200);
+                int delay = RandomService.between(20, 200);
                 dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, c, delay);
                 sleepService.sleep(100, 200);
             }
@@ -79,7 +80,7 @@ public class KeyboardService extends AbstractService {
      */
     public void keyPress(final char key) {
         withFocusCanvas(() -> {
-            int delay = Random.between(20, 200);
+            int delay = RandomService.between(20, 200);
             dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, key, delay);
         });
     }
@@ -89,7 +90,7 @@ public class KeyboardService extends AbstractService {
      */
     public void holdShift() {
         withFocusCanvas(() -> {
-            int delay = Random.between(20, 200);
+            int delay = RandomService.between(20, 200);
             dispatchKeyEvent(KeyEvent.KEY_PRESSED, KeyEvent.VK_SHIFT, CHAR_UNDEFINED, delay);
         });
     }
@@ -99,7 +100,7 @@ public class KeyboardService extends AbstractService {
      */
     public void releaseShift() {
         withFocusCanvas(() -> {
-            int delay = Random.between(20, 200);
+            int delay = RandomService.between(20, 200);
             dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_SHIFT, CHAR_UNDEFINED, delay);
         });
     }
@@ -122,7 +123,7 @@ public class KeyboardService extends AbstractService {
      */
     public void keyRelease(int key) {
         withFocusCanvas(() -> {
-            int delay = Random.between(20, 200);
+            int delay = RandomService.between(20, 200);
             dispatchKeyEvent(KeyEvent.KEY_RELEASED, key, CHAR_UNDEFINED, delay);
         });
     }

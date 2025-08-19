@@ -45,17 +45,17 @@ public class SleepService extends AbstractService {
         if (start < 0 || end < 0 || start > end) {
             throw new IllegalArgumentException("Invalid sleep range: " + start + " to " + end);
         }
-        long randomSleep = Random.between((int) start, (int) end);
+        long randomSleep = RandomService.between((int) start, (int) end);
         sleep(randomSleep);
     }
 
     public void sleep(int start, int end) {
-        int randomSleep = Random.between(start, end);
+        int randomSleep = RandomService.between(start, end);
         sleep(randomSleep);
     }
 
     public void sleepGaussian(int mean, int stddev) {
-        int randomSleep = Random.randomGaussian(mean, stddev);
+        int randomSleep = RandomService.randomGaussian(mean, stddev);
         sleep(randomSleep);
     }
 
@@ -166,7 +166,7 @@ public class SleepService extends AbstractService {
     }
 
     public void sleepUntilOnClientThread(BooleanSupplier awaitedCondition) {
-        sleepUntilOnClientThread(awaitedCondition, Random.between(2500, 5000));
+        sleepUntilOnClientThread(awaitedCondition, RandomService.between(2500, 5000));
     }
 
     public void sleepUntilOnClientThread(BooleanSupplier awaitedCondition, int time) {

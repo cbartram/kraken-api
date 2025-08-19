@@ -1,6 +1,5 @@
 package com.kraken.api.core;
 
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
@@ -10,10 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Singleton
-public class Random {
-
-    @Inject
-    private SleepService sleepService;
+public class RandomService {
 
     private static final double GAUSS_CUTOFF = 4.0;
     private static final java.util.Random RANDOM = new java.util.Random();
