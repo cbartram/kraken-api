@@ -77,6 +77,9 @@ public class Context {
             WidgetService.class
     );
 
+    protected ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    public Future<?> scheduledFuture;
+
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
@@ -160,6 +163,17 @@ public class Context {
 
         isRegistered = false;
     }
+
+    /**
+     * Run a method on the client thread, returning the result.
+     * @param method
+     */
+    @SneakyThrows
+    public void runOnSeperateThread(Callable<?> method) {
+        if (scheduledFuture != null && !scheduledFuture.isDone()) return;
+        scheduledFuture = scheduledExecutorService.submit(method);
+    }
+
 
     public int getVarbitValue(int varbit) {
         return runOnClientThread(() -> client.getVarbitValue(varbit));

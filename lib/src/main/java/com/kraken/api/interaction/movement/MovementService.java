@@ -1,16 +1,22 @@
+
 package com.kraken.api.interaction.movement;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Player;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.widgets.Widget;
+import net.runelite.client.plugins.puzzlesolver.solver.pathfinding.Pathfinder;
+import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.lang.reflect.Field;
-import java.util.Collection;
+import java.util.*;
 
 @Slf4j
 @Singleton
@@ -18,6 +24,232 @@ public class MovementService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private WorldPathFinder worldPathfinder;
+
+    @Setter
+    private WorldPoint lastPosition;
+
+    @Setter
+    private WorldPoint currentTarget;
+
+    private Queue<WorldPoint> currentPath;
+    private boolean isExecutingPath = false;
+    private long lastMovementTime = 0;
+    private static final int MOVEMENT_TIMEOUT = 5000; // 5 seconds
+    private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
+
+    // Enhanced walking methods with pathfinding support
+    public boolean walkTo(int x, int y, int plane) {
+        return walkTo(new WorldPoint(x, y, plane), 5);
+    }
+
+    public boolean walkTo(int x, int y, int plane, int distance) {
+        return walkTo(new WorldPoint(x, y, plane), distance);
+    }
+
+    public boolean walkTo(WorldPoint target) {
+        return walkTo(target, 5);
+    }
+
+    public boolean walkTo(WorldPoint target, int distance) {
+        return walkWithState(target, distance) == MovementState.ARRIVED;
+    }
+
+    public MovementState walkWithState(WorldPoint target, int distance) {
+        return walkWithStateInternal(target, distance);
+    }
+
+    /**
+     * Enhanced internal walking logic with cross-world pathfinding support
+     */
+    private MovementState walkWithStateInternal(WorldPoint target, int distance) {
+        if (target == null) {
+            return MovementState.FAILED;
+        }
+
+        WorldPoint playerPos = getPlayerPosition();
+        if (playerPos == null) {
+            return MovementState.FAILED;
+        }
+
+        // Check if we're already at the target
+        if (playerPos.distanceTo(target) <= distance) {
+            isExecutingPath = false;
+            currentPath = null;
+            return MovementState.ARRIVED;
+        }
+
+        // If target is within scene, use direct scene walking
+        LocalPoint targetLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), target);
+        if (targetLocal != null && targetLocal.isInScene()) {
+            sceneWalk(targetLocal);
+            return MovementState.WALKING;
+        }
+
+        // For long-distance targets, use pathfinding
+        return walkWithPathfinding(target, distance);
+    }
+
+    /**
+     * Handles long-distance walking using pathfinding
+     */
+    private MovementState walkWithPathfinding(WorldPoint target, int distance) {
+        WorldPoint playerPos = getPlayerPosition();
+
+        // Check if we need to generate a new path
+        if (!isExecutingPath || currentPath == null || currentPath.isEmpty()) {
+            List<WorldPoint> path = worldPathfinder.findPath(playerPos, target);
+
+            if (path == null || path.isEmpty()) {
+                log.warn("No path found from {} to {}", playerPos, target);
+                return MovementState.FAILED;
+            }
+
+            currentPath = new LinkedList<>(path);
+            isExecutingPath = true;
+            lastMovementTime = System.currentTimeMillis();
+            log.debug("Generated path with {} waypoints", path.size());
+        }
+
+        // Execute the current path
+        return executePathStep(target, distance);
+    }
+
+    /**
+     * Executes a single step in the pathfinding sequence
+     */
+    private MovementState executePathStep(WorldPoint finalTarget, int distance) {
+        if (currentPath == null || currentPath.isEmpty()) {
+            isExecutingPath = false;
+            return MovementState.FAILED;
+        }
+
+        WorldPoint playerPos = getPlayerPosition();
+        WorldPoint currentWaypoint = currentPath.peek();
+
+        // Check if we've reached the current waypoint
+        if (playerPos.distanceTo(currentWaypoint) <= 3) {
+            currentPath.poll(); // Remove completed waypoint
+            lastMovementTime = System.currentTimeMillis();
+
+            // Check if we've completed the entire path
+            if (currentPath.isEmpty()) {
+                if (playerPos.distanceTo(finalTarget) <= distance) {
+                    isExecutingPath = false;
+                    return MovementState.ARRIVED;
+                } else {
+                    // Path completed but not at final target - might need new path
+                    isExecutingPath = false;
+                    return walkWithPathfinding(finalTarget, distance);
+                }
+            }
+
+            // Move to next waypoint
+            currentWaypoint = currentPath.peek();
+        }
+
+        // Check for movement timeout (stuck detection)
+        if (System.currentTimeMillis() - lastMovementTime > MOVEMENT_TIMEOUT) {
+            log.warn("Movement timeout detected, regenerating path");
+            isExecutingPath = false;
+            currentPath = null;
+            return walkWithPathfinding(finalTarget, distance);
+        }
+
+        // Try to walk to current waypoint
+        LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), currentWaypoint);
+        if (waypointLocal != null && waypointLocal.isInScene()) {
+            sceneWalk(waypointLocal);
+            return MovementState.WALKING;
+        } else {
+            // Waypoint not in scene, try to find intermediate point that is
+            WorldPoint intermediatePoint = findIntermediatePoint(playerPos, currentWaypoint);
+            if (intermediatePoint != null) {
+                sceneWalk(intermediatePoint);
+                return MovementState.WALKING;
+            }
+        }
+
+        return MovementState.BLOCKED;
+    }
+
+    /**
+     * Finds an intermediate point between current position and target that is within the loaded scene
+     */
+    private WorldPoint findIntermediatePoint(WorldPoint from, WorldPoint to) {
+        WorldView wv = client.getTopLevelWorldView();
+
+        // Try points along the line between from and to
+        double dx = to.getX() - from.getX();
+        double dy = to.getY() - from.getY();
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Normalize the direction
+        dx /= distance;
+        dy /= distance;
+
+        // Try points at different distances
+        for (int step = 5; step < distance && step < 50; step += 5) {
+            int x = from.getX() + (int)(dx * step);
+            int y = from.getY() + (int)(dy * step);
+            WorldPoint testPoint = new WorldPoint(x, y, from.getPlane());
+
+            LocalPoint testLocal = LocalPoint.fromWorld(wv, testPoint);
+            if (testLocal != null && testLocal.isInScene()) {
+                return testPoint;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the current player position safely
+     */
+    private WorldPoint getPlayerPosition() {
+        Player player = client.getLocalPlayer();
+        return player != null ? player.getWorldLocation() : null;
+    }
+
+    /**
+     * Stops any current pathfinding operation
+     */
+    public void stopMovement() {
+        isExecutingPath = false;
+        currentPath = null;
+        currentTarget = null;
+    }
+
+    /**
+     * Checks if currently executing a path
+     */
+    public boolean isMoving() {
+        return isExecutingPath && currentPath != null && !currentPath.isEmpty();
+    }
+
+    /**
+     * Gets the current movement progress (0.0 to 1.0)
+     */
+    public double getMovementProgress() {
+        if (!isMoving() || currentTarget == null) {
+            return 1.0;
+        }
+
+        WorldPoint playerPos = getPlayerPosition();
+        if (playerPos == null) {
+            return 0.0;
+        }
+
+        double totalDistance = lastPosition != null ?
+                lastPosition.distanceTo(currentTarget) :
+                playerPos.distanceTo(currentTarget);
+
+        double remainingDistance = playerPos.distanceTo(currentTarget);
+
+        return Math.max(0.0, Math.min(1.0, 1.0 - (remainingDistance / totalDistance)));
+    }
 
     /**
      * Attempts to walk to a given {@link WorldPoint} by converting it to a scene coordinate
@@ -53,6 +285,21 @@ public class MovementService extends AbstractService {
             // Normal world coordinate → local coordinate conversion.
             sceneWalk(LocalPoint.fromWorld(wv, worldPoint));
         }
+    }
+
+    /**
+     * Checks if the player's current location is within the specified area defined by the given world points.
+     *
+     * @param worldPoints an array of two world points of the NW and SE corners of the area
+     * @return true if the player's current location is within the specified area, false otherwise
+     */
+    public boolean isInArea(WorldPoint... worldPoints) {
+        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        return playerLocation.getX() <= worldPoints[0].getX() &&   // NW corner x
+                playerLocation.getY() >= worldPoints[0].getY() &&   // NW corner y
+                playerLocation.getX() >= worldPoints[1].getX() &&   // SE corner x
+                playerLocation.getY() <= worldPoints[1].getY();     // SE corner Y
+        // draws box from 2 points to check against all variations of player X,Y from said points.
     }
 
     /**
@@ -103,6 +350,9 @@ public class MovementService extends AbstractService {
         setYCoordinate(sceneY);     // Set the target Y tile.
         setCheckClick();            // Mark the click as valid for pathfinding.
         setViewportWalking();       // Allow walking to be processed by the viewport logic.
+
+        // Update last movement time for timeout detection
+        lastMovementTime = System.currentTimeMillis();
     }
 
     /**
