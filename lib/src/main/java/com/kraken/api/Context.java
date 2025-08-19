@@ -1,5 +1,6 @@
 package com.kraken.api;
 
+import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
@@ -47,8 +48,7 @@ public class Context {
 
     @Getter
     private final ClientThread clientThread;
-    private final InventoryService inventoryService;
-    private final SleepService sleepService;
+
     private final Injector injector;
     private final EventBus eventBus;
 
@@ -77,12 +77,9 @@ public class Context {
     );
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final InventoryService inventoryService,
-                   final SleepService sleepService, final VirtualMouse mouse, final EventBus eventBus, final Injector injector) {
+    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector) {
         this.client = client;
         this.clientThread = clientThread;
-        this.inventoryService = inventoryService;
-        this.sleepService = sleepService;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
@@ -130,15 +127,6 @@ public class Context {
         isRegistered = false;
     }
 
-    @Subscribe
-    public void onItemContainerChanged(ItemContainerChanged event) {
-        if (event.getContainerId() == InventoryID.BANK) {
-            // TODO Refresh bank.
-        } else if (event.getContainerId() == InventoryID.INV) {
-            inventoryService.refreshInventory(event);
-        }
-    }
-
     public int getVarbitValue(int varbit) {
         return runOnClientThread(() -> client.getVarbitValue(varbit));
     }
@@ -156,7 +144,7 @@ public class Context {
         if(rectangle == null) {
             pt = new Point(1, 1);
         } else {
-            pt = getClickingPoint(rectangle, randomPoint);
+            pt = UIService.getClickingPoint(rectangle, randomPoint);
         }
 
         try {
@@ -165,7 +153,7 @@ public class Context {
 
             // This almost always invokes this while NOT on the client thread. So the sleep will occur
             if (!client.isClientThread()) {
-                sleepService.sleep(10, 30);
+                SleepService.sleep(10L, 30L);
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             log.error("Index out of bounds exception for KrakenClient: {}", e.getMessage());
@@ -232,16 +220,5 @@ public class Context {
             log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage());
             return Optional.empty();
         }
-    }
-
-    // TODO Put this somewhere else, maybe in a utility class?
-    public static Point getClickingPoint(Rectangle rectangle, boolean randomize) {
-        if (rectangle == null) return new Point(1, 1);
-        if (rectangle.getX() == 1 && rectangle.getY() == 1) return new Point(1, 1);
-        if (rectangle.getX() == 0 && rectangle.getY() == 0) return new Point(1, 1);
-
-        if (!randomize) return new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY());
-
-        return Random.randomPointEx(new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY()), rectangle, 0.78);
     }
 }

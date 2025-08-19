@@ -1,6 +1,7 @@
 package com.kraken.api.interaction.ui;
 
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.Random;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Perspective;
@@ -60,5 +61,15 @@ public class UIService extends AbstractService {
         int halfSize = tileSize / 4;
 
         return new Rectangle(screenPoint.getX() - halfSize, screenPoint.getY() - halfSize, tileSize / 2, tileSize / 2);
+    }
+
+    public static Point getClickingPoint(Rectangle rectangle, boolean randomize) {
+        if (rectangle == null) return new Point(1, 1);
+        if (rectangle.getX() == 1 && rectangle.getY() == 1) return new Point(1, 1);
+        if (rectangle.getX() == 0 && rectangle.getY() == 0) return new Point(1, 1);
+
+        if (!randomize) return new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY());
+
+        return Random.randomPointEx(new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY()), rectangle, 0.78);
     }
 }

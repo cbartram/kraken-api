@@ -41,6 +41,14 @@ public class SleepService extends AbstractService {
         }
     }
 
+    public static void sleep(long start, long end) {
+        if (start < 0 || end < 0 || start > end) {
+            throw new IllegalArgumentException("Invalid sleep range: " + start + " to " + end);
+        }
+        long randomSleep = Random.between((int) start, (int) end);
+        sleep(randomSleep);
+    }
+
     public void sleep(int start, int end) {
         int randomSleep = Random.between(start, end);
         sleep(randomSleep);

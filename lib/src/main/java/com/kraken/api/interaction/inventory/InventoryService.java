@@ -21,6 +21,7 @@ import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.eventbus.Subscribe;
 
 import java.awt.*;
 import java.util.*;
@@ -48,24 +49,26 @@ public class InventoryService extends AbstractService {
     /**
      * Refreshes the internal inventory list with new/removed items based on the RuneLite event. This is designed
      * to be called within the @Subscribed method for item container changed.
-     * @param e Item container change event indicating what changed in the inventory.
+     * @param event Item container change event indicating what changed in the inventory.
      */
-    public void refreshInventory(ItemContainerChanged e) {
-        assert client.isClientThread();
+    @Subscribe
+    public void onItemContainerChanged(ItemContainerChanged event) {
+      if (event.getContainerId() == InventoryID.INV) {
+          assert client.isClientThread();
 
-        if (e.getContainerId() != InventoryID.INV) return;
-        final ItemContainer itemContainer = e.getItemContainer();
-        if (itemContainer == null) return;
+          final ItemContainer itemContainer = event.getItemContainer();
+          if (itemContainer == null) return;
 
-        List<InventoryItem> _inventoryItems = new ArrayList<>();
-        for (int i = 0; i < itemContainer.getItems().length; i++) {
-            final Item item = itemContainer.getItems()[i];
-            if (item.getId() == -1) continue;
-            final ItemComposition itemComposition = client.getItemDefinition(item.getId());
-            _inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
-        }
+          List<InventoryItem> items = new ArrayList<>();
+          for (int i = 0; i < itemContainer.getItems().length; i++) {
+              final Item item = itemContainer.getItems()[i];
+              if (item.getId() == -1) continue;
+              final ItemComposition itemComposition = client.getItemDefinition(item.getId());
+              items.add(new InventoryItem(item, itemComposition, i, context));
+          }
 
-        inventoryItems = Collections.unmodifiableList(_inventoryItems);
+          inventoryItems = Collections.unmodifiableList(items);
+      }
     }
 
     public Widget getInventory() {
