@@ -1,13 +1,18 @@
 package com.kraken.api.interaction.movement;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
+import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.callback.ClientThread;
-import shortestpath.ShortestPathPlugin;
+import net.runelite.client.config.ConfigManager;
+import shortestpath.ShortestPathConfig;
 import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.Pathfinder;
+import shortestpath.pathfinder.PathfinderConfig;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,12 +26,20 @@ import java.util.Set;
 @Slf4j
 public class ShortestPathService {
     private final Client client;
-    private final ShortestPathPlugin shortestPathPlugin;
+    private final ClientThread clientThread;
+    private final PathfinderConfig config;
+    private Pathfinder pathfinder;
 
     @Inject
-    public ShortestPathService(Client client, ShortestPathPlugin shortestPathPlugin) {
+    public ShortestPathService(Client client, ClientThread clientThread, PathfinderConfig config) {
         this.client = client;
-        this.shortestPathPlugin = shortestPathPlugin;
+        this.clientThread = clientThread;
+        this.config = config;
+    }
+
+    @Provides
+    ShortestPathConfig provideShortestPathConfig(final ConfigManager configManager) {
+        return configManager.getConfig(ShortestPathConfig.class);
     }
 
     /**
@@ -35,10 +48,9 @@ public class ShortestPathService {
      */
     public void setTarget(WorldPoint target) {
         if (target == null) {
-            shortestPathPlugin.restartPathfinding(
+            restartPathfinding(
                     WorldPointUtil.UNDEFINED,
-                    new HashSet<>(),
-                    false
+                    new HashSet<>()
             );
             return;
         }
@@ -52,8 +64,14 @@ public class ShortestPathService {
         int packedTarget = WorldPointUtil.packWorldPoint(target);
         Set<Integer> targets = new HashSet<>();
         targets.add(packedTarget);
+        restartPathfinding(start, targets);
+    }
 
-        shortestPathPlugin.restartPathfinding(start, targets, false);
+    public void restartPathfinding(int start, Set<Integer> ends) {
+        clientThread.invokeLater(() -> {
+            this.pathfinder = new Pathfinder(config, start, ends);
+            this.pathfinder.run();
+        });
     }
 
     /**
@@ -61,13 +79,13 @@ public class ShortestPathService {
      * Returns empty list if no path is found or not yet computed.
      */
     public List<WorldPoint> getCurrentPath() {
-        if (shortestPathPlugin.getPathfinder() == null
-                || shortestPathPlugin.getPathfinder().getPath() == null) {
+        if (pathfinder == null
+                || pathfinder.getPath() == null) {
             return new ArrayList<>();
         }
 
         List<WorldPoint> result = new ArrayList<>();
-        for (int packed : shortestPathPlugin.getPathfinder().getPath()) {
+        for (int packed : pathfinder.getPath()) {
             result.add(WorldPointUtil.unpackWorldPoint(packed));
         }
         return result;
@@ -77,8 +95,8 @@ public class ShortestPathService {
      * Returns whether a path is currently available.
      */
     public boolean hasPath() {
-        return shortestPathPlugin.getPathfinder() != null
-                && shortestPathPlugin.getPathfinder().getPath() != null
-                && !shortestPathPlugin.getPathfinder().getPath().isEmpty();
+        return pathfinder != null
+                && pathfinder.getPath() != null
+                && !pathfinder.getPath().isEmpty();
     }
 }

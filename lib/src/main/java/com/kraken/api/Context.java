@@ -86,16 +86,13 @@ public class Context {
     public Future<?> scheduledFuture;
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final ConfigManager configManager, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
+    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.loader = loader;
-
-        injector.createChildInjector(binder -> binder.bind(ShortestPathConfig.class)
-                .toInstance(configManager.getConfig(ShortestPathConfig.class)));
     }
 
     /**

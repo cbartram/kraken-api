@@ -1,5 +1,6 @@
 package com.kraken.api.interaction.movement;
 
+import com.google.inject.Provider;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import lombok.Getter;
