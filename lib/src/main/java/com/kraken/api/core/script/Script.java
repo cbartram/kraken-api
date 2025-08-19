@@ -26,6 +26,11 @@ public abstract class Script implements Scriptable {
     @Inject
     public Script(final Context context) {
         this.context = context;
+
+        if(!this.context.isRegistered()) {
+            log.info("Registering services classes with the eventbus.");
+            this.context.register();
+        }
     }
 
     /**
@@ -60,10 +65,6 @@ public abstract class Script implements Scriptable {
         }
 
         running = true;
-
-        if(!this.context.isRegistered()) {
-            this.context.register();
-        }
 
         if(!this.context.isHooksLoaded()) {
             this.context.loadHooks();

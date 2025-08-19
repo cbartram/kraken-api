@@ -10,8 +10,10 @@ import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.plugins.puzzlesolver.solver.pathfinding.Pathfinder;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
+import shortestpath.ShortestPathPlugin;
+import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.Pathfinder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,15 +30,14 @@ public class MovementService extends AbstractService {
     private ReflectionService reflectionService;
 
     @Inject
+    private ShortestPathPlugin shortestPathPlugin;
+
+    @Inject
     private WorldPathFinder worldPathfinder;
 
     @Setter
     private WorldPoint lastPosition;
 
-    /**
-     * -- GETTER --
-     *  Gets the current target destination
-     */
     @Getter
     @Setter
     private WorldPoint currentTarget;
@@ -45,37 +46,20 @@ public class MovementService extends AbstractService {
     private List<WorldPoint> fullCalculatedPath; // For visualization
     private boolean isExecutingPath = false;
     private long lastMovementTime = 0;
-    /**
-     * -- GETTER --
-     *  Gets the current movement state
-     */
+
     @Getter
     private MovementState currentState = MovementState.IDLE;
-    /**
-     * -- GETTER --
-     *  Gets a human-readable description of the current movement state
-     */
+
     @Getter
     private String stateDescription = "";
-    /**
-     * -- GETTER --
-     *  Gets the next waypoint the player is walking towards
-     */
+
     @Getter
     private WorldPoint nextWaypoint;
+
     @Getter
     private int completedWaypoints = 0;
     private static final int MOVEMENT_TIMEOUT = 5000; // 5 seconds
     private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
-
-    // Enhanced walking methods with pathfinding support
-    public boolean walkTo(int x, int y, int plane) {
-        return walkTo(new WorldPoint(x, y, plane), 5);
-    }
-
-    public boolean walkTo(int x, int y, int plane, int distance) {
-        return walkTo(new WorldPoint(x, y, plane), distance);
-    }
 
     public boolean walkTo(WorldPoint target) {
         return walkTo(target, 5);
@@ -96,6 +80,7 @@ public class MovementService extends AbstractService {
         if (target == null) {
             currentState = MovementState.FAILED;
             stateDescription = "Target is null";
+            log.warn("Target is null, movement failed");
             return currentState;
         }
 
@@ -103,6 +88,7 @@ public class MovementService extends AbstractService {
         if (playerPos == null) {
             currentState = MovementState.FAILED;
             stateDescription = "Cannot get player position";
+            log.warn("Cannot get player position, movement failed");
             return currentState;
         }
 
@@ -111,6 +97,7 @@ public class MovementService extends AbstractService {
             stopMovement();
             currentState = MovementState.ARRIVED;
             stateDescription = "Arrived at destination";
+            log.info("Arrived at target position: {}", target);
             return currentState;
         }
 
@@ -120,10 +107,10 @@ public class MovementService extends AbstractService {
             sceneWalk(targetLocal);
             currentState = MovementState.WALKING;
             stateDescription = "Walking within scene";
+            log.info("Walking within scene");
             return currentState;
         }
 
-        // For long-distance targets, use pathfinding
         return walkWithPathfinding(target, distance);
     }
 
@@ -135,7 +122,9 @@ public class MovementService extends AbstractService {
 
         // Check if we need to generate a new path
         if (!isExecutingPath || currentPath == null || currentPath.isEmpty()) {
-            List<WorldPoint> path = worldPathfinder.findPath(playerPos, target);
+            setTarget(target);
+            List<WorldPoint> path = getCurrentPath();
+
 
             if (path == null || path.isEmpty()) {
                 log.warn("No path found from {} to {}", playerPos, target);
@@ -304,8 +293,6 @@ public class MovementService extends AbstractService {
         return (double) completedWaypoints / fullCalculatedPath.size();
     }
 
-    // === STATE AND VISUALIZATION METHODS ===
-
     /**
      * Gets the full calculated path for visualization
      */
@@ -352,6 +339,61 @@ public class MovementService extends AbstractService {
                 currentTarget,
                 nextWaypoint
         );
+    }
+
+    /**
+     * Programmatically set a pathfinding target.
+     * @param target the target WorldPoint
+     */
+    public void setTarget(WorldPoint target) {
+        if (target == null) {
+            shortestPathPlugin.restartPathfinding(
+                    WorldPointUtil.UNDEFINED,
+                    new HashSet<>(),
+                    false
+            );
+            return;
+        }
+
+        Player local = client.getLocalPlayer();
+        if (local == null)
+        {
+            return;
+        }
+
+        int start = WorldPointUtil.fromLocalInstance(client, local.getLocalLocation());
+        int packedTarget = WorldPointUtil.packWorldPoint(target);
+        Set<Integer> targets = new HashSet<>();
+        targets.add(packedTarget);
+
+        shortestPathPlugin.restartPathfinding(start, targets, false);
+    }
+
+    /**
+     * Get the current computed path as WorldPoints.
+     * Returns empty list if no path is found or not yet computed.
+     */
+    public List<WorldPoint> getCurrentPath() {
+        if (shortestPathPlugin.getPathfinder() == null
+                || shortestPathPlugin.getPathfinder().getPath() == null) {
+            return new ArrayList<>();
+        }
+
+        List<WorldPoint> result = new ArrayList<>();
+        for (int packed : shortestPathPlugin.getPathfinder().getPath())
+        {
+            result.add(WorldPointUtil.unpackWorldPoint(packed));
+        }
+        return result;
+    }
+
+    /**
+     * Returns whether a path is currently available.
+     */
+    public boolean hasPath() {
+        return shortestPathPlugin.getPathfinder() != null
+                && shortestPathPlugin.getPathfinder().getPath() != null
+                && !shortestPathPlugin.getPathfinder().getPath().isEmpty();
     }
 
     /**
@@ -449,6 +491,8 @@ public class MovementService extends AbstractService {
      * @param sceneY The Y coordinate within the loaded scene grid.
      */
     public void sceneWalk(int sceneX, int sceneY) {
+        log.info("Scene walking to coordinates: ({}, {})", sceneX, sceneY);
+
         setXCoordinate(sceneX);     // Set the target X tile.
         setYCoordinate(sceneY);     // Set the target Y tile.
         setCheckClick();            // Mark the click as valid for pathfinding.

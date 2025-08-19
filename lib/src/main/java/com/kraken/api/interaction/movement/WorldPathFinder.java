@@ -1,7 +1,11 @@
 package com.kraken.api.interaction.movement;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import shortestpath.ShortestPathPlugin;
+import shortestpath.pathfinder.Pathfinder;
+
 import javax.inject.Singleton;
 import java.util.*;
 

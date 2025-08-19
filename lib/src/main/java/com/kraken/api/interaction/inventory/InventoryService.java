@@ -53,6 +53,7 @@ public class InventoryService extends AbstractService {
      */
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
+        log.info("Container item changed: {}", event.getContainerId());
       if (event.getContainerId() == InventoryID.INV) {
           assert client.isClientThread();
 

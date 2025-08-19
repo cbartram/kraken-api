@@ -17,6 +17,7 @@ repositories {
         url = 'https://repo.runelite.net'
     }
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -29,6 +30,7 @@ dependencies {
 
 
     compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
+    implementation group: 'com.github.cbartram', name:'shortest-path', version: '1.0.2'
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
