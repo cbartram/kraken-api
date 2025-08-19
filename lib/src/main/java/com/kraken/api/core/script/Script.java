@@ -130,6 +130,11 @@ public abstract class Script implements Scriptable {
      * @param delay Delay in milliseconds between executions.
      */
     private void reschedule(long delay) {
+        if (!running) {
+            log.info("Main script stop, not rescheduling task.");
+            return; // Don't reschedule if we've been stopped
+        }
+
         if (mainScheduledFuture != null && !mainScheduledFuture.isCancelled()) {
             mainScheduledFuture.cancel(false);
         }

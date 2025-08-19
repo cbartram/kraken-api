@@ -1,4 +1,3 @@
-
 package com.kraken.api.interaction.movement;
 
 import com.kraken.api.core.AbstractService;
@@ -17,6 +16,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Singleton
@@ -26,7 +27,7 @@ public class MovementService extends AbstractService {
     private ReflectionService reflectionService;
 
     @Inject
-    private WorldPathFinder worldPathfinder;
+    private WorldPathfinder worldPathfinder;
 
     @Setter
     private WorldPoint lastPosition;
@@ -35,8 +36,13 @@ public class MovementService extends AbstractService {
     private WorldPoint currentTarget;
 
     private Queue<WorldPoint> currentPath;
+    private List<WorldPoint> fullCalculatedPath; // For visualization
     private boolean isExecutingPath = false;
     private long lastMovementTime = 0;
+    private MovementState currentState = MovementState.IDLE;
+    private String stateDescription = "";
+    private WorldPoint nextWaypoint;
+    private int completedWaypoints = 0;
     private static final int MOVEMENT_TIMEOUT = 5000; // 5 seconds
     private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
 
@@ -66,26 +72,33 @@ public class MovementService extends AbstractService {
      */
     private MovementState walkWithStateInternal(WorldPoint target, int distance) {
         if (target == null) {
-            return MovementState.FAILED;
+            currentState = MovementState.FAILED;
+            stateDescription = "Target is null";
+            return currentState;
         }
 
         WorldPoint playerPos = getPlayerPosition();
         if (playerPos == null) {
-            return MovementState.FAILED;
+            currentState = MovementState.FAILED;
+            stateDescription = "Cannot get player position";
+            return currentState;
         }
 
         // Check if we're already at the target
         if (playerPos.distanceTo(target) <= distance) {
-            isExecutingPath = false;
-            currentPath = null;
-            return MovementState.ARRIVED;
+            stopMovement();
+            currentState = MovementState.ARRIVED;
+            stateDescription = "Arrived at destination";
+            return currentState;
         }
 
         // If target is within scene, use direct scene walking
         LocalPoint targetLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), target);
         if (targetLocal != null && targetLocal.isInScene()) {
             sceneWalk(targetLocal);
-            return MovementState.WALKING;
+            currentState = MovementState.WALKING;
+            stateDescription = "Walking within scene";
+            return currentState;
         }
 
         // For long-distance targets, use pathfinding
@@ -104,12 +117,18 @@ public class MovementService extends AbstractService {
 
             if (path == null || path.isEmpty()) {
                 log.warn("No path found from {} to {}", playerPos, target);
-                return MovementState.FAILED;
+                currentState = MovementState.BLOCKED;
+                stateDescription = "No path found to destination";
+                return currentState;
             }
 
             currentPath = new LinkedList<>(path);
+            fullCalculatedPath = new ArrayList<>(path); // Store full path for visualization
             isExecutingPath = true;
             lastMovementTime = System.currentTimeMillis();
+            completedWaypoints = 0;
+            currentState = MovementState.WALKING;
+            stateDescription = String.format("Following path with %d waypoints", path.size());
             log.debug("Generated path with {} waypoints", path.size());
         }
 
@@ -122,32 +141,41 @@ public class MovementService extends AbstractService {
      */
     private MovementState executePathStep(WorldPoint finalTarget, int distance) {
         if (currentPath == null || currentPath.isEmpty()) {
-            isExecutingPath = false;
-            return MovementState.FAILED;
+            stopMovement();
+            currentState = MovementState.FAILED;
+            stateDescription = "Path execution failed - no waypoints";
+            return currentState;
         }
 
         WorldPoint playerPos = getPlayerPosition();
         WorldPoint currentWaypoint = currentPath.peek();
+        nextWaypoint = currentWaypoint; // Update for state tracking
 
         // Check if we've reached the current waypoint
         if (playerPos.distanceTo(currentWaypoint) <= 3) {
             currentPath.poll(); // Remove completed waypoint
+            completedWaypoints++;
             lastMovementTime = System.currentTimeMillis();
+            stateDescription = String.format("Reached waypoint %d/%d", completedWaypoints, fullCalculatedPath.size());
 
             // Check if we've completed the entire path
             if (currentPath.isEmpty()) {
                 if (playerPos.distanceTo(finalTarget) <= distance) {
-                    isExecutingPath = false;
-                    return MovementState.ARRIVED;
+                    stopMovement();
+                    currentState = MovementState.ARRIVED;
+                    stateDescription = "Arrived at final destination";
+                    return currentState;
                 } else {
                     // Path completed but not at final target - might need new path
                     isExecutingPath = false;
+                    stateDescription = "Path completed, recalculating...";
                     return walkWithPathfinding(finalTarget, distance);
                 }
             }
 
             // Move to next waypoint
             currentWaypoint = currentPath.peek();
+            nextWaypoint = currentWaypoint;
         }
 
         // Check for movement timeout (stuck detection)
@@ -155,6 +183,9 @@ public class MovementService extends AbstractService {
             log.warn("Movement timeout detected, regenerating path");
             isExecutingPath = false;
             currentPath = null;
+            fullCalculatedPath = null;
+            currentState = MovementState.BLOCKED;
+            stateDescription = "Stuck detected, regenerating path...";
             return walkWithPathfinding(finalTarget, distance);
         }
 
@@ -162,17 +193,23 @@ public class MovementService extends AbstractService {
         LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), currentWaypoint);
         if (waypointLocal != null && waypointLocal.isInScene()) {
             sceneWalk(waypointLocal);
-            return MovementState.WALKING;
+            currentState = MovementState.WALKING;
+            stateDescription = String.format("Walking to waypoint %d/%d", completedWaypoints + 1, fullCalculatedPath.size());
+            return currentState;
         } else {
             // Waypoint not in scene, try to find intermediate point that is
             WorldPoint intermediatePoint = findIntermediatePoint(playerPos, currentWaypoint);
             if (intermediatePoint != null) {
                 sceneWalk(intermediatePoint);
-                return MovementState.WALKING;
+                currentState = MovementState.WALKING;
+                stateDescription = "Walking to intermediate point";
+                return currentState;
             }
         }
 
-        return MovementState.BLOCKED;
+        currentState = MovementState.BLOCKED;
+        stateDescription = "Waypoint not accessible";
+        return currentState;
     }
 
     /**
@@ -219,7 +256,12 @@ public class MovementService extends AbstractService {
     public void stopMovement() {
         isExecutingPath = false;
         currentPath = null;
+        fullCalculatedPath = null;
         currentTarget = null;
+        nextWaypoint = null;
+        completedWaypoints = 0;
+        currentState = MovementState.IDLE;
+        stateDescription = "Movement stopped";
     }
 
     /**
@@ -233,22 +275,96 @@ public class MovementService extends AbstractService {
      * Gets the current movement progress (0.0 to 1.0)
      */
     public double getMovementProgress() {
-        if (!isMoving() || currentTarget == null) {
-            return 1.0;
+        if (!isMoving() || fullCalculatedPath == null || fullCalculatedPath.isEmpty()) {
+            return currentState == MovementState.ARRIVED ? 1.0 : 0.0;
         }
 
+        return (double) completedWaypoints / fullCalculatedPath.size();
+    }
+
+    // === STATE AND VISUALIZATION METHODS ===
+
+    /**
+     * Gets the current movement state
+     */
+    public MovementState getCurrentState() {
+        return currentState;
+    }
+
+    /**
+     * Gets a human-readable description of the current movement state
+     */
+    public String getStateDescription() {
+        return stateDescription;
+    }
+
+    /**
+     * Gets the full calculated path for visualization
+     */
+    public List<WorldPoint> getCalculatedPath() {
+        return fullCalculatedPath != null ? Collections.unmodifiableList(fullCalculatedPath) : Collections.emptyList();
+    }
+
+    /**
+     * Gets the remaining waypoints in the current path
+     */
+    public List<WorldPoint> getRemainingPath() {
+        if (currentPath == null || currentPath.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(new ArrayList<>(currentPath));
+    }
+
+    /**
+     * Gets the next waypoint the player is walking towards
+     */
+    public WorldPoint getNextWaypoint() {
+        return nextWaypoint;
+    }
+
+    /**
+     * Gets the current target destination
+     */
+    public WorldPoint getCurrentTarget() {
+        return currentTarget;
+    }
+
+    /**
+     * Gets the number of completed waypoints
+     */
+    public int getCompletedWaypoints() {
+        return completedWaypoints;
+    }
+
+    /**
+     * Gets the total number of waypoints in the current path
+     */
+    public int getTotalWaypoints() {
+        return fullCalculatedPath != null ? fullCalculatedPath.size() : 0;
+    }
+
+    /**
+     * Gets detailed movement statistics for debugging/display
+     */
+    public MovementStats getMovementStats() {
         WorldPoint playerPos = getPlayerPosition();
-        if (playerPos == null) {
-            return 0.0;
-        }
+        double distanceToTarget = currentTarget != null && playerPos != null ?
+                playerPos.distanceTo(currentTarget) : 0.0;
+        double distanceToNextWaypoint = nextWaypoint != null && playerPos != null ?
+                playerPos.distanceTo(nextWaypoint) : 0.0;
 
-        double totalDistance = lastPosition != null ?
-                lastPosition.distanceTo(currentTarget) :
-                playerPos.distanceTo(currentTarget);
-
-        double remainingDistance = playerPos.distanceTo(currentTarget);
-
-        return Math.max(0.0, Math.min(1.0, 1.0 - (remainingDistance / totalDistance)));
+        return new MovementStats(
+                currentState,
+                stateDescription,
+                getMovementProgress(),
+                completedWaypoints,
+                getTotalWaypoints(),
+                distanceToTarget,
+                distanceToNextWaypoint,
+                System.currentTimeMillis() - lastMovementTime,
+                currentTarget,
+                nextWaypoint
+        );
     }
 
     /**
