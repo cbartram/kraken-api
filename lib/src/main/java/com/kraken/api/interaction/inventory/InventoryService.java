@@ -105,7 +105,31 @@ public class InventoryService extends AbstractService {
     public List<InventoryItem> all(Predicate<InventoryItem> filter) {
         return inventoryItems.stream().filter(filter).collect(Collectors.toList());
     }
-    
+
+
+    /**
+     * Returns true if the inventory contains an item with the specified ID.
+     * @param id The ID of the item to check for.
+     */
+    public boolean hasItem(int id) {
+        return inventoryItems.stream().anyMatch(item -> item.getId() == id);
+    }
+
+    /**
+     * Returns true if the inventory contains an item with the specified ID.
+     * @param item The InventoryItem to check for.
+     */
+    public boolean hasItem(InventoryItem item) {
+        return inventoryItems.stream().anyMatch(i -> i.getId() == item.getId());
+    }
+
+    /**
+     * Returns true if the inventory is empty and false otherwise.
+     * @return
+     */
+    public boolean isEmpty() {
+        return inventoryItems.isEmpty();
+    }
 
     /**
      * Combines two items in the inventory by their IDs, ensuring distinct items are used.

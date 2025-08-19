@@ -117,6 +117,22 @@ public class WidgetService extends AbstractService {
         }).orElse(false);
     }
 
+    public Widget findWidget(String text, List<Widget> children) {
+        return findWidget(text, children, false);
+    }
+
+    public Widget findWidget(String text) {
+        return findWidget(text, null, false);
+    }
+
+    public Widget findWidget(String text, boolean exact) {
+        return findWidget(text, null, exact);
+    }
+
+    public boolean hasWidget(String text) {
+        return findWidget(text, null, false) != null;
+    }
+
     /**
      * Searches for a widget with text that matches the specified criteria, either in the provided child widgets
      * or across all root widgets if children are not specified.
@@ -150,6 +166,78 @@ public class WidgetService extends AbstractService {
             }
             return foundWidget;
         }).orElse(null);
+    }
+
+
+    /**
+     * Searches for a widget with the specified sprite ID among root widgets or the specified child widgets.
+     *
+     * @param spriteId The sprite ID to search for.
+     * @param children A list of child widgets to search within. If null, searches root widgets.
+     * @return The widget with the specified sprite ID, or null if not found.
+     */
+    public Widget findWidget(int spriteId, List<Widget> children) {
+        return context.runOnClientThreadOptional(() -> {
+            Widget foundWidget = null;
+
+            if (children == null) {
+                // Search through root widgets if no specific children are provided
+                List<Widget> rootWidgets = Arrays.stream(context.getClient().getWidgetRoots())
+                        .filter(widget -> widget != null && !widget.isHidden())
+                        .collect(Collectors.toList());
+                for (Widget rootWidget : rootWidgets) {
+                    if (rootWidget == null) continue;
+                    if (matchesSpriteId(rootWidget, spriteId)) {
+                        return rootWidget;
+                    }
+                    foundWidget = searchChildren(spriteId, rootWidget);
+                    if (foundWidget != null) return foundWidget;
+                }
+            } else {
+                // Search within provided child widgets
+                for (Widget child : children) {
+                    foundWidget = searchChildren(spriteId, child);
+                    if (foundWidget != null) break;
+                }
+            }
+            return foundWidget;
+        }).orElse(null);
+    }
+
+    /**
+     * Checks if a widget's sprite ID matches the specified sprite ID.
+     *
+     * @param widget   The widget to check.
+     * @param spriteId The sprite ID to match.
+     * @return True if the widget's sprite ID matches the specified sprite ID, false otherwise.
+     */
+    private boolean matchesSpriteId(Widget widget, int spriteId) {
+        return widget != null && widget.getSpriteId() == spriteId;
+    }
+
+    /**
+     * Recursively searches through the child widgets of the given widget for a match with the specified sprite ID.
+     *
+     * @param spriteId The sprite ID to search for.
+     * @param child    The widget to search within.
+     * @return The widget with the specified sprite ID, or null if not found.
+     */
+    public Widget searchChildren(int spriteId, Widget child) {
+        if (matchesSpriteId(child, spriteId)) return child;
+
+        List<Widget[]> childGroups = Stream.of(child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        for (Widget[] childGroup : childGroups) {
+            if (childGroup != null) {
+                for (Widget nestedChild : Arrays.stream(childGroup).filter(w -> w != null && !w.isHidden()).collect(Collectors.toList())) {
+                    Widget found = searchChildren(spriteId, nestedChild);
+                    if (found != null) return found;
+                }
+            }
+        }
+        return null;
     }
 
     /**

@@ -12,7 +12,6 @@ import net.runelite.api.coords.LocalPoint;
 
 import javax.inject.Singleton;
 import java.awt.*;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
