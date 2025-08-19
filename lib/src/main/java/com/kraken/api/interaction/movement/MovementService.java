@@ -2,6 +2,7 @@ package com.kraken.api.interaction.movement;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
@@ -27,11 +28,16 @@ public class MovementService extends AbstractService {
     private ReflectionService reflectionService;
 
     @Inject
-    private WorldPathfinder worldPathfinder;
+    private WorldPathFinder worldPathfinder;
 
     @Setter
     private WorldPoint lastPosition;
 
+    /**
+     * -- GETTER --
+     *  Gets the current target destination
+     */
+    @Getter
     @Setter
     private WorldPoint currentTarget;
 
@@ -39,9 +45,25 @@ public class MovementService extends AbstractService {
     private List<WorldPoint> fullCalculatedPath; // For visualization
     private boolean isExecutingPath = false;
     private long lastMovementTime = 0;
+    /**
+     * -- GETTER --
+     *  Gets the current movement state
+     */
+    @Getter
     private MovementState currentState = MovementState.IDLE;
+    /**
+     * -- GETTER --
+     *  Gets a human-readable description of the current movement state
+     */
+    @Getter
     private String stateDescription = "";
+    /**
+     * -- GETTER --
+     *  Gets the next waypoint the player is walking towards
+     */
+    @Getter
     private WorldPoint nextWaypoint;
+    @Getter
     private int completedWaypoints = 0;
     private static final int MOVEMENT_TIMEOUT = 5000; // 5 seconds
     private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
@@ -285,20 +307,6 @@ public class MovementService extends AbstractService {
     // === STATE AND VISUALIZATION METHODS ===
 
     /**
-     * Gets the current movement state
-     */
-    public MovementState getCurrentState() {
-        return currentState;
-    }
-
-    /**
-     * Gets a human-readable description of the current movement state
-     */
-    public String getStateDescription() {
-        return stateDescription;
-    }
-
-    /**
      * Gets the full calculated path for visualization
      */
     public List<WorldPoint> getCalculatedPath() {
@@ -313,27 +321,6 @@ public class MovementService extends AbstractService {
             return Collections.emptyList();
         }
         return Collections.unmodifiableList(new ArrayList<>(currentPath));
-    }
-
-    /**
-     * Gets the next waypoint the player is walking towards
-     */
-    public WorldPoint getNextWaypoint() {
-        return nextWaypoint;
-    }
-
-    /**
-     * Gets the current target destination
-     */
-    public WorldPoint getCurrentTarget() {
-        return currentTarget;
-    }
-
-    /**
-     * Gets the number of completed waypoints
-     */
-    public int getCompletedWaypoints() {
-        return completedWaypoints;
     }
 
     /**
