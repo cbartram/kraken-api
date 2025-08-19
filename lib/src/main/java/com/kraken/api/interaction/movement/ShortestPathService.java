@@ -1,18 +1,13 @@
 package com.kraken.api.interaction.movement;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.config.ConfigManager;
-import shortestpath.ShortestPathConfig;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.Pathfinder;
-import shortestpath.pathfinder.PathfinderConfig;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,19 +22,12 @@ import java.util.Set;
 public class ShortestPathService {
     private final Client client;
     private final ClientThread clientThread;
-    private final PathfinderConfig config;
     private Pathfinder pathfinder;
 
     @Inject
-    public ShortestPathService(Client client, ClientThread clientThread, PathfinderConfig config) {
+    public ShortestPathService(Client client, ClientThread clientThread) {
         this.client = client;
         this.clientThread = clientThread;
-        this.config = config;
-    }
-
-    @Provides
-    ShortestPathConfig provideShortestPathConfig(final ConfigManager configManager) {
-        return configManager.getConfig(ShortestPathConfig.class);
     }
 
     /**
@@ -69,7 +57,7 @@ public class ShortestPathService {
 
     public void restartPathfinding(int start, Set<Integer> ends) {
         clientThread.invokeLater(() -> {
-            this.pathfinder = new Pathfinder(config, start, ends);
+            this.pathfinder = new Pathfinder(start, ends);
             this.pathfinder.run();
         });
     }

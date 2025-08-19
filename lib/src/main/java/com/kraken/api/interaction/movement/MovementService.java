@@ -1,6 +1,5 @@
 package com.kraken.api.interaction.movement;
 
-import com.google.inject.Provider;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import lombok.Getter;
@@ -10,11 +9,6 @@ import net.runelite.api.Player;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.widgets.Widget;
-import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
-import shortestpath.ShortestPathPlugin;
-import shortestpath.WorldPointUtil;
-import shortestpath.pathfinder.Pathfinder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
