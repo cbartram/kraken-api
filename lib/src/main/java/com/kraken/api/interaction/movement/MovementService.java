@@ -28,7 +28,7 @@ public class MovementService extends AbstractService {
     private ReflectionService reflectionService;
 
     @Inject
-    private ShortestPathPlugin shortestPathPlugin;
+    private ShortestPathService shortestPathService;
 
     @Getter
     @Setter
@@ -114,8 +114,8 @@ public class MovementService extends AbstractService {
 
         // Check if we need to generate a new path
         if (!isExecutingPath || currentPath == null || currentPath.isEmpty()) {
-            setTarget(target);
-            List<WorldPoint> path = getCurrentPath();
+            shortestPathService.setTarget(target);
+            List<WorldPoint> path = shortestPathService.getCurrentPath();
 
 
             if (path == null || path.isEmpty()) {
@@ -331,61 +331,6 @@ public class MovementService extends AbstractService {
                 currentTarget,
                 nextWaypoint
         );
-    }
-
-    /**
-     * Programmatically set a pathfinding target.
-     * @param target the target WorldPoint
-     */
-    public void setTarget(WorldPoint target) {
-        if (target == null) {
-            shortestPathPlugin.restartPathfinding(
-                    WorldPointUtil.UNDEFINED,
-                    new HashSet<>(),
-                    false
-            );
-            return;
-        }
-
-        Player local = client.getLocalPlayer();
-        if (local == null)
-        {
-            return;
-        }
-
-        int start = WorldPointUtil.fromLocalInstance(client, local.getLocalLocation());
-        int packedTarget = WorldPointUtil.packWorldPoint(target);
-        Set<Integer> targets = new HashSet<>();
-        targets.add(packedTarget);
-
-        shortestPathPlugin.restartPathfinding(start, targets, false);
-    }
-
-    /**
-     * Get the current computed path as WorldPoints.
-     * Returns empty list if no path is found or not yet computed.
-     */
-    public List<WorldPoint> getCurrentPath() {
-        if (shortestPathPlugin.getPathfinder() == null
-                || shortestPathPlugin.getPathfinder().getPath() == null) {
-            return new ArrayList<>();
-        }
-
-        List<WorldPoint> result = new ArrayList<>();
-        for (int packed : shortestPathPlugin.getPathfinder().getPath())
-        {
-            result.add(WorldPointUtil.unpackWorldPoint(packed));
-        }
-        return result;
-    }
-
-    /**
-     * Returns whether a path is currently available.
-     */
-    public boolean hasPath() {
-        return shortestPathPlugin.getPathfinder() != null
-                && shortestPathPlugin.getPathfinder().getPath() != null
-                && !shortestPathPlugin.getPathfinder().getPath().isEmpty();
     }
 
     /**

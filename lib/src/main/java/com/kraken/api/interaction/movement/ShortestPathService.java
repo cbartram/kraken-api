@@ -21,14 +21,11 @@ import java.util.Set;
 @Slf4j
 public class ShortestPathService {
     private final Client client;
-    private final ClientThread clientThread;
     private final ShortestPathPlugin shortestPathPlugin;
 
     @Inject
-    public ShortestPathService(Client client, ClientThread clientThread, ShortestPathPlugin shortestPathPlugin)
-    {
+    public ShortestPathService(Client client, ShortestPathPlugin shortestPathPlugin) {
         this.client = client;
-        this.clientThread = clientThread;
         this.shortestPathPlugin = shortestPathPlugin;
     }
 
@@ -47,8 +44,7 @@ public class ShortestPathService {
         }
 
         Player local = client.getLocalPlayer();
-        if (local == null)
-        {
+        if (local == null) {
             return;
         }
 
@@ -64,17 +60,14 @@ public class ShortestPathService {
      * Get the current computed path as WorldPoints.
      * Returns empty list if no path is found or not yet computed.
      */
-    public List<WorldPoint> getCurrentPath()
-    {
+    public List<WorldPoint> getCurrentPath() {
         if (shortestPathPlugin.getPathfinder() == null
-                || shortestPathPlugin.getPathfinder().getPath() == null)
-        {
+                || shortestPathPlugin.getPathfinder().getPath() == null) {
             return new ArrayList<>();
         }
 
         List<WorldPoint> result = new ArrayList<>();
-        for (int packed : shortestPathPlugin.getPathfinder().getPath())
-        {
+        for (int packed : shortestPathPlugin.getPathfinder().getPath()) {
             result.add(WorldPointUtil.unpackWorldPoint(packed));
         }
         return result;
