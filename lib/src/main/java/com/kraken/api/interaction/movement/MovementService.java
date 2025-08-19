@@ -2,18 +2,28 @@ package com.kraken.api.interaction.movement;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.widget.WidgetService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Player;
-import net.runelite.api.WorldView;
+import net.runelite.api.*;
+import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.widgets.Widget;
+import net.runelite.client.game.SpriteManager;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.List;
 
 @Slf4j
 @Singleton
@@ -24,6 +34,12 @@ public class MovementService extends AbstractService {
 
     @Inject
     private ShortestPathService shortestPathService;
+    
+    @Inject
+    private SpriteManager spriteManager;
+    
+    @Inject
+    private WidgetService widgetService;
 
     @Getter
     @Setter
@@ -91,7 +107,8 @@ public class MovementService extends AbstractService {
         // If target is within scene, use direct scene walking
         LocalPoint targetLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), target);
         if (targetLocal != null && targetLocal.isInScene()) {
-            sceneWalk(targetLocal);
+//            sceneWalk(targetLocal);
+            walkMiniMap(target, 5);
             currentState = MovementState.WALKING;
             stateDescription = "Walking within scene";
             log.info("Walking within scene");
@@ -114,7 +131,7 @@ public class MovementService extends AbstractService {
 
 
             if (path == null || path.isEmpty()) {
-                log.warn("No path found from {} to {}", playerPos, target);
+                log.warn("No path found, or path is still being calculated from {} to {}", playerPos, target);
                 currentState = MovementState.BLOCKED;
                 stateDescription = "No path found to destination";
                 return currentState;
@@ -127,7 +144,7 @@ public class MovementService extends AbstractService {
             completedWaypoints = 0;
             currentState = MovementState.WALKING;
             stateDescription = String.format("Following path with %d waypoints", path.size());
-            log.debug("Generated path with {} waypoints", path.size());
+            log.info("Generated path with {} waypoints", path.size());
         }
 
         // Execute the current path
@@ -155,18 +172,21 @@ public class MovementService extends AbstractService {
             completedWaypoints++;
             lastMovementTime = System.currentTimeMillis();
             stateDescription = String.format("Reached waypoint %d/%d", completedWaypoints, fullCalculatedPath.size());
-
+            log.info("Reached waypoint {}/{}", completedWaypoints, fullCalculatedPath.size());
+            
             // Check if we've completed the entire path
             if (currentPath.isEmpty()) {
                 if (playerPos.distanceTo(finalTarget) <= distance) {
                     stopMovement();
                     currentState = MovementState.ARRIVED;
                     stateDescription = "Arrived at final destination";
+                    log.info("Arrived at final destination");
                     return currentState;
                 } else {
                     // Path completed but not at final target - might need new path
                     isExecutingPath = false;
                     stateDescription = "Path completed, recalculating...";
+                    log.info("Path completed, recalculating path to final target: {}", finalTarget);
                     return walkWithPathfinding(finalTarget, distance);
                 }
             }
@@ -178,29 +198,33 @@ public class MovementService extends AbstractService {
 
         // Check for movement timeout (stuck detection)
         if (System.currentTimeMillis() - lastMovementTime > MOVEMENT_TIMEOUT) {
-            log.warn("Movement timeout detected, regenerating path");
+            log.info("Movement timeout detected, regenerating path");
             isExecutingPath = false;
             currentPath = null;
             fullCalculatedPath = null;
             currentState = MovementState.BLOCKED;
-            stateDescription = "Stuck detected, regenerating path...";
+            stateDescription = "Player is stuck, regenerating path...";
             return walkWithPathfinding(finalTarget, distance);
         }
 
         // Try to walk to current waypoint
         LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), currentWaypoint);
         if (waypointLocal != null && waypointLocal.isInScene()) {
-            sceneWalk(waypointLocal);
+//            sceneWalk(waypointLocal);
+            walkMiniMap(currentWaypoint, 5);
             currentState = MovementState.WALKING;
             stateDescription = String.format("Walking to waypoint %d/%d", completedWaypoints + 1, fullCalculatedPath.size());
+            log.info("Walking to waypoint (in scene) {}/{}", completedWaypoints + 1, fullCalculatedPath.size());
             return currentState;
         } else {
             // Waypoint not in scene, try to find intermediate point that is
             WorldPoint intermediatePoint = findIntermediatePoint(playerPos, currentWaypoint);
             if (intermediatePoint != null) {
-                sceneWalk(intermediatePoint);
+//                sceneWalk(intermediatePoint);
+                walkMiniMap(intermediatePoint, 5);
                 currentState = MovementState.WALKING;
                 stateDescription = "Walking to intermediate point";
+                log.info("Walking to intermediate point: {}", intermediatePoint);
                 return currentState;
             }
         }
@@ -238,6 +262,181 @@ public class MovementService extends AbstractService {
         }
 
         return null;
+    }
+
+    public boolean walkMiniMap(WorldPoint worldPoint, double zoomDistance) {
+        if (client.getMinimapZoom() != zoomDistance)
+            client.setMinimapZoom(zoomDistance);
+
+        Point point = worldToMinimap(worldPoint);
+
+        if (point == null) return false;
+        if (!isPointInsideMinimap(point)) return false;
+
+        context.getMouse().click(point);
+        return true;
+    }
+
+    /**
+     * Checks if a given point is inside the minimap clipping area.
+     *
+     * @param point The point to check.
+     * @return {@code true} if the point is within the minimap bounds, {@code false} otherwise.
+     */
+    public boolean isPointInsideMinimap(Point point) {
+        Shape minimapClipArea = getMinimapClipArea();
+        return minimapClipArea != null && minimapClipArea.contains(point.getX(), point.getY());
+    }
+
+    /**
+     * Converts a {@link WorldPoint} to a minimap coordinate {@link Point}.
+     *
+     * @param worldPoint The world point to convert.
+     * @return The corresponding minimap point, or {@code null} if conversion fails.
+     */
+    @Nullable
+    public Point worldToMinimap(WorldPoint worldPoint) {
+        if (worldPoint == null) return null;
+
+        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+        if (localPoint == null) {
+            log.info("Tried to walk worldpoint " + worldPoint + " using the canvas but localpoint returned null");
+            return null;
+        }
+
+        final LocalPoint lp = localPoint;
+        return context.runOnClientThreadOptional(() -> Perspective.localToMinimap(client, lp)).orElse(null);
+    }
+
+    /**
+     * Returns a simple elliptical clip area for the minimap.
+     *
+     * @return A {@link Shape} representing the minimap clip area.
+     */
+    private Shape getMinimapClipAreaSimple() {
+        Widget minimapDrawArea = getMinimapDrawWidget();
+        if (minimapDrawArea == null) {
+            return null;
+        }
+        Rectangle bounds = minimapDrawArea.getBounds();
+        return new Ellipse2D.Double(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+    }
+
+    /**
+     * Retrieves the minimap clipping area as a polygon derived from the minimap alpha mask sprite,
+     * and scales it inward to avoid overlapping edge elements.
+     *
+     * @param scale The scale factor to shrink the polygon (e.g., 0.94 for 94% of the original size).
+     * @return A {@link Shape} representing the scaled minimap clickable area, or a fallback shape if the sprite is unavailable.
+     */
+    public Shape getMinimapClipArea(double scale) {
+        Widget minimapWidget = getMinimapDrawWidget();
+        if (minimapWidget == null) {
+            return null;
+        }
+
+        boolean isResized = client.isResized();
+
+        BufferedImage minimapSprite = context.runOnClientThreadOptional(() ->
+                spriteManager.getSprite(isResized ? SpriteID.RESIZEABLE_MODE_MINIMAP_ALPHA_MASK : SpriteID.FIXED_MODE_MINIMAP_ALPHA_MASK, 0)).orElse(null);
+
+        if (minimapSprite == null) {
+            return getMinimapClipAreaSimple();
+        }
+
+        Shape rawClipArea = bufferedImageToPolygon(minimapSprite, minimapWidget.getBounds());
+        return shrinkShape(rawClipArea, scale);
+    }
+
+    /**
+     * Retrieves the minimap draw widget based on the current game view mode.
+     *
+     * @return The minimap draw widget, or {@code null} if not found.
+     */
+    public Widget getMinimapDrawWidget() {
+        if (client.isResized()) {
+            if (client.getVarbitValue(Varbits.SIDE_PANELS) == 1) {
+                return widgetService.getWidget(ComponentID.RESIZABLE_VIEWPORT_BOTTOM_LINE_MINIMAP_DRAW_AREA);
+            }
+            return widgetService.getWidget(ComponentID.RESIZABLE_VIEWPORT_MINIMAP_DRAW_AREA);
+        }
+        return widgetService.getWidget(ComponentID.FIXED_VIEWPORT_MINIMAP_DRAW_AREA);
+    }
+
+    /**
+     * Retrieves the minimap clipping area as a {@link Shape}, scaled to slightly reduce its size.
+     * <p>
+     * This is useful for rendering overlays within the minimap without overlapping UI elements such as the globe icon.
+     *
+     * @return A {@link Shape} representing the scaled minimap clip area, or {@code null} if the minimap widget is unavailable.
+     */
+    public Shape getMinimapClipArea() {
+        return getMinimapClipArea(client.isResized() ? 0.94 : 1.0);
+    }
+
+    /**
+     * Converts a BufferedImage to a polygon by detecting the border based on the outside color.
+     *
+     * @param image         The image to convert.
+     * @param minimapBounds The bounds of the minimap widget.
+     * @return A polygon representing the minimap's clickable area.
+     */
+    private Polygon bufferedImageToPolygon(BufferedImage image, Rectangle minimapBounds) {
+        Color outsideColour = null;
+        Color previousColour;
+        final int width = image.getWidth();
+        final int height = image.getHeight();
+        List<java.awt.Point> points = new ArrayList<>();
+
+        for (int y = 0; y < height; y++) {
+            previousColour = outsideColour;
+            for (int x = 0; x < width; x++) {
+                int rgb = image.getRGB(x, y);
+                int a = (rgb & 0xff000000) >>> 24;
+                int r = (rgb & 0x00ff0000) >> 16;
+                int g = (rgb & 0x0000ff00) >> 8;
+                int b = (rgb & 0x000000ff);
+                Color colour = new Color(r, g, b, a);
+                if (x == 0 && y == 0) {
+                    outsideColour = colour;
+                    previousColour = colour;
+                }
+                if (!colour.equals(outsideColour) && previousColour.equals(outsideColour)) {
+                    points.add(new java.awt.Point(x, y));
+                }
+                if ((colour.equals(outsideColour) || x == (width - 1)) && !previousColour.equals(outsideColour)) {
+                    points.add(0, new java.awt.Point(x, y));
+                }
+                previousColour = colour;
+            }
+        }
+
+        int offsetX = minimapBounds.x;
+        int offsetY = minimapBounds.y;
+        Polygon polygon = new Polygon();
+        for (java.awt.Point point : points) {
+            polygon.addPoint(point.x + offsetX, point.y + offsetY);
+        }
+        return polygon;
+    }
+
+    /**
+     * Shrinks the given shape toward its center by the specified scale factor.
+     *
+     * @param shape The original shape to shrink.
+     * @param scale The scale factor (e.g., 0.94 = 94% size). Must be > 0 and < 1 to reduce the shape.
+     * @return A new {@link Shape} that is scaled inward toward its center.
+     */
+    private Shape shrinkShape(Shape shape, double scale) {
+        Rectangle bounds = shape.getBounds();
+        double centerX = bounds.getCenterX();
+        double centerY = bounds.getCenterY();
+
+        AffineTransform shrink = AffineTransform.getTranslateInstance(centerX, centerY);
+        shrink.scale(scale, scale);
+        shrink.translate(-centerX, -centerY);
+
+        return shrink.createTransformedShape(shape);
     }
 
     /**
