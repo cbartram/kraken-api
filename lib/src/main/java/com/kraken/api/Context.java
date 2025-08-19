@@ -29,9 +29,12 @@ import net.runelite.api.Point;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.plugins.PluginManager;
+import shortestpath.ShortestPathPlugin;
 
 import java.awt.*;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -81,13 +84,19 @@ public class Context {
     public Future<?> scheduledFuture;
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
+    public Context(final Client client, final ClientThread clientThread, final PluginManager pluginManager, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.loader = loader;
+
+        try {
+            pluginManager.loadPlugins(Collections.singletonList(ShortestPathPlugin.class), null);
+        } catch (Exception e) {
+            log.error("Failed to register shortest path plugin:", e);
+        }
     }
 
     /**

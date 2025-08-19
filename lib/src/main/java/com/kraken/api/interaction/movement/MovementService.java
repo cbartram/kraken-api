@@ -19,8 +19,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Singleton
@@ -31,12 +29,6 @@ public class MovementService extends AbstractService {
 
     @Inject
     private ShortestPathPlugin shortestPathPlugin;
-
-    @Inject
-    private WorldPathFinder worldPathfinder;
-
-    @Setter
-    private WorldPoint lastPosition;
 
     @Getter
     @Setter
