@@ -17,6 +17,7 @@ import com.kraken.api.interaction.spells.SpellService;
 import com.kraken.api.interaction.ui.TabService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.interaction.widget.WidgetService;
+import com.kraken.api.loader.HooksLoader;
 import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,6 +48,7 @@ public class Context {
 
     private final Injector injector;
     private final EventBus eventBus;
+    private final HooksLoader loader;
 
     @Getter
     @Setter
@@ -54,6 +56,9 @@ public class Context {
 
     @Getter
     private boolean isRegistered = false;
+
+    @Getter
+    private boolean hooksLoaded = false;
 
     public static MenuEntry targetMenu;
 
@@ -73,14 +78,44 @@ public class Context {
     );
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector) {
+    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
+        this.loader = loader;
     }
 
+    /**
+     * Loads hooks containing key obfuscated RuneLite client methods for use in the API. This is called by the Script class
+     * to ensure that the hooks are loaded and set before any scripts are run. This ensures that reflection based operations like
+     * prayer flicking, movement, and other interactions with the RuneLite client can be performed correctly by the implementing script.
+     */
+    public void loadHooks() {
+        if (hooksLoaded) {
+            log.warn("Hooks already loaded, skipping.");
+            return;
+        }
+
+        try {
+            loader.loadHooks();
+            if(loader.getHooks() == null) {
+                log.error("Hooks failed to load, cannot proceed.");
+                return;
+            }
+            hooksLoaded = true;
+            loader.setHooks();
+            log.info("Hooks loaded and set successfully.");
+        } catch (Exception e) {
+            log.error("Failed to load hooks with exception: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Registers all Service classes that have methods annotated with @Subscribe to the EventBus.
+     * This allows the API to listen for key RuneLite events and respond accordingly.
+     */
     public void register() {
         try {
             for (Class<?> clazz : EVENTBUS_LISTENERS) {
@@ -103,6 +138,9 @@ public class Context {
         isRegistered = true;
     }
 
+    /**
+     * Unregisters all Service classes that have methods annotated with @Subscribe from the EventBus.
+     */
     public void destroy() {
         try {
             for (Class<?> clazz : EVENTBUS_LISTENERS) {

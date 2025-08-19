@@ -112,10 +112,10 @@ public class MovementService extends AbstractService {
      */
     private void setXCoordinate(int x) {
         Field xField = reflectionService.getField(
-                reflectionService.getSceneSelectedXClassName(),
-                reflectionService.getSceneSelectedXFieldName()
+                ReflectionService.getSceneSelectedXClassName(),
+                ReflectionService.getSceneSelectedXFieldName()
         );
-        reflectionService.setFieldIntValue(
+        ReflectionService.setFieldIntValue(
                 xField,
                 client.getTopLevelWorldView().getScene(),
                 x,
@@ -130,10 +130,10 @@ public class MovementService extends AbstractService {
      */
     private void setYCoordinate(int y) {
         Field yField = reflectionService.getField(
-                reflectionService.getSceneSelectedYClassName(),
-                reflectionService.getSceneSelectedYFieldName()
+                ReflectionService.getSceneSelectedYClassName(),
+                ReflectionService.getSceneSelectedYFieldName()
         );
-        reflectionService.setFieldIntValue(
+        ReflectionService.setFieldIntValue(
                 yField,
                 client.getTopLevelWorldView().getScene(),
                 y,
@@ -147,10 +147,10 @@ public class MovementService extends AbstractService {
      */
     private void setCheckClick() {
         Field checkClick = reflectionService.getField(
-                reflectionService.getCheckClickClassName(),
-                reflectionService.getCheckClickFieldName()
+                ReflectionService.getCheckClickClassName(),
+                ReflectionService.getCheckClickFieldName()
         );
-        reflectionService.setFieldBooleanValue(
+        ReflectionService.setFieldBooleanValue(
                 checkClick,
                 client.getTopLevelWorldView().getScene(),
                 true,
@@ -164,11 +164,11 @@ public class MovementService extends AbstractService {
      */
     private void setViewportWalking() {
         Field viewport = reflectionService.getField(
-                reflectionService.getViewportWalkingClassName(),
-                reflectionService.getViewportWalkingFieldName()
+                ReflectionService.getViewportWalkingClassName(),
+                ReflectionService.getViewportWalkingFieldName()
         );
         String errorMsg = "Failed to set scene viewport walking boolean.";
-        reflectionService.setFieldBooleanValue(
+        ReflectionService.setFieldBooleanValue(
                 viewport,
                 client.getTopLevelWorldView().getScene(),
                 true,

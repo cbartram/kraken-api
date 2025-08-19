@@ -65,6 +65,10 @@ public abstract class Script implements Scriptable {
             this.context.register();
         }
 
+        if(!this.context.isHooksLoaded()) {
+            this.context.loadHooks();
+        }
+
         onStart();
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
