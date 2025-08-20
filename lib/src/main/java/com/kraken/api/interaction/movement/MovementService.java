@@ -1,15 +1,12 @@
 package com.kraken.api.interaction.movement;
 
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.SleepService;
-import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import javax.inject.Inject;
@@ -31,6 +28,9 @@ public class MovementService extends AbstractService {
     
     @Inject
     private MinimapService minimapService;
+
+    @Inject
+    private PlayerService playerService;
 
     @Getter
     @Setter
@@ -80,7 +80,7 @@ public class MovementService extends AbstractService {
             return currentState;
         }
 
-        WorldPoint playerPos = getPlayerPosition();
+        WorldPoint playerPos = playerService.getPlayerPosition();
         if (playerPos == null) {
             currentState = MovementState.FAILED;
             stateDescription = "Cannot get player position";
@@ -102,7 +102,7 @@ public class MovementService extends AbstractService {
         if (targetLocal != null && targetLocal.isInScene() && playerPos.distanceTo(target) <= 15) {
             log.info("Target is within scene and close enough, walking directly to {}", target);
             // Wait for player to stop moving before clicking
-            if (isPlayerMoving()) {
+            if (playerService.isMoving()) {
                 currentState = MovementState.WALKING;
                 stateDescription = "Waiting for player to stop moving";
                 return currentState;
@@ -123,7 +123,7 @@ public class MovementService extends AbstractService {
      * Handles long-distance walking using pathfinding
      */
     private MovementState walkWithPathfinding(WorldPoint target, int distance) {
-        WorldPoint playerPos = getPlayerPosition();
+        WorldPoint playerPos = playerService.getPlayerPosition();
 
         // Check if we need to generate a new path
         if (!isExecutingPath || currentPath == null || currentPath.isEmpty()) {
@@ -162,10 +162,10 @@ public class MovementService extends AbstractService {
             return currentState;
         }
 
-        WorldPoint playerPos = getPlayerPosition();
+        WorldPoint playerPos = playerService.getPlayerPosition();
 
         // If player is moving, wait for them to stop
-        if (isPlayerMoving()) {
+        if (playerService.isMoving()) {
             currentState = MovementState.WALKING;
             stateDescription = "Player is moving, waiting...";
             lastMovementTime = System.currentTimeMillis(); // Update movement time while moving
@@ -297,14 +297,6 @@ public class MovementService extends AbstractService {
     }
 
     /**
-     * Checks if the player is currently moving
-     */
-    private boolean isPlayerMoving() {
-        return client.getLocalPlayer().getPoseAnimation() == client.getLocalPlayer().getWalkAnimation()
-                || client.getLocalPlayer().getPoseAnimation() == client.getLocalPlayer().getRunAnimation();
-    }
-
-    /**
      * Finds an intermediate point between current position and target that is within the loaded scene
      */
     private WorldPoint findIntermediatePoint(WorldPoint from, WorldPoint to) {
@@ -348,14 +340,6 @@ public class MovementService extends AbstractService {
         }
 
         return null;
-    }
-
-    /**
-     * Gets the current player position safely
-     */
-    private WorldPoint getPlayerPosition() {
-        Player player = client.getLocalPlayer();
-        return player != null ? player.getWorldLocation() : null;
     }
 
     /**
@@ -418,7 +402,7 @@ public class MovementService extends AbstractService {
      * Gets detailed movement statistics for debugging/display
      */
     public MovementStats getMovementStats() {
-        WorldPoint playerPos = getPlayerPosition();
+        WorldPoint playerPos = playerService.getPlayerPosition();
         double distanceToTarget = currentTarget != null && playerPos != null ?
                 playerPos.distanceTo(currentTarget) : 0.0;
         double distanceToNextWaypoint = nextWaypoint != null && playerPos != null ?
@@ -448,7 +432,7 @@ public class MovementService extends AbstractService {
      */
     public void sceneWalk(WorldPoint worldPoint, boolean convertForInstance) {
         if (worldPoint == null) {
-            return; // Nothing to do if no target point is given.
+            return;
         }
 
         // Retrieve the top-level world view from the client.
@@ -472,21 +456,6 @@ public class MovementService extends AbstractService {
             // Normal world coordinate → local coordinate conversion.
             sceneWalk(LocalPoint.fromWorld(wv, worldPoint));
         }
-    }
-
-    /**
-     * Checks if the player's current location is within the specified area defined by the given world points.
-     *
-     * @param worldPoints an array of two world points of the NW and SE corners of the area
-     * @return true if the player's current location is within the specified area, false otherwise
-     */
-    public boolean isInArea(WorldPoint... worldPoints) {
-        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
-        return playerLocation.getX() <= worldPoints[0].getX() &&   // NW corner x
-                playerLocation.getY() >= worldPoints[0].getY() &&   // NW corner y
-                playerLocation.getX() >= worldPoints[1].getX() &&   // SE corner x
-                playerLocation.getY() <= worldPoints[1].getY();     // SE corner Y
-        // draws box from 2 points to check against all variations of player X,Y from said points.
     }
 
     /**
