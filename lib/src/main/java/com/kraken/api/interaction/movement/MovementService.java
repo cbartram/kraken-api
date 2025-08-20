@@ -39,6 +39,8 @@ public class MovementService extends AbstractService {
     private Queue<WorldPoint> currentPath;
     private List<WorldPoint> fullCalculatedPath; // For visualization
     private boolean isExecutingPath = false;
+
+    @Getter
     private long lastMovementTime = 0;
 
     @Getter
