@@ -5,6 +5,8 @@ import com.kraken.api.Context;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -19,6 +21,9 @@ public abstract class Script implements Scriptable {
     protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
     protected ScheduledFuture<?> scheduledFuture;
     private ScheduledFuture<?> mainScheduledFuture;
+
+    private Instant startTime; // when the script started
+
 
     @Getter
     private volatile boolean running = false;
@@ -65,6 +70,7 @@ public abstract class Script implements Scriptable {
         }
 
         running = true;
+        startTime = Instant.now();
 
         if(!this.context.isHooksLoaded()) {
             this.context.loadHooks();
@@ -105,6 +111,7 @@ public abstract class Script implements Scriptable {
         }
 
         running = false;
+        startTime = null;
 
         if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
             mainScheduledFuture.cancel(true);
@@ -153,5 +160,19 @@ public abstract class Script implements Scriptable {
                 stop();
             }
         }, delay, delay, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Get the runtime formatted as HH:mm:ss
+     */
+    public String getRuntimeString() {
+        if (startTime == null) {
+            return "00:00:00";
+        }
+        Duration runtime = Duration.between(startTime, Instant.now());
+        long hours = runtime.toHours();
+        long minutes = runtime.toMinutesPart();
+        long seconds = runtime.toSecondsPart();
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }
