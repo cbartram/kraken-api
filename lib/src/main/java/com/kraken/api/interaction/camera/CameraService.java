@@ -308,7 +308,8 @@ public class CameraService extends AbstractService {
 
     // get the camera zoom
     public int getZoom() {
-        return client.getVarcIntValue(VarClientInt.CAMERA_ZOOM_RESIZABLE_VIEWPORT);
+        // VarClientInt.CAMERA_ZOOM_RESIZABLE_VIEWPORT
+        return client.getVarcIntValue(74);
     }
 
     public void setZoom(int zoom) {
@@ -316,6 +317,7 @@ public class CameraService extends AbstractService {
             client.runScript(ScriptID.CAMERA_DO_ZOOM, zoom, zoom);
         });
     }
+
     // Get camera/compass facing
     public int getYaw() {
         return client.getCameraYaw();
@@ -326,7 +328,6 @@ public class CameraService extends AbstractService {
     // East = 1536
     // South = 1024
     // West = 512
-
     public void setYaw(int yaw) {
         if ( yaw >= 0 && yaw < 2048 ) {
             client.setCameraYawTarget(yaw);

@@ -1,8 +1,10 @@
 package com.kraken.api.interaction.movement;
 
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.SleepService;
+import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.interaction.widget.WidgetService;
+import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -10,17 +12,9 @@ import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.widgets.ComponentID;
-import net.runelite.api.widgets.Widget;
-import net.runelite.client.game.SpriteManager;
-
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
-import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
@@ -36,10 +30,10 @@ public class MovementService extends AbstractService {
     private ShortestPathService shortestPathService;
     
     @Inject
-    private SpriteManager spriteManager;
-    
+    private MinimapService minimapService;
+
     @Inject
-    private WidgetService widgetService;
+    private CameraService cameraService;
 
     @Getter
     @Setter
@@ -104,14 +98,21 @@ public class MovementService extends AbstractService {
             return currentState;
         }
 
-        // If target is within scene, use direct scene walking
+        // If target is within scene and close enough, use direct scene walking
         LocalPoint targetLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), target);
-        if (targetLocal != null && targetLocal.isInScene()) {
-//            sceneWalk(targetLocal);
-            walkMiniMap(target, 5);
+        if (targetLocal != null && targetLocal.isInScene() && playerPos.distanceTo(target) <= 15) {
+            log.info("Target is within scene and close enough, walking directly to {}", target);
+            // Wait for player to stop moving before clicking
+            if (isPlayerMoving()) {
+                currentState = MovementState.WALKING;
+                stateDescription = "Waiting for player to stop moving";
+                return currentState;
+            }
+
+            sceneWalk(targetLocal);
             currentState = MovementState.WALKING;
             stateDescription = "Walking within scene";
-            log.info("Walking within scene");
+            log.info("Walking within scene to target");
             return currentState;
         }
 
@@ -128,7 +129,6 @@ public class MovementService extends AbstractService {
         if (!isExecutingPath || currentPath == null || currentPath.isEmpty()) {
             shortestPathService.setTarget(target);
             List<WorldPoint> path = shortestPathService.getCurrentPath();
-
 
             if (path == null || path.isEmpty()) {
                 log.warn("No path found, or path is still being calculated from {} to {}", playerPos, target);
@@ -163,38 +163,38 @@ public class MovementService extends AbstractService {
         }
 
         WorldPoint playerPos = getPlayerPosition();
-        WorldPoint currentWaypoint = currentPath.peek();
-        nextWaypoint = currentWaypoint; // Update for state tracking
 
-        // Check if we've reached the current waypoint
-        if (playerPos.distanceTo(currentWaypoint) <= 3) {
-            currentPath.poll(); // Remove completed waypoint
-            completedWaypoints++;
-            lastMovementTime = System.currentTimeMillis();
-            stateDescription = String.format("Reached waypoint %d/%d", completedWaypoints, fullCalculatedPath.size());
-            log.info("Reached waypoint {}/{}", completedWaypoints, fullCalculatedPath.size());
-            
-            // Check if we've completed the entire path
-            if (currentPath.isEmpty()) {
-                if (playerPos.distanceTo(finalTarget) <= distance) {
-                    stopMovement();
-                    currentState = MovementState.ARRIVED;
-                    stateDescription = "Arrived at final destination";
-                    log.info("Arrived at final destination");
-                    return currentState;
-                } else {
-                    // Path completed but not at final target - might need new path
-                    isExecutingPath = false;
-                    stateDescription = "Path completed, recalculating...";
-                    log.info("Path completed, recalculating path to final target: {}", finalTarget);
-                    return walkWithPathfinding(finalTarget, distance);
-                }
-            }
-
-            // Move to next waypoint
-            currentWaypoint = currentPath.peek();
-            nextWaypoint = currentWaypoint;
+        // If player is moving, wait for them to stop
+        if (isPlayerMoving()) {
+            currentState = MovementState.WALKING;
+            stateDescription = "Player is moving, waiting...";
+            lastMovementTime = System.currentTimeMillis(); // Update movement time while moving
+            return currentState;
         }
+
+        // Find the next waypoint that's 7-11 tiles away
+        WorldPoint targetWaypoint = findOptimalWaypoint(playerPos);
+
+        if (targetWaypoint == null) {
+            // No suitable waypoint found, might be close to destination
+            if (playerPos.distanceTo(finalTarget) <= distance) {
+                stopMovement();
+                currentState = MovementState.ARRIVED;
+                stateDescription = "Arrived at final destination";
+                log.info("Arrived at final destination");
+                return currentState;
+            } else {
+                // Regenerate path
+                isExecutingPath = false;
+                currentPath = null;
+                fullCalculatedPath = null;
+                stateDescription = "Recalculating path...";
+                log.info("No suitable waypoint found, recalculating path");
+                return walkWithPathfinding(finalTarget, distance);
+            }
+        }
+
+        nextWaypoint = targetWaypoint; // Update for state tracking
 
         // Check for movement timeout (stuck detection)
         if (System.currentTimeMillis() - lastMovementTime > MOVEMENT_TIMEOUT) {
@@ -207,21 +207,25 @@ public class MovementService extends AbstractService {
             return walkWithPathfinding(finalTarget, distance);
         }
 
-        // Try to walk to current waypoint
-        LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), currentWaypoint);
+        // Try to walk to the target waypoint
+        LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), targetWaypoint);
         if (waypointLocal != null && waypointLocal.isInScene()) {
-//            sceneWalk(waypointLocal);
-            walkMiniMap(currentWaypoint, 5);
+            sceneWalk(waypointLocal);
+            lastMovementTime = System.currentTimeMillis();
             currentState = MovementState.WALKING;
-            stateDescription = String.format("Walking to waypoint %d/%d", completedWaypoints + 1, fullCalculatedPath.size());
-            log.info("Walking to waypoint (in scene) {}/{}", completedWaypoints + 1, fullCalculatedPath.size());
+            stateDescription = String.format("Walking to waypoint (distance: %d)", (int)playerPos.distanceTo(targetWaypoint));
+            log.info("Walking to waypoint at distance: {}", (int)playerPos.distanceTo(targetWaypoint));
+
+            // Remove waypoints that we've passed or are close to
+            removePassedWaypoints(playerPos);
+
             return currentState;
         } else {
             // Waypoint not in scene, try to find intermediate point that is
-            WorldPoint intermediatePoint = findIntermediatePoint(playerPos, currentWaypoint);
+            WorldPoint intermediatePoint = findIntermediatePoint(playerPos, targetWaypoint);
             if (intermediatePoint != null) {
-//                sceneWalk(intermediatePoint);
-                walkMiniMap(intermediatePoint, 5);
+                sceneWalk(intermediatePoint);
+                lastMovementTime = System.currentTimeMillis();
                 currentState = MovementState.WALKING;
                 stateDescription = "Walking to intermediate point";
                 log.info("Walking to intermediate point: {}", intermediatePoint);
@@ -231,7 +235,73 @@ public class MovementService extends AbstractService {
 
         currentState = MovementState.BLOCKED;
         stateDescription = "Waypoint not accessible";
+        log.info("Movement blocked, waypoint not accessible: {}", targetWaypoint);
         return currentState;
+    }
+
+    /**
+     * Finds the optimal waypoint that's 7-11 tiles away from current position
+     */
+    private WorldPoint findOptimalWaypoint(WorldPoint playerPos) {
+        if (currentPath == null || currentPath.isEmpty()) {
+            return null;
+        }
+
+        // Look for a waypoint that's 7-11 tiles away
+        for (WorldPoint waypoint : currentPath) {
+            double distance = playerPos.distanceTo(waypoint);
+            if (distance >= 7 && distance <= 11) {
+                return waypoint;
+            }
+        }
+
+        // If no waypoint in ideal range, find the farthest one that's still accessible
+        WorldPoint farthestAccessible = null;
+        double maxDistance = 0;
+
+        for (WorldPoint waypoint : currentPath) {
+            double distance = playerPos.distanceTo(waypoint);
+            if (distance <= 15) { // Max scene walk distance
+                LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), waypoint);
+                if (waypointLocal != null && waypointLocal.isInScene()) {
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                        farthestAccessible = waypoint;
+                    }
+                }
+            }
+        }
+
+        return farthestAccessible;
+    }
+
+    /**
+     * Removes waypoints that have been passed or are very close to current position
+     */
+    private void removePassedWaypoints(WorldPoint playerPos) {
+        if (currentPath == null) return;
+
+        Iterator<WorldPoint> iterator = currentPath.iterator();
+        while (iterator.hasNext()) {
+            WorldPoint waypoint = iterator.next();
+            if (playerPos.distanceTo(waypoint) <= 3) {
+                iterator.remove();
+                completedWaypoints++;
+                log.info("Removed passed waypoint, total completed: {}", completedWaypoints);
+            } else {
+                // Once we hit a waypoint that's not passed, stop removing
+                // (assuming path is ordered)
+                break;
+            }
+        }
+    }
+
+    /**
+     * Checks if the player is currently moving
+     */
+    private boolean isPlayerMoving() {
+        return client.getLocalPlayer().getPoseAnimation() == client.getLocalPlayer().getWalkAnimation()
+                || client.getLocalPlayer().getPoseAnimation() == client.getLocalPlayer().getRunAnimation();
     }
 
     /**
@@ -249,194 +319,75 @@ public class MovementService extends AbstractService {
         dx /= distance;
         dy /= distance;
 
-        // Try points at different distances
-        for (int step = 5; step < distance && step < 50; step += 5) {
-            int x = from.getX() + (int)(dx * step);
-            int y = from.getY() + (int)(dy * step);
-            WorldPoint testPoint = new WorldPoint(x, y, from.getPlane());
+        // Try points at different distances, prioritizing 7-11 tile range
+        for (int step = 11; step >= 7; step--) {
+            if (step < distance) {
+                int x = from.getX() + (int)(dx * step);
+                int y = from.getY() + (int)(dy * step);
+                WorldPoint testPoint = new WorldPoint(x, y, from.getPlane());
 
-            LocalPoint testLocal = LocalPoint.fromWorld(wv, testPoint);
-            if (testLocal != null && testLocal.isInScene()) {
-                return testPoint;
+                LocalPoint testLocal = LocalPoint.fromWorld(wv, testPoint);
+                if (testLocal != null && testLocal.isInScene()) {
+                    return testPoint;
+                }
+            }
+        }
+
+        // If no point in ideal range, try shorter distances
+        for (int step = 6; step >= 3; step--) {
+            if (step < distance) {
+                int x = from.getX() + (int)(dx * step);
+                int y = from.getY() + (int)(dy * step);
+                WorldPoint testPoint = new WorldPoint(x, y, from.getPlane());
+
+                LocalPoint testLocal = LocalPoint.fromWorld(wv, testPoint);
+                if (testLocal != null && testLocal.isInScene()) {
+                    return testPoint;
+                }
             }
         }
 
         return null;
     }
 
-    public boolean walkMiniMap(WorldPoint worldPoint, double zoomDistance) {
-        if (client.getMinimapZoom() != zoomDistance)
-            client.setMinimapZoom(zoomDistance);
+    /**
+     * Walks quickly by sending a menu entry and invoking the "Walk here" action on the menu entry.
+     *
+     * @param localPoint A two-dimensional point in the local coordinate space.
+     */
+    public void walkFastLocal(LocalPoint localPoint) {
+        Point canv = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
+        int canvasX = canv != null ? canv.getX() : -1;
+        int canvasY = canv != null ? canv.getY() : -1;
 
-        Point point = worldToMinimap(worldPoint);
-
-        if (point == null) return false;
-        if (!isPointInsideMinimap(point)) return false;
-
-        context.getMouse().click(point);
-        return true;
+        context.doInvoke(new NewMenuEntry(canvasX, canvasY, MenuAction.WALK.getId(), 0, -1, "Walk here"), new Rectangle(1, 1, client.getCanvasWidth(), client.getCanvasHeight()));
     }
 
-    /**
-     * Checks if a given point is inside the minimap clipping area.
-     *
-     * @param point The point to check.
-     * @return {@code true} if the point is within the minimap bounds, {@code false} otherwise.
-     */
-    public boolean isPointInsideMinimap(Point point) {
-        Shape minimapClipArea = getMinimapClipArea();
-        return minimapClipArea != null && minimapClipArea.contains(point.getX(), point.getY());
+    public boolean walkFastCanvas(WorldPoint worldPoint) {
+        return walkFastCanvas(worldPoint, true);
     }
 
-    /**
-     * Converts a {@link WorldPoint} to a minimap coordinate {@link Point}.
-     *
-     * @param worldPoint The world point to convert.
-     * @return The corresponding minimap point, or {@code null} if conversion fails.
-     */
-    @Nullable
-    public Point worldToMinimap(WorldPoint worldPoint) {
-        if (worldPoint == null) return null;
-
+    public boolean walkFastCanvas(WorldPoint worldPoint, boolean toggleRun) {
+        Point canv;
         LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+
         if (localPoint == null) {
-            log.info("Tried to walk worldpoint " + worldPoint + " using the canvas but localpoint returned null");
-            return null;
+            log.error("Tried to walk worldpoint {} using the canvas but localpoint returned null", worldPoint);
+            return false;
         }
 
-        final LocalPoint lp = localPoint;
-        return context.runOnClientThreadOptional(() -> Perspective.localToMinimap(client, lp)).orElse(null);
-    }
+        canv = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
 
-    /**
-     * Returns a simple elliptical clip area for the minimap.
-     *
-     * @return A {@link Shape} representing the minimap clip area.
-     */
-    private Shape getMinimapClipAreaSimple() {
-        Widget minimapDrawArea = getMinimapDrawWidget();
-        if (minimapDrawArea == null) {
-            return null;
-        }
-        Rectangle bounds = minimapDrawArea.getBounds();
-        return new Ellipse2D.Double(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-    }
+        int canvasX = canv != null ? canv.getX() : -1;
+        int canvasY = canv != null ? canv.getY() : -1;
 
-    /**
-     * Retrieves the minimap clipping area as a polygon derived from the minimap alpha mask sprite,
-     * and scales it inward to avoid overlapping edge elements.
-     *
-     * @param scale The scale factor to shrink the polygon (e.g., 0.94 for 94% of the original size).
-     * @return A {@link Shape} representing the scaled minimap clickable area, or a fallback shape if the sprite is unavailable.
-     */
-    public Shape getMinimapClipArea(double scale) {
-        Widget minimapWidget = getMinimapDrawWidget();
-        if (minimapWidget == null) {
-            return null;
+        // if the tile is not on screen, use minimap
+        if (!cameraService.isTileOnScreen(localPoint) || canvasX < 0 || canvasY < 0) {
+            return minimapService.walkMiniMap(worldPoint, 5);
         }
 
-        boolean isResized = client.isResized();
-
-        BufferedImage minimapSprite = context.runOnClientThreadOptional(() ->
-                spriteManager.getSprite(isResized ? SpriteID.RESIZEABLE_MODE_MINIMAP_ALPHA_MASK : SpriteID.FIXED_MODE_MINIMAP_ALPHA_MASK, 0)).orElse(null);
-
-        if (minimapSprite == null) {
-            return getMinimapClipAreaSimple();
-        }
-
-        Shape rawClipArea = bufferedImageToPolygon(minimapSprite, minimapWidget.getBounds());
-        return shrinkShape(rawClipArea, scale);
-    }
-
-    /**
-     * Retrieves the minimap draw widget based on the current game view mode.
-     *
-     * @return The minimap draw widget, or {@code null} if not found.
-     */
-    public Widget getMinimapDrawWidget() {
-        if (client.isResized()) {
-            if (client.getVarbitValue(Varbits.SIDE_PANELS) == 1) {
-                return widgetService.getWidget(ComponentID.RESIZABLE_VIEWPORT_BOTTOM_LINE_MINIMAP_DRAW_AREA);
-            }
-            return widgetService.getWidget(ComponentID.RESIZABLE_VIEWPORT_MINIMAP_DRAW_AREA);
-        }
-        return widgetService.getWidget(ComponentID.FIXED_VIEWPORT_MINIMAP_DRAW_AREA);
-    }
-
-    /**
-     * Retrieves the minimap clipping area as a {@link Shape}, scaled to slightly reduce its size.
-     * <p>
-     * This is useful for rendering overlays within the minimap without overlapping UI elements such as the globe icon.
-     *
-     * @return A {@link Shape} representing the scaled minimap clip area, or {@code null} if the minimap widget is unavailable.
-     */
-    public Shape getMinimapClipArea() {
-        return getMinimapClipArea(client.isResized() ? 0.94 : 1.0);
-    }
-
-    /**
-     * Converts a BufferedImage to a polygon by detecting the border based on the outside color.
-     *
-     * @param image         The image to convert.
-     * @param minimapBounds The bounds of the minimap widget.
-     * @return A polygon representing the minimap's clickable area.
-     */
-    private Polygon bufferedImageToPolygon(BufferedImage image, Rectangle minimapBounds) {
-        Color outsideColour = null;
-        Color previousColour;
-        final int width = image.getWidth();
-        final int height = image.getHeight();
-        List<java.awt.Point> points = new ArrayList<>();
-
-        for (int y = 0; y < height; y++) {
-            previousColour = outsideColour;
-            for (int x = 0; x < width; x++) {
-                int rgb = image.getRGB(x, y);
-                int a = (rgb & 0xff000000) >>> 24;
-                int r = (rgb & 0x00ff0000) >> 16;
-                int g = (rgb & 0x0000ff00) >> 8;
-                int b = (rgb & 0x000000ff);
-                Color colour = new Color(r, g, b, a);
-                if (x == 0 && y == 0) {
-                    outsideColour = colour;
-                    previousColour = colour;
-                }
-                if (!colour.equals(outsideColour) && previousColour.equals(outsideColour)) {
-                    points.add(new java.awt.Point(x, y));
-                }
-                if ((colour.equals(outsideColour) || x == (width - 1)) && !previousColour.equals(outsideColour)) {
-                    points.add(0, new java.awt.Point(x, y));
-                }
-                previousColour = colour;
-            }
-        }
-
-        int offsetX = minimapBounds.x;
-        int offsetY = minimapBounds.y;
-        Polygon polygon = new Polygon();
-        for (java.awt.Point point : points) {
-            polygon.addPoint(point.x + offsetX, point.y + offsetY);
-        }
-        return polygon;
-    }
-
-    /**
-     * Shrinks the given shape toward its center by the specified scale factor.
-     *
-     * @param shape The original shape to shrink.
-     * @param scale The scale factor (e.g., 0.94 = 94% size). Must be > 0 and < 1 to reduce the shape.
-     * @return A new {@link Shape} that is scaled inward toward its center.
-     */
-    private Shape shrinkShape(Shape shape, double scale) {
-        Rectangle bounds = shape.getBounds();
-        double centerX = bounds.getCenterX();
-        double centerY = bounds.getCenterY();
-
-        AffineTransform shrink = AffineTransform.getTranslateInstance(centerX, centerY);
-        shrink.scale(scale, scale);
-        shrink.translate(-centerX, -centerY);
-
-        return shrink.createTransformedShape(shape);
+        context.doInvoke(new NewMenuEntry(canvasX, canvasY, MenuAction.WALK.getId(), 0, 0, "Walk here"), new Rectangle(canvasX, canvasY, client.getCanvasWidth(), client.getCanvasHeight()));
+        return true;
     }
 
     /**
@@ -622,8 +573,6 @@ public class MovementService extends AbstractService {
      * @param sceneY The Y coordinate within the loaded scene grid.
      */
     public void sceneWalk(int sceneX, int sceneY) {
-        log.info("Scene walking to coordinates: ({}, {})", sceneX, sceneY);
-
         setXCoordinate(sceneX);     // Set the target X tile.
         setYCoordinate(sceneY);     // Set the target Y tile.
         setCheckClick();            // Mark the click as valid for pathfinding.
