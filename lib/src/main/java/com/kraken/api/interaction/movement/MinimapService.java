@@ -33,9 +33,29 @@ public class MinimapService extends AbstractService {
     @Inject
     private SpriteManager spriteManager;
 
-    public boolean walkMiniMap(WorldPoint worldPoint, double zoomDistance) {
-        if (client.getMinimapZoom() != zoomDistance)
-            client.setMinimapZoom(zoomDistance);
+    public boolean walkMiniMap(WorldPoint worldPoint) {
+        return walkMiniMap(worldPoint, 5.0f);
+    }
+
+    /**
+     * Walks to a world point via a click on the Minimap. This must have a fixed mode client and the stretched mode plugin
+     * turned off to work correctly. Zoom values can be between 2 and 8.
+     * @param worldPoint
+     * @param zoomDistance
+     * @return
+     */
+    public boolean walkMiniMap(WorldPoint worldPoint, float zoomDistance) {
+        float zoom;
+        if(zoomDistance < 2.0) {
+            zoom = 2.0f;
+        } else if(zoomDistance > 8.0) {
+            zoom = 8.0f;
+        } else {
+            zoom = zoomDistance;
+        }
+
+        if (client.getMinimapZoom() != zoom)
+            client.setMinimapZoom(zoom);
 
         Point point = worldToMinimap(worldPoint);
 
@@ -48,7 +68,7 @@ public class MinimapService extends AbstractService {
             return false;
         }
 
-        log.info("Clicked minimap at point: X={}, Y={}, for WP: X={}, Y={}", point.getX(), point.getY(), worldPoint.getX(), worldPoint.getY());
+        log.debug("Clicked minimap at point: X={}, Y={}, for WP: X={}, Y={}", point.getX(), point.getY(), worldPoint.getX(), worldPoint.getY());
         context.getMouse().click(point);
         return true;
     }
@@ -132,7 +152,7 @@ public class MinimapService extends AbstractService {
     public Widget getMinimapDrawWidget() {
         if (client.isResized()) {
             // Side panels
-            if (client.getVarbitValue(4607) == 1) {
+            if (context.getVarbitValue(4607) == 1) {
                 // ComponentID.RESIZABLE_VIEWPORT_BOTTOM_LINE_MINIMAP_DRAW_AREA
                 return widgetService.getWidget(10747934);
             }

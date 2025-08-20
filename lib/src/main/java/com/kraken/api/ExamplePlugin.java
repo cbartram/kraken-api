@@ -14,6 +14,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.events.ConfigChanged;
@@ -76,6 +77,13 @@ public class ExamplePlugin extends Plugin {
         return configManager.getConfig(ExampleConfig.class);
     }
 
+//    @Subscribe
+//    private void onMenuOptionClicked(MenuOptionClicked event) {
+//        log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
+//                event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
+//                event.getId(), event.getItemOp(), event);
+//    }
+
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
@@ -87,7 +95,6 @@ public class ExamplePlugin extends Plugin {
                     int x = Integer.parseInt(config.xCoordinate());
                     int y = Integer.parseInt(config.yCoordinate());
                     WorldPoint wp = new WorldPoint(x, y, client.getTopLevelWorldView().getPlane());
-                    LocalPoint lp = new LocalPoint(x, y, client.getTopLevelWorldView().getPlane());
                     switch(config.movementType()) {
                         case SCENE_WALK_SP:
                             log.info("Using Scene Walk for movement.");
@@ -95,15 +102,7 @@ public class ExamplePlugin extends Plugin {
                             break;
                         case MINIMAP_WALK_WP:
                             log.info("Using Minimap Walk for movement. Curr Zoom = {}", client.getMinimapZoom());
-                            minimapService.walkMiniMap(wp, 5.0);
-                            break;
-                        case WALK_LOCAL_LP:
-                            log.info("Using Local Walk for movement.");
-                            movementService.walkFastLocal(lp);
-                            break;
-                        case WALK_CANVAS_WP:
-                            log.info("Using Canvas Walk for movement.");
-                            movementService.walkFastCanvas(wp);
+                            minimapService.walkMiniMap(wp);
                             break;
                     }
                 } else {

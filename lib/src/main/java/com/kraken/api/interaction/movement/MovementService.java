@@ -32,9 +32,6 @@ public class MovementService extends AbstractService {
     @Inject
     private MinimapService minimapService;
 
-    @Inject
-    private CameraService cameraService;
-
     @Getter
     @Setter
     private WorldPoint currentTarget;
@@ -109,8 +106,9 @@ public class MovementService extends AbstractService {
                 return currentState;
             }
 
-            sceneWalk(targetLocal);
+            minimapService.walkMiniMap(target);
             currentState = MovementState.WALKING;
+            lastMovementTime = System.currentTimeMillis();
             stateDescription = "Walking within scene";
             log.info("Walking within scene to target");
             return currentState;
@@ -210,11 +208,11 @@ public class MovementService extends AbstractService {
         // Try to walk to the target waypoint
         LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), targetWaypoint);
         if (waypointLocal != null && waypointLocal.isInScene()) {
-            sceneWalk(waypointLocal);
+            minimapService.walkMiniMap(targetWaypoint);
             lastMovementTime = System.currentTimeMillis();
             currentState = MovementState.WALKING;
-            stateDescription = String.format("Walking to waypoint (distance: %d)", (int)playerPos.distanceTo(targetWaypoint));
-            log.info("Walking to waypoint at distance: {}", (int)playerPos.distanceTo(targetWaypoint));
+            stateDescription = String.format("Walking to waypoint (distance: %d)", playerPos.distanceTo(targetWaypoint));
+            log.info("Walking to waypoint at distance: {}", playerPos.distanceTo(targetWaypoint));
 
             // Remove waypoints that we've passed or are close to
             removePassedWaypoints(playerPos);
@@ -224,7 +222,7 @@ public class MovementService extends AbstractService {
             // Waypoint not in scene, try to find intermediate point that is
             WorldPoint intermediatePoint = findIntermediatePoint(playerPos, targetWaypoint);
             if (intermediatePoint != null) {
-                sceneWalk(intermediatePoint);
+                minimapService.walkMiniMap(intermediatePoint);
                 lastMovementTime = System.currentTimeMillis();
                 currentState = MovementState.WALKING;
                 stateDescription = "Walking to intermediate point";
@@ -348,46 +346,6 @@ public class MovementService extends AbstractService {
         }
 
         return null;
-    }
-
-    /**
-     * Walks quickly by sending a menu entry and invoking the "Walk here" action on the menu entry.
-     *
-     * @param localPoint A two-dimensional point in the local coordinate space.
-     */
-    public void walkFastLocal(LocalPoint localPoint) {
-        Point canv = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
-        int canvasX = canv != null ? canv.getX() : -1;
-        int canvasY = canv != null ? canv.getY() : -1;
-
-        context.doInvoke(new NewMenuEntry(canvasX, canvasY, MenuAction.WALK.getId(), 0, -1, "Walk here"), new Rectangle(1, 1, client.getCanvasWidth(), client.getCanvasHeight()));
-    }
-
-    public boolean walkFastCanvas(WorldPoint worldPoint) {
-        return walkFastCanvas(worldPoint, true);
-    }
-
-    public boolean walkFastCanvas(WorldPoint worldPoint, boolean toggleRun) {
-        Point canv;
-        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
-
-        if (localPoint == null) {
-            log.error("Tried to walk worldpoint {} using the canvas but localpoint returned null", worldPoint);
-            return false;
-        }
-
-        canv = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
-
-        int canvasX = canv != null ? canv.getX() : -1;
-        int canvasY = canv != null ? canv.getY() : -1;
-
-        // if the tile is not on screen, use minimap
-        if (!cameraService.isTileOnScreen(localPoint) || canvasX < 0 || canvasY < 0) {
-            return minimapService.walkMiniMap(worldPoint, 5);
-        }
-
-        context.doInvoke(new NewMenuEntry(canvasX, canvasY, MenuAction.WALK.getId(), 0, 0, "Walk here"), new Rectangle(canvasX, canvasY, client.getCanvasWidth(), client.getCanvasHeight()));
-        return true;
     }
 
     /**
@@ -568,7 +526,7 @@ public class MovementService extends AbstractService {
     /**
      * Core walking method for scene coordinates.
      * Sets internal RuneLite scene walking variables via reflection to simulate a click-to-walk action.
-     *
+     * TODO When in fixed mode no stretch plugin SceneWalk actually walks to where your actual mouse last left the canvas. This needs a real mouse to work it seems
      * @param sceneX The X coordinate within the loaded scene grid.
      * @param sceneY The Y coordinate within the loaded scene grid.
      */
