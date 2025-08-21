@@ -60,7 +60,7 @@ public class MinimapService extends AbstractService {
         Point point = worldToMinimap(worldPoint);
 
         if (point == null) {
-            log.error("Minimap zoom point is null");
+            log.error("Failed to convert world point: {} to minimap coords", worldPoint);
             return false;
         }
         if (!isPointInsideMinimap(point)) {
@@ -68,7 +68,6 @@ public class MinimapService extends AbstractService {
             return false;
         }
 
-        log.debug("Clicked minimap at point: X={}, Y={}, for WP: X={}, Y={}", point.getX(), point.getY(), worldPoint.getX(), worldPoint.getY());
         context.getMouse().click(point);
         return true;
     }

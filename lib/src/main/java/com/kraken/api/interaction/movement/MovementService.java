@@ -54,6 +54,7 @@ public class MovementService extends AbstractService {
 
     @Getter
     private int completedWaypoints = 0;
+
     private static final int MOVEMENT_TIMEOUT = 5000; // 5 seconds
     private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
 
@@ -108,7 +109,7 @@ public class MovementService extends AbstractService {
                 return currentState;
             }
 
-            minimapService.walkMiniMap(target);
+            minimapService.walkMiniMap(target, 2);
             currentState = MovementState.WALKING;
             lastMovementTime = System.currentTimeMillis();
             stateDescription = "Walking within scene";
@@ -172,7 +173,7 @@ public class MovementService extends AbstractService {
             return currentState;
         }
 
-        // Find the next waypoint that's 7-11 tiles away
+        // Find the next waypoint that's several tiles away
         WorldPoint targetWaypoint = findOptimalWaypoint(playerPos);
 
         if (targetWaypoint == null) {
@@ -210,7 +211,7 @@ public class MovementService extends AbstractService {
         // Try to walk to the target waypoint
         LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), targetWaypoint);
         if (waypointLocal != null && waypointLocal.isInScene()) {
-            minimapService.walkMiniMap(targetWaypoint);
+            minimapService.walkMiniMap(targetWaypoint, 2);
             lastMovementTime = System.currentTimeMillis();
             currentState = MovementState.WALKING;
             stateDescription = String.format("Walking to waypoint (distance: %d)", playerPos.distanceTo(targetWaypoint));
@@ -224,7 +225,7 @@ public class MovementService extends AbstractService {
             // Waypoint not in scene, try to find intermediate point that is
             WorldPoint intermediatePoint = findIntermediatePoint(playerPos, targetWaypoint);
             if (intermediatePoint != null) {
-                minimapService.walkMiniMap(intermediatePoint);
+                minimapService.walkMiniMap(intermediatePoint, 2);
                 lastMovementTime = System.currentTimeMillis();
                 currentState = MovementState.WALKING;
                 stateDescription = "Walking to intermediate point";
@@ -240,17 +241,23 @@ public class MovementService extends AbstractService {
     }
 
     /**
-     * Finds the optimal waypoint that's 12-20 tiles away from current position
+     * Finds the optimal waypoint that's several away from current position
      */
     private WorldPoint findOptimalWaypoint(WorldPoint playerPos) {
         if (currentPath == null || currentPath.isEmpty()) {
             return null;
         }
 
-        // Look for a waypoint that's 12-20 tiles away
+        // Look for a waypoint that's ideally in the 12-20 tiles range away
         for (WorldPoint waypoint : currentPath) {
             double distance = playerPos.distanceTo(waypoint);
             if (distance >= 12 && distance <= 20) {
+                // Check that this point can be accessed via minimap
+                if(minimapService.worldToMinimap(waypoint) == null) {
+                    log.info("Waypoint could not be found on minimap, skipping");
+                    continue;
+                }
+
                 return waypoint;
             }
         }
@@ -264,7 +271,8 @@ public class MovementService extends AbstractService {
             if (distance <= 15) { // Max scene walk distance
                 LocalPoint waypointLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), waypoint);
                 if (waypointLocal != null && waypointLocal.isInScene()) {
-                    if (distance > maxDistance) {
+                    // Only consider waypoints that are accessible via the minimap
+                    if (distance > maxDistance && minimapService.worldToMinimap(waypoint) != null) {
                         maxDistance = distance;
                         farthestAccessible = waypoint;
                     }

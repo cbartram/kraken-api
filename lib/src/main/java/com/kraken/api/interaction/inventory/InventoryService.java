@@ -59,15 +59,14 @@ public class InventoryService extends AbstractService {
           final ItemContainer itemContainer = event.getItemContainer();
           if (itemContainer == null) return;
 
-          List<InventoryItem> items = new ArrayList<>();
+          inventoryItems.clear();
           for (int i = 0; i < itemContainer.getItems().length; i++) {
               final Item item = itemContainer.getItems()[i];
               if (item.getId() == -1) continue;
               final ItemComposition itemComposition = client.getItemDefinition(item.getId());
-              items.add(new InventoryItem(item, itemComposition, i, context));
+              inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
           }
-
-          inventoryItems = Collections.unmodifiableList(items);
+          log.info("[API] Inventory updated size: {}", inventoryItems.size());
       }
     }
 
