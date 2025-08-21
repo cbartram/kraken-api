@@ -10,8 +10,11 @@ import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.equipment.GearService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.interaction.movement.ShortestPathService;
 import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.prayer.PrayerService;
 import com.kraken.api.interaction.spells.SpellService;
 import com.kraken.api.interaction.ui.TabService;
@@ -26,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Point;
+import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
@@ -74,6 +79,9 @@ public class Context {
             GameObjectService.class,
             InventoryService.class,
             MovementService.class,
+            MinimapService.class,
+            ShortestPathService.class,
+            PlayerService.class,
             NpcService.class,
             PrayerService.class,
             SpellService.class,
@@ -143,6 +151,8 @@ public class Context {
             return;
         }
 
+        // Post a new event to the event bus letting registered classes refresh their inventory.
+        this.eventBus.post(new ItemContainerChanged(InventoryID.INV, client.getItemContainer(InventoryID.INV)));
         isRegistered = true;
     }
 
@@ -156,6 +166,7 @@ public class Context {
                     if (method.isAnnotationPresent(Subscribe.class)) {
                         Object handler = injector.getInstance(clazz);
                         if (handler != null) {
+                            log.info("Unregistering {} from eventbus", clazz.getSimpleName());
                             eventBus.unregister(handler);
                         }
                     }

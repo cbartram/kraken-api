@@ -76,6 +76,11 @@ public abstract class Script implements Scriptable {
             this.context.loadHooks();
         }
 
+        if(!this.context.isRegistered()) {
+            log.info("Registering services classes with the eventbus.");
+            this.context.register();
+        }
+
         onStart();
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
