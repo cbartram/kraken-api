@@ -32,15 +32,13 @@ public abstract class BehaviorTreeScript extends Script {
         }
 
         behaviorTree = new BehaviorTree(rootNode);
-        log.info("Behavior tree initialized for script: {}", this.getClass().getSimpleName());
-
         onBehaviorTreeStart();
     }
 
     @Override
     public final long loop() {
-        if (behaviorTree == null) {
-            log.error("Behavior tree not initialized");
+        if (!super.isRunning() || behaviorTree == null) {
+            log.error("Behavior tree not initialized or script is not running");
             return -1; // Stop execution
         }
 

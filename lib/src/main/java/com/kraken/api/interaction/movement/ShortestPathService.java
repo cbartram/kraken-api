@@ -52,7 +52,15 @@ public class ShortestPathService {
         int packedTarget = WorldPointUtil.packWorldPoint(target);
         Set<Integer> targets = new HashSet<>();
         targets.add(packedTarget);
+
         restartPathfinding(start, targets);
+    }
+
+    /**
+     * Cancels the current path.
+     */
+    public void cancel() {
+        setTarget(null);
     }
 
     public void restartPathfinding(int start, Set<Integer> ends) {

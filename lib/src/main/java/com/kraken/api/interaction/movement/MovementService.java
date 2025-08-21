@@ -67,6 +67,11 @@ public class MovementService extends AbstractService {
     }
 
     public MovementState walkWithState(WorldPoint target, int distance) {
+        if (client.isClientThread()) {
+            log.warn("Please do not call the 'walkTo()' method from the main client thread.");
+            return MovementState.FAILED;
+        }
+
         return walkWithStateInternal(target, distance);
     }
 
@@ -95,6 +100,7 @@ public class MovementService extends AbstractService {
             currentState = MovementState.ARRIVED;
             stateDescription = "Arrived at destination";
             log.info("Arrived at target position: {}", target);
+            shortestPathService.cancel();
             return currentState;
         }
 
@@ -183,6 +189,7 @@ public class MovementService extends AbstractService {
                 currentState = MovementState.ARRIVED;
                 stateDescription = "Arrived at final destination";
                 log.info("Arrived at final destination");
+                shortestPathService.cancel();
                 return currentState;
             } else {
                 // Regenerate path

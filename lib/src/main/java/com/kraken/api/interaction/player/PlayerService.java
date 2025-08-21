@@ -37,8 +37,10 @@ public class PlayerService extends AbstractService {
      * Gets the current player position safely
      */
     public WorldPoint getPlayerPosition() {
-        Player player = client.getLocalPlayer();
-        return player != null ? player.getWorldLocation() : null;
+        return context.runOnClientThreadOptional(() -> {
+            Player p = client.getLocalPlayer();
+            return p != null ? p.getWorldLocation() : null;
+        }).orElse(null);
     }
 
     /**
@@ -106,7 +108,7 @@ public class PlayerService extends AbstractService {
             return false;
         }
 
-        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        WorldPoint playerLocation = getPlayerPosition();
 
         // Null check for player location
         if (playerLocation == null) {

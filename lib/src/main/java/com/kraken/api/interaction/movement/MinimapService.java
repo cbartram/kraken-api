@@ -54,8 +54,11 @@ public class MinimapService extends AbstractService {
             zoom = zoomDistance;
         }
 
-        if (client.getMinimapZoom() != zoom)
-            client.setMinimapZoom(zoom);
+        context.runOnClientThread(() -> {
+            if (client.getMinimapZoom() != zoom) {
+                client.setMinimapZoom(zoom);
+            }
+        });
 
         Point point = worldToMinimap(worldPoint);
 
