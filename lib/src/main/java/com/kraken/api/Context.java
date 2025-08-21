@@ -27,8 +27,10 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Point;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.client.callback.ClientThread;
@@ -73,6 +75,7 @@ public class Context {
     public static MenuEntry targetMenu;
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
+            this.getClass(),
             GearService.class,
             BankService.class,
             CameraService.class,
@@ -151,8 +154,6 @@ public class Context {
             return;
         }
 
-        // Post a new event to the event bus letting registered classes refresh their inventory.
-        this.eventBus.post(new ItemContainerChanged(InventoryID.INV, client.getItemContainer(InventoryID.INV)));
         isRegistered = true;
     }
 
@@ -250,6 +251,15 @@ public class Context {
             log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage());
             return null;
         }
+    }
+
+    public void runOnClientThread(Runnable method) {
+        if (client.isClientThread()) {
+            method.run();
+            return;
+        }
+
+        clientThread.invoke(method);
     }
 
     /**

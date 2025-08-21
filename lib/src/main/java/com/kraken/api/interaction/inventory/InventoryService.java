@@ -13,10 +13,8 @@ import com.kraken.api.model.InventoryItem;
 import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Item;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.MenuAction;
+import net.runelite.api.*;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.ComponentID;
@@ -46,6 +44,17 @@ public class InventoryService extends AbstractService {
     @Inject
     private BankService bankService;
 
+    @Subscribe
+    private void onGameStateChanged(GameStateChanged event) {
+        // This ensures that the inventory is populated with the latest data as soon as the user logs in. Users can stop/start
+        // their plugins as often as they want and the Context (accessible through super class) will continually register/unregister
+        // the necessary classes from the eventbus to keep the inventory in sync.
+        if(event.getGameState() == GameState.LOGGED_IN) {
+            Optional<ItemContainer> container = context.runOnClientThreadOptional(() -> client.getItemContainer(InventoryID.INV));
+            container.ifPresent(this::refresh);
+        }
+    }
+
     /**
      * Refreshes the internal inventory list with new/removed items based on the RuneLite event. This is designed
      * to be called within the @Subscribed method for item container changed.
@@ -55,19 +64,23 @@ public class InventoryService extends AbstractService {
     public void onItemContainerChanged(ItemContainerChanged event) {
       if (event.getContainerId() == InventoryID.INV) {
           assert client.isClientThread();
-
           final ItemContainer itemContainer = event.getItemContainer();
-          if (itemContainer == null) return;
-
-          inventoryItems.clear();
-          for (int i = 0; i < itemContainer.getItems().length; i++) {
-              final Item item = itemContainer.getItems()[i];
-              if (item.getId() == -1) continue;
-              final ItemComposition itemComposition = client.getItemDefinition(item.getId());
-              inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
-          }
-          log.info("[API] Inventory updated size: {}", inventoryItems.size());
+          refresh(itemContainer);
       }
+    }
+
+    /**
+     * Refreshes the inventory with a new item container.
+     * @param itemContainer The item container to refresh with.
+     */
+    private void refresh(ItemContainer itemContainer) {
+        inventoryItems.clear();
+        for (int i = 0; i < itemContainer.getItems().length; i++) {
+            final Item item = itemContainer.getItems()[i];
+            if (item.getId() == -1) continue;
+            final ItemComposition itemComposition = client.getItemDefinition(item.getId());
+            inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
+        }
     }
 
     public Widget getInventory() {
