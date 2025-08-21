@@ -77,9 +77,6 @@ public class VirtualMouse {
         if (point == null) return this;
 
         Runnable clickAction = () -> {
-//            if (Rs2AntibanSettings.naturalMouse && point.getX() > 1 && point.getY() > 1) {
-//                Microbot.naturalMouse.moveTo(point.getX(), point.getY());
-//            }
             handleClick(point, rightClick);
         };
 
@@ -97,29 +94,6 @@ public class VirtualMouse {
         if (point == null) return this;
 
         Runnable clickAction = () -> {
-            //            if (Rs2AntibanSettings.naturalMouse && point.getX() > 1 && point.getY() > 1) {
-//                Microbot.naturalMouse.moveTo(point.getX(), point.getY());
-//
-//                if (Rs2UiHelper.hasActor(entry)) {
-//                    log.info("Actor found: " + entry.getActor().getName());
-//                    Rectangle rectangle = Rs2UiHelper.getActorClickbox(entry.getActor());
-//                    if (!Rs2UiHelper.isMouseWithinRectangle(rectangle)) {
-//                        newPoint = Rs2UiHelper.getClickingPoint(rectangle, true);
-//                        Microbot.naturalMouse.moveTo(newPoint.getX(), newPoint.getY());
-//                    }
-//                }
-//
-//                if (Rs2UiHelper.isGameObject(entry)) {
-//                    log.info("Game Object found: " + entry.getGameObject().toString());
-//                    Rectangle rectangle = Rs2UiHelper.getObjectClickbox(entry.getGameObject());
-//                    if (!Rs2UiHelper.isMouseWithinRectangle(rectangle)) {
-//                        newPoint = Rs2UiHelper.getClickingPoint(rectangle, true);
-//                        Microbot.naturalMouse.moveTo(newPoint.getX(), newPoint.getY());
-//
-//                    }
-//                }
-//            }
-
             Context.targetMenu = entry;
             handleClick(point, rightClick);
         };
@@ -227,6 +201,9 @@ public class VirtualMouse {
         return new java.awt.Point(point.getX(), point.getY());
     }
 
+    public java.awt.Point getCanvasMousePosition() {
+       return client.getCanvas().getMousePosition();
+    }
     
     public VirtualMouse move(int x, int y) {
         return move(new Point(x, y));

@@ -1,5 +1,8 @@
-package com.kraken.api;
+package com.kraken.api.overlay;
 
+import com.kraken.api.ExampleConfig;
+import com.kraken.api.ExamplePlugin;
+import com.kraken.api.input.VirtualMouse;
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -8,20 +11,15 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 
 import javax.inject.Inject;
 import java.awt.*;
-import java.awt.geom.Ellipse2D;
-import java.util.List;
 
 public class MouseTrackerOverlay extends Overlay {
     private final Client client;
-    private final ExamplePlugin plugin;
-    private final ExampleConfig config;
+    private final VirtualMouse mouse;
 
     @Inject
-    public MouseTrackerOverlay(Client client, ExamplePlugin plugin, ExampleConfig config)
-    {
+    public MouseTrackerOverlay(Client client, VirtualMouse mouse) {
         this.client = client;
-        this.plugin = plugin;
-        this.config = config;
+        this.mouse = mouse;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_WIDGETS);
@@ -41,7 +39,7 @@ public class MouseTrackerOverlay extends Overlay {
     }
 
     private void drawCurrentPosition(Graphics2D graphics) {
-        Point mousePos = plugin.getCurrentMousePosition();
+        Point mousePos = mouse.getCanvasMousePosition();
         if (mousePos == null) {
             return;
         }

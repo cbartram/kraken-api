@@ -5,12 +5,12 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -68,9 +68,6 @@ public class ExamplePlugin extends Plugin {
     private java.util.List<Point> mouseTrail = new ArrayList<>();
     private Point lastMousePosition = new Point();
     private static final int MAX_TRAIL_LENGTH = 100;
-
-    public static final WorldPoint MINING_AREA = new WorldPoint(3287, 3367, 0);
-    public static final WorldPoint BANK_AREA = new WorldPoint(3253, 3420, 0); // Varrock East bank
 
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
@@ -138,17 +135,6 @@ public class ExamplePlugin extends Plugin {
                 }
             }
         }
-    }
-
-    public java.util.List<Point> getMouseTrail() {
-        return new ArrayList<>(mouseTrail);
-    }
-
-    public Point getCurrentMousePosition() {
-        if (client.getCanvas() != null) {
-            return client.getCanvas().getMousePosition();
-        }
-        return null;
     }
 
     @Override
