@@ -36,8 +36,13 @@ public class MovementService extends AbstractService {
     @Setter
     private WorldPoint currentTarget;
 
+    @Getter
     private Queue<WorldPoint> currentPath;
+
+    @Getter
     private List<WorldPoint> fullCalculatedPath; // For visualization
+
+    @Getter
     private boolean isExecutingPath = false;
 
     @Getter
@@ -225,8 +230,7 @@ public class MovementService extends AbstractService {
             log.info("Walking to waypoint at distance: {}", playerPos.distanceTo(targetWaypoint));
 
             // Remove waypoints that we've passed or are close to
-            removePassedWaypoints(playerPos);
-
+            removePassedWaypoints(nextWaypoint);
             return currentState;
         } else {
             // Waypoint not in scene, try to find intermediate point that is
@@ -291,23 +295,23 @@ public class MovementService extends AbstractService {
     }
 
     /**
-     * Removes waypoints that have been passed or are very close to current position
+     * Removes all waypoints from 0 to the next selected waypoint. This prevents backtracking where the character
+     * paths back to a waypoint that was not removed.
      */
-    private void removePassedWaypoints(WorldPoint playerPos) {
-        if (currentPath == null) return;
+    private void removePassedWaypoints(WorldPoint next) {
+        if (currentPath == null || currentPath.isEmpty()) return;
 
         Iterator<WorldPoint> iterator = currentPath.iterator();
         while (iterator.hasNext()) {
             WorldPoint waypoint = iterator.next();
-            if (playerPos.distanceTo(waypoint) <= 3) {
-                iterator.remove();
-                completedWaypoints++;
-                log.info("Removed passed waypoint, total completed: {}", completedWaypoints);
-            } else {
-                // Once we hit a waypoint that's not passed, stop removing
-                // (assuming path is ordered)
+
+            if(waypoint.getX() == next.getX() && waypoint.getY() == next.getY()) {
                 break;
             }
+
+            iterator.remove();
+            completedWaypoints++;
+            log.info("Removed passed waypoint, total completed: {}", completedWaypoints);
         }
     }
 
@@ -372,17 +376,10 @@ public class MovementService extends AbstractService {
     }
 
     /**
-     * Checks if currently executing a path
-     */
-    public boolean isMoving() {
-        return isExecutingPath && currentPath != null && !currentPath.isEmpty();
-    }
-
-    /**
      * Gets the current movement progress (0.0 to 1.0)
      */
     public double getMovementProgress() {
-        if (!isMoving() || fullCalculatedPath == null || fullCalculatedPath.isEmpty()) {
+        if (!(isExecutingPath && currentPath != null && !currentPath.isEmpty())|| fullCalculatedPath == null || fullCalculatedPath.isEmpty()) {
             return currentState == MovementState.ARRIVED ? 1.0 : 0.0;
         }
 

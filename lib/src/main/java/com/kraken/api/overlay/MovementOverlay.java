@@ -37,7 +37,7 @@ public class MovementOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
         // Only render if we have an active movement
-        if (!movementService.isMoving()) {
+        if (!(movementService.isExecutingPath() && movementService.getCurrentPath() != null && !movementService.getCurrentPath().isEmpty())) {
             return null;
         }
 
@@ -168,14 +168,11 @@ public class MovementOverlay extends Overlay {
         }
 
         // Draw pulsing blue circle for next waypoint
-        long time = System.currentTimeMillis();
-        int alpha = (int) (128 + 127 * Math.sin(time * 0.005));
-        graphics.setColor(new Color(0, 150, 255, alpha));
+        graphics.setColor(new Color(0, 150, 255));
         graphics.setStroke(new BasicStroke(2.0f));
-        graphics.drawOval(screenPos.getX() - 6, screenPos.getY() - 6, 12, 12);
+        graphics.fillOval(screenPos.getX() - 4, screenPos.getY() - 4, 8, 8);
 
         // Add "NEXT" text
-        graphics.setColor(new Color(0, 150, 255));
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
         graphics.drawString("NEXT", screenPos.getX() + 10, screenPos.getY() - 8);
     }
