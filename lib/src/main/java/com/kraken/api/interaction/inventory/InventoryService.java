@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 public class InventoryService extends AbstractService {
-    private List<InventoryItem> inventoryItems = Collections.emptyList();
+    private final List<InventoryItem> inventoryItems = new ArrayList<>();
 
     @Inject
     private SleepService sleepService;

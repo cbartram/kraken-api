@@ -89,7 +89,7 @@ public class BankService extends AbstractService {
     public boolean closeBank() {
         if (!isOpen()) return true;
         widgetService.clickWidget(786434, 11);
-        return sleepService.sleepUntil(() -> !isOpen(), 5000);
+        return sleepService.sleepUntil(() -> !isOpen(), 3000);
     }
 
     /**
