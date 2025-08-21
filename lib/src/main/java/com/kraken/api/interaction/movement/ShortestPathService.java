@@ -1,6 +1,7 @@
 package com.kraken.api.interaction.movement;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
@@ -19,6 +20,7 @@ import java.util.Set;
  * Lets you set a target and retrieve the computed path as a list of WorldPoints.
  */
 @Slf4j
+@Singleton
 public class ShortestPathService {
     private final Client client;
     private final ClientThread clientThread;

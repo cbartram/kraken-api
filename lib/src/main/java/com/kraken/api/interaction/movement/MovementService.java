@@ -101,18 +101,17 @@ public class MovementService extends AbstractService {
 
         // Check if we're already at the target
         if (playerPos.distanceTo(target) <= distance) {
-            stopMovement();
             currentState = MovementState.ARRIVED;
             stateDescription = "Arrived at destination";
             log.info("Arrived at target position: {}", target);
-            shortestPathService.cancel();
+            resetPath();
             return currentState;
         }
 
         // If target is within scene and close enough, use direct scene walking
         LocalPoint targetLocal = LocalPoint.fromWorld(client.getTopLevelWorldView(), target);
         if (targetLocal != null && targetLocal.isInScene() && playerPos.distanceTo(target) <= 15) {
-            log.info("Target is within scene and close enough, walking directly to {}", target);
+            log.info("Target is within scene, finishing path to: {}", target);
             // Wait for player to stop moving before clicking
             if (playerService.isMoving()) {
                 currentState = MovementState.WALKING;
@@ -121,10 +120,8 @@ public class MovementService extends AbstractService {
             }
 
             minimapService.walkMiniMap(target, 2);
-            currentState = MovementState.WALKING;
-            lastMovementTime = System.currentTimeMillis();
-            stateDescription = "Walking within scene";
-            log.info("Walking within scene to target");
+            currentState = MovementState.ARRIVED;
+            resetPath();
             return currentState;
         }
 
@@ -194,7 +191,7 @@ public class MovementService extends AbstractService {
                 currentState = MovementState.ARRIVED;
                 stateDescription = "Arrived at final destination";
                 log.info("Arrived at final destination");
-                shortestPathService.cancel();
+                resetPath();
                 return currentState;
             } else {
                 // Regenerate path
@@ -311,7 +308,6 @@ public class MovementService extends AbstractService {
 
             iterator.remove();
             completedWaypoints++;
-            log.info("Removed passed waypoint, total completed: {}", completedWaypoints);
         }
     }
 
@@ -400,7 +396,7 @@ public class MovementService extends AbstractService {
         if (currentPath == null || currentPath.isEmpty()) {
             return Collections.emptyList();
         }
-        return Collections.unmodifiableList(new ArrayList<>(currentPath));
+        return List.copyOf(currentPath);
     }
 
     /**
@@ -432,6 +428,17 @@ public class MovementService extends AbstractService {
                 currentTarget,
                 nextWaypoint
         );
+    }
+
+    public void resetPath() {
+        isExecutingPath = false;
+        currentPath = null;
+        fullCalculatedPath = null;
+        currentTarget = null;
+        nextWaypoint = null;
+        completedWaypoints = 0;
+        currentState = MovementState.IDLE;
+        stateDescription = "Movement stopped";
     }
 
     /**
