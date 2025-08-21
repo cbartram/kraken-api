@@ -284,13 +284,10 @@ public class GameObjectService extends AbstractService {
                     actions = objComp.getActions();
                 }
 
-                log.info("Object has the following actions: {}", (Object) actions);
-
                 for (int i = 0; i < actions.length; i++) {
                     if (actions[i] == null) continue;
                     if (action.equalsIgnoreCase(StringUtils.stripColTags(actions[i]))) {
                         index = i;
-                        log.info("Index: {}, found for action: {}", i, action);
                         break;
                     }
                 }
@@ -310,8 +307,6 @@ public class GameObjectService extends AbstractService {
             } else if (index == 4) {
                 menuAction = MenuAction.GAME_OBJECT_FIFTH_OPTION;
             }
-
-            log.info("Final menu action is: {}", menuAction.name());
 
             if (!cameraService.isTileOnScreen(object.getLocalLocation())) {
                 cameraService.turnTo(object);

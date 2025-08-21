@@ -76,7 +76,9 @@ public class BankService extends AbstractService {
 //            itemBoundingBox = itemBounds(item);
 //        }
 
-        context.doInvoke(new NewMenuEntry(item.getSlot(), container, MenuAction.CC_OP.getId(), identifier, item.getId(), item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
+//        Option=Deposit-All, Target=<col=ff9040>Iron ore</col>, Param0=4, Param1=983043, MenuAction=CC_OP_LOW_PRIORITY, ItemId=440, id=8, itemOp=-1, str=MenuOptionClicked(getParam0=4, getParam1=983043, getMenuOption=Deposit-All, getMenuTarget=<col=ff9040>Iron ore</col>, getMenuAction=CC_OP_LOW_PRIORITY, getId=8)
+        log.info("Invoking Bank menu: param0={}, param1={}, opcode={}, identifier={}, target={}, itemId={}", item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getName(), item.getId());
+        context.doInvoke(new NewMenuEntry(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
     }
 
     /**

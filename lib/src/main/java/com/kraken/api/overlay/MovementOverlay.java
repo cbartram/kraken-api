@@ -111,7 +111,7 @@ public class MovementOverlay extends Overlay {
         for (int i = 0; i < fullPath.size() - remainingPath.size(); i++) {
             Point screenPos = worldToScreen(fullPath.get(i));
             if (screenPos != null) {
-                graphics.fillOval((int) ((int) screenPos.getX() - 3), (int) ((int) screenPos.getY() - 3), 6, 6);
+                graphics.fillOval(( screenPos.getX() - 3), (screenPos.getY() - 3), 6, 6);
             }
         }
 
@@ -120,18 +120,7 @@ public class MovementOverlay extends Overlay {
         for (WorldPoint waypoint : remainingPath) {
             Point screenPos = worldToScreen(waypoint);
             if (screenPos != null) {
-                graphics.fillOval((int) (int) screenPos.getX() - 4, (int) (int) screenPos.getY() - 4, 8, 8);
-
-                // Add waypoint numbers
-                graphics.setColor(Color.BLACK);
-                graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
-                String waypointNum = String.valueOf(remainingPath.indexOf(waypoint) + 1);
-                FontMetrics fm = graphics.getFontMetrics();
-                int textWidth = fm.stringWidth(waypointNum);
-                int textHeight = fm.getHeight();
-                graphics.drawString(waypointNum,
-                        (int) (int) screenPos.getX() - textWidth / 2,
-                        (int) (int) screenPos.getY() + textHeight / 4);
+                graphics.fillOval(screenPos.getX() - 4, screenPos.getY() - 4, 8, 8);
                 graphics.setColor(new Color(255, 255, 0, 200));
             }
         }
@@ -153,16 +142,16 @@ public class MovementOverlay extends Overlay {
         // Draw large red circle for target
         graphics.setColor(new Color(255, 0, 0, 200));
         graphics.setStroke(new BasicStroke(3.0f));
-        graphics.drawOval((int) (int) screenPos.getX() - 8, (int) (int) screenPos.getY() - 8, 16, 16);
+        graphics.drawOval(screenPos.getX() - 8, screenPos.getY() - 8, 16, 16);
 
         // Draw crosshair
-        graphics.drawLine((int) screenPos.getX() - 12, (int) screenPos.getY(), (int) screenPos.getX() + 12, (int) screenPos.getY());
-        graphics.drawLine((int) screenPos.getX(), (int) screenPos.getY() - 12, (int) screenPos.getX(), (int) screenPos.getY() + 12);
+        graphics.drawLine(screenPos.getX() - 12, screenPos.getY(), screenPos.getX() + 12, screenPos.getY());
+        graphics.drawLine(screenPos.getX(), screenPos.getY() - 12, screenPos.getX(), screenPos.getY() + 12);
 
         // Add "TARGET" text
         graphics.setColor(Color.RED);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        graphics.drawString("TARGET", (int) screenPos.getX() + 15, (int) screenPos.getY() - 10);
+        graphics.drawString("TARGET", screenPos.getX() + 15, screenPos.getY() - 10);
     }
 
     /**
@@ -183,12 +172,12 @@ public class MovementOverlay extends Overlay {
         int alpha = (int) (128 + 127 * Math.sin(time * 0.005));
         graphics.setColor(new Color(0, 150, 255, alpha));
         graphics.setStroke(new BasicStroke(2.0f));
-        graphics.drawOval((int) screenPos.getX() - 6, (int) screenPos.getY() - 6, 12, 12);
+        graphics.drawOval(screenPos.getX() - 6, screenPos.getY() - 6, 12, 12);
 
         // Add "NEXT" text
         graphics.setColor(new Color(0, 150, 255));
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
-        graphics.drawString("NEXT", (int) screenPos.getX() + 10, (int) screenPos.getY() - 8);
+        graphics.drawString("NEXT", screenPos.getX() + 10, screenPos.getY() - 8);
     }
 
     /**

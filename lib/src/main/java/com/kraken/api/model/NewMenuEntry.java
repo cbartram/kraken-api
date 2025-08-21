@@ -1,20 +1,15 @@
 package com.kraken.api.model;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
-@ToString
-@EqualsAndHashCode
 @NoArgsConstructor
 public class NewMenuEntry implements MenuEntry {
-
     @Getter
     private String option;
 
@@ -40,12 +35,11 @@ public class NewMenuEntry implements MenuEntry {
     private int itemId;
 
     @Getter
-    private int itemOp;
-
-    @Getter
-    private TileObject gameObject;
+    private int itemOp = 0;
 
     private Actor actor;
+    private TileObject gameObject;
+    private Widget widget;
 
     private NewMenuEntry(int param0, int param1, MenuAction type, int identifier) {
         this.param0 = param0;
@@ -58,36 +52,49 @@ public class NewMenuEntry implements MenuEntry {
         this(param0, param1, MenuAction.of(opcode), identifier);
     }
 
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target) {
+        this(param0, param1, opcode, identifier);
+        this.option = target;
+        this.target = "";
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor, String option) {
+        this(param0, param1, opcode, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+        this.actor = actor;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor) {
+        this(param0, param1, opcode, identifier, itemId, target, actor, "Use");
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject) {
+        this(param0, param1, opcode, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+        this.gameObject = gameObject;
+    }
+
+    public NewMenuEntry(String option, String target, int identifier, MenuAction type, int param0, int param1, boolean forceLeftClick) {
+        this(param0, param1, type, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = forceLeftClick;
+    }
+
     public NewMenuEntry(String option, int param0, int param1, int opcode, int identifier, int itemId, String target) {
         this(param0, param1, opcode, identifier);
         this.option = option;
         this.target = target;
         this.forceLeftClick = false;
         this.itemId = itemId;
-    }
-
-    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option) {
-        this.param0 = param0;
-        this.param1 = param1;
-        this.type = MenuAction.of(opcode);
-        this.identifier = identifier;
-        this.itemId = itemId;
-        this.target = "";
-        this.option = option;
-        this.forceLeftClick = false;
-    }
-
-    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject) {
-        this.option = "Use";
-        this.target = target;
-        this.identifier = identifier;
-        this.type = MenuAction.of(opcode);
-        this.param0 = param0;
-        this.param1 = param1;
-        this.forceLeftClick = false;
-        this.itemId = itemId;
-        this.option = option;
-        this.gameObject = gameObject;
     }
 
     public NewMenuEntry(String option, int param0, int param1, int opcode, int identifier, int itemId, int itemOp, String target) {
@@ -100,15 +107,6 @@ public class NewMenuEntry implements MenuEntry {
         this.target = target;
         this.itemOp = itemOp;
         this.forceLeftClick = false;
-    }
-
-    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor, String option) {
-        this(param0, param1, opcode, identifier);
-        this.option = option;
-        this.target = target;
-        this.forceLeftClick = false;
-        this.itemId = itemId;
-        this.actor = actor;
     }
 
     public MenuEntry setOption(String option) {
@@ -173,6 +171,10 @@ public class NewMenuEntry implements MenuEntry {
         return null;
     }
 
+    public MenuEntry getParent() {
+        return this;
+    }
+
     public boolean isItemOp() {
         return false;
     }
@@ -183,27 +185,36 @@ public class NewMenuEntry implements MenuEntry {
         return this;
     }
 
+    public MenuEntry setWidget(Widget widget) {
+        this.widget = widget;
+        return this;
+    }
+
     @Nullable
     public Widget getWidget() {
-        return null;
+        return widget;
     }
 
     @Nullable
     public NPC getNpc() {
-        return null;
+        return actor instanceof NPC ? (NPC) actor : null;
     }
 
     @Nullable
     public Player getPlayer() {
-        return null;
+        return actor instanceof Player ? (Player) actor : null;
     }
 
     @Nullable
     public Actor getActor() {
-        return null;
+        return actor;
     }
 
     @Nullable
+    public TileObject getGameObject() {
+        return gameObject;
+    }
+
     @Override
     public Menu getSubMenu() {
         return null;
@@ -215,5 +226,105 @@ public class NewMenuEntry implements MenuEntry {
     }
 
     @Override
-    public void deleteSubMenu() {}
+    public void deleteSubMenu() {
+
+    }
+
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        } else if (!(o instanceof NewMenuEntry)) {
+            return false;
+        } else {
+            NewMenuEntry other = (NewMenuEntry)o;
+            if (!other.canEqual(this)) {
+                return false;
+            } else if (this.getIdentifier() != other.getIdentifier()) {
+                return false;
+            } else if (this.getParam0() != other.getParam0()) {
+                return false;
+            } else if (this.getParam1() != other.getParam1()) {
+                return false;
+            } else if (this.isForceLeftClick() != other.isForceLeftClick()) {
+                return false;
+            } else {
+                Object this$option = this.getOption();
+                Object other$option = other.getOption();
+                if (this$option == null) {
+                    if (other$option != null) {
+                        return false;
+                    }
+                } else if (!this$option.equals(other$option)) {
+                    return false;
+                }
+
+                Object this$target = this.getTarget();
+                Object other$target = other.getTarget();
+                if (this$target == null) {
+                    if (other$target != null) {
+                        return false;
+                    }
+                } else if (!this$target.equals(other$target)) {
+                    return false;
+                }
+
+                Object this$type = this.getType();
+                Object other$type = other.getType();
+                if (this$type == null) {
+                    return other$type == null;
+                } else return this$type.equals(other$type);
+            }
+        }
+    }
+
+    protected boolean canEqual(Object other) {
+        return other instanceof NewMenuEntry;
+    }
+
+    public int hashCode() {
+        boolean PRIME = true;
+        int result = 1;
+        result = result * 59 + this.getIdentifier();
+        result = result * 59 + this.getParam0();
+        result = result * 59 + this.getParam1();
+        result = result * 59 + (this.isForceLeftClick() ? 79 : 97);
+        Object $option = this.getOption();
+        result = result * 59 + ($option == null ? 43 : $option.hashCode());
+        Object $target = this.getTarget();
+        result = result * 59 + ($target == null ? 43 : $target.hashCode());
+        Object $type = this.getType();
+        result = result * 59 + ($type == null ? 43 : $type.hashCode());
+        return result;
+    }
+
+    public String toString() {
+        String var10000 = this.getOption();
+        return "NewMenuEntry(option=" + var10000 + ", target=" + this.getTarget() + ", identifier=" + this.getIdentifier() + ", type=" + this.getType() + ", param0=" + this.getParam0() + ", param1=" + this.getParam1() + ", forceLeftClick=" + this.isForceLeftClick() + ")";
+    }
+
+    /**
+     * Calculates the identifier for a given menu option using a custom offset.
+     *
+     * The identifier is computed using the formula: (menuOption * 65536) + offset.
+     * For example:
+     *   - menuOption 1 with default offset (+6): (1 * 65536) + 6 = 65542
+     *
+     * @param menuOption the menu option number (starting at 1)
+     * @param offset the offset value to be added (can be positive or negative)
+     * @return the corresponding identifier
+     */
+    public static int findIdentifier(int menuOption, int offset) {
+        return menuOption * 65536 + offset;
+    }
+
+    /**
+     * Calculates the identifier for a given menu option using the default offset of +6.
+     *
+     * @param menuOption the menu option number (starting at 1)
+     * @return the corresponding identifier with the default offset
+     */
+    public static int findIdentifier(int menuOption) {
+        return findIdentifier(menuOption, 6);
+    }
+
 }

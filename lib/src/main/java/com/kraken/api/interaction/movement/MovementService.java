@@ -240,17 +240,17 @@ public class MovementService extends AbstractService {
     }
 
     /**
-     * Finds the optimal waypoint that's 7-11 tiles away from current position
+     * Finds the optimal waypoint that's 12-20 tiles away from current position
      */
     private WorldPoint findOptimalWaypoint(WorldPoint playerPos) {
         if (currentPath == null || currentPath.isEmpty()) {
             return null;
         }
 
-        // Look for a waypoint that's 7-11 tiles away
+        // Look for a waypoint that's 12-20 tiles away
         for (WorldPoint waypoint : currentPath) {
             double distance = playerPos.distanceTo(waypoint);
-            if (distance >= 7 && distance <= 11) {
+            if (distance >= 12 && distance <= 20) {
                 return waypoint;
             }
         }

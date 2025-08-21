@@ -77,12 +77,12 @@ public class ExamplePlugin extends Plugin {
         return configManager.getConfig(ExampleConfig.class);
     }
 
-//    @Subscribe
-//    private void onMenuOptionClicked(MenuOptionClicked event) {
-//        log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
-//                event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
-//                event.getId(), event.getItemOp(), event);
-//    }
+    @Subscribe
+    private void onMenuOptionClicked(MenuOptionClicked event) {
+        log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
+                event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
+                event.getId(), event.getItemOp(), event);
+    }
 
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
