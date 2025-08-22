@@ -67,16 +67,11 @@ public class MovementOverlay extends Overlay {
         if (fullPath.size() < 2) {
             return;
         }
-
-        // Set up graphics
         graphics.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-
-        WorldPoint playerPos = client.getLocalPlayer().getWorldLocation();
-        Point playerScreenPos = worldToScreen(playerPos);
 
         // Draw completed path in green
         graphics.setColor(new Color(0, 255, 0, 100));
-        Point lastScreenPos = playerScreenPos;
+        Point lastScreenPos = null;
 
         for (int i = 0; i < fullPath.size() - remainingPath.size(); i++) {
             Point screenPos = worldToScreen(fullPath.get(i));
@@ -171,6 +166,19 @@ public class MovementOverlay extends Overlay {
         graphics.setColor(new Color(0, 150, 255));
         graphics.setStroke(new BasicStroke(2.0f));
         graphics.fillOval(screenPos.getX() - 4, screenPos.getY() - 4, 8, 8);
+
+
+        Point lastFinishedPoint = null;
+        for (int i = 0; i < movementService.getCalculatedPath().size() - movementService.getRemainingPath().size(); i++) {
+            lastFinishedPoint = worldToScreen(movementService.getCalculatedPath().get(i));
+        }
+
+        // Draw a line connecting the last completed point with the next selected point.
+        if(lastFinishedPoint != null) {
+            Point2D p1 = new Point2D.Float(lastFinishedPoint.getX(), lastFinishedPoint.getY());
+            Point2D p2 = new Point2D.Float(screenPos.getX(), screenPos.getY());
+            graphics.draw(new Line2D.Float(p1, p2));
+        }
 
         // Add "NEXT" text
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
