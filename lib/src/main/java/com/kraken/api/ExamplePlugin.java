@@ -104,7 +104,7 @@ public class ExamplePlugin extends Plugin {
                     }
                 } else {
                     log.info("Stopping Movement...");
-                    movementService.stopMovement();
+                    movementService.resetPath();
                 }
             }
         }
