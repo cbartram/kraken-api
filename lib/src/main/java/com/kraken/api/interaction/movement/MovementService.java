@@ -165,7 +165,7 @@ public class MovementService extends AbstractService {
      */
     private MovementState executePathStep(WorldPoint finalTarget, int distance) {
         if (currentPath == null || currentPath.isEmpty()) {
-            stopMovement();
+            resetPath();
             currentState = MovementState.FAILED;
             stateDescription = "Path execution failed - no waypoints";
             return currentState;
@@ -187,7 +187,6 @@ public class MovementService extends AbstractService {
         if (targetWaypoint == null) {
             // No suitable waypoint found, might be close to destination
             if (playerPos.distanceTo(finalTarget) <= distance) {
-                stopMovement();
                 currentState = MovementState.ARRIVED;
                 stateDescription = "Arrived at final destination";
                 log.info("Arrived at final destination");
@@ -195,6 +194,8 @@ public class MovementService extends AbstractService {
                 return currentState;
             } else {
                 // Regenerate path
+                // TODO When a player finishes a path and we reset, the next time we re-calc a path it is like halfway through the opposite direction and we
+                // end up going back to the mine then this condition triggers and we re-calculate a brand new path. Resetting the path doesn't seem to be working right
                 isExecutingPath = false;
                 currentPath = null;
                 fullCalculatedPath = null;
@@ -358,20 +359,6 @@ public class MovementService extends AbstractService {
     }
 
     /**
-     * Stops any current pathfinding operation
-     */
-    public void stopMovement() {
-        isExecutingPath = false;
-        currentPath = null;
-        fullCalculatedPath = null;
-        currentTarget = null;
-        nextWaypoint = null;
-        completedWaypoints = 0;
-        currentState = MovementState.IDLE;
-        stateDescription = "Movement stopped";
-    }
-
-    /**
      * Gets the current movement progress (0.0 to 1.0)
      */
     public double getMovementProgress() {
@@ -430,6 +417,9 @@ public class MovementService extends AbstractService {
         );
     }
 
+    /**
+     * Resets a current path and clears it from memory.
+     */
     public void resetPath() {
         isExecutingPath = false;
         currentPath = null;
@@ -439,6 +429,8 @@ public class MovementService extends AbstractService {
         completedWaypoints = 0;
         currentState = MovementState.IDLE;
         stateDescription = "Movement stopped";
+        shortestPathService.getCurrentPath().clear();
+        shortestPathService.cancel();
     }
 
     /**

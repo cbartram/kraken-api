@@ -312,6 +312,7 @@ public class GameObjectService extends AbstractService {
                 cameraService.turnTo(object);
             }
 
+            // TODO Performs many yellow clicks
             context.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object), uiService.getObjectClickbox(object));
         } catch (Exception ex) {
             log.error("Failed to interact with object: {}", ex.getMessage());
