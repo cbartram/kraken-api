@@ -260,7 +260,7 @@ public class MovementService extends AbstractService {
         // Look for a waypoint that's ideally in the 12-20 tiles range away
         for (WorldPoint waypoint : currentPath) {
             double distance = playerPos.distanceTo(waypoint);
-            if (distance >= 12 && distance <= 20) {
+            if (distance >= 15 && distance <= 30) {
                 // Check that this point can be accessed via minimap
                 if(minimapService.worldToMinimap(waypoint) == null) {
                     log.info("Waypoint could not be found on minimap, skipping");

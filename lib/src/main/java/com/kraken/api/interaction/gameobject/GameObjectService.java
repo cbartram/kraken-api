@@ -6,6 +6,7 @@ import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -14,6 +15,7 @@ import net.runelite.api.coords.WorldPoint;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -161,10 +163,12 @@ public class GameObjectService extends AbstractService {
     public List<GameObject> getGameObjects(Predicate<GameObject> predicate, WorldPoint anchor, int distance) {
         Player player = client.getLocalPlayer();
         if (player == null) {
+            log.warn("No game objects found, local player null");
             return Collections.emptyList();
         }
         LocalPoint anchorLocal = LocalPoint.fromWorld(player.getWorldView(), anchor);
         if (anchorLocal == null) {
+            log.warn("No game objects found cannot determine anchor from local play position");
             return Collections.emptyList();
         }
         return getGameObjects(predicate, anchorLocal, distance * Perspective.LOCAL_TILE_SIZE);
@@ -220,6 +224,128 @@ public class GameObjectService extends AbstractService {
 
         return result.stream();
     }
+
+    /**
+     * Finds a reachable game object by name within a specified distance from an anchor point.
+     *
+     * @param objectName  The name of the game object to find.
+     * @param exact       Whether to match the name exactly or partially.
+     * @param distance    The maximum distance from the anchor point to search for the game object.
+     * @param anchorPoint The point from which to measure the distance.
+     * @return The nearest reachable game object that matches the criteria, or null if none is found.
+     */
+    public GameObject findReachableObject(String objectName, boolean exact, int distance, WorldPoint anchorPoint) {
+        return findReachableObject(objectName, exact, distance, anchorPoint, false, "");
+    }
+
+    /**
+     * Finds a reachable game object by name within a specified distance from an anchor point, optionally checking for a specific action.
+     *
+     * @param objectName  The name of the game object to find.
+     * @param exact       Whether to match the name exactly or partially.
+     * @param distance    The maximum distance from the anchor point to search for the game object.
+     * @param anchorPoint The point from which to measure the distance.
+     * @param checkAction Whether to check for a specific action on the game object.
+     * @param action      The action to check for if checkAction is true.
+     * @return The nearest reachable game object that matches the criteria, or null if none is found.
+     */
+    public GameObject findReachableObject(String objectName, boolean exact, int distance, WorldPoint anchorPoint, boolean checkAction, String action) {
+        Predicate<TileObject> namePred = nameMatches(objectName, exact);
+
+        Predicate<GameObject> filter = o -> {
+            if (!namePred.test(o)) {
+                return false;
+            }
+
+            if (checkAction) {
+                ObjectComposition comp = convertToObjectComposition(o);
+                return hasAction(comp, action);
+            }
+
+            return true;
+        };
+
+        return getGameObjects(filter, anchorPoint, distance)
+                .stream()
+                .min(Comparator.comparingInt(o ->
+                        client.getLocalPlayer().getWorldLocation().distanceTo(o.getWorldLocation())))
+                .orElse(null);
+    }
+
+    public boolean hasAction(ObjectComposition objComp, String action) {
+        return hasAction(objComp, action, true);
+    }
+
+    public boolean hasAction(ObjectComposition objComp, String action, boolean exact) {
+        if (objComp == null) return false;
+
+        return Arrays.stream(objComp.getActions())
+                .filter(Objects::nonNull)
+                .anyMatch(a -> exact ? a.equalsIgnoreCase(action) : a.toLowerCase().contains(action.toLowerCase()));
+    }
+
+    /**
+     * Creates a predicate that matches TileObjects whose name matches the given name.
+     * Optionally, it can require an exact match or allow partial (contains) match.
+     *
+     * @param objectName The name of the object to match.
+     * @param exact      If true, the object name must exactly match (case-insensitive).
+     *                   If false, the name must only contain the given string (case-insensitive).
+     * @param <T>        A type that extends TileObject.
+     * @return A predicate that returns true if the object's name matches the given name.
+     */
+    public <T extends TileObject> Predicate<T> nameMatches(String objectName, boolean exact) {
+        String normalizedForIds = objectName.toLowerCase().replace(" ", "_");
+        Set<Integer> ids = new HashSet<>(getObjectIdsByName(normalizedForIds));
+
+        String lower = objectName.toLowerCase();
+
+        return obj -> {
+            if (!ids.isEmpty() && !ids.contains(obj.getId())) {
+                return false;
+            }
+
+            return getCompositionName(obj)
+                    .map(compName -> exact ? compName.equalsIgnoreCase(objectName) : compName.toLowerCase().contains(lower))
+                    .orElse(false);
+        };
+    }
+
+    public Optional<String> getCompositionName(TileObject obj) {
+        ObjectComposition comp = convertToObjectComposition(obj);
+        if (comp == null) {
+            return Optional.empty();
+        }
+        String name = comp.getName();
+        return (name == null || name.equals("null"))
+                ? Optional.empty()
+                : Optional.of(StringUtils.stripColTags(name));
+    }
+
+    @SneakyThrows
+    public List<Integer> getObjectIdsByName(String name) {
+        List<Integer> ids = new ArrayList<>();
+        String lowerName = name.toLowerCase();
+
+        Class<?>[] classesToScan = {
+                net.runelite.api.ObjectID.class,
+                net.runelite.api.gameval.ObjectID.class,
+        };
+
+        for (Class<?> clazz : classesToScan) {
+            for (Field f : clazz.getFields()) {
+                if (f.getType() != int.class) continue;
+
+                if (f.getName().toLowerCase().contains(lowerName)) {
+                    f.setAccessible(true);
+                    ids.add(f.getInt(null));
+                }
+            }
+        }
+
+        return ids;
+    }
+
 
 
     @Nullable
@@ -312,7 +438,10 @@ public class GameObjectService extends AbstractService {
                 cameraService.turnTo(object);
             }
 
+
+
             // TODO Performs many yellow clicks
+            // Real: [Client] INFO com.krakenplugins.example.MiningPlugin - Option=Mine, Target=<col=ffff>Iron rocks, Param0=45, Param1=49, MenuAction=GAME_OBJECT_FIRST_OPTION, ItemId=-1, id=11364, itemOp=-1, str=MenuOptionClicked(getParam0=45, getParam1=49, getMenuOption=Mine, getMenuTarget=<col=ffff>Iron rocks, getMenuAction=GAME_OBJECT_FIRST_OPTION, getId=11364)
             context.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object), uiService.getObjectClickbox(object));
         } catch (Exception ex) {
             log.error("Failed to interact with object: {}", ex.getMessage());
