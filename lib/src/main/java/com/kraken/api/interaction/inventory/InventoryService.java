@@ -226,6 +226,14 @@ public class InventoryService extends AbstractService {
     }
 
     /**
+     * Returns true if the inventory is full and false otherwise.
+     * @return
+     */
+    public boolean isFull() {
+        return inventoryItems.size() >= 28;
+    }
+
+    /**
      * Combines two items in the inventory by their IDs, ensuring distinct items are used.
      *
      * @param primaryItemId   The ID of the primary item.

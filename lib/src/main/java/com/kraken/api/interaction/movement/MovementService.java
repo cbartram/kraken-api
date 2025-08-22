@@ -171,17 +171,8 @@ public class MovementService extends AbstractService {
             return currentState;
         }
 
-        WorldPoint playerPos = playerService.getPlayerPosition();
-
-        // If player is moving, wait for them to stop
-        if (playerService.isMoving()) {
-            currentState = MovementState.WALKING;
-            stateDescription = "Player is moving, waiting...";
-            lastMovementTime = System.currentTimeMillis(); // Update movement time while moving
-            return currentState;
-        }
-
         // Find the next waypoint that's several tiles away
+        WorldPoint playerPos = playerService.getPlayerPosition();
         WorldPoint targetWaypoint = findOptimalWaypoint(playerPos);
 
         if (targetWaypoint == null) {
