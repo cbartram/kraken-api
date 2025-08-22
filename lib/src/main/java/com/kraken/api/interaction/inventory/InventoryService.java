@@ -31,6 +31,10 @@ import java.util.stream.Collectors;
 @Singleton
 public class InventoryService extends AbstractService {
     private final List<InventoryItem> inventoryItems = new ArrayList<>();
+    private final List<InventoryItem> prevInventoryItems = new ArrayList<>();
+
+    // Store the raw container for diff comparisons
+    private ItemContainer lastProcessedContainer = null;
 
     @Inject
     private SleepService sleepService;
@@ -74,13 +78,32 @@ public class InventoryService extends AbstractService {
      * @param itemContainer The item container to refresh with.
      */
     private void refresh(ItemContainer itemContainer) {
+        if(!prevInventoryItems.isEmpty()) {
+            prevInventoryItems.clear();
+        }
+
+        prevInventoryItems.addAll(inventoryItems);
         inventoryItems.clear();
+
         for (int i = 0; i < itemContainer.getItems().length; i++) {
             final Item item = itemContainer.getItems()[i];
             if (item.getId() == -1) continue;
             final ItemComposition itemComposition = client.getItemDefinition(item.getId());
             inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
         }
+
+        lastProcessedContainer = itemContainer;
+    }
+
+    private List<InventoryItem> toInventoryItemModel(Item[] items) {
+        List<InventoryItem> newItems = new ArrayList<>();
+        for (int i = 0; i < items.length; i++) {
+            final Item item = items[i];
+            if (item.getId() == -1) continue;
+            final ItemComposition itemComposition = client.getItemDefinition(item.getId());
+            newItems.add(new InventoryItem(item, itemComposition, i, context));
+        }
+        return newItems;
     }
 
     public Widget getInventory() {
@@ -96,6 +119,65 @@ public class InventoryService extends AbstractService {
             }
             return null;
         }).orElse(null);
+    }
+
+    public InventoryChanged diff(ItemContainer itemContainer) {
+        if(itemContainer.getId() != InventoryID.INV) {
+            return new InventoryChanged(null, -1, InventoryUpdateType.NONE);
+        }
+
+        // If this is the same container we just processed, use our stored prev items
+        List<InventoryItem> comparisonPrevItems;
+        if (lastProcessedContainer == itemContainer) {
+            comparisonPrevItems = new ArrayList<>(prevInventoryItems);
+        } else {
+            // This is a different container, so current items become previous
+            comparisonPrevItems = new ArrayList<>(inventoryItems);
+        }
+
+        List<InventoryItem> currentItems = toInventoryItemModel(itemContainer.getItems());
+
+        // Find changes
+        for(int i = 0; i < Math.max(currentItems.size(), comparisonPrevItems.size()); i++) {
+            InventoryItem currentItem = i < currentItems.size() ? currentItems.get(i) : null;
+            InventoryItem previousItem = i < comparisonPrevItems.size() ? comparisonPrevItems.get(i) : null;
+
+            if(!inventoryItemsEqual(currentItem, previousItem)) {
+                return handleItemChange(i, previousItem, currentItem);
+            }
+        }
+
+        return new InventoryChanged(null, -1, InventoryUpdateType.NONE);
+    }
+
+    private boolean inventoryItemsEqual(InventoryItem item1, InventoryItem item2) {
+        if(item1 == null && item2 == null) {
+            return true;
+        }
+        if(item1 == null || item2 == null) {
+            return false;
+        }
+        return item1.getId() == item2.getId() && item1.getQuantity() == item2.getQuantity();
+    }
+
+    private InventoryChanged handleItemChange(int slot, InventoryItem previousItem, InventoryItem currentItem) {
+        if(previousItem == null && currentItem != null) {
+            // Item was added
+            return new InventoryChanged(currentItem, slot, InventoryUpdateType.ADDED);
+        } else if(previousItem != null && currentItem == null) {
+            // Item was removed
+            return new InventoryChanged(previousItem, slot, InventoryUpdateType.REMOVED);
+        } else if(previousItem != null && currentItem != null) {
+            if(previousItem.getId() != currentItem.getId()) {
+                // Different item in same slot
+                return new InventoryChanged(currentItem, slot, InventoryUpdateType.MOVED);
+            } else if(previousItem.getQuantity() != currentItem.getQuantity()) {
+                // Same item, different quantity
+                return new InventoryChanged(currentItem, slot, InventoryUpdateType.QUANTITY);
+            }
+        }
+
+        return new InventoryChanged(null, -1, InventoryUpdateType.NONE);
     }
 
     /**
