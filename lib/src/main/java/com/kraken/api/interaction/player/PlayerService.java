@@ -3,12 +3,17 @@ package com.kraken.api.interaction.player;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.widget.WidgetService;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Singleton
@@ -16,6 +21,11 @@ public class PlayerService extends AbstractService {
 
     @Inject
     private WidgetService widgetService;
+
+    @Inject
+    private ReflectionService reflectionService;
+
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
     /**
      * Checks if the player is currently moving based on their pose animation.
@@ -64,17 +74,36 @@ public class PlayerService extends AbstractService {
     /**
      * Sets the special attack state if currentSpecEnergy >= specialAttackEnergyRequired
      *
-     * @param energyRequired int, 1000 = 100%
-     * @return boolean, whether the action succeeded
+     * @param energyRequired int, 100 = 100%
      */
     public void toggleSpecialAttack(int energyRequired) {
-        int currentSpecEnergy = client.getVarpValue(300); // Spec percent
-        // spec enabled
-        if (currentSpecEnergy >= energyRequired && (client.getVarpValue(301) == 0)) {
-            widgetService.clickWidget("special attack");
+        int currentSpecEnergy = client.getVarpValue(300) / 10;
+        if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
+            widgetService.clickWidget(10485795);
         }
     }
 
+    /**
+     * Returns true when the spec is enabled and false otherwise
+     * @return
+     */
+    public boolean isSpecEnabled() {
+        return client.getVarpValue(301) == 1;
+    }
+
+    /**
+     * Sets the special attack state if currentSpecEnergy >= specialAttackEnergyRequired using reflection instead of mouse events.
+     *
+     * @param energyRequired int, 100 = 100%
+     * @param delay int a set delay before the spec button is pressed. This can't happen instantaneously because the server needs to process
+     *              the weapon equip before it can toggle on spec. Otherwise, the game would see you toggle on spec for nothing, then spec weapon gets equipped with spec disabled.
+     */
+    public void toggleSpecialAttackReflect(int energyRequired, int delay) {
+        int currentSpecEnergy = client.getVarpValue(300) / 10;
+        if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
+            executor.schedule(() -> reflectionService.invokeMenuAction(-1, 38862886, MenuAction.CC_OP.getId(), 1, -1), delay, TimeUnit.MILLISECONDS);
+        }
+    }
 
     /**
      * Checks if the player is within 5 tiles of a given {@link WorldPoint}.
