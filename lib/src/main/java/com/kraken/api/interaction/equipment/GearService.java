@@ -10,6 +10,9 @@ import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.MenuAction;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
@@ -59,13 +62,6 @@ public class GearService extends AbstractService {
             equipment.addAll(list);
         }
     }
-
-//    @Subscribe
-//    private void onMenuOptionClicked(MenuOptionClicked event) {
-//        log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
-//                event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
-//                event.getId(), event.getItemOp(), event);
-//    }
 
     public boolean wieldReflect(int id) {
         int[] ids = new int[]{id};
@@ -176,6 +172,15 @@ public class GearService extends AbstractService {
                 .filter(i -> name.equalsIgnoreCase(i.getName()))
                 .max(Comparator.comparing(InventoryItem::getName))
                 .isPresent();
+    }
+
+    public Item getEquipmentInSlot(EquipmentInventorySlot slot) {
+        ItemContainer equipment = client.getItemContainer(94);
+        if (equipment == null) {
+            return null;
+        }
+
+        return equipment.getItem(slot.getSlotIdx());
     }
 
     public boolean hasItem(int id) {

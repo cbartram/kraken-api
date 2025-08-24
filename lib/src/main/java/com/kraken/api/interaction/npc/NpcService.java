@@ -367,99 +367,20 @@ public class NpcService extends AbstractService {
         }
     }
 
-    private static HeadIcon headIconThruLengthEightArrays(NPC npc) throws IllegalAccessException {
-        Class<?>[] trying = new Class<?>[]{npc.getClass(),npc.getComposition().getClass()};
-        for (Class<?> aClass : trying) {
-            for (Field declaredField : aClass.getDeclaredFields()) {
-                Field[] decFields = declaredField.getType().getDeclaredFields();
-                if(decFields.length == 2) {
-                    if(decFields[0].getType().isArray()&&decFields[1].getType().isArray()){
-                        for (Field decField : decFields) {
-                            decField.setAccessible(true);
-                        }
-                        Object[] array1 = (Object[]) decFields[0].get(npc);
-                        Object[] array2 = (Object[]) decFields[1].get(npc);
-                        for (Field decField : decFields) {
-                            decField.setAccessible(false);
-                        }
-                        if(array1.length == 8 & array2.length == 8) {
-                            if(decFields[0].getType()==short[].class) {
-                                if((short)array1[0] == -1) {
-                                    return null;
-                                }
-                                return HeadIcon.values()[(short)array1[0]];
-                            }
-                            if((short)array2[0] == -1){
-                                return null;
-                            }
-                            return HeadIcon.values()[(short)array2[0]];
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     @SneakyThrows
     public static HeadIcon getHeadIcon(final NPC npc) {
-        if(npc == null) return null;
-        HeadIcon icon = getOldHeadIcon(npc);
-        if(icon != null) {
-            return icon;
+        if (npc.getOverheadSpriteIds() == null) {
+            log.info("Npc has no overhead sprites.");
+            return null;
         }
-        icon = getOlderHeadicon(npc);
-        if(icon != null) {
-            return icon;
+
+        for (int i = 0; i < npc.getOverheadSpriteIds().length; i++) {
+            int overheadSpriteId = npc.getOverheadSpriteIds()[i];
+            if (overheadSpriteId == -1) continue;
+            return HeadIcon.values()[overheadSpriteId];
         }
-        return headIconThruLengthEightArrays(npc);
-    }
 
-    @SneakyThrows
-    private static HeadIcon getOlderHeadicon(NPC npc){
-        Method getHeadIconMethod;
-        for (Method declaredMethod : npc.getComposition().getClass().getDeclaredMethods()) {
-            if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short.class && declaredMethod.getParameterCount() == 1) {
-                getHeadIconMethod = declaredMethod;
-                getHeadIconMethod.setAccessible(true);
-                short headIcon = -1;
-                try {
-                    headIcon = (short) getHeadIconMethod.invoke(npc.getComposition(), 0);
-                }catch (Exception e){
-                    //nothing
-                }
-                getHeadIconMethod.setAccessible(false);
-
-                if (headIcon == -1) {
-                    continue;
-                }
-                return HeadIcon.values()[headIcon];
-            }
-        }
-        return null;
-    }
-
-    @SneakyThrows
-    private static HeadIcon getOldHeadIcon(NPC npc) {
-        Method getHeadIconMethod;
-        for (Method declaredMethod : npc.getClass().getDeclaredMethods()) {
-            if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short[].class && declaredMethod.getParameterCount() == 0) {
-                getHeadIconMethod = declaredMethod;
-                getHeadIconMethod.setAccessible(true);
-                short[] headIcon = null;
-                try {
-                    headIcon = (short[]) getHeadIconMethod.invoke(npc);
-                } catch (Exception e) {
-                    //nothing
-                }
-                getHeadIconMethod.setAccessible(false);
-
-                if (headIcon == null) {
-                    continue;
-                }
-                return HeadIcon.values()[headIcon[0]];
-            }
-        }
+        log.info("Found overheadSpriteIds: {} but failed to find valid overhead prayer.", Arrays.toString(npc.getOverheadSpriteIds()));
         return null;
     }
 }

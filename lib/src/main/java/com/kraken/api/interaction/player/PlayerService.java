@@ -34,6 +34,14 @@ public class PlayerService extends AbstractService {
     }
 
     /**
+     * Gets the amount of special attack energy remaining as a percent (0-100).
+     * @return int the amount of special attack energy the player has remaining.
+     */
+    public int getSpecialAttackEnergy() {
+        return client.getVarpValue(300) / 10;
+    }
+
+    /**
      * Gets the current player position safely
      */
     public WorldPoint getPlayerPosition() {
