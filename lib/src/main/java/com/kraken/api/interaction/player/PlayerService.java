@@ -92,6 +92,14 @@ public class PlayerService extends AbstractService {
     }
 
     /**
+     * Returns true when the spec is disabled and false otherwise
+     * @return
+     */
+    public boolean isSpecDisabled() {
+        return client.getVarpValue(301) == 0;
+    }
+
+    /**
      * Sets the special attack state if currentSpecEnergy >= specialAttackEnergyRequired using reflection instead of mouse events.
      *
      * @param energyRequired int, 100 = 100%
