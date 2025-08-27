@@ -52,6 +52,125 @@ The output API `.jar` will be located in:
 ./lib/build/libs/kraken-api-<version>.jar
 ```
 
+
+### Example Plugin Setup
+
+In order to use the API in an actual RuneLite plugin you should check out the [Kraken Example Plugin](https://github.com/cbartram/kraken-example-plugin)
+which shows a best practice usage of the API within an actual plugin.
+To set up your development environment we recommend following [this guide on RuneLite's Wiki](https://github.com/runelite/runelite/wiki/Building-with-IntelliJ-IDEA).
+
+Once you have the example plugin cloned and setup within Intellij you can run the main class in `src/test/java/ExamplePluginTest.java` to run RuneLite with 
+the example plugin loaded in the plugin panel within RuneLite's sidebar. 
+
+![example-plugin](./images/example-plugin.png)
+
+In order for the plugin to run correctly your game must be in:
+- Fixed mode
+- Have the "Stretched Mode" plugin disabled
+
+### API Design & Methodology
+
+The Kraken API was designed from the ground up to leverage the software design pattern of dependency injection. This is the exact same 
+pattern adopted by RuneLite to ensure that plugins get exactly what they need to run from RuneLite and nothing more. As the developer you will
+declare to your script what you need from the Kraken API and the dependencies will be directly injected into your script at runtime. For example a mining script
+which clicks a rock may need information from the API for:
+
+- Interacting with Game Object through the `GameObjectService`
+- Checking if the inventory is full with the`InventoryService`
+- Sleeping during downtime using the `SleepService`
+
+```java
+@Slf4j
+public class ClickRockAction {
+
+    @Inject
+    private SleepService sleepService;
+    
+    @Inject
+    private GameObjectService gameObjectService;
+    
+    @Inject
+    private InventoryService inventoryService;
+    
+
+    @Subscribe
+    private void onItemContainerChanged(ItemContainerChanged e) {
+        if (e.getContainerId() == InventoryID.INV) {
+            // ...
+        }
+    }
+    
+    public boolean performAction() {
+        GameObject nearestRock = gameObjectService.findReachableObject("Iron rocks", true, 5, client.getLocalPlayer().getWorldLocation(), true, "Mine");
+
+        if (nearestRock == null) {
+            log.info("No available iron rocks found, waiting for respawn");
+            return false;
+        }
+        
+        if (gameObjectService.interact(nearestRock, "Mine")) {
+            sleepService.sleepUntil(() -> context.isPlayerMining(client.getLocalPlayer()), RandomService.between(1200, 2000));
+            return true;
+        } else {
+            return false;
+        }
+    }
+     // ... 
+}
+```
+
+Dependency injection ensures that your script classes remain lightweight, testable, and easy to debug.
+
+### Script Structure
+
+There are 2 main structures you can use for actually writing scripts with the Kraken API,
+although, you can implement other ways of maintaining script state if you'd like!
+
+1. Extending the basic `Script` class
+2. Behavior Trees
+
+#### Extending the Script Class
+
+For simple plugins, most users will want to extend the `Script` class which provides helpful methods like `onStart()`, `onLoop()`, and `onEnd()` for 
+managing script state. You can opt to implement a Finite State Machine (FSM) pattern for your scripts where, when certain conditions are met
+the script transitions to a state and performs an action. For example a mining script may have:
+
+States:
+- IDLE: Initial state, ready to begin mining
+- FINDING_ROCKS: Searching for available mining rocks
+- MOVING_TO_ROCKS: Walking to the selected mining location
+- MINING: Actively mining ore from rocks
+- INVENTORY_FULL: Inventory is full, need to bank
+- MOVING_TO_BANK: Walking to the bank
+- BANKING: Depositing ore into bank
+- ERROR: Something went wrong, needs intervention
+
+and governing logic like: 
+
+IDLE → FINDING_ROCKS → MOVING_TO_ROCKS → MINING → MINING → MINING →
+INVENTORY_FULL → MOVING_TO_BANK → BANKING → FINDING_ROCKS → ...
+
+This approach has several benefits:
+
+- Clear Logic Flow: Easy to understand and debug bot behavior
+- Error Handling: Structured approach to handle failures
+- Maintainability: Simple to add new states or modify existing ones
+- Predictable Behavior: Bot actions are deterministic based on current state
+- Logging: Easy to track state transitions for debugging
+
+Extending the `Script` class gives you a blank slate to work with,
+giving your freedom to determine how your script operates with the Kraken API. 
+
+#### Behavior Trees
+
+As you move to making more complex scripts you may run into issues with large FSM's that make managing states difficult to debug. This is where Behavior Trees come
+into play. Traditionally, behavior trees have been used to give depth to A.I. enemies in video games, however, the Kraken API includes a foundation for creating
+scripts using Behavior Trees. This document won't cover the mechanics behind behavior trees in detail however, you can check out the [Kraken Example Mining Plugin](https://github.com/cbartram/kraken-example-plugin)
+to see a fully implemented example of a Behavior tree based script. 
+
+Behavior trees are one of those things where you don't need them until you do. You may eventually get to a point in your script where the state transitions
+become too complex and unwieldy to maintain which is why the Kraken API provides this programming paradigm to you!
+
 ### Running Tests
 
 Run the full test suite with:
@@ -62,20 +181,21 @@ Run the full test suite with:
 
 ### Using Kraken API in Your Plugin
 
-Add the dependency to your `build.gradle`:
+Add the Kraken API dependency to your `build.gradle` file as follows:
 
 ```gradle
 repositories {
     mavenCentral()
-    maven { url "https://maven.pkg.github.com/cbartram/kraken-api" }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    implementation group: 'com.github.cbartram', name:'kraken-api', version: '1.0.12'
+    // Or the latest available version
+    implementation group: 'com.github.cbartram', name:'kraken-api', version: '1.0.53'
+    implementation group: 'com.github.cbartram', name:'shortest-path', version: '1.0.3'
 }
 ```
-
-> ⚠️ You may need a GitHub token with `read:packages` permission to authenticate with the package registry.
+> ⚠️ If you are using the MovementService in your plugin for character pathing you should also include the `shortest-path` dependency.
 
 ### Development Workflow
 
