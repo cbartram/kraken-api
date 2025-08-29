@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://kraken-plugins.duckdns.org">
+  <a href="https://kraken-plugins.com">
     <img src="lib/src/main/resources/kraken.png" alt="Logo" width="128" height="128">
   </a>
 
@@ -23,7 +23,7 @@
 # 🚀 Getting Started (For Developers)
 
 Kraken API is designed to extend the RuneLite API with additional client-interaction utilities for writing automation based plugins that are compatible with RuneLite. If you are
-just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.duckdns.org](https://kraken-plugins.duckdns.org).
+just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.com](https://kraken-plugins.com).
 
 ### Prerequisites
 - [Java 11+](https://adoptium.net/) (JDK required)
