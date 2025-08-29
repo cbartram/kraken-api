@@ -17,7 +17,9 @@ import java.net.URL;
 @Slf4j
 @Singleton
 public class HooksLoader {
-    private static final String HOOKS_URL = "https://raw.githubusercontent.com/OreoCupcakes/kotori-plugins-releases/master/hooks.json";
+    // Upstream hooks are located at "https://raw.githubusercontent.com/OreoCupcakes/kotori-plugins-releases/master/hooks.json";
+    // TODO Need to find out how these are actually generated so we don't depend on other plugin providers.
+    private static final String HOOKS_URL = "https://minio.kraken-plugins.com/kraken-bootstrap-static/hooks.json";
 
     private final Client client;
     private final Gson gson;
