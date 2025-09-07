@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarPlayerID;
@@ -127,6 +128,16 @@ public class PlayerService extends AbstractService {
         if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
             widgetService.clickWidget(10485795);
         }
+    }
+
+    /**
+     * Calculates the player's current health as a percentage of their real (base) health.
+     *
+     * @return the health percentage as a double. For example:
+     *         150.0 if boosted, 80.0 if drained, or 100.0 if unchanged.
+     */
+    public double getHealthPercentage() {
+        return (double) (client.getBoostedSkillLevel(Skill.HITPOINTS) * 100) / client.getRealSkillLevel(Skill.HITPOINTS);
     }
 
     /**
