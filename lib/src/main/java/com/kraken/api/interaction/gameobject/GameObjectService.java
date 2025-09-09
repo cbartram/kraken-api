@@ -3,6 +3,7 @@ package com.kraken.api.interaction.gameobject;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
@@ -25,6 +26,9 @@ import java.util.stream.Stream;
 @Slf4j
 @Singleton
 public class GameObjectService extends AbstractService {
+
+    @Inject
+    private ReflectionService reflectionService;
 
     /**
      * Extracts all {@link GameObject}s located on a given {@link Tile}.
@@ -441,8 +445,9 @@ public class GameObjectService extends AbstractService {
 
 
             // TODO Performs many yellow clicks
-            // Real: [Client] INFO com.krakenplugins.example.MiningPlugin - Option=Mine, Target=<col=ffff>Iron rocks, Param0=45, Param1=49, MenuAction=GAME_OBJECT_FIRST_OPTION, ItemId=-1, id=11364, itemOp=-1, str=MenuOptionClicked(getParam0=45, getParam1=49, getMenuOption=Mine, getMenuTarget=<col=ffff>Iron rocks, getMenuAction=GAME_OBJECT_FIRST_OPTION, getId=11364)
-            context.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object), uiService.getObjectClickbox(object));
+            //Option=Mine, Target=<col=ffff>Iron rocks, Param0=45, Param1=49, MenuAction=GAME_OBJECT_FIRST_OPTION, ItemId=-1, id=11364, itemOp=-1, str=MenuOptionClicked(getParam0=45, getParam1=49, getMenuOption=Mine, getMenuTarget=<col=ffff>Iron rocks, getMenuAction=GAME_OBJECT_FIRST_OPTION, getId=11364)
+            reflectionService.invokeMenuAction(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName());
+            // context.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object), uiService.getObjectClickbox(object));
         } catch (Exception ex) {
             log.error("Failed to interact with object: {}", ex.getMessage());
         }
