@@ -124,10 +124,7 @@ public class PlayerService extends AbstractService {
      * @param energyRequired int, 100 = 100%
      */
     public void toggleSpecialAttack(int energyRequired) {
-        int currentSpecEnergy = client.getVarpValue(300) / 10;
-        if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
-            widgetService.clickWidget(10485795);
-        }
+       toggleSpecialAttackReflect(energyRequired, 300);
     }
 
     /**
@@ -201,6 +198,45 @@ public class PlayerService extends AbstractService {
         if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
             executor.schedule(() -> reflectionService.invokeMenuAction(-1, 38862886, MenuAction.CC_OP.getId(), 1, -1), delay, TimeUnit.MILLISECONDS);
         }
+    }
+
+    /**
+     * Toggles the players run energy. If it is on it will turn it off and vice versa. Use
+     * {activateRun} and {deactivateRun} if a specific state is required.
+     */
+    public void toggleRun() {
+        executor.schedule(() -> reflectionService.invokeMenuAction(-1, 10485787, MenuAction.CC_OP.getId(), 1, -1), 50, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Activates run if it is deactivated.
+     */
+    public void activateRun() {
+        if(isRunEnabled()) return;
+        toggleRun();
+    }
+
+    /**
+     * Deactivates run if it is enabled.
+     */
+    public void deactivateRun() {
+        if(isRunEnabled()) toggleRun();
+    }
+
+    /**
+     * Returns true when a players run is enabled and false otherwise.
+     * @return boolean
+     */
+    public boolean isRunEnabled() {
+        return client.getVarpValue(173) == 1;
+    }
+
+    /**
+     * Returns the amount of run energy remaining for the player as an integer between 0 and 100.
+     * @return int
+     */
+    public int currentRunEnergy() {
+        return this.client.getEnergy() / 100;
     }
 
     /**

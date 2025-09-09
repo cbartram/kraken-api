@@ -60,7 +60,7 @@ public class MovementService extends AbstractService {
     @Getter
     private int completedWaypoints = 0;
 
-    private static final int MOVEMENT_TIMEOUT = 5000; // 5 seconds
+    private static final int MOVEMENT_TIMEOUT = 12000; // 5 seconds
     private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
 
     public boolean walkTo(WorldPoint target) {
@@ -77,13 +77,6 @@ public class MovementService extends AbstractService {
             return MovementState.FAILED;
         }
 
-        return walkWithStateInternal(target, distance);
-    }
-
-    /**
-     * Enhanced internal walking logic with cross-world pathfinding support
-     */
-    private MovementState walkWithStateInternal(WorldPoint target, int distance) {
         if (target == null) {
             currentState = MovementState.FAILED;
             stateDescription = "Target is null";
@@ -187,6 +180,7 @@ public class MovementService extends AbstractService {
                 // Regenerate path
                 // TODO When a player finishes a path and we reset, the next time we re-calc a path it is like halfway through the opposite direction and we
                 // end up going back to the mine then this condition triggers and we re-calculate a brand new path. Resetting the path doesn't seem to be working right
+                resetPath();
                 isExecutingPath = false;
                 currentPath = null;
                 fullCalculatedPath = null;
@@ -288,18 +282,18 @@ public class MovementService extends AbstractService {
      * paths back to a waypoint that was not removed.
      */
     private void removePassedWaypoints(WorldPoint next) {
-        if (currentPath == null || currentPath.isEmpty()) return;
+        WorldPoint playerPos = playerService.getPlayerPosition();
+        if (playerPos == null) return;
 
-        Iterator<WorldPoint> iterator = currentPath.iterator();
-        while (iterator.hasNext()) {
-            WorldPoint waypoint = iterator.next();
-
-            if(waypoint.getX() == next.getX() && waypoint.getY() == next.getY()) {
+        // If we’re very close, treat it as reached
+        while (currentPath != null && !currentPath.isEmpty()) {
+            WorldPoint first = currentPath.peek();
+            if (playerPos.distanceTo(first) <= 2) {
+                currentPath.poll();
+                completedWaypoints++;
+            } else {
                 break;
             }
-
-            iterator.remove();
-            completedWaypoints++;
         }
     }
 
@@ -437,25 +431,20 @@ public class MovementService extends AbstractService {
             return;
         }
 
-        // Retrieve the top-level world view from the client.
         WorldView wv = client.getTopLevelWorldView();
 
         if (convertForInstance) {
-            // Convert world coordinates to their local equivalents inside an instanced scene.
             Collection<WorldPoint> localWorldPoints = WorldPoint.toLocalInstance(wv.getScene(), worldPoint);
 
-            // Ensure we have exactly one matching point; otherwise, walking becomes ambiguous.
             if (localWorldPoints.size() != 1) {
                 return;
             }
 
-            // Convert the single matching WorldPoint to LocalPoint and initiate walking.
             for (WorldPoint localWorld : localWorldPoints) {
                 sceneWalk(LocalPoint.fromWorld(wv, localWorld));
                 return;
             }
         } else {
-            // Normal world coordinate → local coordinate conversion.
             sceneWalk(LocalPoint.fromWorld(wv, worldPoint));
         }
     }
