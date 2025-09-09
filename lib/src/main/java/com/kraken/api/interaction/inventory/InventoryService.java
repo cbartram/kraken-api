@@ -664,7 +664,20 @@ public class InventoryService extends AbstractService {
                 inventoryItems.stream().filter(filter).min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
     }
 
+    /**
+     * Returns a list of Inventory Items which can be consumed for health.
+     * @return List of Inventory items which are food.
+     */
+    public  List<InventoryItem> getFood() {
+        return new ArrayList<>(all(InventoryItem::isFood));
+    }
 
+    /**
+     * Drops the item from the inventory.
+     *
+     * @param item The item to drop
+     * @return True if the item was successfully dropped, false otherwise.
+     */
     private boolean drop(InventoryItem item) {
         if (item == null) return false;
 
