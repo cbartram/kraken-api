@@ -47,6 +47,19 @@ public class PrayerService extends AbstractService {
     }
 
     /**
+     * Toggles a prayer on or off. This will use reflection based prayer toggles by default.
+     * @param prayer The Prayer to toggle
+     * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
+     */
+    public boolean toggle(Prayer prayer) {
+        if(client.isPrayerActive(prayer)) {
+            return toggle(prayer, false, true);
+        } else {
+            return toggle(prayer, true, true);
+        }
+    }
+
+    /**
      * Toggles a prayer on or off.
      * @param prayer The Prayer to toggle
      * @param activate True if the prayer should be turned on and false if it should be turned off
