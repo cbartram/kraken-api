@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.model.NewMenuEntry;
 import lombok.SneakyThrows;
@@ -32,6 +33,9 @@ public class NpcService extends AbstractService {
 
     @Inject
     private UIService uiService;
+
+    @Inject
+    private ReflectionService reflectionService;
 
     /**
      * Retrieves a stream of NPCs filtered by a given condition.
@@ -319,9 +323,9 @@ public class NpcService extends AbstractService {
                 cameraService.turnTo(npc);
             }
 
-            context.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action), uiService.getActorClickbox(npc));
+            reflectionService.invokeMenuAction(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), action);
+            // context.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action), uiService.getActorClickbox(npc));
             return true;
-
         } catch (Exception ex) {
             log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
             return false;
@@ -367,6 +371,12 @@ public class NpcService extends AbstractService {
         }
     }
 
+    /**
+     * Returns the head icon for an NPC if it exists. A head icon would be a prayer the NPC is prayer:
+     * i.e. Hunlleff's prayers or Nex's deflect melee.
+     * @param npc NPC to check
+     * @return HeadIcon
+     */
     @SneakyThrows
     public static HeadIcon getHeadIcon(final NPC npc) {
         if (npc.getOverheadSpriteIds() == null) {
@@ -380,7 +390,7 @@ public class NpcService extends AbstractService {
             return HeadIcon.values()[overheadSpriteId];
         }
 
-        log.info("Found overheadSpriteIds: {} but failed to find valid overhead prayer.", Arrays.toString(npc.getOverheadSpriteIds()));
+        log.debug("Found overheadSpriteIds: {} but failed to find valid overhead prayer.", Arrays.toString(npc.getOverheadSpriteIds()));
         return null;
     }
 }
