@@ -4,6 +4,7 @@ import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.widget.WidgetService;
 import com.kraken.api.model.InventoryItem;
 import com.kraken.api.model.NewMenuEntry;
@@ -35,6 +36,9 @@ public class BankService extends AbstractService {
 
     @Inject
     private InventoryService inventoryService;
+
+    @Inject
+    private ReflectionService reflectionService;
 
     private static final int BANK_INVENTORY_ITEM_CONTAINER = 983043;
 
@@ -76,9 +80,9 @@ public class BankService extends AbstractService {
 //            itemBoundingBox = itemBounds(item);
 //        }
 
-//        Option=Deposit-All, Target=<col=ff9040>Iron ore</col>, Param0=4, Param1=983043, MenuAction=CC_OP_LOW_PRIORITY, ItemId=440, id=8, itemOp=-1, str=MenuOptionClicked(getParam0=4, getParam1=983043, getMenuOption=Deposit-All, getMenuTarget=<col=ff9040>Iron ore</col>, getMenuAction=CC_OP_LOW_PRIORITY, getId=8)
         log.info("Invoking Bank menu: param0={}, param1={}, opcode={}, identifier={}, target={}, itemId={}", item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getName(), item.getId());
-        context.doInvoke(new NewMenuEntry(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
+        reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName(), "");
+        // context.doInvoke(new NewMenuEntry(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
     }
 
     /**
@@ -160,14 +164,13 @@ public class BankService extends AbstractService {
     }
 
     /**
-     * deposit all items identified by its id
-     *
+     * Deposits all items identified with the given id.
      * @param id searches based on the id
      *
      * @return true if anything deposited
      */
     public boolean depositAll(int id) {
-        InventoryItem item = inventoryService.get(id);
+        InventoryItem item = inventoryService.getRandom(id);
         if (item == null) return false;
         return depositAll(item);
     }

@@ -12,6 +12,7 @@ import com.kraken.api.interaction.ui.TabService;
 import com.kraken.api.interaction.widget.WidgetService;
 import com.kraken.api.model.InventoryItem;
 import com.kraken.api.model.NewMenuEntry;
+import com.kraken.api.util.RandomUtils;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -537,6 +538,46 @@ public class InventoryService extends AbstractService {
      */
     public boolean interact(InventoryItem item) {
         return interact(item, "");
+    }
+
+    /**
+     * Gets a random item in the inventory which matches the specified filter criteria.
+     * @param predicate The filter to apply
+     * @return The item that matches the filter criteria or null if not found.
+     */
+    public InventoryItem getRandom(Predicate<InventoryItem> predicate) {
+        List<InventoryItem> items = inventoryItems.stream()
+                .filter(predicate)
+                .collect(Collectors.toList());
+
+        if (items.isEmpty()) {
+            return null;
+        }
+
+        int randomIndex = RandomUtils.randomIntBetween(0, items.size() - 1);
+        return items.get(randomIndex);
+    }
+
+    /**
+     * Gets a random item in the inventory which matches the specified filter criteria.
+     * @param ids The ids to search for
+     * @return The item that matches the filter criteria or null if not found.
+     */
+    public InventoryItem getRandom(int... ids) {
+        return getRandom(item -> Arrays.stream(ids).anyMatch(id -> id == item.getId()));
+    }
+
+    /**
+     * Gets the item in the inventory that matches the specified filter criteria. This will return
+     * the first item which matches. Use {findRandom} if you wish to find the item specified by the filter criteria
+     * in a random slot.
+     *
+     * @param predicate The filter to apply.
+     *
+     * @return The item that matches the filter criteria, or null if not found.
+     */
+    public InventoryItem getFirst(Predicate<InventoryItem> predicate) {
+        return get(predicate);
     }
 
     /**

@@ -423,7 +423,6 @@ public class GameObjectService extends AbstractService {
                 }
             }
 
-
             if (client.isWidgetSelected()) {
                 menuAction = MenuAction.WIDGET_TARGET_ON_GAME_OBJECT;
             } else if (index == 0) {
@@ -442,12 +441,7 @@ public class GameObjectService extends AbstractService {
                 cameraService.turnTo(object);
             }
 
-
-
-            // TODO Performs many yellow clicks
-            //Option=Mine, Target=<col=ffff>Iron rocks, Param0=45, Param1=49, MenuAction=GAME_OBJECT_FIRST_OPTION, ItemId=-1, id=11364, itemOp=-1, str=MenuOptionClicked(getParam0=45, getParam1=49, getMenuOption=Mine, getMenuTarget=<col=ffff>Iron rocks, getMenuAction=GAME_OBJECT_FIRST_OPTION, getId=11364)
             reflectionService.invokeMenuAction(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName());
-            // context.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object), uiService.getObjectClickbox(object));
         } catch (Exception ex) {
             log.error("Failed to interact with object: {}", ex.getMessage());
         }
