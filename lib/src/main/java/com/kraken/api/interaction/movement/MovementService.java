@@ -180,7 +180,6 @@ public class MovementService extends AbstractService {
                 // Regenerate path
                 // TODO When a player finishes a path and we reset, the next time we re-calc a path it is like halfway through the opposite direction and we
                 // end up going back to the mine then this condition triggers and we re-calculate a brand new path. Resetting the path doesn't seem to be working right
-                resetPath();
                 isExecutingPath = false;
                 currentPath = null;
                 fullCalculatedPath = null;
@@ -282,18 +281,18 @@ public class MovementService extends AbstractService {
      * paths back to a waypoint that was not removed.
      */
     private void removePassedWaypoints(WorldPoint next) {
-        WorldPoint playerPos = playerService.getPlayerPosition();
-        if (playerPos == null) return;
+        if (currentPath == null || currentPath.isEmpty()) return;
 
-        // If we’re very close, treat it as reached
-        while (currentPath != null && !currentPath.isEmpty()) {
-            WorldPoint first = currentPath.peek();
-            if (playerPos.distanceTo(first) <= 2) {
-                currentPath.poll();
-                completedWaypoints++;
-            } else {
+        Iterator<WorldPoint> iterator = currentPath.iterator();
+        while (iterator.hasNext()) {
+            WorldPoint waypoint = iterator.next();
+
+            if(waypoint.getX() == next.getX() && waypoint.getY() == next.getY()) {
                 break;
             }
+
+            iterator.remove();
+            completedWaypoints++;
         }
     }
 
@@ -430,7 +429,6 @@ public class MovementService extends AbstractService {
         if (worldPoint == null) {
             return;
         }
-
         WorldView wv = client.getTopLevelWorldView();
 
         if (convertForInstance) {
