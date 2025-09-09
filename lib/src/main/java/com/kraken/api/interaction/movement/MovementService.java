@@ -25,7 +25,7 @@ public class MovementService extends AbstractService {
 
     @Inject
     private ShortestPathService shortestPathService;
-    
+
     @Inject
     private MinimapService minimapService;
 
@@ -60,7 +60,7 @@ public class MovementService extends AbstractService {
     @Getter
     private int completedWaypoints = 0;
 
-    private static final int MOVEMENT_TIMEOUT = 12000; // 5 seconds
+    private static final int MOVEMENT_TIMEOUT = 12000; // 12 seconds
     private static final int MIN_DISTANCE_FOR_PATH = 20; // Tiles
 
     public boolean walkTo(WorldPoint target) {
@@ -77,6 +77,13 @@ public class MovementService extends AbstractService {
             return MovementState.FAILED;
         }
 
+        return walkWithStateInternal(target, distance);
+    }
+
+    /**
+     * Enhanced internal walking logic with cross-world pathfinding support
+     */
+    private MovementState walkWithStateInternal(WorldPoint target, int distance) {
         if (target == null) {
             currentState = MovementState.FAILED;
             stateDescription = "Target is null";
@@ -429,6 +436,7 @@ public class MovementService extends AbstractService {
         if (worldPoint == null) {
             return;
         }
+
         WorldView wv = client.getTopLevelWorldView();
 
         if (convertForInstance) {
