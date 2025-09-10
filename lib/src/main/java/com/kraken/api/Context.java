@@ -9,11 +9,13 @@ import com.kraken.api.interaction.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.equipment.GearService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
+import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
 import com.kraken.api.interaction.movement.ShortestPathService;
 import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.packet.PacketService;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.prayer.PrayerService;
 import com.kraken.api.interaction.spells.SpellService;
@@ -80,6 +82,8 @@ public class Context {
             BankService.class,
             CameraService.class,
             GameObjectService.class,
+            GroundObjectService.class,
+            PacketService.class,
             InventoryService.class,
             MovementService.class,
             MinimapService.class,
