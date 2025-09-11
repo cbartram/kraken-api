@@ -44,9 +44,9 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
-            name = "Start Path",
+            name = "Start",
             keyName = "start",
-            description = "Start Pathfinding algorithm.",
+            description = "Start the execution of the script.",
             position = 3
     )
     default boolean start() {

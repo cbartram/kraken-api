@@ -303,6 +303,51 @@ public class MovementService extends AbstractService {
         }
     }
 
+    public List<WorldPoint> reachableTiles() {
+        boolean[][] visited = new boolean[104][104];
+        int[][] flags = client.getCollisionMaps()[client.getPlane()].getFlags();
+        WorldPoint playerLoc = client.getLocalPlayer().getWorldLocation();
+        int firstPoint = (playerLoc.getX() - client.getTopLevelWorldView().getBaseX() << 16) | playerLoc.getY() - client.getTopLevelWorldView().getBaseY();
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        queue.add(firstPoint);
+        while (!queue.isEmpty()) {
+            int point = queue.poll();
+            short x = (short) (point >> 16);
+            short y = (short) point;
+            if (y < 0 || x < 0 || y > 104 || x > 104) {
+                continue;
+            }
+            if ((flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0 && (flags[x][y - 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && !visited[x][y - 1]) {
+                queue.add((x << 16) | (y - 1));
+                visited[x][y - 1] = true;
+            }
+            if ((flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0 && (flags[x][y + 1] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && !visited[x][y + 1]) {
+                queue.add((x << 16) | (y + 1));
+                visited[x][y + 1] = true;
+            }
+            if ((flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0 && (flags[x - 1][y] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && !visited[x - 1][y]) {
+                queue.add(((x - 1) << 16) | y);
+                visited[x - 1][y] = true;
+            }
+            if ((flags[x][y] & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0 && (flags[x + 1][y] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && !visited[x + 1][y]) {
+                queue.add(((x + 1) << 16) | y);
+                visited[x + 1][y] = true;
+            }
+        }
+        int baseX = client.getTopLevelWorldView().getBaseX();
+        int baseY = client.getTopLevelWorldView().getBaseY();
+        int plane = client.getTopLevelWorldView().getPlane();
+        List<WorldPoint> finalPoints = new ArrayList<>();
+        for (int x = 0; x < 104; ++x) {
+            for (int y = 0; y < 104; ++y) {
+                if (visited[x][y]) {
+                    finalPoints.add(new WorldPoint(baseX + x, baseY + y, plane));
+                }
+            }
+        }
+        return finalPoints;
+    }
+
     /**
      * Finds an intermediate point between current position and target that is within the loaded scene
      */

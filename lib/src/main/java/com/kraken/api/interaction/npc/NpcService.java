@@ -1,5 +1,9 @@
 package com.kraken.api.interaction.npc;
 
+import com.example.EthanApiPlugin.Collections.NPCs;
+import com.example.EthanApiPlugin.Collections.query.NPCQuery;
+import com.example.Packets.MousePackets;
+import com.example.Packets.NPCPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
@@ -32,9 +36,6 @@ public class NpcService extends AbstractService {
     private CameraService cameraService;
 
     @Inject
-    private UIService uiService;
-
-    @Inject
     private ReflectionService reflectionService;
 
     /**
@@ -56,6 +57,82 @@ public class NpcService extends AbstractService {
                 .orElse(new ArrayList<>());
 
         return npcList.stream();
+    }
+
+    /**
+     * Interacts with a given NPC given the NPC's name and an action using packets.
+     * @param name NPC name
+     * @param actions Action to take: "Attack"
+     * @return
+     */
+    public boolean interact(String name, String... actions) {
+        NPC npc = getNpcs(n -> n.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+        if(npc == null) return false;
+        log.info("NPC found: {}", npc.getName());
+        MousePackets.queueClickPacket();
+        NPCPackets.queueNPCAction(npc, actions);
+        return true;
+    }
+
+    /**
+     * Interacts with a given NPC given the NPC's id and an action using packets.
+     * @param id NPC id
+     * @param actions Action to take: "Attack"
+     * @return
+     */
+    public boolean interact(int id, String... actions) {
+        return NPCs.search().withId(id).first().flatMap(npc -> {
+            MousePackets.queueClickPacket();
+            NPCPackets.queueNPCAction(npc, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    /**
+     * Interacts with the first NPC which matches the passed predicate using the given action with packets.
+     * @param predicate Predicate to filter NPC's
+     * @param actions Action to take: "Attack"
+     * @return
+     */
+    public boolean interact(Predicate<? super NPC> predicate, String... actions) {
+        return NPCs.search().filter(predicate).first().flatMap(npc -> {
+            MousePackets.queueClickPacket();
+            NPCPackets.queueNPCAction(npc, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    /**
+     * Interacts with a given NPC given the NPC's index and an action using packets.
+     * @param index NPC index
+     * @param actions Action to take: "Attack"
+     * @return
+     */
+    public boolean interactIndex(int index, String... actions) {
+        return NPCs.search().indexIs(index).first().flatMap(npc -> {
+            MousePackets.queueClickPacket();
+            NPCPackets.queueNPCAction(npc, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    /**
+     * Interacts with a given NPC given the NPC and multiple actions using packets.
+     * @param npc The NPC to interact with
+     * @param actions Action to take: "Attack"
+     * @return
+     */
+    public boolean interact(NPC npc, String... actions) {
+        if (npc == null) {
+            return false;
+        }
+        NPCComposition comp = NPCQuery.getNPCComposition(npc);
+        if (comp == null) {
+            return false;
+        }
+        MousePackets.queueClickPacket();
+        NPCPackets.queueNPCAction(npc, actions);
+        return true;
     }
 
     /**
@@ -281,7 +358,7 @@ public class NpcService extends AbstractService {
      * @param action The action to perform on the NPC (e.g., "Talk-to", "Attack", "Trade").
      * @return {@code true} if the interaction was successfully executed, {@code false} if the NPC was unreachable.
      */
-    public boolean interact(NPC npc, String action) {
+    public boolean interactReflect(NPC npc, String action) {
         if (npc == null) return false;
 
         try {
@@ -324,7 +401,6 @@ public class NpcService extends AbstractService {
             }
 
             reflectionService.invokeMenuAction(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), action);
-            // context.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action), uiService.getActorClickbox(npc));
             return true;
         } catch (Exception ex) {
             log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);

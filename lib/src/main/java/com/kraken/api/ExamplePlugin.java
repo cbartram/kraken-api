@@ -3,8 +3,10 @@ package com.kraken.api;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import lombok.Getter;
@@ -29,15 +31,12 @@ import java.util.ArrayList;
 @Slf4j
 @Singleton
 @PluginDescriptor(
-        name = "Movement Test Plugin",
+        name = "Test Plugin",
         enabledByDefault = false,
         description = "A dummy example plugin used to test the API before releasing.",
         tags = {"example", "automation", "kraken"}
 )
 public class ExamplePlugin extends Plugin {
-
-    @Inject
-    private Client client;
 
     @Getter
     @Inject
@@ -46,7 +45,6 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
 
-    // Helper Overlay for displaying movement paths from the MovementService within the API.
     @Inject
     private MovementOverlay movementOverlay;
 
@@ -54,7 +52,10 @@ public class ExamplePlugin extends Plugin {
     private MovementService movementService;
 
     @Inject
-    private MinimapService minimapService;
+    private GroundObjectService groundObjectService;
+
+    @Inject
+    private NpcService npcService;
 
     @Inject
     private Context context;
@@ -65,10 +66,6 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private MouseTrackerOverlay overlay;
 
-    private java.util.List<Point> mouseTrail = new ArrayList<>();
-    private Point lastMousePosition = new Point();
-    private static final int MAX_TRAIL_LENGTH = 100;
-
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
         return configManager.getConfig(ExampleConfig.class);
@@ -76,7 +73,7 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     private void onMenuOptionClicked(MenuOptionClicked event) {
-        log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
+        log.debug("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
                 event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
                 event.getId(), event.getItemOp(), event);
     }
@@ -84,54 +81,16 @@ public class ExamplePlugin extends Plugin {
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
-            // Handle config changes if necessary
-            log.info("Mining config changed: {}", event.getKey());
             if(event.getKey().equals("start")) {
                 if (config.start()) {
-                    log.info("Starting Movement...");
-                    int x = Integer.parseInt(config.xCoordinate());
-                    int y = Integer.parseInt(config.yCoordinate());
-                    WorldPoint wp = new WorldPoint(x, y, client.getTopLevelWorldView().getPlane());
-                    switch(config.movementType()) {
-                        case SCENE_WALK_SP:
-                            log.info("Using Scene Walk for movement.");
-                            movementService.sceneWalk(x, y);
-                            break;
-                        case MINIMAP_WALK_WP:
-                            log.info("Using Minimap Walk for movement. Curr Zoom = {}", client.getMinimapZoom());
-                            minimapService.walkMiniMap(wp);
-                            break;
-                    }
+                    log.info("Starting...");
+                    clientThread.invoke(() -> {
+                        boolean clicked = npcService.interact("Guard", "Attack");
+                        log.info("Clicked: {}", clicked);
+                    });
                 } else {
-                    log.info("Stopping Movement...");
+                    log.info("Stopping...");
                     movementService.resetPath();
-                }
-            }
-        }
-    }
-
-    @Subscribe
-    public void onGameTick(GameTick gameTick)
-    {
-        if (client.getCanvas() == null)
-        {
-            return;
-        }
-
-        // Get mouse position relative to canvas
-        Point mousePos = client.getCanvas().getMousePosition();
-        if (mousePos != null)
-        {
-            // Only add to trail if mouse has moved
-            if (!mousePos.equals(lastMousePosition))
-            {
-                mouseTrail.add(new Point(mousePos));
-                lastMousePosition = new Point(mousePos);
-
-                // Limit trail length
-                if (mouseTrail.size() > MAX_TRAIL_LENGTH)
-                {
-                    mouseTrail.remove(0);
                 }
             }
         }

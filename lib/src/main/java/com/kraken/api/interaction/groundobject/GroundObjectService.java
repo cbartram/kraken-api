@@ -1,5 +1,9 @@
 package com.kraken.api.interaction.groundobject;
 
+import com.example.EthanApiPlugin.Collections.TileObjects;
+import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
+import com.example.Packets.MousePackets;
+import com.example.Packets.ObjectPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
@@ -14,6 +18,8 @@ import net.runelite.api.coords.WorldPoint;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 @Slf4j
 @Singleton
@@ -22,21 +28,41 @@ public class GroundObjectService extends AbstractService {
     @Inject
     private ReflectionService reflectionService;
 
-    @Inject
-    private InventoryService inventoryService;
+    /**
+     * Finds all tile objects
+     * @return
+     */
+    public List<TileObject> all() {
+        return TileObjects.search().result();
+    }
 
-    @Inject
-    private TileService tileService;
+    /**
+     * Finds all tile objects which match a given predicate.
+     * @param filter
+     * @return
+     */
+    public List<TileObject> get(Predicate<TileObject> filter) {
+        return TileObjects.search().filter(filter).result();
+    }
+
+    /**
+     * Finds all Tile objects with a given name
+     * @param name
+     * @return
+     */
+    public List<TileObject> findByName(String name) {
+        return TileObjects.search().withName(name).result();
+    }
     
     /**
-     * Interacts with a ground item by performing a specified action.
+     * Interacts with a ground item by performing a specified action using reflection
      *
      * @param groundItem The ground item to interact with.
      * @param action     The action to perform on the ground item.
      *
      * @return true if the interaction was successful, false otherwise.
      */
-    private boolean interact(GroundItem groundItem, String action) {
+    private boolean interactReflect(GroundItem groundItem, String action) {
         if (groundItem == null) return false;
         try {
             int param0;
@@ -97,86 +123,58 @@ public class GroundObjectService extends AbstractService {
     }
 
     /**
-     * Interacts with an item on the ground with the "Take" action.
+     * Interacts with an item on the ground with the "Take" action using Reflection
      * @param groundItem Ground item to interact with
      * @return
      */
-    public boolean interact(GroundItem groundItem) {
-        return interact(groundItem, "Take");
+    public boolean interactReflect(GroundItem groundItem) {
+        return interactReflect(groundItem, "Take");
     }
 
     /**
-     * Loots all ground items within a given range from the players local location.
-     * @param itemId Item id to loot
-     * @param range int range to search
+     * Interacts with an item on the ground given the items name using packets
+     * @param name the item name to interact with
+     * @param actions The actions to perform, usually "Take"
      * @return
      */
-    public boolean loot(int itemId, int range) {
-        if (inventoryService.isFull()) return false;
-        final GroundItem item = Arrays.stream(getAll(range))
-                .filter(i -> i.getId() == itemId)
-                .findFirst().orElse(null);
-        return interact(item);
+    public boolean interact(String name, String... actions) {
+        return TileObjects.search().withName(name).first().flatMap(tileObject -> {
+            MousePackets.queueClickPacket();
+            ObjectPackets.queueObjectAction(tileObject, false, actions);
+            return Optional.of(true);
+        }).orElse(false);
     }
 
     /**
-     * Returns an array of ground items within a given range from the players local position.
-     * @param range int search radius.
+     * Interacts with an item on the ground given the item id using Packets
+     * @param id the id name to interact with
+     * @param actions The actions to perform, usually "Take"
      * @return
      */
-    public GroundItem[] getAll(int range) {
-        return getAllFromWorldPoint(range, client.getLocalPlayer().getWorldLocation());
+    public boolean interact(int id, String... actions) {
+        return TileObjects.search().withId(id).first().flatMap(tileObject -> {
+            MousePackets.queueClickPacket();
+            ObjectPackets.queueObjectAction(tileObject, false, actions);
+            return Optional.of(true);
+        }).orElse(false);
     }
 
     /**
-     * Retrieves all GroundItem objects within a specified range of a WorldPoint, sorted by distance.
-     *
-     * @param range The radius in tiles to search around the given world point
-     * @param worldPoint The center WorldPoint to search around
-     * @return An array of GroundItem objects found within the specified range, sorted by proximity
-     *         to the center point (closest first). Returns an empty array if no items are found.
+     * Interacts with an item on the ground given a TileObject for the item using Packets
+     * @param tileObject the tile object to interact with
+     * @param actions The actions to perform, usually "Take"
+     * @return
      */
-    public GroundItem[] getAllFromWorldPoint(int range, WorldPoint worldPoint) {
-        if (worldPoint == null) return new GroundItem[0];
-
-        return context.runOnClientThreadOptional(() -> {
-            List<GroundItem> temp = new ArrayList<>();
-            final int pX = worldPoint.getX();
-            final int pY = worldPoint.getY();
-            final int minX = pX - range, minY = pY - range;
-            final int maxX = pX + range, maxY = pY + range;
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = minY; y <= maxY; y++) {
-                    for (GroundItem item : getAllAt(x, y)) {
-                        if (item == null) continue;
-                        temp.add(item);
-                    }
-                }
-            }
-
-            // Sort by closest item first
-            return temp.stream().sorted(Comparator.comparingInt(value -> Objects.requireNonNull(LocalPoint.fromWorld(client.getTopLevelWorldView(), value.getLocation()))
-                            .distanceTo(client.getLocalPlayer().getLocalLocation())))
-                    .toArray(GroundItem[]::new);
-        }).orElse(new GroundItem[0]);
-    }
-
-    /**
-     * Returns all the ground items at a tile on the current plane.
-     *
-     * @param x The x position of the tile in the world.
-     * @param y The y position of the tile in the world.
-     *
-     * @return An array of the ground items on the specified tile.
-     */
-    public GroundItem[] getAllAt(int x, int y) {
-        return (GroundItem[]) context.runOnClientThreadOptional(() -> {
-            final Tile tile = tileService.getTile(x, y);
-            if (tile == null) return new GroundItem[0];
-
-            List<TileItem> groundItems = tile.getGroundItems();
-            if (groundItems == null) return new GroundItem[0];
-            return groundItems.toArray(TileItem[]::new);
-        }).orElse(new GroundItem[0]);
+    public boolean interact(TileObject tileObject, String... actions) {
+        if (tileObject == null) {
+            return false;
+        }
+        ObjectComposition comp = TileObjectQuery.getObjectComposition(tileObject);
+        if (comp == null) {
+            return false;
+        }
+        MousePackets.queueClickPacket();
+        ObjectPackets.queueObjectAction(tileObject, false, actions);
+        return true;
     }
 }
