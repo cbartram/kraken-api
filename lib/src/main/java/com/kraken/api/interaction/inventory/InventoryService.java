@@ -179,6 +179,22 @@ public class InventoryService extends AbstractService {
     }
 
     /**
+     * Returns the count of items in the inventory
+     * @return
+     */
+    public int count() {
+        return inventoryItems.size();
+    }
+
+    /**
+     * Returns the free space in a users inventory.
+     * @return
+     */
+    public int freeSpace() {
+        return 28 - inventoryItems.size();
+    }
+
+    /**
      * Combines two items in the inventory by their IDs, ensuring distinct items are used.
      *
      * @param primaryItemId   The ID of the primary item.

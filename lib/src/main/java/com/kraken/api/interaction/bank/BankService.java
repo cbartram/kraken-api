@@ -78,8 +78,6 @@ public class BankService extends AbstractService {
         return widgetService.hasWidgetText("Rearrange mode", 12, 18, false);
     }
 
-
-
     public void withdrawX(Widget item, int amount) {
         setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
 
