@@ -1,5 +1,10 @@
 package com.kraken.api.interaction.bank;
 
+import com.example.EthanApiPlugin.Collections.Bank;
+import com.example.EthanApiPlugin.EthanApiPlugin;
+import com.example.InteractionApi.BankInteraction;
+import com.example.Packets.MousePackets;
+import com.example.Packets.WidgetPackets;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
@@ -13,6 +18,7 @@ import net.runelite.api.MenuAction;
 import net.runelite.api.SpriteID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -21,12 +27,25 @@ import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static com.example.InteractionApi.BankInteraction.setWithdrawMode;
 
 @Slf4j
 @Singleton
 public class BankService extends AbstractService {
+    private static final int WITHDRAW_QUANTITY = 3960;
+    private static final int WITHDRAW_AS_VARBIT = 3958;
+    private static final int WITHDRAW_ITEM_MODE = 0;
+    private static final int WITHDRAW_NOTES_MODE = 1;
+    private static final int WITHDRAW_ITEM_MODE_WIDGET = 786454;
+    private static final int WITHDRAW_NOTE_MODE_WIDGET = 786456;
+
+    private static final String ITEM_MODE_ACTION = "Item";
+    private static final String NOTE_MODE_ACTION = "Note";
+
 
     @Inject
     private WidgetService widgetService;
@@ -59,13 +78,107 @@ public class BankService extends AbstractService {
         return widgetService.hasWidgetText("Rearrange mode", 12, 18, false);
     }
 
+
+
+    public void withdrawX(Widget item, int amount) {
+        setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+        if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
+            return;
+        }
+        BankInteraction.useItem(item, "Withdraw-X");
+        EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
+        EthanApiPlugin.getClient().setVarcIntValue(5, 7);
+        EthanApiPlugin.getClient().runScript(681);
+        EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+    }
+
+    public void withdrawX(Widget item, int amount, boolean noted) {
+        setWithdrawMode(noted? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+
+        if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
+            return;
+        }
+        BankInteraction.useItem(item, noted, "Withdraw-X");
+        EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
+        EthanApiPlugin.getClient().setVarcIntValue(5, 7);
+        EthanApiPlugin.getClient().runScript(681);
+        EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+    }
+
+    public boolean withdraw(String name, String... actions) {
+        return Bank.search().withName(name).first().flatMap(item -> {
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    public boolean withdraw(int id, String... actions) {
+        return Bank.search().withId(id).first().flatMap(item -> {
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    public boolean withdrawIndex(int index, String... actions) {
+        return Bank.search().indexIs(index).first().flatMap(item -> {
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    public boolean withdraw(Widget item, String... actions) {
+        if (item == null) {
+            return false;
+        }
+
+        setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+        MousePackets.queueClickPacket();
+        WidgetPackets.queueWidgetAction(item, actions);
+        return true;
+    }
+
+    public boolean withdraw(String name, boolean noted, String... actions) {
+        return Bank.search().withName(name).first().flatMap(item -> {
+            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    public boolean withdraw(int id, boolean noted, String... actions) {
+        return Bank.search().withId(id).first().flatMap(item -> {
+            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
     /**
      * Executes menu swapping for a specific item and entry index.
      *
      * @param identifier The index of the entry to swap.
      * @param item    The ItemWidget associated with the menu swap.
      */
-    public void invokeMenu(final int identifier, InventoryItem item) {
+    public void invokeMenuReflect(final int identifier, InventoryItem item) {
         Rectangle itemBoundingBox = null;
 
         if (container == BANK_INVENTORY_ITEM_CONTAINER) {
@@ -82,7 +195,6 @@ public class BankService extends AbstractService {
 
         log.info("Invoking Bank menu: param0={}, param1={}, opcode={}, identifier={}, target={}, itemId={}", item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getName(), item.getId());
         reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName(), "");
-        // context.doInvoke(new NewMenuEntry(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
     }
 
     /**
@@ -90,10 +202,10 @@ public class BankService extends AbstractService {
      *
      * @return true if the bank interface was open and successfully closed, true if already closed.
      */
-    public boolean closeBank() {
-        if (!isOpen()) return true;
-        widgetService.clickWidget(786434, 11);
-        return sleepService.sleepUntil(() -> !isOpen(), 3000);
+    public void close() {
+        if (isOpen()) {
+            client.runScript(29);
+        }
     }
 
     /**
@@ -108,9 +220,9 @@ public class BankService extends AbstractService {
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0) {
-            invokeMenu(2, item);
+            invokeMenuReflect(2, item);
         } else {
-            invokeMenu(3, item);
+            invokeMenuReflect(3, item);
         }
         return true;
     }
@@ -156,9 +268,9 @@ public class BankService extends AbstractService {
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
-            invokeMenu(2, item);
+            invokeMenuReflect(2, item);
         } else {
-            invokeMenu(8, item);
+            invokeMenuReflect(8, item);
         }
         return true;
     }

@@ -1,5 +1,6 @@
 package com.kraken.api.interaction.inventory;
 
+import com.example.InteractionApi.InventoryInteraction;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -37,9 +38,6 @@ import static com.kraken.api.util.StringUtils.stripColTags;
 public class InventoryService extends AbstractService {
     private final List<InventoryItem> inventoryItems = new ArrayList<>();
     private final List<InventoryItem> prevInventoryItems = new ArrayList<>();
-
-    // Store the raw container for diff comparisons
-    private ItemContainer lastProcessedContainer = null;
 
     @Inject
     private SleepService sleepService;
@@ -99,8 +97,6 @@ public class InventoryService extends AbstractService {
             final ItemComposition itemComposition = client.getItemDefinition(item.getId());
             inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
         }
-
-        lastProcessedContainer = itemContainer;
     }
 
     private List<InventoryItem> toInventoryItemModel(Item[] items) {
@@ -127,65 +123,6 @@ public class InventoryService extends AbstractService {
             }
             return null;
         }).orElse(null);
-    }
-
-    public InventoryChanged diff(ItemContainer itemContainer) {
-        if(itemContainer.getId() != InventoryID.INV) {
-            return new InventoryChanged(null, -1, InventoryUpdateType.NONE);
-        }
-
-        // If this is the same container we just processed, use our stored prev items
-        List<InventoryItem> comparisonPrevItems;
-        if (lastProcessedContainer == itemContainer) {
-            comparisonPrevItems = new ArrayList<>(prevInventoryItems);
-        } else {
-            // This is a different container, so current items become previous
-            comparisonPrevItems = new ArrayList<>(inventoryItems);
-        }
-
-        List<InventoryItem> currentItems = toInventoryItemModel(itemContainer.getItems());
-
-        // Find changes
-        for(int i = 0; i < Math.max(currentItems.size(), comparisonPrevItems.size()); i++) {
-            InventoryItem currentItem = i < currentItems.size() ? currentItems.get(i) : null;
-            InventoryItem previousItem = i < comparisonPrevItems.size() ? comparisonPrevItems.get(i) : null;
-
-            if(!inventoryItemsEqual(currentItem, previousItem)) {
-                return handleItemChange(i, previousItem, currentItem);
-            }
-        }
-
-        return new InventoryChanged(null, -1, InventoryUpdateType.NONE);
-    }
-
-    private boolean inventoryItemsEqual(InventoryItem item1, InventoryItem item2) {
-        if(item1 == null && item2 == null) {
-            return true;
-        }
-        if(item1 == null || item2 == null) {
-            return false;
-        }
-        return item1.getId() == item2.getId() && item1.getQuantity() == item2.getQuantity();
-    }
-
-    private InventoryChanged handleItemChange(int slot, InventoryItem previousItem, InventoryItem currentItem) {
-        if(previousItem == null && currentItem != null) {
-            // Item was added
-            return new InventoryChanged(currentItem, slot, InventoryUpdateType.ADDED);
-        } else if(previousItem != null && currentItem == null) {
-            // Item was removed
-            return new InventoryChanged(previousItem, slot, InventoryUpdateType.REMOVED);
-        } else if(previousItem != null && currentItem != null) {
-            if(previousItem.getId() != currentItem.getId()) {
-                // Different item in same slot
-                return new InventoryChanged(currentItem, slot, InventoryUpdateType.MOVED);
-            } else if(previousItem.getQuantity() != currentItem.getQuantity()) {
-                // Same item, different quantity
-                return new InventoryChanged(currentItem, slot, InventoryUpdateType.QUANTITY);
-            }
-        }
-
-        return new InventoryChanged(null, -1, InventoryUpdateType.NONE);
     }
 
     /**
@@ -337,29 +274,15 @@ public class InventoryService extends AbstractService {
     /**
      * Uses the given item in the inventory.
      *
-     * @param rs2Item The item to use.
+     * @param item The item to use.
      *
      * @return True if the item is successfully used, false otherwise.
      */
-    public boolean use(InventoryItem rs2Item) {
-        if (rs2Item == null) return false;
-        return interact(rs2Item, "Use");
+    public boolean use(InventoryItem item) {
+        if (item == null) return false;
+        return interact(item, "Use");
     }
 
-    /**
-     * Interacts with a given item in the inventory using the specified action.
-     * If the item has an invalid slot value, it will find the slot based on the item ID.
-     *
-     * @param item   The item to interact with.
-     * @param action The action to perform on the item.
-     *
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interact(InventoryItem item, String action) {
-        if (item == null) return false;
-        invokeMenu(item, action);
-        return true;
-    }
 
     /**
      * Interacts with an item in the inventory using reflection. If the item has an invalid slot value, it will find the slot based on the item ID.
@@ -409,6 +332,50 @@ public class InventoryService extends AbstractService {
         return true;
     }
 
+    public boolean itemHasAction(int itemId, String action) {
+        return Arrays.stream(client.getItemDefinition(itemId).getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
+    }
+
+    /**
+     * Interacts with an item with the specified ID in the inventory using the first available action.
+     *
+     * @param id The ID of the item to interact with.
+     *
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public boolean interact(int id, String action) {
+        String tmp = action;
+
+        if(action == null || action.trim().isEmpty()) {
+           Optional<String> firstAction = Arrays.stream(client.getItemDefinition(id).getInventoryActions()).findFirst();
+           if(firstAction.isPresent()) {
+               tmp = firstAction.get();
+           }
+        }
+
+        return InventoryInteraction.useItem(id, tmp);
+    }
+
+    /**
+     * Interacts with an item with the specified ID in the inventory using the first available action.
+     *
+     * @param item The Inventory Item to interact with.
+     *
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public boolean interact(InventoryItem item, String action) {
+        String tmp = action;
+
+        if(action == null || action.trim().isEmpty()) {
+            Optional<String> firstAction = Arrays.stream(item.getInventoryActions()).findFirst();
+            if(firstAction.isPresent()) {
+                tmp = firstAction.get();
+            }
+        }
+
+        return InventoryInteraction.useItem(item.getId(), tmp);
+    }
+
     /**
      * Interacts with an item with the specified ID in the inventory using the first available action.
      *
@@ -418,32 +385,6 @@ public class InventoryService extends AbstractService {
      */
     public boolean interact(int id) {
         return interact(id, "");
-    }
-
-    /**
-     * Interacts with an item with the specified ID in the inventory using the specified action.
-     *
-     * @param id     The ID of the item to interact with.
-     * @param action The action to perform on the item.
-     *
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interact(int id, String action) {
-        return interact(get(id), action);
-    }
-    /**
-     * Interacts with an item with the specified ID in the inventory using the specified action.
-     *
-     * @param id     The ID of the item to interact with.
-     * @param action The action to perform on the item.
-     *
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interact(int id, String action, int identifier) {
-        final InventoryItem item = get(id);
-        if (item == null) return false;
-        invokeMenu(item, action, identifier);
-        return true;
     }
 
     /**
@@ -502,7 +443,7 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interact(String name, String action, boolean exact) {
-        return interact(get(name, exact),action);
+        return interact(get(name, exact), action);
     }
 
     /**
@@ -525,7 +466,7 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interact(Predicate<InventoryItem> filter, String action) {
-        return interact(get(filter),action);
+        return interact(get(filter), action);
     }
 
     /**
@@ -668,8 +609,16 @@ public class InventoryService extends AbstractService {
      * Returns a list of Inventory Items which can be consumed for health.
      * @return List of Inventory items which are food.
      */
-    public  List<InventoryItem> getFood() {
+    public List<InventoryItem> getFood() {
         return new ArrayList<>(all(InventoryItem::isFood));
+    }
+
+    /**
+     * Returns true when the player has edible hard food in their inventory and false otherwise.
+     * @return boolean
+     */
+    public boolean hasFood() {
+        return !new ArrayList<>(all(InventoryItem::isFood)).isEmpty();
     }
 
     /**
@@ -681,7 +630,7 @@ public class InventoryService extends AbstractService {
     private boolean drop(InventoryItem item) {
         if (item == null) return false;
 
-        invokeMenu(item, "Drop");
+        interactReflect(item, "Drop");
         return true;
     }
 
@@ -769,17 +718,6 @@ public class InventoryService extends AbstractService {
                 .findFirst().map(Widget::getBounds).orElse(null);
     }
 
-
-    /**
-     * Method executes menu actions
-     *
-     * @param item Current item to interact with
-     * @param action  Action used on the item
-     */
-    private void invokeMenu(InventoryItem item, String action) {
-        invokeMenu(item, action, -1);
-    }
-
     /**
      * Opens the inventory.
      *
@@ -787,74 +725,6 @@ public class InventoryService extends AbstractService {
      */
     public boolean open() {
         return tabService.switchTo(InterfaceTab.INVENTORY);
-    }
-
-    /**
-     * Executes menu actions with a provided identifier.
-     * If the provided identifier is -1, the old logic is used to determine the identifier.
-     *
-     * @param item            The current item to interact with.
-     * @param action             The action to be used on the item.
-     * @param providedIdentifier The identifier to use; if -1, compute using the old logic.
-     */
-    private void invokeMenu(InventoryItem item, String action, int providedIdentifier) {
-        if (item == null) return;
-        open();
-        int param0;
-        int param1;
-        int identifier = -1;
-        MenuAction menuAction = MenuAction.CC_OP;
-        Widget[] inventoryWidgets;
-        param0 = item.getSlot();
-        boolean isDepositBoxOpen = !context.runOnClientThreadOptional(() -> widgetService.getWidget(12582935) == null
-                || widgetService.getWidget(12582935).isHidden()).orElse(false);
-
-        Widget widget;
-
-        if (bankService.isOpen()) {
-            param1 = ComponentID.BANK_INVENTORY_ITEM_CONTAINER;
-            widget = widgetService.getWidget(param1);
-        } else if (isDepositBoxOpen) {
-            param1 = ComponentID.DEPOSIT_BOX_INVENTORY_ITEM_CONTAINER;
-            widget = widgetService.getWidget(param1);
-        } else {
-            param1 = ComponentID.INVENTORY_CONTAINER;
-            widget = widgetService.getWidget(param1);
-        }
-
-        if (widget != null && widget.getChildren() != null) {
-            inventoryWidgets = widget.getChildren();
-        } else {
-            inventoryWidgets = null;
-        }
-
-        if (inventoryWidgets == null) return;
-
-        if (!action.isEmpty()) {
-            var itemWidget = Arrays.stream(inventoryWidgets).filter(x -> x != null && x.getIndex() == item.getSlot()).findFirst().orElseGet(null);
-
-            String[] actions = itemWidget != null && itemWidget.getActions() != null ?
-                    itemWidget.getActions() :
-                    item.getInventoryActions();
-
-            identifier = providedIdentifier == -1 ? indexOfIgnoreCase(stripColTags(actions), action) + 1 : providedIdentifier;
-        }
-
-
-        if (client.isWidgetSelected()) {
-            menuAction = MenuAction.WIDGET_TARGET_ON_WIDGET;
-        } else if (action.equalsIgnoreCase("use")) {
-            menuAction = MenuAction.WIDGET_TARGET;
-        } else if (action.equalsIgnoreCase("cast")) {
-            menuAction = MenuAction.WIDGET_TARGET_ON_WIDGET;
-        }
-
-        context.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, item.getId(), item.getName()), (itemBounds(item) == null) ? new Rectangle(1, 1) : itemBounds(item));
-
-        if (action.equalsIgnoreCase("destroy")) {
-            sleepService.sleepUntil(() -> widgetService.isWidgetVisible(584, 0));
-            widgetService.clickWidget(widgetService.getWidget(584, 1).getId());
-        }
     }
 
     private static int indexOfIgnoreCase(String[] sourceList, String searchString) {
