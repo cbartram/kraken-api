@@ -89,7 +89,7 @@ public abstract class Script implements Scriptable {
 
         onStart();
 
-        log.info("Scheduling loop execution");
+        log.info("Scheduling loop execution v2");
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!running) {
