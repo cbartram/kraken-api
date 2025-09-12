@@ -84,7 +84,21 @@ public abstract class Script implements Scriptable {
 
         onStart();
 
-        mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+        // Simple recursive scheduling
+        scheduleNext(0);
+    }
+
+    /**
+     * Reschedules the main loop with a new delay.
+     *
+     * @param delay Delay in milliseconds between executions.
+     */
+    private void scheduleNext(long delay) {
+        if (!running) {
+            return;
+        }
+
+        mainScheduledFuture = scheduledExecutorService.schedule(() -> {
             try {
                 if (!running) {
                     stop();
@@ -92,21 +106,18 @@ public abstract class Script implements Scriptable {
                 }
 
                 log.info("Executing loop");
-                long delay = loop();
+                long nextDelay = loop();
 
-                // If loop() signals to stop
-                if (delay <= 0) {
+                if (nextDelay <= 0) {
                     stop();
-                    return;
+                } else {
+                    scheduleNext(nextDelay); // Schedule the next execution
                 }
-
-                // Reschedule with user-specified delay
-                reschedule(delay);
             } catch (Exception e) {
                 log.error("Exception in script loop: {}", this.getClass().getSimpleName(), e);
                 stop();
             }
-        }, 0, 100, TimeUnit.MILLISECONDS); // Initial 100ms default, will be overridden by reschedule
+        }, delay, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -137,36 +148,6 @@ public abstract class Script implements Scriptable {
         if(this.context.isRegistered()) {
             this.context.destroy();
         }
-    }
-
-    /**
-     * Reschedules the main loop with a new delay.
-     *
-     * @param delay Delay in milliseconds between executions.
-     */
-    private void reschedule(long delay) {
-        if (!running) {
-            log.info("Main script stop, not rescheduling task.");
-            return; // Don't reschedule if we've been stopped
-        }
-
-        if (mainScheduledFuture != null && !mainScheduledFuture.isCancelled()) {
-            mainScheduledFuture.cancel(false);
-        }
-
-        mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                long nextDelay = loop();
-                if (nextDelay <= 0) {
-                    stop();
-                } else {
-                    reschedule(nextDelay);
-                }
-            } catch (Exception e) {
-                log.error("Exception in script loop: {}", this.getClass().getSimpleName(), e);
-                stop();
-            }
-        }, delay, delay, TimeUnit.MILLISECONDS);
     }
 
     /**
