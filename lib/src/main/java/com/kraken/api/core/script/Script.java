@@ -34,7 +34,6 @@ public abstract class Script implements Scriptable {
         this.context = context;
 
         if(!this.context.isRegistered()) {
-            log.info("Registering services classes with the eventbus.");
             this.context.register();
         }
     }
@@ -61,10 +60,17 @@ public abstract class Script implements Scriptable {
     public abstract void onEnd();
 
     /**
-     * Starts the script loop.
-     * Will call {@link #onStart()} before the first loop execution.
+     * Starts the script loop with a default delay of 100ms.
      */
     public void start() {
+        start(100);
+    }
+
+    /**
+     * Starts the script loop with a specified period to execute the loop on.
+     * Will call {@link #onStart()} before the first loop execution.
+     */
+    public void start(int period) {
         if (running) {
             log.warn("Script already running: {}", this.getClass().getSimpleName());
             return;
@@ -78,46 +84,29 @@ public abstract class Script implements Scriptable {
         }
 
         if(!this.context.isRegistered()) {
-            log.info("Registering services classes with the eventbus.");
             this.context.register();
         }
 
         onStart();
 
-        // Simple recursive scheduling
-        scheduleNext(0);
-    }
-
-    /**
-     * Reschedules the main loop with a new delay.
-     *
-     * @param delay Delay in milliseconds between executions.
-     */
-    private void scheduleNext(long delay) {
-        if (!running) {
-            return;
-        }
-
-        mainScheduledFuture = scheduledExecutorService.schedule(() -> {
+        log.info("Scheduling loop execution");
+        mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!running) {
                     stop();
                     return;
                 }
-
                 log.info("Executing loop");
                 long nextDelay = loop();
-
+                log.info("Value from loop: {}", nextDelay);
                 if (nextDelay <= 0) {
                     stop();
-                } else {
-                    scheduleNext(nextDelay); // Schedule the next execution
                 }
             } catch (Exception e) {
                 log.error("Exception in script loop: {}", this.getClass().getSimpleName(), e);
                 stop();
             }
-        }, delay, TimeUnit.MILLISECONDS);
+        }, 0, period, TimeUnit.MILLISECONDS);
     }
 
     /**
