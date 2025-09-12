@@ -97,13 +97,17 @@ public abstract class Script implements Scriptable {
                     return;
                 }
                 log.info("Executing loop");
+                System.out.println("Executing loop (sout)");
                 long nextDelay = loop();
                 log.info("Value from loop: {}", nextDelay);
+                System.out.println("Value from loop (sout)");
                 if (nextDelay <= 0) {
                     stop();
                 }
             } catch (Exception e) {
+                System.err.println("Exception in script loop: " + this.getClass().getSimpleName() + "error: " + e.getMessage());
                 log.error("Exception in script loop: {}", this.getClass().getSimpleName(), e);
+                e.printStackTrace();
                 stop();
             }
         }, 0, period, TimeUnit.MILLISECONDS);
