@@ -48,6 +48,8 @@ testing {
 }
 
 java {
+    withSourcesJar()
+    withJavadocJar()
     toolchain {
         languageVersion = JavaLanguageVersion.of(11)
     }
@@ -60,12 +62,49 @@ jar {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        maven(MavenPublication) {
             from components.java
-
             groupId = 'com.github.cbartram'
             artifactId = 'kraken-api'
             version = project.version
+
+            pom {
+                name = 'Kraken API'
+                description = 'Kraken API Library'
+                url = 'https://github.com/cbartram/kraken-api'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'cbartram'
+                        name = 'Rune Wraith'
+                        email = 'runewraith.business@gmail.com'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/cbartram/kraken-api.git'
+                    developerConnection = 'scm:git:ssh://github.com/cbartram/kraken-api.git'
+                    url = 'https://github.com/cbartram/kraken-api'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/cbartram/kraken-api")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
         }
     }
 }
