@@ -52,6 +52,55 @@ The output API `.jar` will be located in:
 ./lib/build/libs/kraken-api-<version>.jar
 ```
 
+### Consuming the API
+
+To use the API in a project add the package to your `build.gradle` file. You will need to either: 
+- `export GITHUB_ACTOR=<YOUR_GITHUB_USERNAME>; export GITHUB_TOKEN=<GITHUB_PAT`
+- Add the following to your `gradle.properties` file: `gpr.user=your-github-username gpr.key=your-personal-access-token`
+
+You can generate a Github personal access token (PAT) by navigating to your [Github Settings](https://github.com/settings/personal-access-tokens)
+and clicking "Generate new Token". Give the token a unique name and optional description with read-only access to public repositories. Store the token
+in a safe place as it won't be viewable again. It can be used to authenticate to GitHub and pull Kraken API packages. Do **NOT** share this token with anyone.
+
+Here is an example `build.gradle` for incorporating the API
+
+```groovy
+plugins {
+    id 'java'
+    id 'application'
+}
+
+
+// Replace with the package version of the API you need
+def krakenApiVersion = 'X.Y.Z'
+
+allprojects {
+    apply plugin: 'java'
+    repositories {
+        // You must declare this maven repository to be able to search and pull Kraken API packages
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/cbartram/kraken-api")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+
+        // Jitpack is a legacy provider for Kraken API artifacts < 1.0.77 as well as shortest-path artifacts <= 1.0.3
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+
+dependencies {
+    compileOnly group: 'com.github.cbartram', name:'kraken-api', version: krakenApiVersion
+    implementation group: 'com.github.cbartram', name:'shortest-path', version: '1.0.3'
+    // ... other dependencies
+}
+```
+
+> ⚠️ If you are using the MovementService in your plugin for character pathing you should also include the `shortest-path` dependency.
 
 ### Example Plugin Setup
 
@@ -179,24 +228,6 @@ Run the full test suite with:
 ./gradlew test
 ```
 
-### Using Kraken API in Your Plugin
-
-Add the Kraken API dependency to your `build.gradle` file as follows:
-
-```gradle
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
-dependencies {
-    // Or the latest available version
-    implementation group: 'com.github.cbartram', name:'kraken-api', version: '1.0.53'
-    implementation group: 'com.github.cbartram', name:'shortest-path', version: '1.0.3'
-}
-```
-> ⚠️ If you are using the MovementService in your plugin for character pathing you should also include the `shortest-path` dependency.
-
 ### Development Workflow
 
 1. Create a new branch from `master`
@@ -217,7 +248,7 @@ A deployment consists of:
 
 - Building the API JAR
 - Publishing a new version to the GitHub Releases section
-  - This will be picked up by jitpack.io for easy integration into other gradle projects.
+  - This will be picked up by Github Packages for easy integration into other gradle projects.
 - Uploading the JAR file to the Minio storage server used by the Kraken Client at runtime.
 - (Optional) Updating the `bootstrap.json` in the Kraken Client to point to the latest version of the API JAR file
 - (Optional) Updating the build.gradle file in the Kraken Client to use the latest version of the API JAR file
@@ -254,6 +285,7 @@ This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
 ## 🙏 Acknowledgments
 
 * **RuneLite** — The splash screen and much of the core codebase come from RuneLite.
+* **Packet Utils** - Plugin from Ethan Vann providing access to complex packet sending functionality
 * **Microbot** — For clever ideas on client and plugin interaction.
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-api.svg?style=for-the-badge
