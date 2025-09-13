@@ -20,14 +20,15 @@ public abstract class Script implements Scriptable {
     // the user needing to manually register them. This API expects to be running only within the context of a RuneLite client.
     private final Context context;
 
-    protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
-    protected ScheduledFuture<?> scheduledFuture;
-    private ScheduledFuture<?> mainScheduledFuture;
+    public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
+    public ScheduledFuture<?> scheduledFuture;
+    public ScheduledFuture<?> mainScheduledFuture;
 
     private Instant startTime; // when the script started
 
     @Getter
     private volatile boolean running = false;
+    private Thread thread;
 
     @Inject
     public Script(final Context context) {
@@ -59,89 +60,65 @@ public abstract class Script implements Scriptable {
      */
     public abstract void onEnd();
 
-    /**
-     * Starts the script loop with a default delay of 100ms.
-     */
-    public void start() {
-        start(100);
-    }
-
-    /**
-     * Starts the script loop with a specified period to execute the loop on.
-     * Will call {@link #onStart()} before the first loop execution.
-     * @param period The period for how often the loop is executed
-     */
-    public void start(int period) {
+    public final void start() {
         if (running) {
-            log.warn("Script already running: {}", this.getClass().getSimpleName());
-            return;
-        }
-
-        running = true;
-        startTime = Instant.now();
-
-        if(!this.context.isHooksLoaded()) {
-            this.context.loadHooks();
+            return; // Already running
         }
 
         if(!this.context.isRegistered()) {
             this.context.register();
         }
 
-        onStart();
-
-        log.info("Scheduling loop execution v2");
-        mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+        running = true;
+        thread = new Thread(() -> {
             try {
-                if (!running) {
-                    stop();
-                    return;
+                onStart();
+
+                while (running) {
+                    long delay = loop();
+
+                    if (delay <= 0) {
+                        break; // negative return means exit loop
+                    }
+
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
-                log.info("Executing loop");
-                System.out.println("Executing loop (sout)");
-                long nextDelay = loop();
-                log.info("Value from loop: {}", nextDelay);
-                System.out.println("Value from loop (sout)");
-                if (nextDelay <= 0) {
-                    stop();
-                }
-            } catch (Exception e) {
-                System.err.println("Exception in script loop: " + this.getClass().getSimpleName() + "error: " + e.getMessage());
-                log.error("Exception in script loop: {}", this.getClass().getSimpleName(), e);
-                e.printStackTrace();
-                stop();
             }
-        }, 0, period, TimeUnit.MILLISECONDS);
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            } finally {
+                onEnd();
+                running = false;
+            }
+        });
+
+        thread.start();
     }
 
-    /**
-     * Stops the script loop and calls {@link #onEnd()}.
-     */
-    public void stop() {
-        if (!running) {
-            return;
-        }
-
+    public final void stop() {
         running = false;
-        startTime = null;
-
-        if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
-            mainScheduledFuture.cancel(true);
-        }
-
-        if (scheduledFuture != null && !scheduledFuture.isDone()) {
-            scheduledFuture.cancel(true);
-        }
-
-        try {
-            onEnd();
-        } catch (Exception e) {
-            log.error("Exception in script onEnd: {}", this.getClass().getSimpleName(), e);
-        }
-
         if(this.context.isRegistered()) {
             this.context.destroy();
         }
+
+        if (thread != null) {
+            thread.interrupt();
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    public final boolean isRunning() {
+        return running;
     }
 
     /**
