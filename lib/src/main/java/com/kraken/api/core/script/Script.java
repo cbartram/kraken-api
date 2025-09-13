@@ -49,12 +49,12 @@ public abstract class Script implements Scriptable {
      * This is where the user's main logic goes.
      *
      * @return Delay in milliseconds before the next loop iteration.
-     *         Return <= 0 to stop execution.
+     *         Return less than or equal to 0 to stop execution.
      */
     public abstract long loop();
 
     /**
-     * Called once when the script is stopped (manually or by returning <= 0 from loop()).
+     * Called once when the script is stopped (manually or by returning less than or equal to 0 from loop()).
      * Override this to clean up resources or reset services.
      */
     public abstract void onEnd();
@@ -69,6 +69,7 @@ public abstract class Script implements Scriptable {
     /**
      * Starts the script loop with a specified period to execute the loop on.
      * Will call {@link #onStart()} before the first loop execution.
+     * @param period The period for how often the loop is executed
      */
     public void start(int period) {
         if (running) {
@@ -145,6 +146,7 @@ public abstract class Script implements Scriptable {
 
     /**
      * Get the runtime formatted as HH:mm:ss
+     * @return The runtime of the script formatted as a string
      */
     public String getRuntimeString() {
         if (startTime == null) {

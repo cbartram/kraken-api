@@ -30,7 +30,7 @@ public class GroundObjectService extends AbstractService {
 
     /**
      * Finds all tile objects
-     * @return
+     * @return returns all tile objects on the ground
      */
     public List<TileObject> all() {
         return TileObjects.search().result();
@@ -38,8 +38,8 @@ public class GroundObjectService extends AbstractService {
 
     /**
      * Finds all tile objects which match a given predicate.
-     * @param filter
-     * @return
+     * @param filter A predicate to filter which tile objects are returned
+     * @return Tile objects which pass the filter
      */
     public List<TileObject> get(Predicate<TileObject> filter) {
         return TileObjects.search().filter(filter).result();
@@ -47,8 +47,8 @@ public class GroundObjectService extends AbstractService {
 
     /**
      * Finds all Tile objects with a given name
-     * @param name
-     * @return
+     * @param name The name of a tile object to find
+     * @return Tile objects which match the passed name parameter.
      */
     public List<TileObject> findByName(String name) {
         return TileObjects.search().withName(name).result();
@@ -125,7 +125,7 @@ public class GroundObjectService extends AbstractService {
     /**
      * Interacts with an item on the ground with the "Take" action using Reflection
      * @param groundItem Ground item to interact with
-     * @return
+     * @return True when the interaction was successful and false otherwise
      */
     public boolean interactReflect(GroundItem groundItem) {
         return interactReflect(groundItem, "Take");
@@ -135,7 +135,7 @@ public class GroundObjectService extends AbstractService {
      * Interacts with an item on the ground given the items name using packets
      * @param name the item name to interact with
      * @param actions The actions to perform, usually "Take"
-     * @return
+     * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(String name, String... actions) {
         return TileObjects.search().withName(name).first().flatMap(tileObject -> {
@@ -149,7 +149,7 @@ public class GroundObjectService extends AbstractService {
      * Interacts with an item on the ground given the item id using Packets
      * @param id the id name to interact with
      * @param actions The actions to perform, usually "Take"
-     * @return
+     * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(int id, String... actions) {
         return TileObjects.search().withId(id).first().flatMap(tileObject -> {
@@ -163,7 +163,7 @@ public class GroundObjectService extends AbstractService {
      * Interacts with an item on the ground given a TileObject for the item using Packets
      * @param tileObject the tile object to interact with
      * @param actions The actions to perform, usually "Take"
-     * @return
+     * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(TileObject tileObject, String... actions) {
         if (tileObject == null) {

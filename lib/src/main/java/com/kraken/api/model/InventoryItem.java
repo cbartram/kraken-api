@@ -88,6 +88,7 @@ public class InventoryItem {
      * @param id Item ID
      * @param quantity Item quantity
      * @param slot Item slot position
+     * @param context The context for the cache
      * @return ItemModel with basic data, ItemComposition loaded lazily
      */
     public static InventoryItem createFromCache(int id, int quantity, int slot, Context context) {
@@ -168,6 +169,7 @@ public class InventoryItem {
 
     /**
      * Gets the item name, loading composition if needed.
+     * @return String the name of the inventory item
      */
     public String getName() {
         if (name == null) {
@@ -178,6 +180,7 @@ public class InventoryItem {
 
     /**
      * Gets whether the item is stackable, loading composition if needed.
+     * @return boolean true if the item is stackable and false otherwise
      */
     public boolean isStackable() {
         if (itemComposition == null) {
@@ -188,6 +191,7 @@ public class InventoryItem {
 
     /**
      * Gets whether the item is noted, loading composition if needed.
+     * @return true if the item is noted and false otherwise.
      */
     public boolean isNoted() {
         if (itemComposition == null) {
@@ -198,6 +202,7 @@ public class InventoryItem {
 
     /**
      * Gets whether the item is tradeable, loading composition if needed.
+     * @return True if the item is tradeable and false otherwise
      */
     public boolean isTradeable() {
         if (itemComposition == null) {
@@ -208,6 +213,7 @@ public class InventoryItem {
 
     /**
      * Gets the inventory actions, loading composition if needed.
+     * @return The inventory actions for an item. i.e "Wield", "Examine", "Drop", "Use"
      */
     public String[] getInventoryActions() {
         if (itemComposition == null) {
@@ -218,6 +224,7 @@ public class InventoryItem {
     /**
      * Gets the equipment actions, loading composition if needed.
      * This returns a list of actions that can be performed on the item when equipped.
+     * @return The list of actions on the equipment
      */
     public List<String> getEquipmentActions() {
         if (itemComposition == null) {
@@ -228,6 +235,7 @@ public class InventoryItem {
 
     /**
      * Gets the item composition, loading it if needed.
+     * @return The items composition object
      */
     public ItemComposition getItemComposition() {
         if (itemComposition == null) {
@@ -236,6 +244,10 @@ public class InventoryItem {
         return itemComposition;
     }
 
+    /**
+     * True if the item is food. This returns jugs of wine as food and will not return rock cakes as food.
+     * @return True if the item is food and false otherwise.
+     */
     public boolean isFood() {
         if (isNoted()) return false;
 
@@ -257,6 +269,10 @@ public class InventoryItem {
         }
     }
 
+    /**
+     * The high alchemy price for the item
+     * @return The amount of GP received when this item is high alched for gold.
+     */
     public int getHaPrice() {
         return itemComposition.getHaPrice();
     }

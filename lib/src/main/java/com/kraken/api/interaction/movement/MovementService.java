@@ -396,6 +396,7 @@ public class MovementService extends AbstractService {
 
     /**
      * Gets the current movement progress (0.0 to 1.0)
+     * @return The movement progress as a double between 0.0 and 1.0
      */
     public double getMovementProgress() {
         if (!(isExecutingPath && currentPath != null && !currentPath.isEmpty())|| fullCalculatedPath == null || fullCalculatedPath.isEmpty()) {
@@ -407,6 +408,7 @@ public class MovementService extends AbstractService {
 
     /**
      * Gets the full calculated path for visualization
+     * @return A list of world points representing the calculated path
      */
     public List<WorldPoint> getCalculatedPath() {
         return fullCalculatedPath != null ? Collections.unmodifiableList(fullCalculatedPath) : Collections.emptyList();
@@ -414,6 +416,7 @@ public class MovementService extends AbstractService {
 
     /**
      * Gets the remaining waypoints in the current path
+     * @return The list of world points for the path remaining (the path that has not yet been traversed).
      */
     public List<WorldPoint> getRemainingPath() {
         if (currentPath == null || currentPath.isEmpty()) {
@@ -424,6 +427,7 @@ public class MovementService extends AbstractService {
 
     /**
      * Gets the total number of waypoints in the current path
+     * @return the total amount of waypoints in the path.
      */
     public int getTotalWaypoints() {
         return fullCalculatedPath != null ? fullCalculatedPath.size() : 0;
@@ -431,6 +435,7 @@ public class MovementService extends AbstractService {
 
     /**
      * Gets detailed movement statistics for debugging/display
+     * @return Movement statistics for the currently traversable path.
      */
     public MovementStats getMovementStats() {
         WorldPoint playerPos = playerService.getPlayerPosition();

@@ -1,10 +1,13 @@
 package com.kraken.api.core.script;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class BehaviorTree {
     private final BehaviorNode rootNode;
+
+    @Getter
     private BehaviorResult lastResult = BehaviorResult.FAILURE;
 
     public BehaviorTree(BehaviorNode rootNode) {
@@ -34,14 +37,8 @@ public class BehaviorTree {
     }
 
     /**
-     * Get the result of the last tree execution
-     */
-    public BehaviorResult getLastResult() {
-        return lastResult;
-    }
-
-    /**
      * Check if the tree is currently running
+     * @return True if the behavior tree is running and false otherwise
      */
     public boolean isRunning() {
         return lastResult == BehaviorResult.RUNNING;

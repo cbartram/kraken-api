@@ -288,16 +288,16 @@ public class ReflectionService extends AbstractService {
      * Invokes a menu action like toggling a prayer on/off or interacting with something via a MenuEntry using reflection. Jagex
      * includes a "Junk Value" parameter in their methods to make reflection harder. Without this parameter's exact value we cannot invoke a method correctly and
      * this junk value changes each client update. The junk value is determined based on the json value from the hooks when the client starts.
-     * @param param0
-     * @param param1
-     * @param opcode
-     * @param identifier
-     * @param itemId
-     * @param worldViewId
-     * @param option
-     * @param target
-     * @param x
-     * @param y
+     * @param param0 The first param
+     * @param param1 The second param
+     * @param opcode The operation code for the invocation
+     * @param identifier The identifier for the invocatin
+     * @param itemId The item id to invoke
+     * @param worldViewId The world view id
+     * @param option The option
+     * @param target The target to invoke
+     * @param x The x coordinate for the invocation
+     * @param y The y coordinate for the invocation
      */
     public void invokeMenuAction(int param0, int param1, int opcode, int identifier, int itemId, int worldViewId, String option, String target, int x, int y) {
         Class<?> clazz = getClass(invokeMenuActionClassName);

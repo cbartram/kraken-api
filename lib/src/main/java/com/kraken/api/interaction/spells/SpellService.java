@@ -60,6 +60,7 @@ public class SpellService extends AbstractService {
      * 4. Player has the required prayer to cast the spell (if applicable)
      *
      * @param spell The spell to be clicked.
+     * @return True if the cast was successful and false otherwise
      */
     public boolean cast(Spells spell) {
         if(spell == null) {

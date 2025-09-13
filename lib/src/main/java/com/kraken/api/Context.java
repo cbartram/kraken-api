@@ -187,7 +187,7 @@ public class Context {
 
     /**
      * Run a method on the client thread, returning the result.
-     * @param method
+     * @param method The method to call
      */
     @SneakyThrows
     public void runOnSeperateThread(Callable<?> method) {
@@ -268,9 +268,9 @@ public class Context {
 
     /**
      * Run a method on the client thread, returning an optional of the result.
-     * @param method
-     * @return
-     * @param <T>
+     * @param method The method to call
+     * @param <T> The type of the method's return value
+     * @return The result from the called method
      */
     @SneakyThrows
     public <T> Optional<T> runOnClientThreadOptional(Callable<T> method) {

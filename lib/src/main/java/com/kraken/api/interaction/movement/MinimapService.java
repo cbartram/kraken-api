@@ -40,9 +40,9 @@ public class MinimapService extends AbstractService {
     /**
      * Walks to a world point via a click on the Minimap. This must have a fixed mode client and the stretched mode plugin
      * turned off to work correctly. Zoom values can be between 2 and 8.
-     * @param worldPoint
-     * @param zoomDistance
-     * @return
+     * @param worldPoint The world point to walk to
+     * @param zoomDistance The zoom distance for the minimap
+     * @return True if the walk operation was successful and false otherwise.
      */
     public boolean walkMiniMap(WorldPoint worldPoint, float zoomDistance) {
         float zoom;

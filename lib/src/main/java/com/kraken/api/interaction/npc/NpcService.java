@@ -63,7 +63,7 @@ public class NpcService extends AbstractService {
      * Interacts with a given NPC given the NPC's name and an action using packets.
      * @param name NPC name
      * @param actions Action to take: "Attack"
-     * @return
+     * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(String name, String... actions) {
         NPC npc = getNpcs(n -> n.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
@@ -78,7 +78,7 @@ public class NpcService extends AbstractService {
      * Interacts with a given NPC given the NPC's id and an action using packets.
      * @param id NPC id
      * @param actions Action to take: "Attack"
-     * @return
+     * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(int id, String... actions) {
         return NPCs.search().withId(id).first().flatMap(npc -> {
@@ -92,7 +92,7 @@ public class NpcService extends AbstractService {
      * Interacts with the first NPC which matches the passed predicate using the given action with packets.
      * @param predicate Predicate to filter NPC's
      * @param actions Action to take: "Attack"
-     * @return
+     * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(Predicate<? super NPC> predicate, String... actions) {
         return NPCs.search().filter(predicate).first().flatMap(npc -> {
@@ -106,7 +106,7 @@ public class NpcService extends AbstractService {
      * Interacts with a given NPC given the NPC's index and an action using packets.
      * @param index NPC index
      * @param actions Action to take: "Attack"
-     * @return
+     * @return True if the interaction was successful and false otherwise
      */
     public boolean interactIndex(int index, String... actions) {
         return NPCs.search().indexIs(index).first().flatMap(npc -> {
@@ -120,7 +120,7 @@ public class NpcService extends AbstractService {
      * Interacts with a given NPC given the NPC and multiple actions using packets.
      * @param npc The NPC to interact with
      * @param actions Action to take: "Attack"
-     * @return
+     * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(NPC npc, String... actions) {
         if (npc == null) {
@@ -276,6 +276,7 @@ public class NpcService extends AbstractService {
      * Uses client thread for safe access to player location.
      *
      * @param maxDistance Maximum distance in tiles
+     * @param npc The npc to check distance for
      * @return true if within distance, false otherwise
      */
     public boolean isWithinDistanceFromPlayer(NPC npc, int maxDistance) {
@@ -286,6 +287,7 @@ public class NpcService extends AbstractService {
     /**
      * Gets the distance from this NPC to the player.
      * Uses client thread for safe access to player location.
+     * @param npc The npc to check distance for
      *
      * @return Distance in tiles
      */
@@ -297,6 +299,7 @@ public class NpcService extends AbstractService {
     /**
      * Checks if this NPC is within a specified distance from a given location.
      *
+     * @param npc The npc to check within distance
      * @param anchor The anchor point
      * @param maxDistance Maximum distance in tiles
      * @return true if within distance, false otherwise
@@ -309,7 +312,7 @@ public class NpcService extends AbstractService {
     /**
      * Checks if this NPC is currently interacting with the player.
      * Uses client thread for safe access to player reference.
-     *
+     * @param npc The npc to check if interacting with player
      * @return true if interacting with player, false otherwise
      */
     public boolean isInteractingWithPlayer(NPC npc) {
@@ -318,7 +321,7 @@ public class NpcService extends AbstractService {
 
     /**
      * Checks if this NPC is currently moving.
-     *
+     * @param npc The npc to check if currently moving
      * @return true if moving, false if idle
      */
     public boolean isMoving(NPC npc) {
@@ -329,7 +332,7 @@ public class NpcService extends AbstractService {
 
     /**
      * Gets the health percentage of this NPC.
-     *
+     * @param npc The npc health to check
      * @return Health percentage (0-100), or -1 if unknown
      */
     public double getHealthPercentage(NPC npc) {

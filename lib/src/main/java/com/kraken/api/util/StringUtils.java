@@ -22,10 +22,10 @@ public class StringUtils {
     }
 
     /**
-     * Strips <col=...> tags from each string in the provided array.
+     * Strips {@code <col=...>} tags from each string in the provided array.
      *
      * @param sourceList the array of strings to process
-     * @return a new array with <col=...> tags removed
+     * @return a new array with {@code <col=...>} tags removed
      */
     public static String[] stripColTags(String[] sourceList) {
         List<String> resultList = new ArrayList<>();

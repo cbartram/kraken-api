@@ -334,8 +334,8 @@ public class RandomService {
      *
      * @param min         The minimum value (inclusive).
      * @param max         The maximum value (inclusive).
-     * @param skewFactor  The skew factor. A value > 1 will skew the distribution towards the higher end,
-     *                    while a value < 1 will skew it towards the lower end. A value of 1 produces
+     * @param skewFactor  The skew factor. A value greater than 1 will skew the distribution towards the higher end,
+     *                    while a value less than 1 will skew it towards the lower end. A value of 1 produces
      *                    a standard Gaussian distribution centered around the midpoint.
      * @param useGaussian If true, the method will use a Gaussian distribution instead of a uniform one.
      *
@@ -376,9 +376,9 @@ public class RandomService {
 
     /**
      * generate random number between min and max
-     * @param min
-     * @param max
-     * @return
+     * @param min The minimum the random number can be
+     * @param max The maximum the random number can be
+     * @return A random number between the minimum and maximum
      */
     public static int between(final int min, final int max) {
         final int n = Math.abs(max - min);
@@ -387,9 +387,9 @@ public class RandomService {
 
     /**
      * random gaussian
-     * @param mean
-     * @param stddev
-     * @return
+     * @param mean The mean
+     * @param stddev The standard deviation
+     * @return a random gaussian distribution
      */
     public static int randomGaussian(double mean, double stddev) {
         double u, v, s;

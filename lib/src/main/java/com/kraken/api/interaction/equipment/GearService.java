@@ -71,7 +71,7 @@ public class GearService extends AbstractService {
     /**
      * Wields gear from the players inventory using reflection to make the menu invocations.
      * @param itemIds int[] item ids to equip.
-     * @return
+     * @return True when the wield operation was successful and false otherwise
      */
     public boolean wieldReflect(int[] itemIds) {
         if (itemIds == null) {

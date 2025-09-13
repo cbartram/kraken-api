@@ -75,6 +75,7 @@ public class ShortestPathService {
     /**
      * Get the current computed path as WorldPoints.
      * Returns empty list if no path is found or not yet computed.
+     * @return The list of world points representing the currently calculated path
      */
     public List<WorldPoint> getCurrentPath() {
         if (pathfinder == null
@@ -91,6 +92,7 @@ public class ShortestPathService {
 
     /**
      * Returns whether a path is currently available.
+     * @return True if a path is available and false otherwise
      */
     public boolean hasPath() {
         return pathfinder != null

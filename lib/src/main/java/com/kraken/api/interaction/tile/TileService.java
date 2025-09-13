@@ -44,8 +44,8 @@ public class TileService extends AbstractService {
 
     /**
      * Used to convert a WorldPoint in an instance to a LocalPoint
-     * @param worldPoint
-     * @return
+     * @param worldPoint The world point to convert
+     * @return A local point representing the same global world point
      */
     public LocalPoint fromWorldInstance(WorldPoint worldPoint)
     {

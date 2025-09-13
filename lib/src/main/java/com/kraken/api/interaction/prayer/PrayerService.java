@@ -21,7 +21,6 @@ public class PrayerService extends AbstractService {
     /**
      * Wrapper method which turns a prayer on.
      * @param prayer The prayer to turn on.
-     * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
      */
     public void activatePrayer(Prayer prayer) {
         toggle(prayer, true, true);

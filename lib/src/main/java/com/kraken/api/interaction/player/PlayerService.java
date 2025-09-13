@@ -47,6 +47,7 @@ public class PlayerService extends AbstractService {
     /**
      * The poisoned status of the player, with negative values indicating the duration of poison or venom protection and
      * positive values representing the amount of poison or venom damage the player will be taking.
+     * @param event The varbit changed event from RuneLite
      *    - (-inf, -38): Venom immune for a duration of {@code (abs(val) - 38) * 30} game ticks (18 seconds per poison tick), after which point the value will have increased to {@code -38} and be representing poison immunity rather than venom immunity
      *    - [-38, 0): Poison immune for a duration of {@code abs(val) * 30} game ticks (18 seconds per poison tick)
      *    - 0: Not poisoned or immune to poison
@@ -100,6 +101,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Gets the current player position safely
+     * @return The current players position as a world point
      */
     public WorldPoint getPlayerPosition() {
         return context.runOnClientThreadOptional(() -> {
@@ -119,7 +121,8 @@ public class PlayerService extends AbstractService {
 
 
     /**
-     * Sets the special attack state if currentSpecEnergy >= specialAttackEnergyRequired
+     * Sets the special attack state if current special attack energy is greater than or equal to the required special
+     * attack energy
      *
      * @param energyRequired int, 100 = 100%
      */
@@ -139,7 +142,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Returns true when the spec is enabled and false otherwise
-     * @return
+     * @return True if spec is enabled and false otherwise
      */
     public boolean isSpecEnabled() {
         return client.getVarpValue(301) == 1;
@@ -147,7 +150,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Returns true when the spec is disabled and false otherwise
-     * @return
+     * @return True if speci is disabled and false otherwise
      */
     public boolean isSpecDisabled() {
         return client.getVarpValue(301) == 0;
@@ -155,7 +158,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Returns true if the player has anti-venom protection currently active
-     * @return
+     * @return True if the player has anti-venom active and false otherwise
      */
     private boolean hasAntiVenomActive() {
         return antiVenomTime < VENOM_VALUE_CUTOFF;
@@ -163,7 +166,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Returns true if the player has anti-poison protection currently active
-     * @return
+     * @return True if the player has anti-poison active and false otherwise
      */
     private boolean hasAntiPoisonActive() {
         return antiPoisonTime > 0;
@@ -171,7 +174,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Returns true if the player's anti-poison protection is about to expire (within 10 ticks of expiration)
-     * @return
+     * @return True if the anti-poison is about to expire within 10 game ticks.
      */
     private boolean antiPoisonAboutToExpire() {
         return hasAntiPoisonActive() && (Math.abs(antiPoisonTime) * 30) < 10;
@@ -179,7 +182,7 @@ public class PlayerService extends AbstractService {
 
     /**
      * Returns true if the players anti-venom protection is about to expire (within 10 ticks of expiration)
-     * @return
+     * @return True if the anti-venom is about to expire within 10 game ticks.
      */
     private boolean antiVenomAboutToExpire() {
         int ticks = (Math.abs(antiVenomTime) - 38) * 30;
@@ -187,7 +190,7 @@ public class PlayerService extends AbstractService {
     }
 
     /**
-     * Sets the special attack state if currentSpecEnergy >= specialAttackEnergyRequired using reflection instead of mouse events.
+     * Sets the special attack state if the current special attack energy is greater than or equal to the required special attack energy using reflection instead of mouse events.
      *
      * @param energyRequired int, 100 = 100%
      * @param delay int a set delay before the spec button is pressed. This can't happen instantaneously because the server needs to process

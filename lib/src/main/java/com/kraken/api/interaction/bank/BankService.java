@@ -197,8 +197,6 @@ public class BankService extends AbstractService {
 
     /**
      * Closes the bank interface if it is open.
-     *
-     * @return true if the bank interface was open and successfully closed, true if already closed.
      */
     public void close() {
         if (isOpen()) {
@@ -229,6 +227,7 @@ public class BankService extends AbstractService {
      * Deposits one item quickly by its ID.
      *
      * @param id The ID of the item to deposit.
+     * @return boolean true if the deposit was successful and false otherwise
      */
     public boolean depositOne(int id) {
         return depositOne(inventoryService.get(id));
@@ -238,6 +237,8 @@ public class BankService extends AbstractService {
      * Deposits one item quickly by its name with a partial name match.
      *
      * @param name The name of the item to deposit.
+     * @param exact When true only a name which exactly matches will be deposited. Partial matches are accepted when this value is false.
+     * @return True if the deposit was successful and false otherwise
      */
     public boolean depositOne(String name, boolean exact) {
         return depositOne(inventoryService.get(name, exact));
@@ -247,6 +248,7 @@ public class BankService extends AbstractService {
      * Deposits one item quickly by its name with a partial name match.
      *
      * @param name The name of the item to deposit.
+     * @return True if the deposit was successful and false otherwise
      */
     public boolean depositOne(String name) {
         return depositOne(name, false);
@@ -256,8 +258,7 @@ public class BankService extends AbstractService {
      * Deposit all items identified by its ItemWidget
      *
      * @param item item to deposit
-     *
-     * @returns did deposit anything
+     * @return True if the deposit was successful and false otherwise
      */
     private boolean depositAll(InventoryItem item) {
         if (item == null) return false;
@@ -303,22 +304,25 @@ public class BankService extends AbstractService {
      *
      * @param name  name to search
      * @param exact does an exact search equalsIgnoreCase
+     * @return True if the deposit was successful and false otherwise
      */
     public boolean depositAll(String name, boolean exact) {
         return depositAll(inventoryService.get(name, exact));
     }
 
     /**
-     * deposit all items identified by its name
+     * Deposit all items identified by its name
      *
      * @param name item name to search
+     * @return True if the deposit was successful and false otherwise
      */
     public boolean depositAll(String name) {
         return depositAll(name, false);
     }
 
     /**
-     * deposit all items
+     * Deposit all items in the players inventory
+     * @return True if the deposit was successful and false otherwise
      */
     public boolean depositAll() {
         if (inventoryService.isEmpty()) return true;

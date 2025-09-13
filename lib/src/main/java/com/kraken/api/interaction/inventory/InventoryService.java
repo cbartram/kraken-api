@@ -149,6 +149,7 @@ public class InventoryService extends AbstractService {
     /**
      * Returns true if the inventory contains an item with the specified ID.
      * @param id The ID of the item to check for.
+     * @return True when the users inventory contains the item and false otherwise
      */
     public boolean hasItem(int id) {
         return inventoryItems.stream().anyMatch(item -> item.getId() == id);
@@ -157,6 +158,7 @@ public class InventoryService extends AbstractService {
     /**
      * Returns true if the inventory contains an item with the specified ID.
      * @param item The InventoryItem to check for.
+     * @return True when the users inventory contains the item and false otherwise
      */
     public boolean hasItem(InventoryItem item) {
         return inventoryItems.stream().anyMatch(i -> i.getId() == item.getId());
@@ -164,7 +166,7 @@ public class InventoryService extends AbstractService {
 
     /**
      * Returns true if the inventory is empty and false otherwise.
-     * @return
+     * @return true if the inventory is empty and false otherwise.
      */
     public boolean isEmpty() {
         return inventoryItems.isEmpty();
@@ -172,7 +174,7 @@ public class InventoryService extends AbstractService {
 
     /**
      * Returns true if the inventory is full and false otherwise.
-     * @return
+     * @return True if the inventory is full and false otherwise.
      */
     public boolean isFull() {
         return inventoryItems.size() >= 28;
@@ -180,7 +182,7 @@ public class InventoryService extends AbstractService {
 
     /**
      * Returns the count of items in the inventory
-     * @return
+     * @return The count of items in the players inventory
      */
     public int count() {
         return inventoryItems.size();
@@ -188,7 +190,7 @@ public class InventoryService extends AbstractService {
 
     /**
      * Returns the free space in a users inventory.
-     * @return
+     * @return The amount of free space available in the players inventory
      */
     public int freeSpace() {
         return 28 - inventoryItems.size();
@@ -211,6 +213,7 @@ public class InventoryService extends AbstractService {
      *
      * @param primaryItemId   The ID of the primary item.
      * @param secondaryItemId The ID of the secondary item.
+     * @param shortSleep True if there should be a short sleep in between the combine operation
      *
      * @return True if the combine operation was successful, false otherwise.
      */
@@ -235,6 +238,7 @@ public class InventoryService extends AbstractService {
      *
      * @param primary   The primary item.
      * @param secondary The secondary item.
+     * @param shortSleep True if there should be a short sleep operation between the combination
      *
      * @return True if the combine operation was successful, false otherwise.
      */
@@ -356,6 +360,7 @@ public class InventoryService extends AbstractService {
      * Interacts with an item with the specified ID in the inventory using the first available action.
      *
      * @param id The ID of the item to interact with.
+     * @param action The action to take. i.e. "Eat" or "Use"
      *
      * @return True if the interaction was successful, false otherwise.
      */
@@ -376,6 +381,7 @@ public class InventoryService extends AbstractService {
      * Interacts with an item with the specified ID in the inventory using the first available action.
      *
      * @param item The Inventory Item to interact with.
+     * @param action The action to take. i.e. "Eat" or "Use"
      *
      * @return True if the interaction was successful, false otherwise.
      */
@@ -455,6 +461,7 @@ public class InventoryService extends AbstractService {
      *
      * @param name   The name of the item to interact with.
      * @param action The action to perform on the item.
+     * @param exact when true
      *
      * @return True if the interaction was successful, false otherwise.
      */
@@ -575,6 +582,7 @@ public class InventoryService extends AbstractService {
      * this method ignores casing
      *
      * @param name The name to match.
+     * @param exact When true only exact matches on the name will be included
      *
      * @return The item with the specified name, or null if not found.
      */
@@ -599,6 +607,8 @@ public class InventoryService extends AbstractService {
      * this method ignores casing
      *
      * @param name The name to match.
+     * @param stackable When true will return the item stack
+     * @param exact when true only exact matches for the name will be accepted
      *
      * @return The item with the specified name, or null if not found.
      */
@@ -611,6 +621,8 @@ public class InventoryService extends AbstractService {
      * this method ignores casing
      *
      * @param names to match.
+     * @param stackable True if the item is stackable
+     * @param exact when true only exact matches for the name will be accepted
      *
      * @return The item with the specified name, or null if not found.
      */
@@ -684,9 +696,10 @@ public class InventoryService extends AbstractService {
     }
 
     /**
-     *
-     * @param name
-     * @return
+     * Drops an item given the items name
+     * @param name The name of the item to drop
+     * @param exact When true only the exact name will return an item to drop
+     * @return True if the item was dropped successfully and false otherwise.
      */
     public boolean drop(String name, boolean exact) {
         return drop(get(name,exact));
