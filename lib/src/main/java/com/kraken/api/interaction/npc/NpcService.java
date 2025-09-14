@@ -48,15 +48,14 @@ public class NpcService extends AbstractService {
      * @return A sorted {@link Stream} of {@link NPC} objects that match the given predicate.
      */
     public Stream<? extends NPC> getNpcs(Predicate<NPC> predicate) {
-        List<? extends NPC> npcList = Optional.of(context.getClient().getTopLevelWorldView().npcs().stream()
-                        .filter(Objects::nonNull)
-                        .filter(x -> x.getName() != null)
-                        .filter(predicate)
-                        .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(context.getClient().getLocalPlayer().getLocalLocation())))
-                        .collect(Collectors.toList()))
-                .orElse(new ArrayList<>());
+        Optional<List<NPC>> npcs = context.runOnClientThreadOptional(() -> context.getClient().getTopLevelWorldView().npcs().stream()
+                .filter(Objects::nonNull)
+                .filter(x -> x.getName() != null)
+                .filter(predicate)
+                .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(context.getClient().getLocalPlayer().getLocalLocation())))
+                .collect(Collectors.toList()));
 
-        return npcList.stream();
+        return npcs.<Stream<? extends NPC>>map(Collection::stream).orElse(null);
     }
 
     /**

@@ -19,11 +19,6 @@ public abstract class Script implements Scriptable {
     // Any time a user extends this class, context will be injected registering the API Classes with the eventbus without
     // the user needing to manually register them. This API expects to be running only within the context of a RuneLite client.
     private final Context context;
-
-    public ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
-    public ScheduledFuture<?> scheduledFuture;
-    public ScheduledFuture<?> mainScheduledFuture;
-
     private Instant startTime; // when the script started
 
     @Getter
@@ -70,21 +65,18 @@ public abstract class Script implements Scriptable {
         }
 
         running = true;
-        log.info("[Script] Creating new thread for script");
+        startTime = Instant.now();
         thread = new Thread(() -> {
             try {
-                log.info("[Script] Calling onStart()");
                 onStart();
 
                 while (running) {
-                    log.info("[Script] Running loop");
                     long delay = loop();
 
                     if (delay <= 0) {
                         break; // negative return means exit loop
                     }
 
-                    log.info("[Script] Waiting for loop: {}", delay);
                     try {
                         Thread.sleep(delay);
                     } catch (InterruptedException e) {
@@ -96,13 +88,11 @@ public abstract class Script implements Scriptable {
                 log.error("[Script] Exception occurred in script execution:", e);
                 e.printStackTrace();
             } finally {
-                log.info("[Script] Closing thread and calling onEnd");
                 onEnd();
                 running = false;
             }
         });
 
-        log.info("[Script] starting thread");
         thread.start();
     }
 

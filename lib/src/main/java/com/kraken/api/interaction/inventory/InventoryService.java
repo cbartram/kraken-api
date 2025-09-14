@@ -41,15 +41,9 @@ public class InventoryService extends AbstractService {
 
     @Inject
     private SleepService sleepService;
-
-    @Inject
-    private WidgetService widgetService;
     
     @Inject
     private TabService tabService;
-    
-    @Inject
-    private BankService bankService;
 
     @Inject
     private ReflectionService reflectionService;
