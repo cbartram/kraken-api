@@ -62,7 +62,7 @@ public abstract class Script implements Scriptable {
 
     public final void start() {
         if (running) {
-            return; // Already running
+            return;
         }
 
         if(!this.context.isRegistered()) {
@@ -70,17 +70,21 @@ public abstract class Script implements Scriptable {
         }
 
         running = true;
+        log.info("[Script] Creating new thread for script");
         thread = new Thread(() -> {
             try {
+                log.info("[Script] Calling onStart()");
                 onStart();
 
                 while (running) {
+                    log.info("[Script] Running loop");
                     long delay = loop();
 
                     if (delay <= 0) {
                         break; // negative return means exit loop
                     }
 
+                    log.info("[Script] Waiting for loop: {}", delay);
                     try {
                         Thread.sleep(delay);
                     } catch (InterruptedException e) {
@@ -88,20 +92,25 @@ public abstract class Script implements Scriptable {
                         break;
                     }
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
+                log.error("[Script] Exception occurred in script execution:", e);
                 e.printStackTrace();
             } finally {
+                log.info("[Script] Closing thread and calling onEnd");
                 onEnd();
                 running = false;
             }
         });
 
+        log.info("[Script] starting thread");
         thread.start();
     }
 
     public final void stop() {
+        if(!running) {
+            return;
+        }
+
         running = false;
         if(this.context.isRegistered()) {
             this.context.destroy();
@@ -115,10 +124,6 @@ public abstract class Script implements Scriptable {
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    public final boolean isRunning() {
-        return running;
     }
 
     /**
