@@ -75,14 +75,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish latest version to GitHub Packages
-        run: |
-          echo "Publishing latest version to GitHub Packages"
-          export VERSION="latest"
-          echo "VERSION=latest" >> $GITHUB_ENV
-          ./gradlew publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# Causes overwrite issues where latest is already published
+#      - name: Publish latest version to GitHub Packages
+#        run: |
+#          echo "Publishing latest version to GitHub Packages"
+#          export VERSION="latest"
+#          echo "VERSION=latest" >> $GITHUB_ENV
+#          ./gradlew publish
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install MinIO client
         run: |
