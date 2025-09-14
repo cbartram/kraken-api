@@ -100,6 +100,10 @@ dependencies {
 }
 ```
 
+Each release also includes a `latest` tag.
+You can optionally use this instead of a semantic version for the API to use the latest published version.
+
+> ⚠️ Be careful using `latest` in your plugins though as API functionality can change dramatically between patch versions (especially while the API is under development).
 > ⚠️ If you are using the MovementService in your plugin for character pathing you should also include the `shortest-path` dependency.
 
 ### Example Plugin Setup
