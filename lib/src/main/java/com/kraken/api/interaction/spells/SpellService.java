@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.model.InventoryItem;
+import com.kraken.api.interaction.inventory.InventoryItem;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Varbit;

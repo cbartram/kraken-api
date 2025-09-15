@@ -1,7 +1,5 @@
 package com.kraken.api.interaction.npc;
 
-import com.example.EthanApiPlugin.Collections.NPCs;
-import com.example.EthanApiPlugin.Collections.query.NPCQuery;
 import com.example.Packets.MousePackets;
 import com.example.Packets.NPCPackets;
 import com.google.inject.Inject;
@@ -9,8 +7,6 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.interaction.ui.UIService;
-import com.kraken.api.model.NewMenuEntry;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.HeadIcon;
@@ -20,8 +16,6 @@ import net.runelite.api.NPCComposition;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -65,12 +59,10 @@ public class NpcService extends AbstractService {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(String name, String... actions) {
-        NPC npc = getNpcs(n -> n.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
-        if(npc == null) return false;
-        log.info("NPC found: {}", npc.getName());
-        MousePackets.queueClickPacket();
-        NPCPackets.queueNPCAction(npc, actions);
-        return true;
+        return interact(n -> {
+            String npcName = context.runOnClientThreadOptional(n::getName).orElse(null);
+            return npcName != null && npcName.equalsIgnoreCase(name);
+        }, actions);
     }
 
     /**
@@ -80,11 +72,7 @@ public class NpcService extends AbstractService {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(int id, String... actions) {
-        return NPCs.search().withId(id).first().flatMap(npc -> {
-            MousePackets.queueClickPacket();
-            NPCPackets.queueNPCAction(npc, actions);
-            return Optional.of(true);
-        }).orElse(false);
+        return interact(n -> n.getId() == id, actions);
     }
 
     /**
@@ -93,12 +81,12 @@ public class NpcService extends AbstractService {
      * @param actions Action to take: "Attack"
      * @return True if the interaction was successful and false otherwise
      */
-    public boolean interact(Predicate<? super NPC> predicate, String... actions) {
-        return NPCs.search().filter(predicate).first().flatMap(npc -> {
-            MousePackets.queueClickPacket();
-            NPCPackets.queueNPCAction(npc, actions);
-            return Optional.of(true);
-        }).orElse(false);
+    public boolean interact(Predicate<NPC> predicate, String... actions) {
+        NPC npc = getNpcs(predicate).findFirst().orElse(null);
+        if(npc == null) return false;
+        MousePackets.queueClickPacket();
+        NPCPackets.queueNPCAction(npc, actions);
+        return true;
     }
 
     /**
@@ -108,11 +96,7 @@ public class NpcService extends AbstractService {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean interactIndex(int index, String... actions) {
-        return NPCs.search().indexIs(index).first().flatMap(npc -> {
-            MousePackets.queueClickPacket();
-            NPCPackets.queueNPCAction(npc, actions);
-            return Optional.of(true);
-        }).orElse(false);
+        return interact(n -> n.getIndex() == index, actions);
     }
 
     /**
@@ -125,7 +109,8 @@ public class NpcService extends AbstractService {
         if (npc == null) {
             return false;
         }
-        NPCComposition comp = NPCQuery.getNPCComposition(npc);
+
+        NPCComposition comp = context.runOnClientThreadOptional(npc::getComposition).orElse(null);
         if (comp == null) {
             return false;
         }
@@ -258,10 +243,9 @@ public class NpcService extends AbstractService {
      */
     public Stream<? extends NPC> getAttackableNpcs(String name, boolean exact) {
         if (name == null || name.isEmpty()) return Stream.empty();
-        return getAttackableNpcs().filter(x -> {
-            String npcName = x.getName();
-            if (npcName == null || npcName.isEmpty()) return false;
-            return exact ? npcName.equalsIgnoreCase(name) : npcName.toLowerCase().contains(name.toLowerCase());
+        return getAttackableNpcs().filter(npc -> {
+            Optional<String> npcName = context.runOnClientThreadOptional(npc::getName);
+            return npcName.map(s -> exact ? s.equalsIgnoreCase(name) : s.toLowerCase().contains(name.toLowerCase())).orElse(false);
         });
     }
 

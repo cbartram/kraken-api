@@ -4,18 +4,16 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
-import com.kraken.api.interaction.movement.MinimapService;
-import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.inventory.InventoryItem;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.NPC;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -25,8 +23,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.ui.overlay.OverlayManager;
 
-import java.awt.*;
-import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
@@ -49,7 +46,7 @@ public class ExamplePlugin extends Plugin {
     private MovementOverlay movementOverlay;
 
     @Inject
-    private MovementService movementService;
+    private InventoryService inventoryService;
 
     @Inject
     private GroundObjectService groundObjectService;
@@ -65,6 +62,8 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private MouseTrackerOverlay overlay;
+
+    private Thread thread;
 
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
@@ -83,14 +82,10 @@ public class ExamplePlugin extends Plugin {
         if (event.getGroup().equals("testapi")) {
             if(event.getKey().equals("start")) {
                 if (config.start()) {
-                    log.info("Starting...");
-                    clientThread.invoke(() -> {
-                        boolean clicked = npcService.interact("Guard", "Attack");
-                        log.info("Clicked: {}", clicked);
-                    });
+                    runNpcServiceTest();
+                    runInventoryServiceTest();
                 } else {
                     log.info("Stopping...");
-                    movementService.resetPath();
                 }
             }
         }
@@ -124,5 +119,54 @@ public class ExamplePlugin extends Plugin {
             default:
                 break;
         }
+    }
+
+    private void runNpcServiceTest() {
+        thread = new Thread(() -> {
+            log.info("Starting npc service test in new thread...");
+            npcService
+                    .getAttackableNpcs("Guard")
+                    .filter(n -> !n.isInteracting())
+                    .findFirst().ifPresent(guard -> log.info("Guard found"));
+
+            java.util.List<NPC> npcs = npcService.getNpcs().collect(Collectors.toList());
+
+            for(NPC npc : npcs) {
+                log.info("Npc found: {}", context.runOnClientThreadOptional(npc::getName));
+            }
+
+        });
+
+        thread.start();
+    }
+
+
+    private void runInventoryServiceTest() {
+        thread = new Thread(() -> {
+            log.info("Starting inventory service test in new thread...");
+            log.info("Has food: {}", inventoryService.hasFood());
+
+            int idx = 0;
+            for(InventoryItem item : inventoryService.all()) {
+                log.info("Item found: {}", item.getName());
+                if(idx == 0) {
+                    log.info("Interacting with: {}", item.getName());
+                    inventoryService.interactReflect(item, "Use");
+                }
+                idx++;
+            }
+
+            idx = 0;
+            for(InventoryItem i : inventoryService.getFood()) {
+                log.info("Food found: {}", i.getName());
+                idx++;
+            }
+
+            int runePlateQuantity = inventoryService.get("Rune Platebody").getQuantity();
+            log.info("Rune Platebody quantity: {}", runePlateQuantity);
+            inventoryService.drop("Swordfish");
+        });
+
+        thread.start();
     }
 }

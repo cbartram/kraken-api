@@ -1,18 +1,16 @@
 package com.kraken.api.interaction.inventory;
 
 import com.example.InteractionApi.InventoryInteraction;
+import com.example.Packets.MousePackets;
+import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
-import com.kraken.api.interaction.bank.BankService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.InterfaceTab;
 import com.kraken.api.interaction.ui.TabService;
-import com.kraken.api.interaction.widget.WidgetService;
-import com.kraken.api.model.InventoryItem;
-import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.RandomUtils;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +19,6 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
-import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
@@ -37,7 +34,6 @@ import static com.kraken.api.util.StringUtils.stripColTags;
 @Singleton
 public class InventoryService extends AbstractService {
     private final List<InventoryItem> inventoryItems = new ArrayList<>();
-    private final List<InventoryItem> prevInventoryItems = new ArrayList<>();
 
     @Inject
     private SleepService sleepService;
@@ -78,32 +74,21 @@ public class InventoryService extends AbstractService {
      * @param itemContainer The item container to refresh with.
      */
     private void refresh(ItemContainer itemContainer) {
-        if(!prevInventoryItems.isEmpty()) {
-            prevInventoryItems.clear();
-        }
-
-        prevInventoryItems.addAll(inventoryItems);
         inventoryItems.clear();
 
         for (int i = 0; i < itemContainer.getItems().length; i++) {
             final Item item = itemContainer.getItems()[i];
             if (item.getId() == -1) continue;
-            final ItemComposition itemComposition = client.getItemDefinition(item.getId());
+            final ItemComposition itemComposition = context.runOnClientThreadOptional(() -> client.getItemDefinition(item.getId())).orElse(null);
+            if(itemComposition == null) continue;
             inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
         }
     }
 
-    private List<InventoryItem> toInventoryItemModel(Item[] items) {
-        List<InventoryItem> newItems = new ArrayList<>();
-        for (int i = 0; i < items.length; i++) {
-            final Item item = items[i];
-            if (item.getId() == -1) continue;
-            final ItemComposition itemComposition = client.getItemDefinition(item.getId());
-            newItems.add(new InventoryItem(item, itemComposition, i, context));
-        }
-        return newItems;
-    }
-
+    /**
+     * Returns the Widget for the players current inventory
+     * @return Widget the current players inventory
+     */
     public Widget getInventory() {
         final int BANK_PIN_INVENTORY_ITEM_CONTAINER = 17563648;
         final int SHOP_INVENTORY_ITEM_CONTAINER = 19726336;
@@ -146,7 +131,7 @@ public class InventoryService extends AbstractService {
      * @return True when the users inventory contains the item and false otherwise
      */
     public boolean hasItem(int id) {
-        return inventoryItems.stream().anyMatch(item -> item.getId() == id);
+        return inventoryItems.stream().anyMatch((item) -> context.runOnClientThreadOptional(() -> item.getId() == id).orElse(false));
     }
 
     /**
@@ -155,7 +140,16 @@ public class InventoryService extends AbstractService {
      * @return True when the users inventory contains the item and false otherwise
      */
     public boolean hasItem(InventoryItem item) {
-        return inventoryItems.stream().anyMatch(i -> i.getId() == item.getId());
+        return hasItem(item.getId());
+    }
+
+    /**
+     * Returns true if the inventory contains an item with the specified name.
+     * @param name String name of the item to check for.
+     * @return True when the users inventory contains the item and false otherwise
+     */
+    public boolean hasItem(String name) {
+        return inventoryItems.stream().anyMatch((item) -> context.runOnClientThreadOptional(() -> item.getName().equalsIgnoreCase(name)).orElse(false));
     }
 
     /**
@@ -316,7 +310,7 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interactReflect(InventoryItem item, String action, int providedIdentifier) {
-        int identifier = -1;
+        int identifier;
         if(item == null) return false;
         Widget inventoryWidget = context.getClient().getWidget(InterfaceID.Inventory.ITEMS);
         if (inventoryWidget == null) {
@@ -341,11 +335,19 @@ public class InventoryService extends AbstractService {
             String[] actions = itemWidget.getActions() != null ? itemWidget.getActions() : item.getInventoryActions();
 
             identifier = providedIdentifier == -1 ? indexOfIgnoreCase(stripColTags(actions), action) + 1 : providedIdentifier;
+
+
             reflectionService.invokeMenuAction(itemWidget.getIndex(), InterfaceID.Inventory.ITEMS, MenuAction.CC_OP.getId(), identifier, itemWidget.getItemId());
         }
         return true;
     }
 
+    /**
+     * Returns true if the item with the specified ID has the specified action. i.e "Swordfish" will have the action "Eat" but not "Drink"
+     * @param itemId The id of the item to check
+     * @param action The action to check for
+     * @return True if the item has the action and false otherwise
+     */
     public boolean itemHasAction(int itemId, String action) {
         return Arrays.stream(client.getItemDefinition(itemId).getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
     }
@@ -359,16 +361,16 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interact(int id, String action) {
-        String tmp = action;
+        String tmp;
 
         if(action == null || action.trim().isEmpty()) {
            Optional<String> firstAction = Arrays.stream(client.getItemDefinition(id).getInventoryActions()).findFirst();
-           if(firstAction.isPresent()) {
-               tmp = firstAction.get();
-           }
+            tmp = firstAction.orElse(action);
+        } else {
+            tmp = action;
         }
 
-        return InventoryInteraction.useItem(id, tmp);
+        return context.runOnClientThreadOptional(() -> InventoryInteraction.useItem(id, tmp)).orElse(false);
     }
 
     /**
@@ -380,16 +382,16 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interact(InventoryItem item, String action) {
-        String tmp = action;
+        String tmp;
 
         if(action == null || action.trim().isEmpty()) {
             Optional<String> firstAction = Arrays.stream(item.getInventoryActions()).findFirst();
-            if(firstAction.isPresent()) {
-                tmp = firstAction.get();
-            }
+            tmp = firstAction.orElse(action);
+        } else {
+            tmp = action;
         }
 
-        return InventoryInteraction.useItem(item.getId(), tmp);
+        return context.runOnClientThreadOptional(() -> InventoryInteraction.useItem(item.getId(), tmp)).orElse(false);
     }
 
     /**
@@ -557,7 +559,7 @@ public class InventoryService extends AbstractService {
      * @return The first item that matches one of the IDs, or null if not found.
      */
     public InventoryItem get(int... ids) {
-        return get(item -> Arrays.stream(ids).anyMatch(id -> id == item.getId()));
+        return get(item -> Arrays.stream(ids).anyMatch(id -> id == context.runOnClientThreadOptional(item::getId).orElse(-1)));
     }
 
     /**

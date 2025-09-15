@@ -1,4 +1,4 @@
-package com.kraken.api.model;
+package com.kraken.api.interaction.inventory;
 
 import com.kraken.api.Context;
 import lombok.AllArgsConstructor;

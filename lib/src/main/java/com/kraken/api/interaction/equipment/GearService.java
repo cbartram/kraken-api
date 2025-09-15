@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.model.InventoryItem;
+import com.kraken.api.interaction.inventory.InventoryItem;
 import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.Getter;
