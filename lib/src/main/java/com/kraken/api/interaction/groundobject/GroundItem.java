@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
@@ -39,11 +40,11 @@ public class GroundItem {
     private Duration despawnTime;
     private Duration visibleTime;
 
-    public int getHaPrice() {
+    public int getAlchemyPrice() {
         return haPrice * quantity;
     }
 
-    public int getGePrice() {
+    public int getGrandExchangePrice() {
         return gePrice * quantity;
     }
 

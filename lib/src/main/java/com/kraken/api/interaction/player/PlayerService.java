@@ -28,9 +28,6 @@ public class PlayerService extends AbstractService {
     private static final int VENOM_THRESHOLD = 1000000;
 
     @Inject
-    private WidgetService widgetService;
-
-    @Inject
     private ReflectionService reflectionService;
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
@@ -132,12 +129,30 @@ public class PlayerService extends AbstractService {
 
     /**
      * Calculates the player's current health as a percentage of their real (base) health.
+     * If the player has 40 hp total and has 36 hp remaining this will return ~85.0 showing that roughly 85% of the
+     * players health is remaining.
      *
      * @return the health percentage as a double. For example:
      *         150.0 if boosted, 80.0 if drained, or 100.0 if unchanged.
      */
     public double getHealthPercentage() {
         return (double) (client.getBoostedSkillLevel(Skill.HITPOINTS) * 100) / client.getRealSkillLevel(Skill.HITPOINTS);
+    }
+
+    /**
+     * Returns the players current health remaining as an integer.
+     * @return the remaining amount of hitpoints the player currently has.
+     */
+    public int getHealthRemaining() {
+        return client.getBoostedSkillLevel(Skill.HITPOINTS);
+    }
+
+    /**
+     * Returns the players maximum health as an integer.
+     * @return The total amount of hitpoints the player has.
+     */
+    public int getMaxHealth() {
+        return client.getRealSkillLevel(Skill.HITPOINTS);
     }
 
     /**

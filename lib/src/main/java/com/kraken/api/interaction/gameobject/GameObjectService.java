@@ -28,6 +28,9 @@ import java.util.stream.Stream;
 public class GameObjectService extends AbstractService {
 
     @Inject
+    private CameraService cameraService;
+
+    @Inject
     private ReflectionService reflectionService;
 
     /**
@@ -53,12 +56,6 @@ public class GameObjectService extends AbstractService {
                     tile.getGroundObject(),
                     tile.getWallObject()
             );
-
-    @Inject
-    private UIService uiService;
-
-    @Inject
-    private CameraService cameraService;
 
     public boolean interact(WorldPoint worldPoint) {
         return interact(worldPoint, "");
@@ -104,7 +101,7 @@ public class GameObjectService extends AbstractService {
     }
 
     public <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, int distance) {
-        Player player = client.getLocalPlayer();
+        Player player = context.runOnClientThreadOptional(() -> client.getLocalPlayer()).orElse(null);
         if (player == null) {
             return Collections.emptyList();
         }
@@ -145,7 +142,7 @@ public class GameObjectService extends AbstractService {
     }
 
     public List<TileObject> getTileObjects(Predicate<TileObject> predicate, WorldPoint anchor, int distance) {
-        Player player = client.getLocalPlayer();
+        Player player = context.runOnClientThreadOptional(() -> client.getLocalPlayer()).orElse(null);
         if (player == null) {
             return Collections.emptyList();
         }
@@ -165,14 +162,13 @@ public class GameObjectService extends AbstractService {
     }
 
     public List<GameObject> getGameObjects(Predicate<GameObject> predicate, WorldPoint anchor, int distance) {
-        Player player = client.getLocalPlayer();
+        Player player = context.runOnClientThreadOptional(() -> client.getLocalPlayer()).orElse(null);
         if (player == null) {
-            log.warn("No game objects found, local player null");
             return Collections.emptyList();
         }
+
         LocalPoint anchorLocal = LocalPoint.fromWorld(player.getWorldView(), anchor);
         if (anchorLocal == null) {
-            log.warn("No game objects found cannot determine anchor from local play position");
             return Collections.emptyList();
         }
         return getGameObjects(predicate, anchorLocal, distance * Perspective.LOCAL_TILE_SIZE);
@@ -191,7 +187,7 @@ public class GameObjectService extends AbstractService {
     }
 
     private <T extends TileObject> Stream<T> getSceneObjects(Function<Tile, Collection<? extends T>> extractor) {
-        Player player = client.getLocalPlayer();
+        Player player = context.runOnClientThreadOptional(() -> client.getLocalPlayer()).orElse(null);
         if (player == null) return Stream.empty();
 
         Scene scene = player.getWorldView().getScene();
@@ -271,8 +267,7 @@ public class GameObjectService extends AbstractService {
 
         return getGameObjects(filter, anchorPoint, distance)
                 .stream()
-                .min(Comparator.comparingInt(o ->
-                        client.getLocalPlayer().getWorldLocation().distanceTo(o.getWorldLocation())))
+                .min(Comparator.comparingInt(o -> context.runOnClientThreadOptional(() -> client.getLocalPlayer().getWorldLocation().distanceTo(o.getWorldLocation())).orElse(Integer.MAX_VALUE)))
                 .orElse(null);
     }
 

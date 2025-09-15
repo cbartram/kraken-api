@@ -7,12 +7,14 @@ import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.inventory.InventoryItem;
+import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameState;
 import net.runelite.api.NPC;
+import net.runelite.api.TileObject;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.callback.ClientThread;
@@ -47,6 +49,9 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private InventoryService inventoryService;
+
+    @Inject
+    private PlayerService playerService;
 
     @Inject
     private GroundObjectService groundObjectService;
@@ -84,6 +89,8 @@ public class ExamplePlugin extends Plugin {
                 if (config.start()) {
                     runNpcServiceTest();
                     runInventoryServiceTest();
+                    runPlayerServiceTest();
+                    runGroundObjectServiceTest();
                 } else {
                     log.info("Stopping...");
                 }
@@ -165,6 +172,37 @@ public class ExamplePlugin extends Plugin {
             int runePlateQuantity = inventoryService.get("Rune Platebody").getQuantity();
             log.info("Rune Platebody quantity: {}", runePlateQuantity);
             inventoryService.drop("Swordfish");
+        });
+
+        thread.start();
+    }
+
+    private void runPlayerServiceTest() {
+        thread = new Thread(() -> {
+            log.info("Starting player service test in new thread...");
+            double healthPercent = playerService.getHealthPercentage();
+            log.info("Health percent: {}, total: {}, curr, {}", healthPercent, playerService.getMaxHealth(), playerService.getHealthRemaining());
+            log.info("Spec enabled: {}", playerService.isSpecEnabled());
+            log.info("Is moving: {}", playerService.isMoving());
+            log.info("Is poisoned: {}", playerService.isPoisoned());
+            log.info("Is Run enabled: {}", playerService.isRunEnabled());
+            playerService.toggleRun();
+        });
+
+        thread.start();
+    }
+
+    private void runGroundObjectServiceTest() {
+        thread = new Thread(() -> {
+            log.info("Starting ground object service test in new thread...");
+            groundObjectService.get("Bones").stream().findFirst().ifPresent(bones -> {
+                log.info("Bones found on ground, interacting...");
+                groundObjectService.interactReflect(bones, "Take");
+            });
+
+            for (TileObject tileObject : groundObjectService.all()) {
+                log.info("Tile object: {}", tileObject.getId());
+            }
         });
 
         thread.start();
