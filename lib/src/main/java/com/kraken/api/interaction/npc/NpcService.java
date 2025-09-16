@@ -41,7 +41,7 @@ public class NpcService extends AbstractService {
      * @param predicate A {@link Predicate} that defines the filtering condition for NPCs.
      * @return A sorted {@link Stream} of {@link NPC} objects that match the given predicate.
      */
-    public Stream<? extends NPC> getNpcs(Predicate<NPC> predicate) {
+    public Stream<NPC> getNpcs(Predicate<NPC> predicate) {
         Optional<List<NPC>> npcs = context.runOnClientThreadOptional(() -> context.getClient().getTopLevelWorldView().npcs().stream()
                 .filter(Objects::nonNull)
                 .filter(x -> x.getName() != null)
@@ -49,7 +49,7 @@ public class NpcService extends AbstractService {
                 .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(context.getClient().getLocalPlayer().getLocalLocation())))
                 .collect(Collectors.toList()));
 
-        return npcs.<Stream<? extends NPC>>map(Collection::stream).orElse(null);
+        return npcs.<Stream<NPC>>map(Collection::stream).orElse(null);
     }
 
     /**
@@ -127,7 +127,7 @@ public class NpcService extends AbstractService {
      *
      * @return A sorted {@link Stream} of all {@link NPC} objects in the game world.
      */
-    public Stream<? extends NPC> getNpcs() {
+    public Stream<NPC> getNpcs() {
         return getNpcs(npc -> true);
     }
 
@@ -147,7 +147,7 @@ public class NpcService extends AbstractService {
      * @param exact {@code true} to match the name exactly, {@code false} to allow partial matches.
      * @return A {@link Stream} of {@link NPC} objects that match the given name criteria.
      */
-    public Stream<? extends NPC> getNpcs(String name, boolean exact) {
+    public Stream<NPC> getNpcs(String name, boolean exact) {
         if (name == null || name.isEmpty()) return Stream.empty();
         return getNpcs(npc -> {
             String npcName = npc.getName();
@@ -164,7 +164,7 @@ public class NpcService extends AbstractService {
      * @param name The name of the NPC to search for.
      * @return A {@link Stream} of {@link NPC} objects whose names contain the given string.
      */
-    public Stream<? extends NPC> getNpcs(String name) {
+    public Stream<NPC> getNpcs(String name) {
         return getNpcs(name, false);
     }
 
@@ -174,7 +174,7 @@ public class NpcService extends AbstractService {
      * @param id The unique identifier of the NPC to search for.
      * @return A {@link Stream} of {@link NPC} objects that match the given NPC ID.
      */
-    public Stream<? extends NPC> getNpcs(int id) {
+    public Stream<NPC> getNpcs(int id) {
         return getNpcs().filter(x -> x.getId() == id);
     }
 
@@ -192,7 +192,7 @@ public class NpcService extends AbstractService {
      *
      * @return A sorted {@link Stream} of {@link NPC} objects that the player can attack.
      */
-    public Stream<? extends NPC> getAttackableNpcs() {
+    public Stream<NPC> getAttackableNpcs() {
         return getNpcs(npc -> npc.getCombatLevel() > 0 && !npc.isDead())
                 .filter(npc -> !npc.isInteracting())
                 .sorted(Comparator.comparingInt(value ->
@@ -217,7 +217,7 @@ public class NpcService extends AbstractService {
      *                  If {@code false}, include all NPCs matching the other criteria regardless of reachability.
      * @return A sorted {@link Stream} of {@link NPC} objects that the player can attack.
      */
-    public Stream<? extends NPC> getAttackableNpcs(boolean reachable) {
+    public Stream<NPC> getAttackableNpcs(boolean reachable) {
         return getNpcs(npc -> npc.getCombatLevel() > 0
                 && !npc.isDead()
                 && (!reachable || context.getClient().getLocalPlayer().getWorldLocation().distanceTo(npc.getWorldLocation()) < Integer.MAX_VALUE)
@@ -241,7 +241,7 @@ public class NpcService extends AbstractService {
      * @param exact {@code true} to match the name exactly, {@code false} to allow partial matches.
      * @return A sorted {@link Stream} of {@link NPC} objects that match the given name and are attackable.
      */
-    public Stream<? extends NPC> getAttackableNpcs(String name, boolean exact) {
+    public Stream<NPC> getAttackableNpcs(String name, boolean exact) {
         if (name == null || name.isEmpty()) return Stream.empty();
         return getAttackableNpcs().filter(npc -> {
             Optional<String> npcName = context.runOnClientThreadOptional(npc::getName);
@@ -249,7 +249,7 @@ public class NpcService extends AbstractService {
         });
     }
 
-    public Stream<? extends NPC> getAttackableNpcs(String name) {
+    public Stream<NPC> getAttackableNpcs(String name) {
         return getAttackableNpcs(name, false);
     }
 

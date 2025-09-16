@@ -200,6 +200,26 @@ public class GroundObjectService extends AbstractService {
     }
 
     /**
+     * Performs the "Take" action on a ground item using reflection
+     * @param item The ground item to interact with
+     * @return true if the interaction was successful, false otherwise.
+     */
+    public boolean interactReflect(GroundItem item) {
+        return interactReflect(item, "Take");
+    }
+
+    /**
+     * Interacts with a tile object by performing a specified action using reflection
+     * @param item The ground item to interact with
+     * @param action The action to perform on the ground item. i.e "Take", "Examine", etc...
+     * @return true if the interaction was successful, false otherwise.
+     */
+    public boolean interactReflect(GroundItem item, String action) {
+        return interactReflect(item.getTileObject(), item.getName(), action);
+    }
+
+
+    /**
      * Interacts with a tile object by performing a specified action using reflection
      *
      * @param tileObject The tile object to interact with.

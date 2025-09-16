@@ -1,7 +1,5 @@
 package com.kraken.api.overlay;
 
-import com.kraken.api.ExampleConfig;
-import com.kraken.api.ExamplePlugin;
 import com.kraken.api.input.VirtualMouse;
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.Overlay;
