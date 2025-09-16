@@ -67,7 +67,7 @@ public class InfoPanelOverlay extends OverlayPanel {
                     .build());
 
             // Add test results if manager is available
-            if (testResultManager != null) {
+            if (!testResultManager.getAllTestResults().isEmpty()) {
                 addTestResults();
             }
 

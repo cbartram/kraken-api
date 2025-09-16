@@ -69,10 +69,7 @@ public class InventoryServiceTest extends BaseApiTest {
             log.info("Inventory has food: {}", hasFood);
 
             // Test getFood() method
-            List<InventoryItem> foodItems = new ArrayList<>();
-            for (InventoryItem foodItem : inventoryService.getFood()) {
-                foodItems.add(foodItem);
-            }
+            List<InventoryItem> foodItems = new ArrayList<>(inventoryService.getFood());
 
             log.info("Found {} food items", foodItems.size());
 

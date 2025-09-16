@@ -70,28 +70,28 @@ public class TestResultManager {
     }
 
     public void startTest(String testName, CompletableFuture<Boolean> testFuture) {
-        TestResult result = testResults.get(testName);
-        if (result != null) {
-            result.setRunning();
-            runningTests.put(testName, testFuture);
+        TestResult result = new TestResult(testName);
+        result.setRunning();
+        runningTests.put(testName, testFuture);
 
-            long startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
 
-            // Handle test completion
-            testFuture.whenComplete((passed, throwable) -> {
-                long executionTime = System.currentTimeMillis() - startTime;
-                runningTests.remove(testName);
+        // Handle test completion
+        testFuture.whenComplete((passed, throwable) -> {
+            long executionTime = System.currentTimeMillis() - startTime;
+            runningTests.remove(testName);
 
-                if (throwable != null) {
-                    result.setCompleted(false, executionTime, throwable.getMessage());
-                    log.error("Test {} failed with exception", testName, throwable);
-                } else {
-                    result.setCompleted(passed, executionTime, passed ? null : "Test assertions failed");
-                    log.info("Test {} completed: {} ({}ms)", testName,
-                            passed ? "PASSED" : "FAILED", executionTime);
-                }
-            });
-        }
+            if (throwable != null) {
+                result.setCompleted(false, executionTime, throwable.getMessage());
+                log.error("Test {} failed with exception", testName, throwable);
+            } else {
+                result.setCompleted(passed, executionTime, passed ? null : "Test assertions failed");
+                log.info("Test {} completed: {} ({}ms)", testName,
+                        passed ? "PASSED" : "FAILED", executionTime);
+            }
+
+            testResults.put(testName, result);
+        });
     }
 
     public void setTestDisabled(String testName) {

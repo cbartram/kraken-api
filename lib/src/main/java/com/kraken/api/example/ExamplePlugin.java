@@ -72,7 +72,6 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private TestResultManager testResultManager;
 
-    // Test classes
     @Inject
     private NpcServiceTest npcServiceTest;
 
@@ -116,6 +115,7 @@ public class ExamplePlugin extends Plugin {
                 } else {
                     log.info("Stopping API tests...");
                     testResultManager.cancelAllTests();
+                    testResultManager.getAllTestResults().clear();
                 }
             }
         }

@@ -42,8 +42,6 @@ public class NpcServiceTest extends BaseApiTest {
                     String npcName = context.runOnClientThreadOptional(npc::getName).orElse(null);
                     if (npcName != null && !npcName.isEmpty()) {
                         namedNpcsCount++;
-                        log.debug("NPC found: {} (ID: {}, Combat Level: {})",
-                                npcName, npc.getId(), npc.getCombatLevel());
                     }
                     testedCount++;
                 }
