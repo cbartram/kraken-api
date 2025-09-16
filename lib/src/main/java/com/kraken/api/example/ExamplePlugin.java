@@ -90,6 +90,15 @@ public class ExamplePlugin extends Plugin {
     }
 
     @Subscribe
+    private void onMenuOptionClicked(MenuOptionClicked event) {
+        if(config.showDebugInfo()) {
+            log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
+                    event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
+                    event.getId(), event.getItemOp(), event);
+        }
+    }
+
+    @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
             if(event.getKey().equals("start")) {

@@ -26,6 +26,7 @@ public class GroundItem {
 
     private int id;
     private String key;
+    private ItemComposition itemComposition;
     private TileObject tileObject;
     private int itemId;
     private String name;
@@ -42,14 +43,27 @@ public class GroundItem {
     private Duration despawnTime;
     private Duration visibleTime;
 
+    /**
+     * Returns the High Alchemy price of the item multiplied by the quantity on the ground.
+     * @return The High Alchemy price of the item multiplied by the quantity on the ground
+     */
     public int getAlchemyPrice() {
         return haPrice * quantity;
     }
 
+    /**
+     * Returns the Grand Exchange price of the item multiplied by the quantity on the ground.
+     * @return The Grand Exchange price of the item multiplied by the quantity on the ground
+     */
     public int getGrandExchangePrice() {
         return gePrice * quantity;
     }
 
+    /**
+     * Returns a list of actions which can be performed on the Tile object. Generally this will be "Take" or "Examine".
+     * @param item The item composition of the ground item to get actions for
+     * @return A list of actions which can be performed on the tile object
+     */
     @SneakyThrows
     public static String[] getGroundItemActions(ItemComposition item) {
         List<Field> fields = Arrays.stream(item.getClass().getFields()).filter(x -> x.getType().isArray()).collect(Collectors.toList());

@@ -14,6 +14,7 @@ import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
+import com.kraken.api.model.NewMenuEntry;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -21,10 +22,12 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GroundObjectDespawned;
+import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.util.RSTimeUnit;
 
 import java.awt.*;
@@ -71,12 +74,19 @@ public class GroundObjectService extends AbstractService {
     }
 
     @Subscribe
-    private void onItemDespawned(GroundObjectDespawned despawned) {
-        GroundObject item = despawned.getGroundObject();
-        Tile tile = despawned.getTile();
+    private void onItemDespawned(ItemDespawned event) {
+        TileItem item = event.getItem();
+        Tile tile = event.getTile();
         groundItems.remove(tile.getWorldLocation(), item.getId());
     }
 
+    /**
+     * Builds a GroundItem object from a Tile and TileItem. The tile item is the actual object that is on the ground
+     * however, data from the tile is also necessary to build a full representation
+     * @param tile The tile the item is on
+     * @param item The tile item which contains information about the item on the ground
+     * @return A GroundItem object which represents the item on the ground
+     */
     private GroundItem buildGroundItem(final Tile tile, final TileItem item) {
         int tickCount = context.runOnClientThreadOptional(() -> client.getTickCount()).orElse(0);
         final int itemId = item.getId();
@@ -88,14 +98,15 @@ public class GroundObjectService extends AbstractService {
         final String key = String.format("%d-%d-%d-%d-%d",
                 item.getId(),
                 item.getQuantity(),
-                tile.getGroundObject().getX(),
-                tile.getGroundObject().getY(),
+                tile.getWorldLocation().getX(),
+                tile.getWorldLocation().getY(),
                 tile.getPlane());
 
         final GroundItem groundItem = GroundItem.builder()
                 .id(itemId)
                 .key(key)
-                .tileObject(tile.getGroundObject())
+                .itemComposition(itemComposition)
+                .tileObject(tile.getItemLayer())
                 .location(tile.getWorldLocation())
                 .itemId(realItemId)
                 .quantity(item.getQuantity())
@@ -180,26 +191,6 @@ public class GroundObjectService extends AbstractService {
     }
 
     /**
-     * Returns a list of actions which can be performed on the Tile object. Generally this will be "Take" or "Examine".
-     * @param object The tile object to get actions for
-     * @return A list of actions which can be performed on the tile object
-     */
-    @SneakyThrows
-    public List<String> getTileObjectActions(TileObject object) {
-        List<Field> fields = Arrays.stream(object.getClass().getFields()).filter(x -> x.getType().isArray()).collect(Collectors.toList());
-        for (Field field : fields) {
-            if (field.getType().getComponentType().getName().equals("java.lang.String")) {
-                String[] actions = (String[]) field.get(object);
-                if (Arrays.stream(actions).anyMatch(x -> x != null && x.equalsIgnoreCase("take"))) {
-                    field.setAccessible(true);
-                    return List.of(actions);
-                }
-            }
-        }
-        return Collections.emptyList();
-    }
-
-    /**
      * Performs the "Take" action on a ground item using reflection
      * @param item The ground item to interact with
      * @return true if the interaction was successful, false otherwise.
@@ -209,27 +200,15 @@ public class GroundObjectService extends AbstractService {
     }
 
     /**
-     * Interacts with a tile object by performing a specified action using reflection
-     * @param item The ground item to interact with
-     * @param action The action to perform on the ground item. i.e "Take", "Examine", etc...
-     * @return true if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(GroundItem item, String action) {
-        return interactReflect(item.getTileObject(), item.getName(), action);
-    }
-
-
-    /**
-     * Interacts with a tile object by performing a specified action using reflection
+     * Interacts with a ground item by performing a specified action using reflection
      *
-     * @param tileObject The tile object to interact with.
-     * @param name The name of the tile object: i.e. "Bones", "Coins", "Bronze arrow", etc...
+     * @param groundItem The ground item to interact with.
      * @param action     The action to perform on the ground item. i.e "Take", "Examine", etc...
      *
      * @return true if the interaction was successful, false otherwise.
      */
-    public boolean interactReflect(TileObject tileObject, String name, String action) {
-        if (tileObject == null) return false;
+    public boolean interactReflect(GroundItem groundItem, String action) {
+        if (groundItem == null) return false;
         try {
             int param0;
             int param1;
@@ -238,21 +217,22 @@ public class GroundObjectService extends AbstractService {
             MenuAction menuAction = MenuAction.CANCEL;
             ItemComposition item;
 
-            item = context.runOnClientThreadOptional(() -> client.getItemDefinition(tileObject.getId())).orElse(null);
+            item = context.runOnClientThreadOptional(() -> client.getItemDefinition(groundItem.getId())).orElse(null);
             if (item == null) return false;
-            identifier = tileObject.getId();
+            identifier = groundItem.getId();
 
-            LocalPoint localPoint = tileObject.getLocalLocation();
+            LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), groundItem.getLocation());
+            if (localPoint == null) return false;
 
             param0 = localPoint.getSceneX();
-            target = "<col=ff9040>" + name;
+            target = "<col=ff9040>" + groundItem.getName();
             param1 = localPoint.getSceneY();
 
-            List<String> groundActions = getTileObjectActions(tileObject);
+            String[] groundActions = GroundItem.getGroundItemActions(groundItem.getItemComposition());
 
             int index = -1;
-            for (int i = 0; i < groundActions.size(); i++) {
-                String groundAction = groundActions.get(i);
+            for (int i = 0; i < groundActions.length; i++) {
+                String groundAction = groundActions[i];
                 if (groundAction == null || !groundAction.equalsIgnoreCase(action)) continue;
                 index = i;
             }
@@ -276,20 +256,11 @@ public class GroundObjectService extends AbstractService {
                 reflectionService.invokeMenuAction(param0, param1, menuAction.getId(), identifier, -1, action, target);
             }
         } catch (Exception ex) {
-            log.error("failed to interact with ground item: {}", ex.getMessage(), ex);
+            log.error("failed to interact with ground item: {}", groundItem.getName(), ex);
         }
         return true;
     }
 
-    /**
-     * Interacts with an item on the ground with the "Take" action using Reflection
-     * @param object Tile Object to interact with
-     * @param name the item name to interact with i.e. "Bones", "Coins", "Bronze arrow", etc...
-     * @return True when the interaction was successful and false otherwise
-     */
-    public boolean interactReflect(TileObject object, String name) {
-        return interactReflect(object, name, "Take");
-    }
 
     /**
      * Interacts with an item on the ground given the items name using packets

@@ -288,14 +288,14 @@ public class ReflectionService extends AbstractService {
      * Invokes a menu action like toggling a prayer on/off or interacting with something via a MenuEntry using reflection. Jagex
      * includes a "Junk Value" parameter in their methods to make reflection harder. Without this parameter's exact value we cannot invoke a method correctly and
      * this junk value changes each client update. The junk value is determined based on the json value from the hooks when the client starts.
-     * @param param0 The first param
-     * @param param1 The second param
-     * @param opcode The operation code for the invocation
-     * @param identifier The identifier for the invocatin
-     * @param itemId The item id to invoke
-     * @param worldViewId The world view id
-     * @param option The option
-     * @param target The target to invoke
+     * @param param0 Parameter 0 for the menu action. This can be the X coordinate of the mouse or a different value depending on what action is taken.
+     * @param param1 Parameter 1 for the menu action. This can be the Y coordinate of the mouse or a different value depending on what action is taken.
+     * @param opcode This is the operation code for the action you are trying to perform. Each action has a different opcode. For example, the opcode for "Use" is 38, "Cast" is 25, "Drop" is 16, etc.
+     *               These opcodes come from the {@code MenuAction} class. For example: MenuAction.GROUND_ITEM_FOURTH_OPTION;
+     * @param identifier  Usually the same as the item id
+     * @param itemId The item id is the id of the item you are interacting with. This can be the id of an item, NPC, player, or location.
+     * @param option Sometimes known as the "action". This is the text that appears in the menu option i.e. "Take", "Examine", "Cast", "Drop", etc.
+     * @param target The target is the name of the object you are interacting with. This can be the name of an item, NPC, player, or location.
      * @param x The x coordinate for the invocation
      * @param y The y coordinate for the invocation
      */
@@ -346,10 +346,30 @@ public class ReflectionService extends AbstractService {
         });
     }
 
+    /**
+     * Invokes a menu action like toggling a prayer on/off or interacting with something via a MenuEntry using reflection.
+     * @param param0 Parameter 0 for the menu action. This can be the X coordinate of the mouse or a different value depending on what action is taken.
+     * @param param1 Parameter 1 for the menu action. This can be the Y coordinate of the mouse or a different value depending on what action is taken.
+     * @param opcode This is the operation code for the action you are trying to perform. Each action has a different opcode. For example, the opcode for "Use" is 38, "Cast" is 25, "Drop" is 16, etc.
+     *               These opcodes come from the {@code MenuAction} class. For example: MenuAction.GROUND_ITEM_FOURTH_OPTION;
+     * @param identifier  Usually the same as the item id
+     * @param itemId The item id is the id of the item you are interacting with. This can be the id of an item, NPC, player, or location.
+     */
     public void invokeMenuAction(int param0, int param1, int opcode, int identifier, int itemId) {
         invokeMenuAction(param0, param1, opcode, identifier, itemId, "", "");
     }
 
+    /**
+     * Invokes a menu action like toggling a prayer on/off or interacting with something via a MenuEntry using reflection.
+     * @param param0 Parameter 0 for the menu action. This can be the X coordinate of the mouse or a different value depending on what action is taken.
+     * @param param1 Parameter 1 for the menu action. This can be the Y coordinate of the mouse or a different value depending on what action is taken.
+     * @param opcode This is the operation code for the action you are trying to perform. Each action has a different opcode. For example, the opcode for "Use" is 38, "Cast" is 25, "Drop" is 16, etc.
+     *               These opcodes come from the {@code MenuAction} class. For example: MenuAction.GROUND_ITEM_FOURTH_OPTION;
+     * @param identifier  Usually the same as the item id
+     * @param itemId The item id is the id of the item you are interacting with. This can be the id of an item, NPC, player, or location.
+     * @param option Sometimes known as the "action". This is the text that appears in the menu option i.e. "Take", "Examine", "Cast", "Drop", etc.
+     * @param target The target is the name of the object you are interacting with. This can be the name of an item, NPC, player, or location.
+     */
     public void invokeMenuAction(int param0, int param1, int opcode, int identifier, int itemId, String option, String target) {
         invokeMenuAction(param0, param1, opcode, identifier, itemId, -1, option, target, -1, -1);
     }
