@@ -1,9 +1,13 @@
 package com.kraken.api.interaction.groundobject;
 
+import com.example.EthanApiPlugin.Collections.ETileItem;
+import com.example.EthanApiPlugin.Collections.TileItems;
 import com.example.EthanApiPlugin.Collections.TileObjects;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.Packets.MousePackets;
 import com.example.Packets.ObjectPackets;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
@@ -15,11 +19,25 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameTick;
+import net.runelite.api.events.GroundObjectDespawned;
+import net.runelite.api.events.ItemSpawned;
+import net.runelite.api.gameval.VarbitID;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.util.RSTimeUnit;
 
 import java.awt.*;
 import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,12 +50,83 @@ public class GroundObjectService extends AbstractService {
     @Inject
     private ReflectionService reflectionService;
 
+    @Inject
+    private ItemManager itemManager;
+
+    private final Table<WorldPoint, Integer, GroundItem> groundItems = HashBasedTable.create();
+    private static final int COINS = 617;
+
+    @Subscribe
+    private void onItemSpawned(ItemSpawned itemSpawned) {
+        TileItem item = itemSpawned.getItem();
+        Tile tile = itemSpawned.getTile();
+
+        GroundItem groundItem = buildGroundItem(tile, item);
+        GroundItem existing = groundItems.get(tile.getWorldLocation(), item.getId());
+        if (existing != null) {
+            existing.setQuantity(existing.getQuantity() + groundItem.getQuantity());
+        } else {
+            groundItems.put(tile.getWorldLocation(), item.getId(), groundItem);
+        }
+    }
+
+    @Subscribe
+    private void onItemDespawned(GroundObjectDespawned despawned) {
+        GroundObject item = despawned.getGroundObject();
+        Tile tile = despawned.getTile();
+        groundItems.remove(tile.getWorldLocation(), item.getId());
+    }
+
+    private GroundItem buildGroundItem(final Tile tile, final TileItem item) {
+        int tickCount = context.runOnClientThreadOptional(() -> client.getTickCount()).orElse(0);
+        final int itemId = item.getId();
+        final ItemComposition itemComposition = itemManager.getItemComposition(itemId);
+        final int realItemId = itemComposition.getNote() != -1 ? itemComposition.getLinkedNoteId() : itemId;
+        final int alchPrice = itemComposition.getHaPrice();
+        final int despawnTime = item.getDespawnTime() - tickCount;
+        final int visibleTime = item.getVisibleTime() - tickCount;
+        final String key = String.format("%d-%d-%d-%d-%d",
+                item.getId(),
+                item.getQuantity(),
+                tile.getGroundObject().getX(),
+                tile.getGroundObject().getY(),
+                tile.getPlane());
+
+        final GroundItem groundItem = GroundItem.builder()
+                .id(itemId)
+                .key(key)
+                .tileObject(tile.getGroundObject())
+                .location(tile.getWorldLocation())
+                .itemId(realItemId)
+                .quantity(item.getQuantity())
+                .name(itemComposition.getName())
+                .haPrice(alchPrice)
+                .height(tile.getItemLayer().getHeight())
+                .tradeable(itemComposition.isTradeable())
+                .ownership(item.getOwnership())
+                .isPrivate(item.isPrivate())
+                .spawnTime(Instant.now())
+                .stackable(itemComposition.isStackable())
+                .despawnTime(Duration.of(despawnTime, RSTimeUnit.GAME_TICKS))
+                .visibleTime(Duration.of(visibleTime, RSTimeUnit.GAME_TICKS))
+                .build();
+
+        if (realItemId == COINS) {
+            groundItem.setHaPrice(1);
+            groundItem.setGePrice(1);
+        } else {
+            groundItem.setGePrice(itemManager.getItemPrice(realItemId));
+        }
+
+        return groundItem;
+    }
+
     /**
      * Finds all tile objects
      * @return returns all tile objects on the ground
      */
-    public List<TileObject> all() {
-        return context.runOnClientThreadOptional(() -> TileObjects.search().result()).orElse(new ArrayList<>());
+    public List<GroundItem> all() {
+        return context.runOnClientThreadOptional(() -> new ArrayList<>(groundItems.values())).orElse(new ArrayList<>());
     }
 
     /**
@@ -45,17 +134,49 @@ public class GroundObjectService extends AbstractService {
      * @param filter A predicate to filter which tile objects are returned
      * @return Tile objects which pass the filter
      */
-    public List<TileObject> get(Predicate<TileObject> filter) {
-        return context.runOnClientThreadOptional(() -> TileObjects.search().filter(filter).result()).orElse(new ArrayList<>());
+    public List<GroundItem> all(Predicate<GroundItem> filter) {
+        return context.runOnClientThreadOptional(() -> groundItems.values().stream().filter(filter).collect(Collectors.toList())).orElse(new ArrayList<>());
+    }
+
+    /**
+     * Finds all Tile objects with a given id.
+     * @param id The id of the ground item to find.
+     * @return Ground items which match the passed id parameter.
+     */
+    public GroundItem get(int id) {
+        return context.runOnClientThreadOptional(() -> groundItems.values().stream().filter(g -> g != null && g.getId() == id)
+                .findFirst()
+                .orElse(null))
+                .orElse(null);
+    }
+
+    /**
+     * Finds all Tile objects with a given name which matches exactly. This is still case-insensitive.
+     * @param name The name of a tile object to find
+     * @return Tile objects which match the passed name parameter.
+     */
+    public GroundItem get(String name) {
+        return get(name, true);
     }
 
     /**
      * Finds all Tile objects with a given name
      * @param name The name of a tile object to find
+     * @param exact True if the name needs to match exactly, false if a partial match is sufficient, case-insensitive.
      * @return Tile objects which match the passed name parameter.
      */
-    public List<TileObject> get(String name) {
-        return context.runOnClientThreadOptional(() -> TileObjects.search().withName(name).result()).orElse(new ArrayList<>());
+    public GroundItem get(String name, boolean exact) {
+        return context.runOnClientThreadOptional(() -> groundItems.values().stream().filter(g -> {
+            if(g == null) {
+                return false;
+            }
+
+            if(exact) {
+                return g.getName().equalsIgnoreCase(name);
+            } else {
+                return g.getName().toLowerCase().contains(name.toLowerCase());
+            }
+        }).findFirst().orElse(null)).orElse(null);
     }
 
     /**
@@ -157,11 +278,11 @@ public class GroundObjectService extends AbstractService {
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(String name, String... actions) {
-        return context.runOnClientThreadOptional(() -> TileObjects.search().withName(name).first().flatMap(tileObject -> {
+        return context.runOnClientThreadOptional(() -> get(name)).flatMap(g -> {
             MousePackets.queueClickPacket();
-            ObjectPackets.queueObjectAction(tileObject, false, actions);
+            ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
             return Optional.of(true);
-        }).orElse(false)).orElse(false);
+        }).orElse(false);
     }
 
     /**
@@ -171,11 +292,24 @@ public class GroundObjectService extends AbstractService {
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(int id, String... actions) {
-        return context.runOnClientThreadOptional(() -> TileObjects.search().withId(id).first().flatMap(tileObject -> {
+        return context.runOnClientThreadOptional(() -> get(id)).flatMap(g -> {
             MousePackets.queueClickPacket();
-            ObjectPackets.queueObjectAction(tileObject, false, actions);
+            ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
             return Optional.of(true);
-        }).orElse(false)).orElse(false);
+        }).orElse(false);
+    }
+
+    /**
+     * Interacts with an item on the ground given the item id using Packets
+     * @param item The ground item to interact with
+     * @return True when the interaction was successful and false otherwise
+     */
+    public boolean interact(GroundItem item, String... actions) {
+        return context.runOnClientThreadOptional(() -> groundItems.get(item.getLocation(), item.getId())).flatMap(g -> {
+            MousePackets.queueClickPacket();
+            ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
+            return Optional.of(true);
+        }).orElse(false);
     }
 
     /**

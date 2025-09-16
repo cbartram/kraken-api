@@ -25,6 +25,8 @@ public class GroundItem {
     private Instant spawnTime;
 
     private int id;
+    private String key;
+    private TileObject tileObject;
     private int itemId;
     private String name;
     private int quantity;
