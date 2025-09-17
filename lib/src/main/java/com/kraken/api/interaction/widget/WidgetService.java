@@ -3,6 +3,7 @@ package com.kraken.api.interaction.widget;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
+import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import net.runelite.api.MenuAction;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.widgets.Widget;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,15 +21,31 @@ import java.util.stream.Stream;
 @Singleton
 public class WidgetService extends AbstractService {
 
+    /**
+     * Returns a widget by its ID and child index.
+     * @param id the widget ID
+     * @param child the child index
+     * @return the widget, or null if not found
+     */
     public Widget getWidget(int id, int child) {
         return context.runOnClientThreadOptional(() -> client.getWidget(id, child))
                 .orElse(null);
     }
 
+    /**
+     * Returns a widget by its ID
+     * @param id the widget ID
+     * @return the widget, or null if not found
+     */
     public Widget getWidget(@Component int id) {
         return context.runOnClientThreadOptional(() -> client.getWidget(id)).orElse(null);
     }
 
+    /**
+     * Checks if a widget with the specified ID is visible (not hidden).
+     * @param id the widget ID
+     * @return true if the widget is visible, false otherwise
+     */
     public boolean isWidgetVisible(@Component int id) {
         return context.runOnClientThreadOptional(() -> {
             Widget widget = getWidget(id);
@@ -36,76 +54,29 @@ public class WidgetService extends AbstractService {
         }).orElse(false);
     }
 
-    public boolean isWidgetVisible(int widgetId, int childId) {
+    /**
+     * Checks if a widget with the specified ID is visible (not hidden).
+     * @param id the widget ID
+     * @param child the child index
+     * @return true if the widget is visible, false otherwise
+     */
+    public boolean isWidgetVisible(int id, int child) {
         return  context.runOnClientThreadOptional(() -> {
-            Widget widget = getWidget(widgetId, childId);
+            Widget widget = getWidget(id, child);
             if (widget == null) return false;
             return !widget.isHidden();
         }).orElse(false);
     }
 
-    public boolean clickWidget(Widget widget) {
-        if (widget != null) {
-            context.getMouse().click(RandomService.randomPoint(widget.getBounds(), 0));
-            return true;
-        }
-        return false;
-    }
-
-    public boolean clickWidget(String text) {
-        return clickWidget(text, Optional.empty(), 0, false);
-    }
-
-    public boolean clickWidget(String text, boolean exact) {
-        return clickWidget(text, Optional.empty(), 0, exact);
-    }
-
-    public boolean clickWidget(int parentId, int childId) {
-        Widget widget = getWidget(parentId, childId);
-        return clickWidget(widget);
-    }
-
-    public boolean clickWidget(int id) {
-        Widget widget = context.runOnClientThreadOptional(() -> client.getWidget(id)).orElse(null);;
-        if (widget == null) return false;
-        if(widget.isHidden()) return false;
-        context.getMouse().click(RandomService.randomPoint(widget.getBounds(), 0));
-        return true;
-    }
-
-    public boolean clickWidget(String text, Optional<Integer> widgetId, int childId, boolean exact) {
-        return context.runOnClientThreadOptional(() -> {
-            Widget widget;
-            if (widgetId.isEmpty()) {
-                widget = findWidget(text, null, exact);
-            } else {
-                Widget rootWidget = getWidget(widgetId.get(), childId);
-                List<Widget> rootWidgets = new ArrayList<>();
-                rootWidgets.add(rootWidget);
-                widget = findWidget(text, rootWidgets, exact);
-            }
-
-            if (widget != null) {
-                clickWidget(widget);
-            }
-
-            return widget != null;
-
-        }).orElse(false);
-    }
-
-    public void clickWidgetFast(int packetId, int identifier) {
-        Widget widget = getWidget(packetId);
-        clickWidgetFast(widget, -1, identifier);
-    }
-
-    public void clickWidgetFast(Widget widget, int param0, int identifier) {
-        int param1 = widget.getId();
-        String target = "";
-        MenuAction menuAction = MenuAction.CC_OP;
-        context.doInvoke(new NewMenuEntry(param0 != -1 ? param0 : widget.getType(), param1, menuAction.getId(), identifier, widget.getItemId(), target), widget.getBounds());
-    }
-
+    /**
+     * Checks if a widget with the specified text exists within the widget identified by widgetId and childId.
+     *
+     * @param text the text to search for
+     * @param widgetId the widget ID
+     * @param childId the child index
+     * @param exact whether to match the text exactly or partially
+     * @return true if a matching widget is found, false otherwise
+     */
     public boolean hasWidgetText(String text, int widgetId, int childId, boolean exact) {
         return context.runOnClientThreadOptional(() -> {
             Widget rootWidget = getWidget(widgetId, childId);
@@ -117,18 +88,40 @@ public class WidgetService extends AbstractService {
         }).orElse(false);
     }
 
+    /**
+     * Finds a widget with the specified text among the provided child widgets.
+     * @param text the text to search for
+     * @param children the list of child widgets to search within
+     * @return the widget containing the specified text, or null if not found
+     */
     public Widget findWidget(String text, List<Widget> children) {
         return findWidget(text, children, false);
     }
 
+    /**
+     * Finds a widget with the specified text among the provided child widgets.
+     * @param text the text to search for
+     * @return the widget containing the specified text, or null if not found
+     */
     public Widget findWidget(String text) {
         return findWidget(text, null, false);
     }
 
+    /**
+     * Finds a widget with the specified text among the provided child widgets.
+     * @param text the text to search for
+     * @param exact whether to match the text exactly or partially
+     * @return the widget containing the specified text, or null if not found
+     */
     public Widget findWidget(String text, boolean exact) {
         return findWidget(text, null, exact);
     }
 
+    /**
+     * Checks if a widget with the specified text exists among the provided child widgets or across all root widgets if children are not specified.
+     * @param text the text to search for
+     * @return true if a matching widget is found, false otherwise
+     */
     public boolean hasWidget(String text) {
         return findWidget(text, null, false) != null;
     }
@@ -248,7 +241,7 @@ public class WidgetService extends AbstractService {
      * @param exact Whether the search should match the text exactly or allow partial matches.
      * @return The widget containing the specified text, or null if no match is found.
      */
-    public static Widget searchChildren(String text, Widget child, boolean exact) {
+    public Widget searchChildren(String text, Widget child, boolean exact) {
         if (matchesText(child, text, exact)) return child;
 
         List<Widget[]> childGroups = Stream.of(child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren())
@@ -274,7 +267,7 @@ public class WidgetService extends AbstractService {
      * @param exact  Whether the match should be exact or allow partial matches.
      * @return True if the widget's text or any action matches the search criteria, false otherwise.
      */
-    private static boolean matchesText(Widget widget, String text, boolean exact) {
+    private boolean matchesText(Widget widget, String text, boolean exact) {
         String cleanText = StringUtils.stripColTags(widget.getText());
         String cleanName = StringUtils.stripColTags(widget.getName());
 

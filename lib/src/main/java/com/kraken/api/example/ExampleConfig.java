@@ -315,24 +315,55 @@ public interface ExampleConfig extends Config {
         return 1000;
     }
 
+
+    // =========== Game Object Tests SECTION ==========
+    @ConfigSection(
+            name = "Game Object Tests",
+            description = "Settings for Game Object tests.",
+            position = 5
+    )
+    String gameObjectTests = "Game Object Tests";
+
+    @ConfigItem(
+            keyName = "enableGameObjectTests",
+            name = "Enable Game Object Tests",
+            description = "Enable Game Object service testing functionality",
+            section = gameObjectTests,
+            position = 1
+    )
+    default boolean enableGameObjectTests() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "enableGameObjectOverlay",
+            name = "Enable Game Object Overlay",
+            description = "Enable Game Object service overlay",
+            section = gameObjectTests,
+            position = 2
+    )
+    default boolean enableGameObjectOverlay() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "gameObjectOverlayColor",
+            name = "Game Object Overlay Color",
+            description = "Color for game object overlays",
+            section = gameObjectTests,
+            position = 3
+    )
+    default Color gameObjectOverlayColor() {
+        return Color.GREEN;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
             description = "General overlay configuration.",
-            position = 5
+            position = 6
     )
     String overlaySettings = "Overlay Settings";
-
-    @ConfigItem(
-            keyName = "overlayOpacity",
-            name = "Overlay Opacity",
-            description = "Opacity of all overlays (0-255)",
-            section = overlaySettings,
-            position = 1
-    )
-    default int overlayOpacity() {
-        return 255;
-    }
 
     @ConfigItem(
             keyName = "fontSize",
@@ -354,16 +385,5 @@ public interface ExampleConfig extends Config {
     )
     default boolean showDebugInfo() {
         return false;
-    }
-
-    @ConfigItem(
-            keyName = "overlayPosition",
-            name = "Overlay Position",
-            description = "Position of information overlays on screen",
-            section = overlaySettings,
-            position = 4
-    )
-    default String overlayPosition() {
-        return "TOP_LEFT";
     }
 }

@@ -3,14 +3,13 @@ package com.kraken.api.example.overlay;
 import com.google.inject.Inject;
 import com.kraken.api.Context;
 import com.kraken.api.example.ExampleConfig;
+import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.player.PlayerService;
-import net.runelite.api.Client;
-import net.runelite.api.NPC;
-import net.runelite.api.Perspective;
+import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.ui.overlay.Overlay;
@@ -30,11 +29,12 @@ public class TestApiOverlay extends Overlay {
     private final PlayerService playerService;
     private final GroundObjectService groundObjectService;
     private final NpcService npcService;
+    private final GameObjectService gameObjectService;
 
     @Inject
     public TestApiOverlay(Client client, ExampleConfig config, Context context,
                           InventoryService inventoryService, PlayerService playerService,
-                          GroundObjectService groundObjectService, NpcService npcService) {
+                          GroundObjectService groundObjectService, NpcService npcService, GameObjectService gameObjectService) {
         this.client = client;
         this.config = config;
         this.context = context;
@@ -42,9 +42,9 @@ public class TestApiOverlay extends Overlay {
         this.playerService = playerService;
         this.groundObjectService = groundObjectService;
         this.npcService = npcService;
+        this.gameObjectService = gameObjectService;
 
         setPosition(OverlayPosition.DYNAMIC);
-        setPriority(OverlayPriority.MED);
         setLayer(OverlayLayer.ABOVE_SCENE);
     }
 
@@ -69,6 +69,10 @@ public class TestApiOverlay extends Overlay {
                 renderGroundItemOverlays(graphics);
             }
 
+            if(config.enableGameObjectOverlay() && config.enableGameObjectTests()) {
+                renderGameObjectOverlays(graphics);
+            }
+
         } catch (Exception e) {
             // Catch any exceptions to prevent overlay crashes
             graphics.setColor(Color.RED);
@@ -76,6 +80,43 @@ public class TestApiOverlay extends Overlay {
         }
 
         return null;
+    }
+
+    private void renderGameObjectOverlays(Graphics2D graphics) {
+        java.util.List<TileObject> gameObjects = gameObjectService.all();
+        for(TileObject gameObject : gameObjects) {
+            if (gameObject == null) continue;
+
+            LocalPoint localPoint = gameObject.getLocalLocation();
+            Point canvasPoint = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
+            if (canvasPoint == null) continue;
+            // Determine color based on object type
+            Color color = config.gameObjectOverlayColor();
+
+            Color transparentColor = new Color(
+                    color.getRed(),
+                    color.getGreen(),
+                    color.getBlue(),
+                    255
+            );
+
+            graphics.setColor(transparentColor);
+            String name = "ID: " + gameObject.getId();
+
+            // Draw object id
+            FontMetrics metrics = graphics.getFontMetrics();
+            int textWidth = metrics.stringWidth(name);
+            int textX = canvasPoint.getX() - textWidth / 2;
+            int textY = canvasPoint.getY() - 20;
+
+            // Draw background for better readability
+            graphics.setColor(new Color(0, 0, 0, 100));
+            graphics.fillRect(textX - 2, textY - metrics.getHeight() + 2, textWidth + 4, metrics.getHeight());
+
+            // Draw text
+            graphics.setColor(transparentColor);
+            graphics.drawString(name, textX, textY);
+        }
     }
 
     private void renderNpcOverlays(Graphics2D graphics) {
@@ -109,7 +150,7 @@ public class TestApiOverlay extends Overlay {
                         color.getRed(),
                         color.getGreen(),
                         color.getBlue(),
-                        config.overlayOpacity()
+                        255
                 );
                 graphics.setColor(transparentColor);
 
@@ -175,7 +216,7 @@ public class TestApiOverlay extends Overlay {
                         color.getRed(),
                         color.getGreen(),
                         color.getBlue(),
-                        config.overlayOpacity()
+                        255
                 );
 
                 graphics.setColor(transparentColor);

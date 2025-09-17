@@ -33,22 +33,7 @@ public class InfoPanelOverlay extends OverlayPanel {
         this.inventoryService = inventoryService;
         this.playerService = playerService;
         this.testResultManager = testResultManager;
-
-        // Set overlay position based on config
-        switch (config.overlayPosition().toUpperCase()) {
-            case "TOP_RIGHT":
-                setPosition(OverlayPosition.TOP_RIGHT);
-                break;
-            case "BOTTOM_LEFT":
-                setPosition(OverlayPosition.BOTTOM_LEFT);
-                break;
-            case "BOTTOM_RIGHT":
-                setPosition(OverlayPosition.BOTTOM_RIGHT);
-                break;
-            default:
-                setPosition(OverlayPosition.TOP_LEFT);
-                break;
-        }
+        setPosition(OverlayPosition.TOP_RIGHT);
     }
 
     @Override

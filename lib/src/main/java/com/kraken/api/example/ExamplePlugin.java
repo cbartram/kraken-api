@@ -6,10 +6,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
-import com.kraken.api.example.tests.GroundObjectServiceTest;
-import com.kraken.api.example.tests.InventoryServiceTest;
-import com.kraken.api.example.tests.NpcServiceTest;
-import com.kraken.api.example.tests.PlayerServiceTest;
+import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
@@ -76,6 +73,9 @@ public class ExamplePlugin extends Plugin {
     private NpcServiceTest npcServiceTest;
 
     @Inject
+    private GameObjectServiceTest gameObjectServiceTest;
+
+    @Inject
     private InventoryServiceTest inventoryServiceTest;
 
     @Inject
@@ -108,6 +108,10 @@ public class ExamplePlugin extends Plugin {
                     // Run tests based on configuration
                     if (config.enableNpcTests()) {
                         testResultManager.startTest("NpcServiceTest", npcServiceTest.executeTest());
+                    }
+
+                    if(config.enableGameObjectTests()) {
+                        testResultManager.startTest("GameObjectServiceTest", gameObjectServiceTest.executeTest());
                     }
 
                     if (config.enableInventoryTests()) {

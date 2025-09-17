@@ -173,21 +173,6 @@ public class BankService extends AbstractService {
      * @param item    The ItemWidget associated with the menu swap.
      */
     public void invokeMenuReflect(final int identifier, InventoryItem item) {
-        Rectangle itemBoundingBox = null;
-
-        if (container == BANK_INVENTORY_ITEM_CONTAINER) {
-            itemBoundingBox = inventoryService.itemBounds(item);
-        }
-        // Handles withdrawing at item from the bank
-//        if (container == BANK_ITEM_CONTAINER) {
-//            int itemTab = getItemTabForBankItem(item.getSlot());
-//            if (!isTabOpen(itemTab))
-//                openTab(itemTab);
-//            scrollBankToSlot(item.getSlot());
-//            itemBoundingBox = itemBounds(item);
-//        }
-
-        log.info("Invoking Bank menu: param0={}, param1={}, opcode={}, identifier={}, target={}, itemId={}", item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getName(), item.getId());
         reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName(), "");
     }
 
@@ -327,7 +312,7 @@ public class BankService extends AbstractService {
         Widget widget = widgetService.findWidget(1041, null);
         if (widget == null) return false;
 
-        widgetService.clickWidget(widget);
+//        widgetService.clickWidget(widget);
         sleepService.sleep(500, 1500);
         return true;
     }
