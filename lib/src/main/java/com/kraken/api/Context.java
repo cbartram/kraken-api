@@ -8,7 +8,7 @@ import com.kraken.api.core.loader.PacketUtilsLoader;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
-import com.kraken.api.interaction.equipment.GearService;
+import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
@@ -70,7 +70,7 @@ public class Context {
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),
-            GearService.class,
+            EquipmentService.class,
             BankService.class,
             CameraService.class,
             GameObjectService.class,

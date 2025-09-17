@@ -1,34 +1,27 @@
 package com.kraken.api.interaction.equipment;
 
+import com.example.InteractionApi.InventoryInteraction;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.inventory.InventoryItem;
-import com.kraken.api.model.NewMenuEntry;
-import com.kraken.api.util.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.Item;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.MenuAction;
+import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Slf4j
 @Singleton
-public class GearService extends AbstractService {
+public class EquipmentService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
@@ -61,6 +54,52 @@ public class GearService extends AbstractService {
             equipment.clear();
             equipment.addAll(list);
         }
+    }
+
+    /**
+     * Interacts with an item with the specified ID in the inventory using either the wield or wear action.
+     *
+     * @param id The ID of the item to wield/wear.
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public boolean wield(int id) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> {
+            List<String> actions = Arrays.stream(client.getItemDefinition(id).getInventoryActions())
+                    .filter(action -> action.equalsIgnoreCase("wield") || action.equalsIgnoreCase("wear"))
+                    .collect(Collectors.toList());
+            if(actions.isEmpty()) {
+                log.info("No actions found for id: {}", id);
+                return false;
+            }
+
+            return InventoryInteraction.useItem(id, actions.get(0));
+        });
+    }
+
+    /**
+     * Wields gear from the players inventory by name.
+     * @param name The name of the item to equip.
+     * @return True when the wield operation was successful and false otherwise
+     */
+    public boolean wield(String name) {
+        List<InventoryItem> items = inventory.stream()
+                .filter(item -> name.equalsIgnoreCase(item.getName()))
+                .collect(Collectors.toList());
+        if(items.isEmpty()) {
+            log.info("No item in inventory found: {}", name);
+            return false;
+        }
+        return wield(items.get(0).getId());
+    }
+
+    /**
+     * Wields gear from the players inventory by InventoryItem.
+     * @param item The InventoryItem to equip.
+     * @return True when the wield operation was successful and false otherwise
+     */
+    public boolean wield(InventoryItem item) {
+        return wield(item.getId());
     }
 
     /**
@@ -159,7 +198,12 @@ public class GearService extends AbstractService {
         return true;
     }
 
-    public boolean isWearing(Integer id) {
+    /**
+     * Checks if the player is wearing an item by id.
+     * @param id The id of the item to check.
+     * @return True if the player is wearing the item, false otherwise.
+     */
+    public boolean isWearing(int id) {
         return this.equipment
                 .stream()
                 .filter(i -> id == i.getId())
@@ -167,6 +211,11 @@ public class GearService extends AbstractService {
                 .isPresent();
     }
 
+    /**
+     * Checks if the player is wearing an item by name.
+     * @param name The name of the item to check.
+     * @return True if the player is wearing the item, false otherwise.
+     */
     public boolean isWearing(String name) {
         return this.equipment.stream()
                 .filter(i -> name.equalsIgnoreCase(i.getName()))
@@ -174,6 +223,11 @@ public class GearService extends AbstractService {
                 .isPresent();
     }
 
+    /**
+     * Gets the item equipped in the specified equipment slot.
+     * @param slot The equipment slot to check.
+     * @return The Item equipped in the specified slot, or null if the slot is empty or the equipment container is not available.
+     */
     public Item getEquipmentInSlot(EquipmentInventorySlot slot) {
         ItemContainer equipment = client.getItemContainer(94);
         if (equipment == null) {
@@ -181,27 +235,5 @@ public class GearService extends AbstractService {
         }
 
         return equipment.getItem(slot.getSlotIdx());
-    }
-
-    public boolean hasItem(int id) {
-        return this.inventory.stream().anyMatch(i -> i.getId() == id);
-    }
-
-    public boolean hasItem(String itemName) {
-        return this.inventory.stream().anyMatch(i -> i.getName().equalsIgnoreCase(itemName));
-    }
-
-    public InventoryItem getItem(int id) {
-        return this.inventory.stream()
-                .filter(i -> i.getId() == id)
-                .findFirst()
-                .orElse(null);
-    }
-
-    public InventoryItem getItem(String itemName) {
-        return this.inventory.stream()
-                .filter(i -> i.getName().equalsIgnoreCase(itemName))
-                .findFirst()
-                .orElse(null);
     }
 }

@@ -131,6 +131,11 @@ public class CameraService extends AbstractService {
         return Math.abs(getAngleTo(targetAngle)) <= desiredMaxAngle;
     }
 
+    /**
+     * Sets the angle of the camera to the target degrees limited by the max angle.
+     * @param targetDegrees    the angle to the target
+     * @param maxAngle the maximum angle to the target (Should be a positive number)
+     */
     public void setAngle(int targetDegrees, int maxAngle) {
         double defaultCameraSpeed = 1f;
 
@@ -144,6 +149,7 @@ public class CameraService extends AbstractService {
             String configKey = "cameraSpeed";
             defaultCameraSpeed = configManager.getConfiguration(configGroup, configKey, double.class);
         }
+
         // Set the camera speed to 3 to make the camera move faster
         client.setCameraSpeed(3f);
 
@@ -156,6 +162,7 @@ public class CameraService extends AbstractService {
             sleepService.sleepUntilTrue(() -> Math.abs(getAngleTo(targetDegrees)) <= maxAngle, 50, 5000);
             keyboardService.keyRelease(KeyEvent.VK_RIGHT);
         }
+
         client.setCameraSpeed((float) defaultCameraSpeed);
     }
 

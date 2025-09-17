@@ -121,6 +121,15 @@ In order for the plugin to run correctly your game must be in:
 - Fixed mode
 - Have the "Stretched Mode" plugin disabled
 
+### Packets & Reflection
+
+When the API starts it will dynamically get the latest version of the Packet Utils jar file and load the plugin. This plugin
+enables the API to use network packets to communicate directly with OSRS servers for an alternate way of interacting with the game client.
+
+Most of the `Service` classes have two different methods for game interaction.
+There are standard interaction methods like `interact()` and there are reflection interaction methods which will always end with `reflect`.
+For example `wieldReflect()` will use reflection to wield the item instead of packets. 
+
 ### API Design & Methodology
 
 The Kraken API was designed from the ground up to leverage the software design pattern of dependency injection. This is the exact same 
