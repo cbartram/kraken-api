@@ -1,6 +1,7 @@
 package com.kraken.api.interaction.gameobject;
 
 
+import com.example.InteractionApi.TileObjectInteraction;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
@@ -57,14 +58,48 @@ public class GameObjectService extends AbstractService {
                     tile.getWallObject()
             );
 
+
+    /**
+     * Uses packets to interact with a game object by its ID and action.
+     * @param id The ID of the game object to interact with.
+     * @param action The action to perform on the game object.
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public boolean interact(int id, String action) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> TileObjectInteraction.interact(id, action));
+    }
+
+    /**
+     * Interacts with the specified tile object using the specified action using Packets.
+     * @param object The tile object to interact with.
+     * @param action The action to perform on the game object.
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public boolean interact(TileObject object, String action) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> TileObjectInteraction.interact(object, action));
+    }
+
+    /**
+     * Interacts with a game object by its name and action using Packets.
+     * @param name The name of the game object to interact with.
+     * @param action The action to perform on the game object.
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public boolean interact(String name, String action) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> TileObjectInteraction.interact(name, action));
+    }
+
     /**
      * Interacts with a game object located at the specified world point using the default action. By default
      * the action used is: "Walk".
      * @param worldPoint The world point of the game object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(WorldPoint worldPoint) {
-        return interact(worldPoint, "");
+    public boolean interactReflect(WorldPoint worldPoint) {
+        return interactReflect(worldPoint, "");
     }
 
     /**
@@ -74,9 +109,9 @@ public class GameObjectService extends AbstractService {
      * @param action The action to perform on the game object. If empty, the default action "Walk" is used.
      * @return
      */
-    public boolean interact(WorldPoint worldPoint, String action) {
+    public boolean interactReflect(WorldPoint worldPoint, String action) {
         TileObject gameObject = all(o -> o.getWorldLocation().equals(worldPoint)).stream().findFirst().orElse(null);
-        return interact(gameObject, action);
+        return interactReflect(gameObject, action);
     }
 
     /**
@@ -84,8 +119,8 @@ public class GameObjectService extends AbstractService {
      * @param gameObject The game object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(GameObject gameObject) {
-        return interact(gameObject, "");
+    public boolean interactReflect(GameObject gameObject) {
+        return interactReflect(gameObject, "");
     }
 
     /**
@@ -93,8 +128,8 @@ public class GameObjectService extends AbstractService {
      * @param tileObject The tile object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(TileObject tileObject) {
-        return interact(tileObject, "");
+    public boolean interactReflect(TileObject tileObject) {
+        return interactReflect(tileObject, "");
     }
 
     /**
@@ -102,9 +137,9 @@ public class GameObjectService extends AbstractService {
      * @param id The ID of the game object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(int id) {
+    public boolean interactReflect(int id) {
         TileObject object = all(o -> o.getId() == id).stream().findFirst().orElse(null);
-        return interact(object);
+        return interactReflect(object);
     }
 
     /**
@@ -113,7 +148,8 @@ public class GameObjectService extends AbstractService {
      * @param action The action to perform on the game object. If empty, the default action "Walk" is used.
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(TileObject object, String action) {
+    public boolean interactReflect(TileObject object, String action) {
+        if(!context.isHooksLoaded()) return false;
         if (object == null) return false;
         if (client.getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
             log.info("Object to far from player. Cannot interact");

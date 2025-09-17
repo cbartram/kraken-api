@@ -25,7 +25,7 @@ public class GameObjectServiceTest extends BaseApiTest {
         TileObject bankBooth = gameObjectService.all((o) -> o.getId() == 10583, 20).stream().findFirst().orElse(null);
         if (bankBooth != null) {
             log.info("Found bank booth: {}, interacting", bankBooth.getId());
-            testsPassed &= gameObjectService.interact(bankBooth);
+            testsPassed &= gameObjectService.interact(bankBooth, "Bank");
         } else {
             testsPassed = false;
         }
