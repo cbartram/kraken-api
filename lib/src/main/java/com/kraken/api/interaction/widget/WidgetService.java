@@ -1,6 +1,8 @@
 package com.kraken.api.interaction.widget;
 
 
+import com.example.Packets.MousePackets;
+import com.example.Packets.WidgetPackets;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
 import com.kraken.api.interaction.reflect.ReflectionService;
@@ -20,6 +22,69 @@ import java.util.stream.Stream;
 @Slf4j
 @Singleton
 public class WidgetService extends AbstractService {
+
+    /**
+     * Interacts with a widget using the specified action.
+     * @param widget the widget to interact with
+     * @param action the action to perform
+     * @return true if the interaction was successful, false otherwise
+     */
+    public boolean interact(Widget widget, String action) {
+        if(!context.isPacketsLoaded()) return false;
+        if(widget == null) return false;
+
+        return context.runOnClientThread(() -> {
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(widget, action);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    /**
+     * Interacts with a widget identified by its ID using the specified action.
+     * @param id the widget ID
+     * @param action the action to perform
+     * @return true if the interaction was successful, false otherwise
+     */
+    public boolean interact(int id, String action) {
+        Widget widget = getWidget(id);
+        if (widget == null) {
+            return false;
+        }
+
+        return interact(widget, action);
+    }
+
+    /**
+     * Interacts with a widget identified by its ID and child index using the specified action.
+     * @param id the widget ID
+     * @param child the child index
+     * @param action the action to perform
+     * @return true if the interaction was successful, false otherwise
+     */
+    public boolean interact(int id, int child, String action) {
+        Widget widget = getWidget(id, child);
+        if (widget == null) {
+            return false;
+        }
+
+        return interact(widget, action);
+    }
+
+    /**
+     * Interacts with a widget identified by its text using the specified action.
+     * @param text the widget text
+     * @param action the action to perform
+     * @return true if the interaction was successful, false otherwise
+     */
+    public boolean interact(String text, String action) {
+        Widget widget = findWidget(text);
+        if (widget == null) {
+            return false;
+        }
+
+        return interact(widget, action);
+    }
 
     /**
      * Returns a widget by its ID and child index.

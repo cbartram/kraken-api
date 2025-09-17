@@ -79,6 +79,9 @@ public class ExamplePlugin extends Plugin {
     private InventoryServiceTest inventoryServiceTest;
 
     @Inject
+    private BankServiceTest bankServiceTest;
+
+    @Inject
     private PlayerServiceTest playerServiceTest;
 
     @Inject
@@ -124,6 +127,10 @@ public class ExamplePlugin extends Plugin {
 
                     if (config.enableGroundItemTests()) {
                         testResultManager.startTest("GroundItemServiceTest", groundObjectServiceTest.executeTest());
+                    }
+
+                    if(config.enableBankTests()) {
+                        testResultManager.startTest("BankServiceTest", bankServiceTest.executeTest());
                     }
                 } else {
                     log.info("Stopping API tests...");

@@ -36,12 +36,6 @@ public class BankService extends AbstractService {
     private static final int WITHDRAW_AS_VARBIT = 3958;
     private static final int WITHDRAW_ITEM_MODE = 0;
     private static final int WITHDRAW_NOTES_MODE = 1;
-    private static final int WITHDRAW_ITEM_MODE_WIDGET = 786454;
-    private static final int WITHDRAW_NOTE_MODE_WIDGET = 786456;
-
-    private static final String ITEM_MODE_ACTION = "Item";
-    private static final String NOTE_MODE_ACTION = "Note";
-
 
     @Inject
     private WidgetService widgetService;
@@ -74,91 +68,96 @@ public class BankService extends AbstractService {
         return widgetService.hasWidgetText("Rearrange mode", 12, 18, false);
     }
 
-    public void withdrawX(Widget item, int amount) {
-        setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+    /**
+     * Withdraws a specified amount of an item from the bank.
+     * @param item the Widget representing the item to withdraw
+     * @param amount the amount of the item to withdraw
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdrawX(Widget item, int amount) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> {
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
 
-        if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
-            return;
-        }
-        BankInteraction.useItem(item, "Withdraw-X");
-        EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
-        EthanApiPlugin.getClient().setVarcIntValue(5, 7);
-        EthanApiPlugin.getClient().runScript(681);
-        EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+            if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
+                return Optional.of(true);
+            }
+            BankInteraction.useItem(item, "Withdraw-X");
+            EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
+            EthanApiPlugin.getClient().setVarcIntValue(5, 7);
+            EthanApiPlugin.getClient().runScript(681);
+            EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+            return Optional.of(true);
+        }).orElse(false);
     }
 
-    public void withdrawX(Widget item, int amount, boolean noted) {
-        setWithdrawMode(noted? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-
-        if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
-            return;
-        }
-        BankInteraction.useItem(item, noted, "Withdraw-X");
-        EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
-        EthanApiPlugin.getClient().setVarcIntValue(5, 7);
-        EthanApiPlugin.getClient().runScript(681);
-        EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+    /**
+     * Withdraws a specified amount of an item from the bank, either as notes or as regular items.
+     * @param item the Widget representing the item to withdraw
+     * @param amount the amount of the item to withdraw
+     * @param noted if true, withdraws the item as notes; if false, withdraws it as a regular item
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdrawX(Widget item, int amount, boolean noted) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> {
+            setWithdrawMode(noted? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+            if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+                MousePackets.queueClickPacket();
+                WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
+                return Optional.of(true);
+            }
+            BankInteraction.useItem(item, noted, "Withdraw-X");
+            EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
+            EthanApiPlugin.getClient().setVarcIntValue(5, 7);
+            EthanApiPlugin.getClient().runScript(681);
+            EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+            return Optional.of(true);
+        }).orElse(false);
     }
 
+    /**
+     * Withdraws a single item from the bank using its name.
+     * @param name the name of the item to withdraw
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdrawOne(String name) {
+        if(!context.isPacketsLoaded()) return false;
+        return withdraw(name, "Withdraw-1");
+    }
+
+    /**
+     * Withdraws a single item from the bank using its name.
+     * @param name the name of the item to withdraw
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdrawFive(String name) {
+        if(!context.isPacketsLoaded()) return false;
+        return withdraw(name, "Withdraw-5");
+    }
+
+    /**
+     * Withdraws a single item from the bank using its name.
+     * @param name the name of the item to withdraw
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdrawTen(String name) {
+        if(!context.isPacketsLoaded()) return false;
+        return withdraw(name, "Withdraw-10");
+    }
+
+    /**
+     * Withdraws an item from the bank using its name and specified actions.
+     * @param name the name of the item to withdraw
+     * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
+     * @return true if the withdrawal was successful, false otherwise
+     */
     public boolean withdraw(String name, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         return Bank.search().withName(name).first().flatMap(item -> {
             setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
-
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(item, actions);
-            return Optional.of(true);
-        }).orElse(false);
-    }
-
-    public boolean withdraw(int id, String... actions) {
-        return Bank.search().withId(id).first().flatMap(item -> {
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
-
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(item, actions);
-            return Optional.of(true);
-        }).orElse(false);
-    }
-
-    public boolean withdrawIndex(int index, String... actions) {
-        return Bank.search().indexIs(index).first().flatMap(item -> {
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
-
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(item, actions);
-            return Optional.of(true);
-        }).orElse(false);
-    }
-
-    public boolean withdraw(Widget item, String... actions) {
-        if (item == null) {
-            return false;
-        }
-
-        setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
-
-        MousePackets.queueClickPacket();
-        WidgetPackets.queueWidgetAction(item, actions);
-        return true;
-    }
-
-    public boolean withdraw(String name, boolean noted, String... actions) {
-        return Bank.search().withName(name).first().flatMap(item -> {
-            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(item, actions);
-            return Optional.of(true);
-        }).orElse(false);
-    }
-
-    public boolean withdraw(int id, boolean noted, String... actions) {
-        return Bank.search().withId(id).first().flatMap(item -> {
-            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
 
             MousePackets.queueClickPacket();
             WidgetPackets.queueWidgetAction(item, actions);
@@ -167,13 +166,92 @@ public class BankService extends AbstractService {
     }
 
     /**
-     * Executes menu swapping for a specific item and entry index.
-     *
-     * @param identifier The index of the entry to swap.
-     * @param item    The ItemWidget associated with the menu swap.
+     * Withdraws an item from the bank using its ID and specified actions.
+     * @param id the ID of the item to withdraw
+     * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
+     * @return true if the withdrawal was successful, false otherwise
      */
-    public void invokeMenuReflect(final int identifier, InventoryItem item) {
-        reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), identifier, item.getId(), item.getName(), "");
+    public boolean withdraw(int id, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
+        return Bank.search().withId(id).first().flatMap(item -> {
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    /**
+     * Withdraws an item from the bank using its index and specified actions.
+     * @param index the index of the item to withdraw
+     * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdrawIndex(int index, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> Bank.search().indexIs(index).first().flatMap(item -> {
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        })).orElse(false);
+    }
+
+    /**
+     * Withdraws an item from the bank using the provided Widget and actions.
+     * @param item the Widget representing the item to withdraw
+     * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdraw(Widget item, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> {
+            if (item == null) {
+                return Optional.of(false);
+            }
+
+            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        }).orElse(false);
+    }
+
+    /**
+     * Withdraws an item from the bank by its name, with an option to withdraw it as notes or as a regular item.
+     * @param name the name of the item to withdraw
+     * @param noted if true, withdraws the item as notes; if false, withdraws it as a regular item
+     * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
+     * @return true if the withdrawal was successful, false otherwise
+     */
+    public boolean withdraw(String name, boolean noted, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> Bank.search().withName(name).first().flatMap(item -> {
+            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        })).orElse(false);
+    }
+
+    /**
+     * Withdraws an item from the bank by its ID, with an option to withdraw it as notes or as a regular item.
+     * @param id the ID of the item to withdraw
+     * @param noted if true, withdraws the item as notes; if false, withdraws it as a regular item
+     * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
+     * @return
+     */
+    public boolean withdraw(int id, boolean noted, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
+        return context.runOnClientThread(() -> Bank.search().withId(id).first().flatMap(item -> {
+            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(item, actions);
+            return Optional.of(true);
+        })).orElse(false);
     }
 
     /**
@@ -197,9 +275,9 @@ public class BankService extends AbstractService {
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0) {
-            invokeMenuReflect(2, item);
+            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 2, item.getId(), item.getName(), "");
         } else {
-            invokeMenuReflect(3, item);
+            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 3, item.getId(), item.getName(), "");
         }
         return true;
     }
@@ -248,9 +326,9 @@ public class BankService extends AbstractService {
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
-            invokeMenuReflect(2, item);
+            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 2, item.getId(), item.getName(), "");
         } else {
-            invokeMenuReflect(8, item);
+            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 3, item.getId(), item.getName(), "");
         }
         return true;
     }
@@ -309,10 +387,10 @@ public class BankService extends AbstractService {
         if (inventoryService.isEmpty()) return true;
         if (!isOpen()) return false;
 
-        Widget widget = widgetService.findWidget(1041, null);
+        Widget widget = widgetService.getWidget(786476);
         if (widget == null) return false;
 
-//        widgetService.clickWidget(widget);
+        widgetService.interact(widget, "Deposit inventory");
         sleepService.sleep(500, 1500);
         return true;
     }

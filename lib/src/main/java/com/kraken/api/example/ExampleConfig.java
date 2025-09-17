@@ -357,11 +357,30 @@ public interface ExampleConfig extends Config {
         return Color.GREEN;
     }
 
+    // =========== Bank Tests SECTION ==========
+    @ConfigSection(
+            name = "Bank Tests",
+            description = "Settings for Bank tests.",
+            position = 6
+    )
+    String BankTests = "Bank Tests";
+
+    @ConfigItem(
+            keyName = "enableBankTests",
+            name = "Enable Bank Tests",
+            description = "Enable Bank service testing functionality",
+            section = BankTests,
+            position = 1
+    )
+    default boolean enableBankTests() {
+        return true;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
             description = "General overlay configuration.",
-            position = 6
+            position = 7
     )
     String overlaySettings = "Overlay Settings";
 
