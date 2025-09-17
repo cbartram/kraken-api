@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.SleepService;
+import com.kraken.api.core.loader.PacketUtilsLoader;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
@@ -51,10 +52,6 @@ public class Context {
     @Getter
     private final ClientThread clientThread;
 
-    private final Injector injector;
-    private final EventBus eventBus;
-    private final HooksLoader loader;
-
     @Getter
     @Setter
     private VirtualMouse mouse;
@@ -90,15 +87,21 @@ public class Context {
 
     protected ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     public Future<?> scheduledFuture;
+    private final Injector injector;
+    private final EventBus eventBus;
+    private final HooksLoader loader;
+    private final PacketUtilsLoader packetUtilsLoader;
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector, final HooksLoader loader) {
+    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
+                   final EventBus eventBus, final Injector injector, final HooksLoader loader, final PacketUtilsLoader packetUtilsLoader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.loader = loader;
+        this.packetUtilsLoader = packetUtilsLoader;
     }
 
     /**
@@ -131,15 +134,15 @@ public class Context {
      * This allows the API to listen for key RuneLite events and respond accordingly.
      */
     public void register() {
+        packetUtilsLoader.loadPacketUtils();
         try {
             for (Class<?> clazz : EVENTBUS_LISTENERS) {
-                // Check if class has @Subscribe methods
                 for (Method method : clazz.getDeclaredMethods()) {
                     if (method.isAnnotationPresent(Subscribe.class)) {
                         Object handler = injector.getInstance(clazz);
                         if (handler != null) {
                             eventBus.register(handler);
-                            log.info("Registered class: {} with eventbus", clazz.getSimpleName());
+                            log.debug("Registered class: {} with eventbus", clazz.getSimpleName());
                         }
                     }
                 }
