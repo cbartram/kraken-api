@@ -288,11 +288,13 @@ public class GroundObjectService extends AbstractService {
      */
     public boolean interact(int id, String... actions) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThreadOptional(() -> get(id)).flatMap(g -> {
+        return context.runOnClientThread(() -> {
+            GroundItem item = get(id);
+            if(item == null) return false;
             MousePackets.queueClickPacket();
-            ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
-            return Optional.of(true);
-        }).orElse(false);
+            ObjectPackets.queueObjectAction(item.getTileObject(), false, actions);
+            return true;
+        });
     }
 
     /**
