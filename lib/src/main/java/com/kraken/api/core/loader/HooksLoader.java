@@ -1,4 +1,4 @@
-package com.kraken.api.loader;
+package com.kraken.api.core.loader;
 
 
 import com.google.gson.Gson;

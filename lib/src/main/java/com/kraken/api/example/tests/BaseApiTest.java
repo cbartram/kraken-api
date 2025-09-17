@@ -14,7 +14,7 @@ public abstract class BaseApiTest {
 
     /**
      * Executes the test in a separate thread and returns a CompletableFuture with the result
-     * @return CompletableFuture<Boolean> - true if test passed, false if failed
+     * @return CompletableFuture - true if test passed, false if failed
      */
     public CompletableFuture<Boolean> executeTest() {
         return CompletableFuture.supplyAsync(() -> {

@@ -293,6 +293,7 @@ public class GroundObjectService extends AbstractService {
     /**
      * Interacts with an item on the ground given the item id using Packets
      * @param item The ground item to interact with
+     * @param actions The actions to perform, usually "Take"
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(GroundItem item, String... actions) {

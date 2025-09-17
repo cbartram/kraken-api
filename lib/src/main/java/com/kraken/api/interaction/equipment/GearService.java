@@ -63,6 +63,41 @@ public class GearService extends AbstractService {
         }
     }
 
+    /**
+     * Wields gear from the players inventory using reflection to make the menu invocations.
+     * @param item The InventoryItem to equip.
+     * @return True when the wield operation was successful and false otherwise
+     */
+    public boolean wieldReflect(InventoryItem item) {
+        return wieldReflect(item.getId());
+    }
+
+    /**
+     * Wields gear from the players inventory using reflection to make the menu invocations.
+     * @param name The name of the item to equip.
+     * @return True when the wield operation was successful and false otherwise
+     */
+    public boolean wieldReflect(String name) {
+        List<Integer> ids = new ArrayList<>();
+        for (InventoryItem item : inventory) {
+            if (name.equalsIgnoreCase(item.getName())) {
+                ids.add(item.getId());
+            }
+        }
+
+        if (ids.isEmpty()) {
+            return true;
+        }
+
+        int[] idsArray = ids.stream().mapToInt(i -> i).toArray();
+        return wieldReflect(idsArray);
+    }
+
+    /**
+     * Wields gear from the players inventory using reflection to make the menu invocations.
+     * @param id The id of the item to equip.
+     * @return True when the wield operation was successful and false otherwise
+     */
     public boolean wieldReflect(int id) {
         int[] ids = new int[]{id};
         return wieldReflect(ids);
@@ -124,41 +159,6 @@ public class GearService extends AbstractService {
         return true;
     }
 
-    /**
-     * Wields an item from the inventory if it exists and is not already worn.
-     * @param item The item name to wield. i.e "Rune Scimitar" or "Rune scimitar"
-     *
-     * @return True if the item was successfully wielded, false otherwise.
-     */
-    public boolean wield(String item) {
-        if(!hasItem(item)) {
-            return false;
-        }
-
-        if (!isWearing(item)) {
-            wield(getItem(item));
-        }
-        return true;
-    }
-
-    /**
-     * Wields an item from the inventory if it exists and is not already worn.
-     * @param id item id to wield. i.e "14464"
-     *
-     * @return True if the item was successfully wielded, false otherwise.
-     */
-    public boolean wield(int id) {
-        if(!hasItem(id)) {
-            return false;
-        }
-
-        if (!isWearing(id)) {
-            wield(getItem(id));
-        }
-
-        return true;
-    }
-
     public boolean isWearing(Integer id) {
         return this.equipment
                 .stream()
@@ -203,56 +203,5 @@ public class GearService extends AbstractService {
                 .filter(i -> i.getName().equalsIgnoreCase(itemName))
                 .findFirst()
                 .orElse(null);
-    }
-
-    /**
-     * Invokes an action to wield or equip an item in the inventory. This does not support using items on other items or NPCs.
-     * @param item
-     */
-    private void wield(InventoryItem item) {
-        int param1 = 9764864; // Inventory Widget Id
-        int param0 = item.getSlot();
-        MenuAction menuAction = MenuAction.CC_OP;
-        String actionName = "";
-
-        int identifier = -1;
-        Widget[] inventoryWidgets;
-        Widget widget;
-        Rectangle bounds;
-
-        widget = client.getWidget(param1);
-
-        if (widget != null && widget.getChildren() != null) {
-            inventoryWidgets = widget.getChildren();
-        } else {
-            return;
-        }
-
-        // Find the action to perform on the item by looking for the item in the inventory, either "Wear" or "Wield"
-        Widget itemWidget = Arrays.stream(inventoryWidgets).filter(w -> w != null && w.getIndex() == item.getSlot()).findFirst().orElseGet(null);
-        String[] actions = itemWidget != null && itemWidget.getActions() != null ?
-                itemWidget.getActions() :
-                item.getInventoryActions();
-
-        String[] sanitizedActions = StringUtils.stripColTags(actions);
-
-        if(StringUtils.getIndex(sanitizedActions, "wield") != -1) {
-            identifier = StringUtils.getIndex(sanitizedActions, "wield") + 1;
-            actionName = "Wield";
-        }
-
-        // Now try "wear" action if "wield" is not found
-        if(identifier == -1 && actionName.equalsIgnoreCase("")) {
-            identifier = StringUtils.getIndex(sanitizedActions, "wear") + 1;
-            actionName = "Wear";
-        }
-
-        if(identifier == -1) {
-            log.error("No valid action found for item: {}, actions: {}", item.getItemComposition().getName(), sanitizedActions);
-            return;
-        }
-
-        bounds = item.getBounds(context, client) != null ? item.getBounds(context, client) : new Rectangle(1, 1);
-        context.doInvoke(new NewMenuEntry(actionName, param0, param1, menuAction.getId(), identifier, item.getItemComposition().getId(), 2, StringUtils.addColTags(item.getName())), bounds);
     }
 }

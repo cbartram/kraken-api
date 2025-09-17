@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 // Project version is set via the VERSION environment variable in the Github Actions workflow and should not be changed here.

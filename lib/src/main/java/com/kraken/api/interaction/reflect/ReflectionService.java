@@ -293,6 +293,7 @@ public class ReflectionService extends AbstractService {
      * @param opcode This is the operation code for the action you are trying to perform. Each action has a different opcode. For example, the opcode for "Use" is 38, "Cast" is 25, "Drop" is 16, etc.
      *               These opcodes come from the {@code MenuAction} class. For example: MenuAction.GROUND_ITEM_FOURTH_OPTION;
      * @param identifier  Usually the same as the item id
+     * @param worldViewId The world view id is usually -1. This is the id for the WorldView.
      * @param itemId The item id is the id of the item you are interacting with. This can be the id of an item, NPC, player, or location.
      * @param option Sometimes known as the "action". This is the text that appears in the menu option i.e. "Take", "Examine", "Cast", "Drop", etc.
      * @param target The target is the name of the object you are interacting with. This can be the name of an item, NPC, player, or location.
