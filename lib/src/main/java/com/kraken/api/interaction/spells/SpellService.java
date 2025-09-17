@@ -63,6 +63,7 @@ public class SpellService extends AbstractService {
      * @return True if the cast was successful and false otherwise
      */
     public boolean cast(Spells spell) {
+        if(!context.isHooksLoaded()) return false;
         if(spell == null) {
             return false;
         }

@@ -22,10 +22,12 @@ public class PacketService extends AbstractService {
     private static final int INVENTORY_WIDTH = 300, INVENTORY_HEIGHT = 400;
 
     public Point queueClickPacketCoordinateArea() {
+        if(!context.isPacketsLoaded()) return new Point(-1, -1);
         return queueClickPacketCoordinateArea(CoordinateArea.MAIN_MODAL);
     }
 
     public Point queueClickPacketCoordinateArea(CoordinateArea area) {
+        if(!context.isPacketsLoaded()) return new Point(-1, -1);
         if (area == null) {
             return new Point(-1, -1);
         }
@@ -66,6 +68,7 @@ public class PacketService extends AbstractService {
     }
 
     public void walk(WorldPoint point) {
+        if(!context.isPacketsLoaded()) return;
         queueClickPacketCoordinateArea();
         MovementPackets.queueMovement(point);
     }

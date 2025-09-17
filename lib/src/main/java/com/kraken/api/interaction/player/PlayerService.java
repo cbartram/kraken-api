@@ -212,6 +212,7 @@ public class PlayerService extends AbstractService {
      *              the weapon equip before it can toggle on spec. Otherwise, the game would see you toggle on spec for nothing, then spec weapon gets equipped with spec disabled.
      */
     public void toggleSpecialAttackReflect(int energyRequired, int delay) {
+        if(!context.isHooksLoaded()) return;
         int currentSpecEnergy = client.getVarpValue(300) / 10;
         if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
             executor.schedule(() -> reflectionService.invokeMenuAction(-1, 38862886, MenuAction.CC_OP.getId(), 1, -1), delay, TimeUnit.MILLISECONDS);
@@ -223,6 +224,7 @@ public class PlayerService extends AbstractService {
      * {activateRun} and {deactivateRun} if a specific state is required.
      */
     public void toggleRun() {
+        if(!context.isHooksLoaded()) return;
         executor.schedule(() -> reflectionService.invokeMenuAction(-1, 10485787, MenuAction.CC_OP.getId(), 1, -1), 50, TimeUnit.MILLISECONDS);
     }
 

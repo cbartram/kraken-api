@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.ui.FatalErrorDialog;
 
 import javax.swing.*;
 import java.io.ByteArrayOutputStream;
@@ -48,6 +47,7 @@ public class PacketUtilsLoader {
             bootstrap.load(URI.create(BOOTSTRAP_URL));
             Artifact packetUtilsJar = bootstrap.getArtifact(a -> a.getName().contains("packet-utils-"));
             if(packetUtilsJar != null) {
+                log.info("Pulled packet utils jar from bootstrap: {}", packetUtilsJar.getName());
                 URL url = new URL(packetUtilsJar.getPath());
                 try(ByteArrayClassLoader loader = loadPacketUtilsFromUrl(url)) {
                     for (String className : loader.getClassData().keySet()) {
@@ -55,6 +55,7 @@ public class PacketUtilsLoader {
                             Class<?> clazz = loader.loadClass(className);
                             if (clazz.getSuperclass() != null) {
                                 if (clazz.getSuperclass().getName().equals(PLUGIN_BASE_CLASS_NAME)) {
+                                    log.info("Found Packet Utils plugin class: {}", clazz.getSimpleName());
                                     startPlugin((Class<? extends Plugin>) clazz);
                                 }
                             }
@@ -90,7 +91,6 @@ public class PacketUtilsLoader {
 
         return buffer.toByteArray();
     }
-
 
     private void startPlugin(Class<? extends Plugin> pluginClass) {
         try {

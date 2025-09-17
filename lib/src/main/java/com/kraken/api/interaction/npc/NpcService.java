@@ -82,6 +82,7 @@ public class NpcService extends AbstractService {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(Predicate<NPC> predicate, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         NPC npc = getNpcs(predicate).findFirst().orElse(null);
         if(npc == null) return false;
         MousePackets.queueClickPacket();
@@ -106,6 +107,7 @@ public class NpcService extends AbstractService {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean interact(NPC npc, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         if (npc == null) {
             return false;
         }
@@ -345,6 +347,7 @@ public class NpcService extends AbstractService {
      * @return {@code true} if the interaction was successfully executed, {@code false} if the NPC was unreachable.
      */
     public boolean interactReflect(NPC npc, String action) {
+        if(!context.isHooksLoaded()) return false;
         if (npc == null) return false;
 
         try {

@@ -132,6 +132,7 @@ public class GroundObjectServiceTest extends BaseApiTest {
                 log.info("Testing interaction with ground item: {}", targetItem);
 
                 // Test the interact method (this should not throw an exception)
+                // groundObjectService.interact(item);
                 groundObjectService.interactReflect(item);
 
                 log.debug("Ground item interaction test completed successfully");

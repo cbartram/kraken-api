@@ -310,6 +310,7 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interactReflect(InventoryItem item, String action, int providedIdentifier) {
+        if(!context.isHooksLoaded()) return false;
         int identifier;
         if(item == null) return false;
         Widget inventoryWidget = context.getClient().getWidget(InterfaceID.Inventory.ITEMS);
@@ -361,6 +362,7 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interact(int id, String action) {
+        if(!context.isPacketsLoaded()) return false;
         String tmp;
 
         if(action == null || action.trim().isEmpty()) {
@@ -382,6 +384,7 @@ public class InventoryService extends AbstractService {
      * @return True if the interaction was successful, false otherwise.
      */
     public boolean interact(InventoryItem item, String action) {
+        if(!context.isPacketsLoaded()) return false;
         String tmp;
 
         if(action == null || action.trim().isEmpty()) {
@@ -762,5 +765,4 @@ public class InventoryService extends AbstractService {
         else if (searchString.equalsIgnoreCase("wear")) return StringUtils.getIndex(sourceList, "wield");
         else return idx;  // return -1 if the string is not found
     }
-
 }

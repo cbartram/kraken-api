@@ -59,8 +59,12 @@ public class Context {
     @Getter
     private boolean isRegistered = false;
 
+    // Reflection based hooks
     @Getter
     private boolean hooksLoaded = false;
+
+    @Getter
+    private boolean packetsLoaded = false;
 
     public static MenuEntry targetMenu;
 
@@ -130,11 +134,28 @@ public class Context {
     }
 
     /**
+     * Loads the PacketUtils class and plugin which contains key methods for sending packets to the RuneLite client.
+     */
+    public void loadPacketUtils() {
+        if (packetsLoaded) {
+            log.warn("Packets already loaded, skipping.");
+            return;
+        }
+
+        try {
+            packetUtilsLoader.loadPacketUtils();
+            packetsLoaded = true;
+            log.info("Packet utils loaded successfully.");
+        } catch (Exception e) {
+            log.error("Failed to load packet utils with exception: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Registers all Service classes that have methods annotated with @Subscribe to the EventBus.
      * This allows the API to listen for key RuneLite events and respond accordingly.
      */
     public void register() {
-        packetUtilsLoader.loadPacketUtils();
         try {
             for (Class<?> clazz : EVENTBUS_LISTENERS) {
                 for (Method method : clazz.getDeclaredMethods()) {

@@ -111,6 +111,12 @@ public class NpcServiceTest extends BaseApiTest {
             log.info("Found {} non-interacting attackable NPCs matching '{}'",
                     nonInteractingCount, targetNpcName);
 
+            NPC npc = npcService.getAttackableNpcs("Guard").findFirst().orElse(null);
+            if(npc != null) {
+                log.info("Testing packet interaction with NPC");
+                npcService.interact(npc, "Attack");
+            }
+
             // This test passes as long as the methods don't throw exceptions
             // The actual count can vary based on what's in the game world
             return true;

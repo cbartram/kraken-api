@@ -208,6 +208,7 @@ public class GroundObjectService extends AbstractService {
      * @return true if the interaction was successful, false otherwise.
      */
     public boolean interactReflect(GroundItem groundItem, String action) {
+        if(!context.isHooksLoaded()) return false;
         if (groundItem == null) return false;
         try {
             int param0;
@@ -269,6 +270,7 @@ public class GroundObjectService extends AbstractService {
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(String name, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThreadOptional(() -> get(name)).flatMap(g -> {
             MousePackets.queueClickPacket();
             ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
@@ -283,6 +285,7 @@ public class GroundObjectService extends AbstractService {
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(int id, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThreadOptional(() -> get(id)).flatMap(g -> {
             MousePackets.queueClickPacket();
             ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
@@ -297,6 +300,7 @@ public class GroundObjectService extends AbstractService {
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(GroundItem item, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThreadOptional(() -> groundItems.get(item.getLocation(), item.getId())).flatMap(g -> {
             MousePackets.queueClickPacket();
             ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
@@ -311,6 +315,7 @@ public class GroundObjectService extends AbstractService {
      * @return True when the interaction was successful and false otherwise
      */
     public boolean interact(TileObject tileObject, String... actions) {
+        if(!context.isPacketsLoaded()) return false;
         if (tileObject == null) {
             return false;
         }
