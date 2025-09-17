@@ -271,11 +271,13 @@ public class GroundObjectService extends AbstractService {
      */
     public boolean interact(String name, String... actions) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThreadOptional(() -> get(name)).flatMap(g -> {
+        return context.runOnClientThread(() -> {
+            GroundItem groundItem = get(name);
+            if (groundItem == null) return false;
             MousePackets.queueClickPacket();
-            ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
-            return Optional.of(true);
-        }).orElse(false);
+            ObjectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
+            return true;
+        });
     }
 
     /**
@@ -301,11 +303,14 @@ public class GroundObjectService extends AbstractService {
      */
     public boolean interact(GroundItem item, String... actions) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThreadOptional(() -> groundItems.get(item.getLocation(), item.getId())).flatMap(g -> {
+        return context.runOnClientThread(() -> {
+            GroundItem groundItem = groundItems.get(item.getLocation(), item.getId());
+            if(groundItem == null) return false;
+
             MousePackets.queueClickPacket();
-            ObjectPackets.queueObjectAction(g.getTileObject(), false, actions);
-            return Optional.of(true);
-        }).orElse(false);
+            ObjectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
+            return true;
+        });
     }
 
     /**
@@ -316,18 +321,15 @@ public class GroundObjectService extends AbstractService {
      */
     public boolean interact(TileObject tileObject, String... actions) {
         if(!context.isPacketsLoaded()) return false;
-        if (tileObject == null) {
-            return false;
-        }
-        ObjectComposition comp = context.runOnClientThreadOptional(() -> TileObjectQuery.getObjectComposition(tileObject)).orElse(null);
-        if (comp == null) {
-            return false;
-        }
+        if (tileObject == null) return false;
 
-        context.runOnClientThread(() -> {
+        return context.runOnClientThread(() -> {
+            ObjectComposition comp = TileObjectQuery.getObjectComposition(tileObject);
+            if (comp == null) return false;
+
             MousePackets.queueClickPacket();
             ObjectPackets.queueObjectAction(tileObject, false, actions);
+            return true;
         });
-        return true;
     }
 }
