@@ -8,9 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.devtools.MovementFlag;
 import shortestpath.pathfinder.CollisionMap;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static net.runelite.api.Constants.CHUNK_SIZE;
 
@@ -22,6 +26,76 @@ public class TileService extends AbstractService {
 
     @Inject
     private PlayerService playerService;
+
+    /**
+     * This method calculates the distances to a specified tile in the game world
+     * using a breadth-first search (BFS) algorithm, considering movement restrictions
+     * and collision data. The distances are stored in a HashMap where the key is a
+     * WorldPoint (representing a tile location), and the value is the distance
+     * from the starting tile. The method accounts for movement flags that block
+     * movement in specific directions (east, west, north, south) and removes
+     * unreachable tiles based on collision data.
+     *
+     * The method iterates over a range of distances, progressively updating
+     * reachable tiles and adding them to the tileDistances map. It checks if a
+     * tile can be reached by verifying its collision flags and whether it’s blocked
+     * for movement in any direction.
+     *
+     * @param tile The starting tile for the distance calculation.
+     * @param distance The maximum distance to calculate to neighboring tiles.
+     * @param ignoreCollision If true, ignores collision data during the calculation.
+     * @return A HashMap containing WorldPoints and their corresponding distances from the start tile.
+     */
+    public HashMap<WorldPoint, Integer> getReachableTilesFromTile(WorldPoint tile, int distance, boolean ignoreCollision) {
+        final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
+        tileDistances.put(tile, 0);
+
+        for (int i = 0; i < distance + 1; i++) {
+            int dist = i;
+            for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
+                var point = kvp.getKey();
+                LocalPoint localPoint;
+                if (client.getTopLevelWorldView().isInstance()) {
+                    WorldPoint worldPoint = WorldPoint.toLocalInstance(client.getTopLevelWorldView(), point).stream().findFirst().orElse(null);
+                    if (worldPoint == null) break;
+                    localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+                } else
+                    localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
+
+                CollisionData[] collisionMap = client.getTopLevelWorldView().getCollisionMaps();
+                if (collisionMap != null && localPoint != null) {
+                    CollisionData collisionData = collisionMap[client.getTopLevelWorldView().getPlane()];
+                    int[][] flags = collisionData.getFlags();
+                    int data = flags[localPoint.getSceneX()][localPoint.getSceneY()];
+
+                    Set<MovementFlag> movementFlags = MovementFlag.getSetFlags(data);
+
+                    if (!ignoreCollision && !tile.equals(point)) {
+                        if (movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FULL)
+                                || movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FLOOR)) {
+                            tileDistances.remove(point);
+                            continue;
+                        }
+                    }
+
+                    if (kvp.getValue() >= distance)
+                        continue;
+
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_EAST))
+                        tileDistances.putIfAbsent(point.dx(1), dist + 1);
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_WEST))
+                        tileDistances.putIfAbsent(point.dx(-1), dist + 1);
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_NORTH))
+                        tileDistances.putIfAbsent(point.dy(1), dist + 1);
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_SOUTH))
+                        tileDistances.putIfAbsent(point.dy(-1), dist + 1);
+                }
+            }
+        }
+
+        return tileDistances;
+    }
+    
     
     /**
      * This method checks if a given target tile (WorldPoint) is reachable from the

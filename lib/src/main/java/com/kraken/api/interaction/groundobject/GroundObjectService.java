@@ -56,6 +56,9 @@ public class GroundObjectService extends AbstractService {
     @Inject
     private ItemManager itemManager;
 
+    @Inject
+    private TileService tileService;
+
     private final Table<WorldPoint, Integer, GroundItem> groundItems = HashBasedTable.create();
     private static final int COINS = 617;
 
@@ -188,6 +191,15 @@ public class GroundObjectService extends AbstractService {
                 return g.getName().toLowerCase().contains(name.toLowerCase());
             }
         }).findFirst().orElse(null)).orElse(null);
+    }
+
+    /**
+     * Checks if the ground item can be reached from the players position
+     * @param item The ground item to check
+     * @return True if the ground item can be reached from the players position and false otherwise.
+     */
+    public boolean canReach(GroundItem item) {
+        return context.runOnClientThread(() -> tileService.isTileReachable(item.getLocation()));
     }
 
     /**
