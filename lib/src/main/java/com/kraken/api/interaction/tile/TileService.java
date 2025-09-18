@@ -51,14 +51,15 @@ public class TileService extends AbstractService {
         for (int i = 0; i < distance + 1; i++) {
             int dist = i;
             for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
-                var point = kvp.getKey();
+                WorldPoint point = kvp.getKey();
                 LocalPoint localPoint;
                 if (client.getTopLevelWorldView().isInstance()) {
                     WorldPoint worldPoint = WorldPoint.toLocalInstance(client.getTopLevelWorldView(), point).stream().findFirst().orElse(null);
                     if (worldPoint == null) break;
                     localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
-                } else
+                } else {
                     localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
+                }
 
                 CollisionData[] collisionMap = client.getTopLevelWorldView().getCollisionMaps();
                 if (collisionMap != null && localPoint != null) {

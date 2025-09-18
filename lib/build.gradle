@@ -15,16 +15,17 @@ project.version = projectVersion
 
 
 repositories {
-    mavenLocal()
+    mavenCentral()
     maven {
         url = 'https://repo.runelite.net'
     }
-    mavenCentral()
     maven { url 'https://jitpack.io' }
+    mavenLocal()
 }
 
 dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
+    implementation group: 'com.google.inject', name: 'guice', version: '4.1.0'
     implementation("com.google.guava:guava:31.1-jre")
     implementation("org.slf4j:slf4j-api:1.7.25")
     implementation("org.slf4j:slf4j-simple:1.7.25")
