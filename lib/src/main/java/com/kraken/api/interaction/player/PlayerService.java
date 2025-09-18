@@ -103,10 +103,10 @@ public class PlayerService extends AbstractService {
      * @return The current players position as a world point
      */
     public WorldPoint getPlayerPosition() {
-        return context.runOnClientThreadOptional(() -> {
+        return context.runOnClientThread(() -> {
             Player p = client.getLocalPlayer();
             return p != null ? p.getWorldLocation() : null;
-        }).orElse(null);
+        });
     }
 
     /**

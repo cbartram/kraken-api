@@ -310,7 +310,7 @@ public class Context {
             log.error("Failed to run method on client thread: timeout after 2 seconds: {}", e.getMessage());
             return Optional.empty();
         } catch (ExecutionException e) {
-            log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage());
+            log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage(), e);
             return Optional.empty();
         }
     }
