@@ -7,6 +7,7 @@ import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.widget.WidgetService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Actor;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
@@ -133,6 +134,23 @@ public class PlayerService extends AbstractService {
         return Optional.of(client.getLocalPlayer().isInteracting()).orElse(false);
     }
 
+    /**
+     * Returns the current local player.
+     * @return The current player object.
+     */
+    public Player getPlayer() {
+        return context.runOnClientThread(() -> client.getLocalPlayer());
+    }
+
+    /**
+     * Returns the Actor that the player is currently interacting with or null if the player
+     * is not interacting with anything.
+     * @return Actor the Actor being interacted with.
+     */
+    public Actor getInteracting() {
+        if(!isInteracting()) return null;
+        return context.runOnClientThread(() -> client.getLocalPlayer().getInteracting());
+    }
 
     /**
      * Sets the special attack state if current special attack energy is greater than or equal to the required special

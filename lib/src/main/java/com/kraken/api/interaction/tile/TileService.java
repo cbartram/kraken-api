@@ -69,8 +69,7 @@ public class TileService extends AbstractService {
                     Set<MovementFlag> movementFlags = MovementFlag.getSetFlags(data);
 
                     if (!ignoreCollision && !tile.equals(point)) {
-                        if (movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FULL)
-                                || movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FLOOR)) {
+                        if (movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FULL) || movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FLOOR)) {
                             tileDistances.remove(point);
                             continue;
                         }
