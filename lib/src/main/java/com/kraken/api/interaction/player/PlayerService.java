@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarPlayerID;
@@ -105,6 +106,22 @@ public class PlayerService extends AbstractService {
             Player p = client.getLocalPlayer();
             return p != null ? p.getWorldLocation() : null;
         }).orElse(null);
+    }
+
+    /**
+     * Wrapper method for returning the players current world location
+     * @return WorldPoint players location
+     */
+    public WorldPoint getLocation() {
+        return getPlayerPosition();
+    }
+
+    /**
+     * Returns the local location of the player
+     * @return LocalPoint the players local location.
+     */
+    public LocalPoint getLocalLocation() {
+        return LocalPoint.fromWorld(client.getTopLevelWorldView(), getLocation());
     }
 
     /**
