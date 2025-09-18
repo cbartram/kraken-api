@@ -242,7 +242,7 @@ public class BankService extends AbstractService {
      * @param id the ID of the item to withdraw
      * @param noted if true, withdraws the item as notes; if false, withdraws it as a regular item
      * @param actions the actions to perform on the item widget (e.g., "Withdraw", "Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-All", "Withdraw-X")
-     * @return
+     * @return True if the withdraw was successful and false otherwise
      */
     public boolean withdraw(int id, boolean noted, String... actions) {
         if(!context.isPacketsLoaded()) return false;

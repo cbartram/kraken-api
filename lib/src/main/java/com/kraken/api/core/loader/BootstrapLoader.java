@@ -51,6 +51,7 @@ public class BootstrapLoader {
 
     /**
      * Fetches and parses the bootstrap file from the specified URL.
+     * @param uri The URI to load the bootstrap file
      */
     public void load(final URI uri) {
         try {

@@ -107,7 +107,7 @@ public class GameObjectService extends AbstractService {
      * If the action is an empty string, the default action "Walk" is used.
      * @param worldPoint The world point of the game object to interact with.
      * @param action The action to perform on the game object. If empty, the default action "Walk" is used.
-     * @return
+     * @return True if the interaction was successful and false otherwise.
      */
     public boolean interactReflect(WorldPoint worldPoint, String action) {
         TileObject gameObject = all(o -> o.getWorldLocation().equals(worldPoint)).stream().findFirst().orElse(null);
@@ -534,7 +534,7 @@ public class GameObjectService extends AbstractService {
      * @param objComp the ObjectComposition to check
      * @param action the action to look for
      * @param exact if true, requires an exact match; if false, allows partial (contains) match
-     * @return
+     * @return True if the object composition has the given action and false otherwise
      */
     public boolean hasAction(ObjectComposition objComp, String action, boolean exact) {
         if (objComp == null) return false;

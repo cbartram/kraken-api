@@ -8,8 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.plugins.devtools.MovementFlag;
-import shortestpath.pathfinder.CollisionMap;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
