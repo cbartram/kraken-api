@@ -1,5 +1,7 @@
 package com.kraken.api.example;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -7,18 +9,17 @@ import com.kraken.api.Context;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
-import com.kraken.api.interaction.groundobject.GroundItem;
-import com.kraken.api.interaction.groundobject.GroundObjectService;
-import com.kraken.api.interaction.inventory.InventoryService;
-import com.kraken.api.interaction.npc.NpcService;
-import com.kraken.api.interaction.inventory.InventoryItem;
-import com.kraken.api.interaction.player.PlayerService;
+import com.kraken.api.interaction.tile.MovementFlag;
+import com.kraken.api.interaction.tile.TileCollisionDump;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
+import net.runelite.api.CollisionData;
 import net.runelite.api.GameState;
-import net.runelite.api.NPC;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.callback.ClientThread;
@@ -29,6 +30,12 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.ui.overlay.OverlayManager;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -87,6 +94,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private GroundObjectServiceTest groundObjectServiceTest;
 
+    @Inject
+    private Client client;
+
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
         return configManager.getConfig(ExampleConfig.class);
@@ -101,9 +111,87 @@ public class ExamplePlugin extends Plugin {
         }
     }
 
+    private void dumpCollisionData() {
+        int distance = 104;
+        final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
+        tileDistances.put(client.getLocalPlayer().getWorldLocation(), 0);
+
+        List<TileCollisionDump> dump = new ArrayList<>();
+
+        for (int i = 0; i < distance + 1; i++)
+        {
+            int dist = i;
+            for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
+                WorldPoint point = kvp.getKey();
+                LocalPoint localPoint;
+                if (client.getTopLevelWorldView().isInstance())
+                {
+                    WorldPoint worldPoint = WorldPoint.toLocalInstance(client.getTopLevelWorldView(), point)
+                            .stream()
+                            .findFirst()
+                            .orElse(null);
+                    if (worldPoint == null) break;
+                    localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+                } else {
+                    localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
+                }
+
+                CollisionData[] collisionMap = client.getTopLevelWorldView().getCollisionMaps();
+                if (collisionMap != null && localPoint != null) {
+                    CollisionData collisionData = collisionMap[client.getTopLevelWorldView().getPlane()];
+                    int[][] flags = collisionData.getFlags();
+                    int data = flags[localPoint.getSceneX()][localPoint.getSceneY()];
+
+                    Set<MovementFlag> movementFlags = MovementFlag.getSetFlags(data);
+
+                    // Record this tile
+                    dump.add(new TileCollisionDump(
+                            localPoint.getX(),
+                            localPoint.getY(),
+                            localPoint.getSceneX(),
+                            localPoint.getSceneY(),
+                            point.getX(),
+                            point.getY(),
+                            point.getPlane(),
+                            kvp.getValue(),
+                            data,
+                            movementFlags.stream().map(Enum::name).collect(Collectors.toList())
+                    ));
+
+                    if (kvp.getValue() >= distance)
+                        continue;
+
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_EAST))
+                        tileDistances.putIfAbsent(point.dx(1), dist + 1);
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_WEST))
+                        tileDistances.putIfAbsent(point.dx(-1), dist + 1);
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_NORTH))
+                        tileDistances.putIfAbsent(point.dy(1), dist + 1);
+                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_SOUTH))
+                        tileDistances.putIfAbsent(point.dy(-1), dist + 1);
+                }
+            }
+        }
+
+        // Serialize to JSON and write to file
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter("./collision_dump.json")) {
+            gson.toJson(dump, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
+
+            if(event.getKey().equals("collisionData")) {
+                // Dump collision data
+                dumpCollisionData();
+            }
+
             if(event.getKey().equals("start")) {
                 if (config.start()) {
                     log.info("Starting API tests...");

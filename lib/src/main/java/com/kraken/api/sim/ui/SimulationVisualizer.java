@@ -1,16 +1,22 @@
 package com.kraken.api.sim.ui;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
-import com.kraken.api.interaction.tile.MovementFlag;
+import com.google.inject.Singleton;
+import com.kraken.api.interaction.tile.TileCollisionDump;
 import com.kraken.api.sim.SimNpc;
 import com.kraken.api.sim.SimulationEngine;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -18,6 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Main visualizer for OSRS tile collision data and movement simulation
  */
+@Slf4j
+@Singleton
 public class SimulationVisualizer extends JFrame {
     public static final int TILE_SIZE = 20;
     public static final int DEFAULT_MAP_WIDTH = 50;
@@ -26,6 +34,12 @@ public class SimulationVisualizer extends JFrame {
     private JButton simulateButton;
     private JButton clearPathButton;
     private JSpinner tickDelaySpinner;
+
+    // Zoom control buttons
+    private JButton zoomInButton;
+    private JButton zoomOutButton;
+    private JButton resetZoomButton;
+    private JButton centerViewButton;
 
     @Getter
     private JCheckBox showGridCheckbox;
@@ -55,7 +69,7 @@ public class SimulationVisualizer extends JFrame {
     public void init() {
         initializeData();
         initializeUI();
-        generateSampleCollisionData();
+        loadCollisionDataFromJson("collision_dump.json");
     }
 
     private void initializeData() {
@@ -64,19 +78,18 @@ public class SimulationVisualizer extends JFrame {
         npcs = new CopyOnWriteArrayList<>();
 
         // Add some sample NPCs
-        npcs.add(new SimNpc(new Point(20, 20), Color.RED, "Guard"));
-        npcs.add(new SimNpc(new Point(30, 30), Color.BLUE, "Merchant"));
-        npcs.add(new SimNpc(new Point(15, 35), Color.GREEN, "Goblin"));
+//        npcs.add(new SimNpc(new Point(20, 20), Color.RED, "Guard"));
+//        npcs.add(new SimNpc(new Point(30, 30), Color.BLUE, "Merchant"));
+//        npcs.add(new SimNpc(new Point(15, 35), Color.GREEN, "Goblin"));
     }
 
     private void initializeUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Main tile panel
-        JScrollPane scrollPane = new JScrollPane(tilePanel);
-        scrollPane.setPreferredSize(new Dimension(800, 600));
-        add(scrollPane, BorderLayout.CENTER);
+        // Main tile panel - removed scroll pane, using direct panel
+        tilePanel.setPreferredSize(new Dimension(800, 600));
+        add(tilePanel, BorderLayout.CENTER);
 
         // Control panel
         JPanel controlPanel = createControlPanel();
@@ -96,6 +109,13 @@ public class SimulationVisualizer extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Zoom controls
+        panel.add(new JLabel("Zoom Controls:"));
+        JPanel zoomPanel = createZoomControlPanel();
+        panel.add(zoomPanel);
+
+        panel.add(Box.createVerticalStrut(10));
 
         // Display options
         panel.add(new JLabel("Display Options:"));
@@ -142,7 +162,8 @@ public class SimulationVisualizer extends JFrame {
                 "Instructions:\n" +
                         "• Left Click: Move player\n" +
                         "• Right Click: Add/Remove wall\n" +
-                        "• Middle Click: Add NPC\n" +
+                        "• Middle Click + Drag: Pan view\n" +
+                        "• Mouse Wheel: Zoom in/out\n" +
                         "• Hover: View tile info"
         );
         instructions.setEditable(false);
@@ -150,6 +171,75 @@ public class SimulationVisualizer extends JFrame {
         panel.add(instructions);
 
         return panel;
+    }
+
+    private JPanel createZoomControlPanel() {
+        JPanel zoomPanel = new JPanel();
+        zoomPanel.setLayout(new GridLayout(2, 2, 5, 5));
+
+        zoomInButton = new JButton("Zoom In");
+        zoomInButton.addActionListener(e -> tilePanel.zoomIn());
+        zoomPanel.add(zoomInButton);
+
+        zoomOutButton = new JButton("Zoom Out");
+        zoomOutButton.addActionListener(e -> tilePanel.zoomOut());
+        zoomPanel.add(zoomOutButton);
+
+        resetZoomButton = new JButton("Reset Zoom");
+        resetZoomButton.addActionListener(e -> tilePanel.resetZoom());
+        zoomPanel.add(resetZoomButton);
+
+        centerViewButton = new JButton("Center View");
+        centerViewButton.addActionListener(e -> tilePanel.centerView());
+        zoomPanel.add(centerViewButton);
+
+        // Add keyboard shortcuts
+        addKeyboardShortcuts();
+
+        return zoomPanel;
+    }
+
+    private void addKeyboardShortcuts() {
+        // Add keyboard shortcuts for zoom controls
+        InputMap inputMap = getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = getRootPane().getActionMap();
+
+        // Zoom in: Ctrl + Plus or Ctrl + Equals
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PLUS, InputEvent.CTRL_DOWN_MASK), "zoomIn");
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK), "zoomIn");
+        actionMap.put("zoomIn", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tilePanel.zoomIn();
+            }
+        });
+
+        // Zoom out: Ctrl + Minus
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, InputEvent.CTRL_DOWN_MASK), "zoomOut");
+        actionMap.put("zoomOut", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tilePanel.zoomOut();
+            }
+        });
+
+        // Reset zoom: Ctrl + 0
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_0, InputEvent.CTRL_DOWN_MASK), "resetZoom");
+        actionMap.put("resetZoom", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tilePanel.resetZoom();
+            }
+        });
+
+        // Center view: Ctrl + Shift + C
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "centerView");
+        actionMap.put("centerView", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tilePanel.centerView();
+            }
+        });
     }
 
     private JPanel createLegend() {
@@ -173,27 +263,38 @@ public class SimulationVisualizer extends JFrame {
         return item;
     }
 
-    private void generateSampleCollisionData() {
-        // Create some walls
-        for (int x = 10; x < 40; x++) {
-            collisionData[10][x] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
-            collisionData[40][x] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
+    private void loadCollisionDataFromJson(final String filePath) {
+        try (FileReader reader = new FileReader(filePath)) {
+            Gson gson = new Gson();
+            java.lang.reflect.Type listType = new TypeToken<List<TileCollisionDump>>() {}.getType();
+            List<TileCollisionDump> tiles = gson.fromJson(reader, listType);
+
+            // Determine bounds (you could also just use DEFAULT_MAP_WIDTH/HEIGHT)
+            int minX = tiles.stream().mapToInt(TileCollisionDump::getSceneX).min().orElse(0);
+            int minY = tiles.stream().mapToInt(TileCollisionDump::getSceneY).min().orElse(0);
+            int maxX = tiles.stream().mapToInt(TileCollisionDump::getSceneX).max().orElse(DEFAULT_MAP_WIDTH);
+            int maxY = tiles.stream().mapToInt(TileCollisionDump::getSceneY).max().orElse(DEFAULT_MAP_HEIGHT);
+
+            int width = maxX - minX + 1;
+            int height = maxY - minY + 1;
+
+            collisionData = new int[height][width];
+            playerPosition.setLocation(tiles.get(0).getSceneX(), tiles.get(0).getSceneY());
+
+            for (TileCollisionDump tile : tiles) {
+                int localX = tile.getSceneX();
+                int localY = tile.getSceneY();
+                if (localX >= 0 && localX < width && localY >= 0 && localY < height) {
+                    collisionData[localY][localX] = tile.getRawFlags();
+                }
+            }
+
+            simulationEngine.setCollisionData(collisionData);
+            log.info("Loaded collision data from JSON (" + tiles.size() + " tiles)");
         }
-
-        for (int y = 10; y < 40; y++) {
-            collisionData[y][10] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
-            collisionData[y][40] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
+        catch (IOException e) {
+            e.printStackTrace();
         }
-
-        // Add some objects
-        collisionData[25][20] = CollisionDataFlag.BLOCK_MOVEMENT_OBJECT;
-        collisionData[25][30] = CollisionDataFlag.BLOCK_MOVEMENT_OBJECT;
-
-        // Add directional blocks
-        collisionData[20][25] = CollisionDataFlag.BLOCK_MOVEMENT_NORTH;
-        collisionData[30][25] = CollisionDataFlag.BLOCK_MOVEMENT_SOUTH;
-
-        simulationEngine.setCollisionData(collisionData);
     }
 
     private void toggleSimulation(SimulationEngine engine) {

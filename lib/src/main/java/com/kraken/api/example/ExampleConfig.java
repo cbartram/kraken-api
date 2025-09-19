@@ -19,6 +19,18 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+
+    @ConfigItem(
+            name = "Dump Collision Data",
+            keyName = "collisionData",
+            description = "Dumps Collision data to disk.",
+            position = -3
+    )
+    default boolean dumpCollisionData() {
+        return false;
+    }
+
+
     // ========== NPC TESTS SECTION ==========
     @ConfigSection(
             name = "NPC Tests",

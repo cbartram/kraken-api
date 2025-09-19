@@ -9,9 +9,7 @@ import net.runelite.api.CollisionDataFlag;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,9 +18,6 @@ import java.util.Set;
 
 import static com.kraken.api.sim.ui.SimulationVisualizer.*;
 
-/**
- * Main tile rendering panel
- */
 @Slf4j
 @Singleton
 public class TilePanel extends JPanel {
@@ -31,34 +26,98 @@ public class TilePanel extends JPanel {
     private Point hoveredTile = null;
     private final SimulationVisualizer visualizer;
 
+    // Zoom and pan variables
+    private double zoomLevel = 1.0;
+    private static final double MIN_ZOOM = 0.25;
+    private static final double MAX_ZOOM = 4.0;
+    private static final double ZOOM_STEP = 0.1;
+
+    private int panX = 0;
+    private int panY = 0;
+    private Point lastMousePoint = null;
+    private boolean isPanning = false;
 
     @Inject
     public TilePanel(SimulationVisualizer visualizer) {
         this.visualizer = visualizer;
         setPreferredSize(new Dimension(
-                DEFAULT_MAP_WIDTH * TILE_SIZE,
-                DEFAULT_MAP_HEIGHT * TILE_SIZE
+                (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel),
+                (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
         ));
         setBackground(Color.BLACK);
 
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                handleMouseClick(e);
+                if (!isPanning) {
+                    handleMouseClick(e);
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isMiddleMouseButton(e)) {
+                    isPanning = true;
+                    lastMousePoint = e.getPoint();
+                    setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (SwingUtilities.isMiddleMouseButton(e)) {
+                    isPanning = false;
+                    setCursor(Cursor.getDefaultCursor());
+                }
             }
         });
 
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                handleMouseMove(e);
+                if (!isPanning) {
+                    handleMouseMove(e);
+                }
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (isPanning && lastMousePoint != null) {
+                    int dx = e.getX() - lastMousePoint.x;
+                    int dy = e.getY() - lastMousePoint.y;
+                    panX += dx;
+                    panY += dy;
+                    lastMousePoint = e.getPoint();
+                    repaint();
+                }
+            }
+        });
+
+        // Add mouse wheel listener for zooming
+        addMouseWheelListener(e -> {
+            double oldZoom = zoomLevel;
+            Point mousePoint = e.getPoint();
+
+            // Calculate zoom
+            if (e.getWheelRotation() < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+
+            // Adjust pan to keep zoom centered on mouse position
+            if (oldZoom != zoomLevel) {
+                double zoomRatio = zoomLevel / oldZoom;
+                panX = (int)((panX - mousePoint.x) * zoomRatio + mousePoint.x);
+                panY = (int)((panY - mousePoint.y) * zoomRatio + mousePoint.y);
             }
         });
     }
 
     private void handleMouseClick(MouseEvent e) {
-        int tileX = e.getX() / TILE_SIZE;
-        int tileY = e.getY() / TILE_SIZE;
+        Point tileCoords = screenToTile(e.getX(), e.getY());
+        int tileX = tileCoords.x;
+        int tileY = tileCoords.y;
 
         if (tileX >= 0 && tileX < DEFAULT_MAP_WIDTH &&
                 tileY >= 0 && tileY < DEFAULT_MAP_HEIGHT) {
@@ -83,22 +142,17 @@ public class TilePanel extends JPanel {
                 } else {
                     visualizer.getCollisionData()[tileY][tileX] = 0;
                 }
-            } else if (SwingUtilities.isMiddleMouseButton(e)) {
-                // Add NPC
-                visualizer.getNpcs().add(new SimNpc(new Point(tileX, tileY),
-                        new Color((int)(Math.random() * 255),
-                                (int)(Math.random() * 255),
-                                (int)(Math.random() * 255)),
-                        "NPC_" + visualizer.getNpcs().size()));
             }
+            // Note: Removed middle mouse button NPC creation since it's now used for panning
 
             repaint();
         }
     }
 
     private void handleMouseMove(MouseEvent e) {
-        int tileX = e.getX() / TILE_SIZE;
-        int tileY = e.getY() / TILE_SIZE;
+        Point tileCoords = screenToTile(e.getX(), e.getY());
+        int tileX = tileCoords.x;
+        int tileY = tileCoords.y;
 
         if (tileX >= 0 && tileX < DEFAULT_MAP_WIDTH &&
                 tileY >= 0 && tileY < DEFAULT_MAP_HEIGHT) {
@@ -110,12 +164,64 @@ public class TilePanel extends JPanel {
         repaint();
     }
 
+    // Convert screen coordinates to tile coordinates
+    private Point screenToTile(int screenX, int screenY) {
+        int worldX = (int)((screenX - panX) / (TILE_SIZE * zoomLevel));
+        int worldY = (int)((screenY - panY) / (TILE_SIZE * zoomLevel));
+        return new Point(worldX, worldY);
+    }
+
+    // Convert tile coordinates to screen coordinates
+    private Point tileToScreen(int tileX, int tileY) {
+        int screenX = (int)(tileX * TILE_SIZE * zoomLevel + panX);
+        int screenY = (int)(tileY * TILE_SIZE * zoomLevel + panY);
+        return new Point(screenX, screenY);
+    }
+
     private void updateInfoLabel(int x, int y) {
         int flags = visualizer.getCollisionData()[y][x];
         Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
         String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
-        visualizer.getInfoLabel().setText(String.format("Tile [%d, %d] - Flags: %s (0x%04X)",
-                x, y, flagsStr, flags));
+        visualizer.getInfoLabel().setText(String.format("Tile [%d, %d] - Flags: %s (0x%04X) - Zoom: %.1fx",
+                x, y, flagsStr, flags, zoomLevel));
+    }
+
+    public void zoomIn() {
+        if (zoomLevel < MAX_ZOOM) {
+            zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP);
+            updatePreferredSize();
+            repaint();
+        }
+    }
+
+    public void zoomOut() {
+        if (zoomLevel > MIN_ZOOM) {
+            zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP);
+            updatePreferredSize();
+            repaint();
+        }
+    }
+
+    public void resetZoom() {
+        zoomLevel = 1.0;
+        panX = 0;
+        panY = 0;
+        updatePreferredSize();
+        repaint();
+    }
+
+    public void centerView() {
+        panX = (getWidth() - (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel)) / 2;
+        panY = (getHeight() - (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)) / 2;
+        repaint();
+    }
+
+    private void updatePreferredSize() {
+        setPreferredSize(new Dimension(
+                (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel),
+                (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
+        ));
+        revalidate();
     }
 
     @Override
@@ -124,6 +230,10 @@ public class TilePanel extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Apply zoom and pan transformations
+        g2d.translate(panX, panY);
+        g2d.scale(zoomLevel, zoomLevel);
 
         // Draw tiles
         for (int y = 0; y < DEFAULT_MAP_HEIGHT; y++) {
@@ -155,46 +265,72 @@ public class TilePanel extends JPanel {
     private void drawTile(Graphics2D g, int x, int y) {
         int flags = visualizer.getCollisionData()[y][x];
 
-        // Base tile color
+        int px = x * TILE_SIZE;
+        int py = y * TILE_SIZE;
+
+        // Base tile background
         g.setColor(new Color(50, 50, 50));
-        g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        g.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
         if (flags != 0 && visualizer.getShowFlagsCheckbox().isSelected()) {
-            // Color based on collision type
+            // Full block = fill whole tile
             if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0) {
                 g.setColor(Color.DARK_GRAY);
-                g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            } else if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_OBJECT) != 0) {
-                g.setColor(Color.GRAY);
-                g.fillRect(x * TILE_SIZE + 2, y * TILE_SIZE + 2,
-                        TILE_SIZE - 4, TILE_SIZE - 4);
-            } else if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_FLOOR_DECORATION) != 0) {
-                g.setColor(new Color(139, 69, 19));
-                g.fillOval(x * TILE_SIZE + 4, y * TILE_SIZE + 4,
-                        TILE_SIZE - 8, TILE_SIZE - 8);
+                g.fillRect(px, py, TILE_SIZE, TILE_SIZE);
             }
 
-            // Draw directional blocks
-            drawDirectionalBlocks(g, x, y, flags);
+            // Object block = smaller rectangle inside
+            if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_OBJECT) != 0) {
+                g.setColor(Color.GRAY);
+                g.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            }
+
+            // Floor decoration = brown circle
+            if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_FLOOR_DECORATION) != 0) {
+                g.setColor(new Color(139, 69, 19));
+                g.fillOval(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+            }
+
+            // Directional blocks (orange lines)
+            drawDirectionalBlocks(g, px, py, flags);
         }
     }
 
-    private void drawDirectionalBlocks(Graphics2D g, int x, int y, int flags) {
+    private void drawDirectionalBlocks(Graphics2D g, int px, int py, int flags) {
         g.setColor(Color.ORANGE);
-        int cx = x * TILE_SIZE + TILE_SIZE / 2;
-        int cy = y * TILE_SIZE + TILE_SIZE / 2;
 
+        // Draw lines along the edges where movement is blocked
         if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) {
-            g.drawLine(cx, cy, cx, y * TILE_SIZE);
+            g.drawLine(px, py, px + TILE_SIZE, py);
         }
         if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) {
-            g.drawLine(cx, cy, cx, y * TILE_SIZE + TILE_SIZE);
+            g.drawLine(px, py + TILE_SIZE, px + TILE_SIZE, py + TILE_SIZE);
         }
         if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0) {
-            g.drawLine(cx, cy, x * TILE_SIZE + TILE_SIZE, cy);
+            g.drawLine(px + TILE_SIZE, py, px + TILE_SIZE, py + TILE_SIZE);
         }
         if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) {
-            g.drawLine(cx, cy, x * TILE_SIZE, cy);
+            g.drawLine(px, py, px, py + TILE_SIZE);
+        }
+
+        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH_EAST) != 0) {
+            g.drawLine(px, py, px + TILE_SIZE, py);
+            g.drawLine(px + TILE_SIZE, py, px + TILE_SIZE, py + TILE_SIZE);
+        }
+
+        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH_WEST) != 0) {
+            g.drawLine(px, py, px + TILE_SIZE, py);
+            g.drawLine(px, py, px, py + TILE_SIZE);
+        }
+
+        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH_EAST) != 0) {
+            g.drawLine(px, py + TILE_SIZE, px + TILE_SIZE, py + TILE_SIZE);
+            g.drawLine(px + TILE_SIZE, py, px + TILE_SIZE, py + TILE_SIZE);
+        }
+
+        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH_WEST) != 0) {
+            g.drawLine(px, py + TILE_SIZE, px + TILE_SIZE, py + TILE_SIZE);
+            g.drawLine(px, py, px, py + TILE_SIZE);
         }
     }
 
