@@ -1,24 +1,15 @@
 package com.kraken.api.sim.ui;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.interaction.tile.TileCollisionDump;
-import com.kraken.api.sim.SimNpc;
 import com.kraken.api.sim.SimulationEngine;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Main visualizer for OSRS tile collision data and movement simulation. This class is responsible
@@ -42,25 +33,17 @@ public class SimulationVisualizer extends JFrame {
     @Getter
     private JLabel infoLabel;
 
-    @Getter
-    private int[][] collisionData;
-
-    @Getter
-    private List<SimNpc> npcs;
-
     @Inject
-    private SimulationEngine simulationEngine;
+    private SimulationEngine engine;
 
     @Inject
     private TilePanel tilePanel;
 
+    /**
+     * Initializes the class. There are some weird Guice injection cyclic dependency issues
+     * right now where only field level injection works thus this method is needed.
+     */
     public void init() {
-        collisionData = new int[DEFAULT_MAP_HEIGHT][DEFAULT_MAP_WIDTH];
-        npcs = new CopyOnWriteArrayList<>();
-        initializeUI();
-        loadCollisionDataFromJson("collision_dump.json");
-    }
-    private void initializeUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -82,6 +65,10 @@ public class SimulationVisualizer extends JFrame {
         setLocationRelativeTo(null);
     }
 
+    /**
+     * Creates the control panel to hold the various grid, tile, simulation, and tick controls.
+     * @return JPanel panel to hold the control UI elements.
+     */
     private JPanel createControlPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -120,18 +107,33 @@ public class SimulationVisualizer extends JFrame {
         simLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(simLabel);
 
-        simulateButton = new JButton("Start Simulation");
-        simulateButton.addActionListener(e -> toggleSimulation(simulationEngine));
-        simulateButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(simulateButton);
 
+        JPanel simPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+
+        simulateButton = new JButton("Start Simulation");
+        simulateButton.addActionListener(e -> toggleSimulation());
+        simulateButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        simPanel.add(simulateButton);
         JButton clearPathButton = new JButton("Clear Paths");
         clearPathButton.addActionListener(e -> {
             tilePanel.clearPaths();
             tilePanel.repaint();
         });
         clearPathButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(clearPathButton);
+        simPanel.add(clearPathButton);
+
+        JButton forwardTick = new JButton("Next Tick >>");
+        forwardTick.addActionListener(e -> engine.tick());
+        forwardTick.setAlignmentX(Component.LEFT_ALIGNMENT);
+        simPanel.add(forwardTick);
+
+        JButton backwardTick = new JButton("<< Prev Tick");
+        backwardTick.addActionListener(e -> engine.prevTick());
+        backwardTick.setAlignmentX(Component.LEFT_ALIGNMENT);
+        simPanel.add(backwardTick);
+
+        simPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(simPanel);
 
         panel.add(Box.createVerticalStrut(15));
 
@@ -149,7 +151,7 @@ public class SimulationVisualizer extends JFrame {
         // Instructions
         JTextArea instructions = new JTextArea(
                 "Instructions:\n" +
-                        "• Left Click: Move player\n" +
+                        "• Left Click: Set Player Target\n" +
                         "• Right Click: Add/Remove wall\n" +
                         "• Middle Click + Drag: Pan view\n" +
                         "• Mouse Wheel: Zoom in/out\n" +
@@ -164,6 +166,10 @@ public class SimulationVisualizer extends JFrame {
         return panel;
     }
 
+    /**
+     * Creates a subpanel for controlling the zoom on the tiles.
+     * @return JPanel A subpanel for controlling the zoom
+     */
     private JPanel createZoomControlPanel() {
         JPanel zoomPanel = new JPanel(new GridLayout(2, 2, 5, 5));
 
@@ -187,6 +193,10 @@ public class SimulationVisualizer extends JFrame {
         return zoomPanel;
     }
 
+    /**
+     * Creates the legend for understanding which UI elements represent which in-game structures
+     * @return JPanel a subpanel for the legend.
+     */
     private JPanel createLegend() {
         JPanel legend = new JPanel();
         legend.setLayout(new GridLayout(0, 1));
@@ -199,6 +209,12 @@ public class SimulationVisualizer extends JFrame {
         return legend;
     }
 
+    /**
+     * Helper method to create a legend item.
+     * @param color Color for the item
+     * @param text String the text for the item
+     * @return Subpanel for the legend item.
+     */
     private JPanel createLegendItem(Color color, String text) {
         JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel colorBox = new JLabel("■");
@@ -208,51 +224,11 @@ public class SimulationVisualizer extends JFrame {
         return item;
     }
 
-    private void loadCollisionDataFromJson(final String filePath) {
-        try (FileReader reader = new FileReader(filePath)) {
-            Gson gson = new Gson();
-            java.lang.reflect.Type listType = new TypeToken<List<TileCollisionDump>>() {}.getType();
-            List<TileCollisionDump> tiles = gson.fromJson(reader, listType);
-
-            // Find bounds of world coordinates
-            int minX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).min().orElse(0);
-            int minY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).min().orElse(0);
-            int maxX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).max().orElse(DEFAULT_MAP_WIDTH);
-            int maxY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).max().orElse(DEFAULT_MAP_HEIGHT);
-
-            int width = maxX - minX + 1;
-            int height = maxY - minY + 1;
-
-            collisionData = new int[height][width];
-
-            // Place player at first tile relative to minX/minY (this is the tile collision data was generated from)
-            int playerLocalX = tiles.get(0).getWorldPointX() - minX;
-            int playerLocalY = tiles.get(0).getWorldPointY() - minY;
-            int playerFlippedY = height - 1 - playerLocalY;
-            simulationEngine.setPlayerPosition(new Point(playerLocalX, playerFlippedY));
-
-            for (TileCollisionDump tile : tiles) {
-                int localX = tile.getWorldPointX() - minX;
-                int localY = tile.getWorldPointY() - minY;
-
-                // Flip the Y coordinate to correct the reflection
-                int flippedY = height - 1 - localY;
-
-                if (localX >= 0 && localX < width && flippedY >= 0 && flippedY < height) {
-                    collisionData[flippedY][localX] = tile.getRawFlags();
-                }
-            }
-
-            simulationEngine.setCollisionData(collisionData);
-            log.info("Loaded collision data from JSON (" + tiles.size() + " tiles). " +
-                    "Bounds: X[" + minX + "," + maxX + "] Y[" + minY + "," + maxY + "]");
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void toggleSimulation(SimulationEngine engine) {
+    /**
+     * Toggles the state of the simulation. When the simulation is running this will
+     * turn the simulation off (pause it). When it is off it will start the simulation.
+     */
+    private void toggleSimulation() {
         if (engine.isRunning()) {
             engine.stop();
             simulateButton.setText("Start Simulation");

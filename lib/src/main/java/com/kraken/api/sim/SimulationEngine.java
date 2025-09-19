@@ -1,7 +1,10 @@
 package com.kraken.api.sim;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.kraken.api.interaction.tile.TileCollisionDump;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import com.kraken.api.sim.ui.TilePanel;
 import lombok.Getter;
@@ -10,22 +13,20 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+import java.util.List;
 
 /**
- * Simulation engine for NPC movement
+ * Simulation engine for NPC and player movement.
  */
 @Slf4j
 @Singleton
 public class SimulationEngine {
-    private Timer timer;
-
-    @Inject
-    private SimulationVisualizer visualizer;
+    private static final int MAX_HISTORY_SIZE = 50; // Limits the amount of times a user can go back in time
 
     @Inject
     private TilePanel tilePanel;
@@ -35,7 +36,7 @@ public class SimulationEngine {
 
     @Getter
     @Setter
-    private int[][] collisionData = new int[2][2];
+    private int[][] collisionData = new int[104][104];
 
     @Getter
     @Setter
@@ -46,11 +47,23 @@ public class SimulationEngine {
     private Point targetPosition;
 
     @Getter
-    private java.util.List<Point> playerCurrentPath = new ArrayList<>();
+    private final List<SimNpc> npcs = new ArrayList<>();
 
+    @Getter
+    private List<Point> playerCurrentPath = new ArrayList<>();
+
+    private Timer timer;
     int tick = 0;
     private int playerPathIndex = 0;
+    private Stack<GameState> stateHistory = new Stack<>();
 
+    public SimulationEngine() {
+        loadCollisionData("./collision_dump.json");
+    }
+
+    /**
+     * Starts a timer which runs the simulation on 0.6s (1 game tick) intervals.
+     */
     public void start() {
         if (timer != null) {
             timer.stop();
@@ -61,32 +74,105 @@ public class SimulationEngine {
         timer.start();
     }
 
+    /**
+     * Stops the primary simulation timer and resets history.
+     */
     public void stop() {
         if (timer != null) {
             timer.stop();
             running = false;
             tick = 0;
+            stateHistory.clear();
         }
     }
 
-    private void tick() {
-        for (SimNpc npc : visualizer.getNpcs()) {
+    /**
+     * Saves the current game state including player positions, npc positions, path indexes,
+     * and the current tick to a stack in memory.
+     */
+    private void saveCurrentState() {
+        // Collect current NPC positions
+        List<Point> currentNpcPositions = new ArrayList<>();
+        for (SimNpc npc : npcs) {
+            currentNpcPositions.add(new Point(npc.getPosition()));
+        }
+
+        // Create a deep copy of the player path to avoid reference issues
+        List<Point> pathCopy = new ArrayList<>();
+        for (Point point : playerCurrentPath) {
+            pathCopy.add(new Point(point));
+        }
+
+        // Save current state to history
+        GameState currentState = new GameState(tick,
+                playerPosition != null ? new Point(playerPosition) : null,
+                pathCopy,
+                playerPathIndex,
+                currentNpcPositions);
+        stateHistory.push(currentState);
+
+        // Limit history size to prevent memory issues
+        if (stateHistory.size() > MAX_HISTORY_SIZE) {
+            // Remove oldest states
+            Stack<GameState> newHistory = new Stack<>();
+            for (int i = stateHistory.size() - MAX_HISTORY_SIZE; i < stateHistory.size(); i++) {
+                newHistory.push(stateHistory.get(i));
+            }
+            stateHistory = newHistory;
+        }
+    }
+
+    /**
+     * Re-winds the game state by 1 tick.
+     */
+    public void prevTick() {
+        if (stateHistory.isEmpty()) {
+            log.info("Cannot go back further - no previous state saved");
+            return;
+        }
+
+        GameState previousState = stateHistory.pop();
+
+        // Restore previous state
+        tick = previousState.tick;
+
+        if (previousState.playerPosition != null) {
+            setPlayerPosition(previousState.playerPosition);
+        }
+
+        playerCurrentPath = new ArrayList<>(previousState.playerPath);
+        playerPathIndex = previousState.playerPathIndex;
+
+        // Restore previous NPC positions
+        List<SimNpc> prevNpcs = npcs;
+        for (int i = 0; i < Math.min(prevNpcs.size(), previousState.npcPositions.size()); i++) {
+            prevNpcs.get(i).setPosition(previousState.npcPositions.get(i));
+        }
+
+        // Remove the last path point for each NPC (since we're going backward)
+        for (SimNpc npc : npcs) {
+            tilePanel.removeLastNPCPathPoint(npc);
+        }
+
+        tilePanel.repaint();
+    }
+
+    /**
+     * Progresses the game state by 1 tick.
+     */
+    public void tick() {
+        saveCurrentState();
+        for (SimNpc npc : npcs) {
             Point npcPos = npc.getPosition();
             Point playerPos = getPlayerPosition();
 
-            // Calculate distance
-            double distance = npcPos.distance(playerPos);
-
-            if (distance < 10 && distance > 1) {
-                // Find next move towards player
-                Point nextMove = calculateNextMove(npcPos, playerPos);
-                if (nextMove != null && isValidMove(npcPos, nextMove)) {
-                    tilePanel.addNPCPathPoint(npc, new Point(npcPos));
-                    npc.setPosition(nextMove);
-                }
+            // Find next move towards player
+            Point nextMove = calculateNextMove(npcPos, playerPos);
+            if (nextMove != null && isValidMove(npcPos, nextMove)) {
+                tilePanel.addNPCPathPoint(npc, new Point(npcPos));
+                npc.setPosition(nextMove);
             }
         }
-
 
         if (tick > 0 && !playerCurrentPath.isEmpty()) {
             if (playerPathIndex < playerCurrentPath.size() - 1) {
@@ -106,6 +192,11 @@ public class SimulationEngine {
         tick += 1;
     }
 
+    /**
+     * Sets the target point for a player to move towards and runs a BFS
+     * calculation to determine the shortest path.
+     * @param target Target point to move towards
+     */
     public void setPlayerTarget(Point target) {
         Point start = getPlayerPosition();
         playerCurrentPath = findPath(start, target);
@@ -114,6 +205,12 @@ public class SimulationEngine {
         log.info("Calculated path of size: {}", playerCurrentPath.size());
     }
 
+    /**
+     * Computes the next viable movement position for an NPC given 2 points.
+     * @param from The point that the NPC is currently at
+     * @param to The point the NPC wants to move towards.
+     * @return Point a viable point or null if no point is viable in any direction
+     */
     private Point calculateNextMove(Point from, Point to) {
         int dx = Integer.compare(to.x, from.x);
         int dy = Integer.compare(to.y, from.y);
@@ -144,11 +241,18 @@ public class SimulationEngine {
         return null;
     }
 
-    private java.util.List<Point> findPath(Point start, Point goal) {
+    /**
+     * Runs a BFS (Breadth-First-Search) algorithm to compute the shortest player path from a starting
+     * point to a goal point taking into account collision data and obstacles.
+     * @param start Point the starting point of the player
+     * @param goal Point the ending point.
+     * @return A list of shortest path points to the destination
+     */
+    private List<Point> findPath(Point start, Point goal) {
         boolean[][] visited = new boolean[collisionData.length][collisionData[0].length];
         Point[][] parent = new Point[collisionData.length][collisionData[0].length];
 
-        java.util.Queue<Point> queue = new ArrayDeque<>();
+        Queue<Point> queue = new ArrayDeque<>();
         queue.add(start);
         visited[start.y][start.x] = true;
 
@@ -193,10 +297,22 @@ public class SimulationEngine {
         return Collections.emptyList();
     }
 
+    /**
+     * Returns true if the point is in the bounds of the collision data and false otherwise
+     * @param p Point to check bounds for
+     * @return True if the point is in bounds and false otherwise.
+     */
     private boolean inBounds(Point p) {
         return p.x >= 0 && p.x < collisionData[0].length && p.y >= 0 && p.y < collisionData.length;
     }
 
+    /**
+     * Returns true if the movement is valid given collision flags and false otherwise. This takes
+     * into account diagonal movement as well.
+     * @param from Point starting point
+     * @param to Point ending point
+     * @return True if the movement between the 2 points is valid and false otherwise.
+     */
     private boolean isValidMove(Point from, Point to) {
         if (to.x < 0 || to.x >= collisionData[0].length || to.y < 0 || to.y >= collisionData.length) {
             return false;
@@ -226,5 +342,52 @@ public class SimulationEngine {
         if (dx < 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
         if (dy > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
         return dy >= 0 || (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+    }
+
+    /**
+     * Loads the Collision data from a JSON file
+     * @param filePath String the file path containing JSON encoded collision data
+     */
+    private void loadCollisionData(final String filePath) {
+        try (FileReader reader = new FileReader(filePath)) {
+            Gson gson = new Gson();
+            java.lang.reflect.Type listType = new TypeToken<List<TileCollisionDump>>() {}.getType();
+            List<TileCollisionDump> tiles = gson.fromJson(reader, listType);
+
+            // Find bounds of world coordinates
+            int minX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).min().orElse(0);
+            int minY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).min().orElse(0);
+            int maxX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).max().orElse(50);
+            int maxY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).max().orElse(50);
+
+            int width = maxX - minX + 1;
+            int height = maxY - minY + 1;
+
+            this.collisionData = new int[height][width];
+
+            // Place player at first tile relative to minX/minY (this is the tile collision data was generated from)
+            int playerLocalX = tiles.get(0).getWorldPointX() - minX;
+            int playerLocalY = tiles.get(0).getWorldPointY() - minY;
+            int playerFlippedY = height - 1 - playerLocalY;
+            setPlayerPosition(new Point(playerLocalX, playerFlippedY));
+
+            for (TileCollisionDump tile : tiles) {
+                int localX = tile.getWorldPointX() - minX;
+                int localY = tile.getWorldPointY() - minY;
+
+                // Flip the Y coordinate to correct the reflection
+                int flippedY = height - 1 - localY;
+
+                if (localX >= 0 && localX < width && flippedY >= 0 && flippedY < height) {
+                    this.collisionData[flippedY][localX] = tile.getRawFlags();
+                }
+            }
+
+            log.info("Loaded collision data from JSON (" + tiles.size() + " tiles). " +
+                    "Bounds: X[" + minX + "," + maxX + "] Y[" + minY + "," + maxY + "]");
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

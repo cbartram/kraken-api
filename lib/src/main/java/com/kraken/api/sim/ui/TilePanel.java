@@ -136,12 +136,17 @@ public class TilePanel extends JPanel {
         });
     }
 
+    /**
+     * Handles left and right mouse button clicks to either set the players target destination
+     * or configure additional obstacles for the pathing algorithm to contend with.
+     * @param e Mouse event
+     */
     private void handleMouseClick(MouseEvent e) {
         Point tileCoords = screenToTile(e.getX(), e.getY());
         int tileX = tileCoords.x;
         int tileY = tileCoords.y;
 
-        int[][] data = visualizer.getCollisionData();
+        int[][] data = engine.getCollisionData();
         if (tileY >= 0 && tileY < data.length && tileX >= 0 && tileX < data[0].length) {
             if (SwingUtilities.isLeftMouseButton(e)) {
 
@@ -161,22 +166,26 @@ public class TilePanel extends JPanel {
 
             } else if (SwingUtilities.isRightMouseButton(e)) {
                 // Toggle wall
-                if (visualizer.getCollisionData()[tileY][tileX] == 0) {
-                    visualizer.getCollisionData()[tileY][tileX] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
+                if (engine.getCollisionData()[tileY][tileX] == 0) {
+                    engine.getCollisionData()[tileY][tileX] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
                 } else {
-                    visualizer.getCollisionData()[tileY][tileX] = 0;
+                    engine.getCollisionData()[tileY][tileX] = 0;
                 }
             }
             repaint();
         }
     }
 
+    /**
+     * Handles moving a mouse across the grid highlighting the hovered tile.
+     * @param e MouseEvent
+     */
     private void handleMouseMove(MouseEvent e) {
         Point tileCoords = screenToTile(e.getX(), e.getY());
         int tileX = tileCoords.x;
         int tileY = tileCoords.y;
 
-        int[][] data = visualizer.getCollisionData();
+        int[][] data = engine.getCollisionData();
         if (tileY >= 0 && tileY < data.length &&
                 tileX >= 0 && tileX < data[0].length) {
             hoveredTile = new Point(tileX, tileY);
@@ -187,28 +196,66 @@ public class TilePanel extends JPanel {
         repaint();
     }
 
-    // Convert screen coordinates to tile coordinates
+    /**
+     * Removes the last NPC pathing point
+     * @param npc Simulated NPC to remove point from
+     */
+    public void removeLastNPCPathPoint(SimNpc npc) {
+        List<Point> path = npcPaths.get(npc);
+        if (path != null && !path.isEmpty()) {
+            path.remove(path.size() - 1);
+        }
+    }
+
+    /**
+     * Adds an NPC path point
+     * @param npc NpcSim The npc to add to
+     * @param point Point the point to add
+     */
+    public void addNPCPathPoint(SimNpc npc, Point point) {
+        npcPaths.computeIfAbsent(npc, k -> new ArrayList<>()).add(point);
+    }
+
+    /**
+     * Converts screen coordinates to tile coordinates
+     * @param screenX Screen x coordinate
+     * @param screenY Screen y coordinate
+     * @return A point representing the tile.
+     */
     private Point screenToTile(int screenX, int screenY) {
         int worldX = (int)((screenX - panX) / (TILE_SIZE * zoomLevel));
         int worldY = (int)((screenY - panY) / (TILE_SIZE * zoomLevel));
         return new Point(worldX, worldY);
     }
 
-    // Convert tile coordinates to screen coordinates
+    /**
+     * Converts tile coordinates to screen coordinates
+     * @param tileX The tile coordinate to convert (X)
+     * @param tileY The tile coordinate to convert (Y)
+     * @return A point representing the screen point for a given tile.
+     */
     private Point tileToScreen(int tileX, int tileY) {
         int screenX = (int)(tileX * TILE_SIZE * zoomLevel + panX);
         int screenY = (int)(tileY * TILE_SIZE * zoomLevel + panY);
         return new Point(screenX, screenY);
     }
 
+    /**
+     * Updates the information label based on which tile is currently being hovered.
+     * @param x X coordinate
+     * @param y Y coordinate
+     */
     private void updateInfoLabel(int x, int y) {
-        int flags = visualizer.getCollisionData()[y][x];
+        int flags = engine.getCollisionData()[y][x];
         Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
         String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
         visualizer.getInfoLabel().setText(String.format("Tile [%d, %d] - Flags: %s (0x%04X) - Zoom: %.1fx",
                 x, y, flagsStr, flags, zoomLevel));
     }
 
+    /**
+     * Zooms the map in
+     */
     public void zoomIn() {
         if (zoomLevel < MAX_ZOOM) {
             zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP);
@@ -217,6 +264,9 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Zooms the map out
+     */
     public void zoomOut() {
         if (zoomLevel > MIN_ZOOM) {
             zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP);
@@ -225,6 +275,9 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Resets the zoom to 1.0
+     */
     public void resetZoom() {
         zoomLevel = 1.0;
         panX = 0;
@@ -233,14 +286,20 @@ public class TilePanel extends JPanel {
         repaint();
     }
 
+    /**
+     * Centers the grid on the current view
+     */
     public void centerView() {
-        panX = (getWidth() - (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel)) / 2;
-        panY = (getHeight() - (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)) / 2;
+        panX = (getWidth() - (int)(engine.getCollisionData()[0].length * TILE_SIZE * zoomLevel)) / 2;
+        panY = (getHeight() - (int)(engine.getCollisionData().length * TILE_SIZE * zoomLevel)) / 2;
         repaint();
     }
 
+    /**
+     * Updates the preferred size of the grid
+     */
     private void updatePreferredSize() {
-        int[][] data = visualizer.getCollisionData();
+        int[][] data = engine.getCollisionData();
         int width = data[0].length;
         int height = data.length;
 
@@ -263,7 +322,7 @@ public class TilePanel extends JPanel {
         g2d.scale(zoomLevel, zoomLevel);
 
         // Draw tiles
-        int[][] data = visualizer.getCollisionData();
+        int[][] data = engine.getCollisionData();
         for (int y = 0; y < data.length; y++) {
             for (int x = 0; x < data[y].length; x++) {
                 drawTile(g2d, x, y);
@@ -290,8 +349,15 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Draws the collision data onto the grid of tiles. This method checks the collision
+     * data and will draw the correct graphic representing if the tile is blocked, impassable, or walkable.
+     * @param g Graphics object
+     * @param x X coordinate to draw
+     * @param y Y coordinate to draw
+     */
     private void drawTile(Graphics2D g, int x, int y) {
-        int flags = visualizer.getCollisionData()[y][x];
+        int flags = engine.getCollisionData()[y][x];
 
         int px = x * TILE_SIZE;
         int py = y * TILE_SIZE;
@@ -324,6 +390,13 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Draws the directional blocks representing walls which cannot be passed through but can be walked around.
+     * @param g Graphics object
+     * @param px X coordinate
+     * @param py Y coordinate
+     * @param flags Collision flags
+     */
     private void drawDirectionalBlocks(Graphics2D g, int px, int py, int flags) {
         g.setColor(Color.ORANGE);
 
@@ -342,8 +415,12 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Draws the grid of tiles
+     * @param g Graphics object
+     */
     private void drawGrid(Graphics2D g) {
-        int[][] data = visualizer.getCollisionData();
+        int[][] data = engine.getCollisionData();
         int width = data[0].length;
         int height = data.length;
 
@@ -356,6 +433,10 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Draws the players location on the grid of tiles.
+     * @param g Graphics object
+     */
     private void drawPlayer(Graphics2D g) {
         g.setColor(new Color(6, 239, 79, 255));
         g.setStroke(new BasicStroke(2));
@@ -366,14 +447,22 @@ public class TilePanel extends JPanel {
                 engine.getPlayerPosition().y * TILE_SIZE + 14);
     }
 
+    /**
+     * Draws the NPCs onto the grid of tiles
+     * @param g Graphics object
+     */
     private void drawNPCs(Graphics2D g) {
-        for (SimNpc npc : visualizer.getNpcs()) {
+        for (SimNpc npc : engine.getNpcs()) {
             g.setColor(npc.getColor());
             g.fillOval(npc.getPosition().x * TILE_SIZE + 4, npc.getPosition().y * TILE_SIZE + 4,
                     TILE_SIZE - 8, TILE_SIZE - 8);
         }
     }
 
+    /**
+     * Draws the player and NPC paths
+     * @param g Graphics object
+     */
     private void drawPaths(Graphics2D g) {
         // Draw player path
         if (engine.getPlayerCurrentPath().size() > 1) {
@@ -424,15 +513,14 @@ public class TilePanel extends JPanel {
         }
     }
 
+    /**
+     * Clears and resets all paths for both NPCs and players.
+     */
     public void clearPaths() {
         playerPath.clear();
         npcPaths.clear();
         engine.stop();
         engine.setPlayerTarget(null);
         engine.getPlayerCurrentPath().clear();
-    }
-
-    public void addNPCPathPoint(SimNpc npc, Point point) {
-        npcPaths.computeIfAbsent(npc, k -> new ArrayList<>()).add(point);
     }
 }
