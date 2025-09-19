@@ -37,8 +37,6 @@ public class SimulationEngine {
     @Setter
     private int[][] collisionData = new int[2][2];
 
-    int tick = 0;
-
     @Getter
     @Setter
     private Point playerPosition;
@@ -50,7 +48,7 @@ public class SimulationEngine {
     @Getter
     private java.util.List<Point> playerCurrentPath = new ArrayList<>();
 
-
+    int tick = 0;
     private int playerPathIndex = 0;
 
     public void start() {
@@ -72,13 +70,6 @@ public class SimulationEngine {
     }
 
     private void tick() {
-        if(tick == 0) {
-            // On the first tick snap the players point to their starting position
-            if(!tilePanel.getPlayerPath().isEmpty()) {
-                setPlayerPosition(tilePanel.getPlayerPath().get(0));
-            }
-        }
-
         for (SimNpc npc : visualizer.getNpcs()) {
             Point npcPos = npc.getPosition();
             Point playerPos = getPlayerPosition();
@@ -97,12 +88,17 @@ public class SimulationEngine {
         }
 
 
-        log.info("Tick: {}, Player Path Size: {}", tick, playerCurrentPath.size());
         if (tick > 0 && !playerCurrentPath.isEmpty()) {
             if (playerPathIndex < playerCurrentPath.size() - 1) {
-                playerPathIndex++;
-                Point nextStep = playerCurrentPath.get(playerPathIndex);
+                // Remove the current point (the one we're leaving)
+                playerCurrentPath.remove(0);
+                Point nextStep = playerCurrentPath.get(0);
                 setPlayerPosition(nextStep);
+            } else {
+                // Path completed, clear it
+                playerCurrentPath.clear();
+                playerPathIndex = 0;
+                stop();
             }
         }
 

@@ -32,13 +32,6 @@ public class SimulationVisualizer extends JFrame {
     public static final int DEFAULT_MAP_HEIGHT = 50;
 
     private JButton simulateButton;
-    private JButton clearPathButton;
-
-    // Zoom control buttons
-    private JButton zoomInButton;
-    private JButton zoomOutButton;
-    private JButton resetZoomButton;
-    private JButton centerViewButton;
 
     @Getter
     private JCheckBox showGridCheckbox;
@@ -62,21 +55,11 @@ public class SimulationVisualizer extends JFrame {
     private TilePanel tilePanel;
 
     public void init() {
-        initializeData();
+        collisionData = new int[DEFAULT_MAP_HEIGHT][DEFAULT_MAP_WIDTH];
+        npcs = new CopyOnWriteArrayList<>();
         initializeUI();
         loadCollisionDataFromJson("collision_dump.json");
     }
-
-    private void initializeData() {
-        collisionData = new int[DEFAULT_MAP_HEIGHT][DEFAULT_MAP_WIDTH];
-        npcs = new CopyOnWriteArrayList<>();
-
-        // Add some sample NPCs
-//        npcs.add(new SimNpc(new Point(20, 20), Color.RED, "Guard"));
-//        npcs.add(new SimNpc(new Point(30, 30), Color.BLUE, "Merchant"));
-//        npcs.add(new SimNpc(new Point(15, 35), Color.GREEN, "Goblin"));
-    }
-
     private void initializeUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -142,7 +125,7 @@ public class SimulationVisualizer extends JFrame {
         simulateButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(simulateButton);
 
-        clearPathButton = new JButton("Clear Paths");
+        JButton clearPathButton = new JButton("Clear Paths");
         clearPathButton.addActionListener(e -> {
             tilePanel.clearPaths();
             tilePanel.repaint();
@@ -184,66 +167,24 @@ public class SimulationVisualizer extends JFrame {
     private JPanel createZoomControlPanel() {
         JPanel zoomPanel = new JPanel(new GridLayout(2, 2, 5, 5));
 
-        zoomInButton = new JButton("Zoom In");
+        // Zoom control buttons
+        JButton zoomInButton = new JButton("Zoom In");
         zoomInButton.addActionListener(e -> tilePanel.zoomIn());
         zoomPanel.add(zoomInButton);
 
-        zoomOutButton = new JButton("Zoom Out");
+        JButton zoomOutButton = new JButton("Zoom Out");
         zoomOutButton.addActionListener(e -> tilePanel.zoomOut());
         zoomPanel.add(zoomOutButton);
 
-        resetZoomButton = new JButton("Reset Zoom");
+        JButton resetZoomButton = new JButton("Reset Zoom");
         resetZoomButton.addActionListener(e -> tilePanel.resetZoom());
         zoomPanel.add(resetZoomButton);
 
-        centerViewButton = new JButton("Center View");
+        JButton centerViewButton = new JButton("Center View");
         centerViewButton.addActionListener(e -> tilePanel.centerView());
         zoomPanel.add(centerViewButton);
 
         return zoomPanel;
-    }
-
-    private void addKeyboardShortcuts() {
-        // Add keyboard shortcuts for zoom controls
-        InputMap inputMap = getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap actionMap = getRootPane().getActionMap();
-
-        // Zoom in: Ctrl + Plus or Ctrl + Equals
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PLUS, InputEvent.CTRL_DOWN_MASK), "zoomIn");
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK), "zoomIn");
-        actionMap.put("zoomIn", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tilePanel.zoomIn();
-            }
-        });
-
-        // Zoom out: Ctrl + Minus
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, InputEvent.CTRL_DOWN_MASK), "zoomOut");
-        actionMap.put("zoomOut", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tilePanel.zoomOut();
-            }
-        });
-
-        // Reset zoom: Ctrl + 0
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_0, InputEvent.CTRL_DOWN_MASK), "resetZoom");
-        actionMap.put("resetZoom", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tilePanel.resetZoom();
-            }
-        });
-
-        // Center view: Ctrl + Shift + C
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "centerView");
-        actionMap.put("centerView", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tilePanel.centerView();
-            }
-        });
     }
 
     private JPanel createLegend() {
@@ -287,14 +228,18 @@ public class SimulationVisualizer extends JFrame {
             // Place player at first tile relative to minX/minY (this is the tile collision data was generated from)
             int playerLocalX = tiles.get(0).getWorldPointX() - minX;
             int playerLocalY = tiles.get(0).getWorldPointY() - minY;
-            simulationEngine.setPlayerPosition(new Point(playerLocalX, playerLocalY));
+            int playerFlippedY = height - 1 - playerLocalY;
+            simulationEngine.setPlayerPosition(new Point(playerLocalX, playerFlippedY));
 
             for (TileCollisionDump tile : tiles) {
                 int localX = tile.getWorldPointX() - minX;
                 int localY = tile.getWorldPointY() - minY;
 
-                if (localX >= 0 && localX < width && localY >= 0 && localY < height) {
-                    collisionData[localY][localX] = tile.getRawFlags();
+                // Flip the Y coordinate to correct the reflection
+                int flippedY = height - 1 - localY;
+
+                if (localX >= 0 && localX < width && flippedY >= 0 && flippedY < height) {
+                    collisionData[flippedY][localX] = tile.getRawFlags();
                 }
             }
 
