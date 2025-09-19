@@ -114,6 +114,9 @@ public class ExamplePlugin extends Plugin {
     private void dumpCollisionData() {
         int distance = 104;
         final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
+        if (client.getTopLevelWorldView().isInstance()) {
+            log.info("Player is in instance world location: {}", client.getLocalPlayer().getWorldLocation());
+        }
         tileDistances.put(client.getLocalPlayer().getWorldLocation(), 0);
 
         List<TileCollisionDump> dump = new ArrayList<>();
@@ -124,8 +127,7 @@ public class ExamplePlugin extends Plugin {
             for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
                 WorldPoint point = kvp.getKey();
                 LocalPoint localPoint;
-                if (client.getTopLevelWorldView().isInstance())
-                {
+                if (client.getTopLevelWorldView().isInstance()) {
                     WorldPoint worldPoint = WorldPoint.toLocalInstance(client.getTopLevelWorldView(), point)
                             .stream()
                             .findFirst()

@@ -4,6 +4,9 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.tile.MovementFlag;
 import com.kraken.api.sim.SimNpc;
+import com.kraken.api.sim.SimulationEngine;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
 
@@ -18,13 +21,31 @@ import java.util.Set;
 
 import static com.kraken.api.sim.ui.SimulationVisualizer.*;
 
+/**
+ * This class is responsible for drawing on the canvas presented by the Simulation Visualizer. It handles
+ * updating and drawing player and NPC paths based on updates made by the simulation engine. It also handles
+ * user mouse and keyboard input on UI elements.
+ */
 @Slf4j
 @Singleton
 public class TilePanel extends JPanel {
+
+    // These are the points the user has selected for the player to simulate
+    @Getter
     private final List<Point> playerPath = new ArrayList<>();
+
+    // This is the path to the destination tile (playerPath.get(playerPath.size() - 1)); calculated
+    // using BFS
+    @Getter
+    @Setter
+    private List<Point> calculatedPlayerPath = new ArrayList<>();
+
+    @Getter
     private final Map<SimNpc, List<Point>> npcPaths = new HashMap<>();
+
     private Point hoveredTile = null;
     private final SimulationVisualizer visualizer;
+    private final SimulationEngine engine;
 
     // Zoom and pan variables
     private double zoomLevel = 1.0;
@@ -38,8 +59,9 @@ public class TilePanel extends JPanel {
     private boolean isPanning = false;
 
     @Inject
-    public TilePanel(SimulationVisualizer visualizer) {
+    public TilePanel(final SimulationVisualizer visualizer, final SimulationEngine engine) {
         this.visualizer = visualizer;
+        this.engine = engine;
         setPreferredSize(new Dimension(
                 (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel),
                 (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
@@ -119,13 +141,13 @@ public class TilePanel extends JPanel {
         int tileX = tileCoords.x;
         int tileY = tileCoords.y;
 
-        if (tileX >= 0 && tileX < DEFAULT_MAP_WIDTH &&
-                tileY >= 0 && tileY < DEFAULT_MAP_HEIGHT) {
-
+        int[][] data = visualizer.getCollisionData();
+        if (tileY >= 0 && tileY < data.length && tileX >= 0 && tileX < data[0].length) {
             if (SwingUtilities.isLeftMouseButton(e)) {
+
                 // Move player
-                Point oldPos = new Point(visualizer.getPlayerPosition());
-                visualizer.setPlayerPosition(new Point(tileX, tileY));
+                Point oldPos = new Point(engine.getPlayerPosition());
+                Point newTarget = new Point(tileX, tileY);
 
                 // Record path
                 if (!playerPath.isEmpty() && !playerPath.get(playerPath.size() - 1).equals(oldPos)) {
@@ -133,7 +155,9 @@ public class TilePanel extends JPanel {
                 } else if (playerPath.isEmpty()) {
                     playerPath.add(oldPos);
                 }
-                playerPath.add(visualizer.getPlayerPosition());
+
+                engine.setPlayerTarget(newTarget);
+                playerPath.add(engine.getPlayerPosition());
 
             } else if (SwingUtilities.isRightMouseButton(e)) {
                 // Toggle wall
@@ -143,8 +167,6 @@ public class TilePanel extends JPanel {
                     visualizer.getCollisionData()[tileY][tileX] = 0;
                 }
             }
-            // Note: Removed middle mouse button NPC creation since it's now used for panning
-
             repaint();
         }
     }
@@ -154,8 +176,9 @@ public class TilePanel extends JPanel {
         int tileX = tileCoords.x;
         int tileY = tileCoords.y;
 
-        if (tileX >= 0 && tileX < DEFAULT_MAP_WIDTH &&
-                tileY >= 0 && tileY < DEFAULT_MAP_HEIGHT) {
+        int[][] data = visualizer.getCollisionData();
+        if (tileY >= 0 && tileY < data.length &&
+                tileX >= 0 && tileX < data[0].length) {
             hoveredTile = new Point(tileX, tileY);
             updateInfoLabel(tileX, tileY);
         } else {
@@ -217,9 +240,13 @@ public class TilePanel extends JPanel {
     }
 
     private void updatePreferredSize() {
+        int[][] data = visualizer.getCollisionData();
+        int width = data[0].length;
+        int height = data.length;
+
         setPreferredSize(new Dimension(
-                (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel),
-                (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
+                width * TILE_SIZE,
+                height * TILE_SIZE
         ));
         revalidate();
     }
@@ -236,8 +263,9 @@ public class TilePanel extends JPanel {
         g2d.scale(zoomLevel, zoomLevel);
 
         // Draw tiles
-        for (int y = 0; y < DEFAULT_MAP_HEIGHT; y++) {
-            for (int x = 0; x < DEFAULT_MAP_WIDTH; x++) {
+        int[][] data = visualizer.getCollisionData();
+        for (int y = 0; y < data.length; y++) {
+            for (int x = 0; x < data[y].length; x++) {
                 drawTile(g2d, x, y);
             }
         }
@@ -312,45 +340,30 @@ public class TilePanel extends JPanel {
         if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) {
             g.drawLine(px, py, px, py + TILE_SIZE);
         }
-
-        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH_EAST) != 0) {
-            g.drawLine(px, py, px + TILE_SIZE, py);
-            g.drawLine(px + TILE_SIZE, py, px + TILE_SIZE, py + TILE_SIZE);
-        }
-
-        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH_WEST) != 0) {
-            g.drawLine(px, py, px + TILE_SIZE, py);
-            g.drawLine(px, py, px, py + TILE_SIZE);
-        }
-
-        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH_EAST) != 0) {
-            g.drawLine(px, py + TILE_SIZE, px + TILE_SIZE, py + TILE_SIZE);
-            g.drawLine(px + TILE_SIZE, py, px + TILE_SIZE, py + TILE_SIZE);
-        }
-
-        if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH_WEST) != 0) {
-            g.drawLine(px, py + TILE_SIZE, px + TILE_SIZE, py + TILE_SIZE);
-            g.drawLine(px, py, px, py + TILE_SIZE);
-        }
     }
 
     private void drawGrid(Graphics2D g) {
+        int[][] data = visualizer.getCollisionData();
+        int width = data[0].length;
+        int height = data.length;
+
         g.setColor(new Color(100, 100, 100, 50));
-        for (int x = 0; x <= DEFAULT_MAP_WIDTH; x++) {
-            g.drawLine(x * TILE_SIZE, 0, x * TILE_SIZE, DEFAULT_MAP_HEIGHT * TILE_SIZE);
+        for (int x = 0; x <= width; x++) {
+            g.drawLine(x * TILE_SIZE, 0, x * TILE_SIZE, height * TILE_SIZE);
         }
-        for (int y = 0; y <= DEFAULT_MAP_HEIGHT; y++) {
-            g.drawLine(0, y * TILE_SIZE, DEFAULT_MAP_WIDTH * TILE_SIZE, y * TILE_SIZE);
+        for (int y = 0; y <= height; y++) {
+            g.drawLine(0, y * TILE_SIZE, width * TILE_SIZE, y * TILE_SIZE);
         }
     }
 
     private void drawPlayer(Graphics2D g) {
-        g.setColor(Color.YELLOW);
-        g.fillOval(visualizer.getPlayerPosition().x * TILE_SIZE + 2, visualizer.getPlayerPosition().y * TILE_SIZE + 2,
+        g.setColor(new Color(6, 239, 79, 255));
+        g.setStroke(new BasicStroke(2));
+        g.fillRect(engine.getPlayerPosition().x * TILE_SIZE + 2, engine.getPlayerPosition().y * TILE_SIZE + 2,
                 TILE_SIZE - 4, TILE_SIZE - 4);
         g.setColor(Color.BLACK);
-        g.drawString("P", visualizer.getPlayerPosition().x * TILE_SIZE + 6,
-                visualizer.getPlayerPosition().y * TILE_SIZE + 14);
+        g.drawString("P", engine.getPlayerPosition().x * TILE_SIZE + 6,
+                engine.getPlayerPosition().y * TILE_SIZE + 14);
     }
 
     private void drawNPCs(Graphics2D g) {
@@ -363,15 +376,33 @@ public class TilePanel extends JPanel {
 
     private void drawPaths(Graphics2D g) {
         // Draw player path
-        if (playerPath.size() > 1) {
-            g.setColor(new Color(255, 255, 0, 100));
+        if (engine.getPlayerCurrentPath().size() > 1) {
+            g.setColor(new Color(10, 236, 55, 200));
             g.setStroke(new BasicStroke(2));
-            for (int i = 0; i < playerPath.size() - 1; i++) {
-                Point p1 = playerPath.get(i);
-                Point p2 = playerPath.get(i + 1);
+
+            for (int i = 0; i < engine.getPlayerCurrentPath().size() - 1; i++) {
+                Point p1 = engine.getPlayerCurrentPath().get(i);
+                Point p2 = engine.getPlayerCurrentPath().get(i + 1);
                 g.drawLine(p1.x * TILE_SIZE + TILE_SIZE/2, p1.y * TILE_SIZE + TILE_SIZE/2,
                         p2.x * TILE_SIZE + TILE_SIZE/2, p2.y * TILE_SIZE + TILE_SIZE/2);
             }
+
+            // Draw small ovals at each path point
+            g.setColor(new Color(10, 236, 55, 255)); // Solid color for ovals
+            for (Point p : engine.getPlayerCurrentPath()) {
+                int centerX = p.x * TILE_SIZE + TILE_SIZE/2;
+                int centerY = p.y * TILE_SIZE + TILE_SIZE/2;
+                g.fillOval(centerX - 3, centerY - 3, 6, 6); // 6x6 pixel oval
+            }
+        }
+
+        if(engine.getTargetPosition() != null) {
+            g.setColor(new Color(239, 122, 6, 255));
+            g.setStroke(new BasicStroke(2));
+            g.fillRect(engine.getTargetPosition().x * TILE_SIZE + 2, engine.getTargetPosition().y * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            g.setColor(Color.BLACK);
+            g.drawString("T", engine.getTargetPosition().x * TILE_SIZE + 6,
+                    engine.getTargetPosition().y * TILE_SIZE + 14);
         }
 
         // Draw NPC paths
@@ -396,6 +427,9 @@ public class TilePanel extends JPanel {
     public void clearPaths() {
         playerPath.clear();
         npcPaths.clear();
+        engine.stop();
+        engine.setPlayerTarget(null);
+        engine.getPlayerCurrentPath().clear();
     }
 
     public void addNPCPathPoint(SimNpc npc, Point point) {

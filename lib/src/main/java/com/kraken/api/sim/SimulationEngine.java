@@ -6,17 +6,20 @@ import com.kraken.api.sim.ui.SimulationVisualizer;
 import com.kraken.api.sim.ui.TilePanel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
 
 import javax.swing.*;
 import java.awt.*;
-
-import static com.kraken.api.sim.ui.SimulationVisualizer.DEFAULT_MAP_HEIGHT;
-import static com.kraken.api.sim.ui.SimulationVisualizer.DEFAULT_MAP_WIDTH;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 
 /**
  * Simulation engine for NPC movement
  */
+@Slf4j
 @Singleton
 public class SimulationEngine {
     private Timer timer;
@@ -34,13 +37,29 @@ public class SimulationEngine {
     @Setter
     private int[][] collisionData = new int[2][2];
 
-    public void start(int tickDelay) {
+    int tick = 0;
+
+    @Getter
+    @Setter
+    private Point playerPosition;
+
+    @Getter
+    @Setter
+    private Point targetPosition;
+
+    @Getter
+    private java.util.List<Point> playerCurrentPath = new ArrayList<>();
+
+
+    private int playerPathIndex = 0;
+
+    public void start() {
         if (timer != null) {
             timer.stop();
         }
 
         running = true;
-        timer = new Timer(tickDelay, e -> tick());
+        timer = new Timer(600, e -> tick());
         timer.start();
     }
 
@@ -48,14 +67,21 @@ public class SimulationEngine {
         if (timer != null) {
             timer.stop();
             running = false;
+            tick = 0;
         }
     }
 
     private void tick() {
-        // Simple NPC AI: move towards player if within range
+        if(tick == 0) {
+            // On the first tick snap the players point to their starting position
+            if(!tilePanel.getPlayerPath().isEmpty()) {
+                setPlayerPosition(tilePanel.getPlayerPath().get(0));
+            }
+        }
+
         for (SimNpc npc : visualizer.getNpcs()) {
             Point npcPos = npc.getPosition();
-            Point playerPos = visualizer.getPlayerPosition();
+            Point playerPos = getPlayerPosition();
 
             // Calculate distance
             double distance = npcPos.distance(playerPos);
@@ -70,7 +96,26 @@ public class SimulationEngine {
             }
         }
 
+
+        log.info("Tick: {}, Player Path Size: {}", tick, playerCurrentPath.size());
+        if (tick > 0 && !playerCurrentPath.isEmpty()) {
+            if (playerPathIndex < playerCurrentPath.size() - 1) {
+                playerPathIndex++;
+                Point nextStep = playerCurrentPath.get(playerPathIndex);
+                setPlayerPosition(nextStep);
+            }
+        }
+
         tilePanel.repaint();
+        tick += 1;
+    }
+
+    public void setPlayerTarget(Point target) {
+        Point start = getPlayerPosition();
+        playerCurrentPath = findPath(start, target);
+        targetPosition = target;
+        playerPathIndex = 0;
+        log.info("Calculated path of size: {}", playerCurrentPath.size());
     }
 
     private Point calculateNextMove(Point from, Point to) {
@@ -103,10 +148,61 @@ public class SimulationEngine {
         return null;
     }
 
+    private java.util.List<Point> findPath(Point start, Point goal) {
+        boolean[][] visited = new boolean[collisionData.length][collisionData[0].length];
+        Point[][] parent = new Point[collisionData.length][collisionData[0].length];
+
+        java.util.Queue<Point> queue = new ArrayDeque<>();
+        queue.add(start);
+        visited[start.y][start.x] = true;
+
+        int[] dx = {1, -1, 0, 0, 1, 1, -1, -1};
+        int[] dy = {0, 0, 1, -1, 1, -1, 1, -1}; // SE, NE, SW, NW
+
+        while (!queue.isEmpty()) {
+            Point cur = queue.poll();
+
+            if (cur.equals(goal)) {
+                // reconstruct path
+                LinkedList<Point> path = new LinkedList<>();
+                for (Point at = goal; at != null; at = parent[at.y][at.x]) {
+                    path.addFirst(at);
+                }
+                return path;
+            }
+
+            for (int i = 0; i < 8; i++) {
+                Point next = new Point(cur.x + dx[i], cur.y + dy[i]);
+                if (!inBounds(next) || visited[next.y][next.x]) {
+                    continue;
+                }
+
+                // Skip diagonals if one of the cardinal neighbors is blocked
+                if (Math.abs(dx[i]) == 1 && Math.abs(dy[i]) == 1) {
+                    Point horiz = new Point(cur.x + dx[i], cur.y);
+                    Point vert  = new Point(cur.x, cur.y + dy[i]);
+                    if (!isValidMove(cur, horiz) || !isValidMove(cur, vert)) {
+                        continue; // blocked corner
+                    }
+                }
+
+                if (isValidMove(cur, next)) {
+                    visited[next.y][next.x] = true;
+                    parent[next.y][next.x] = cur;
+                    queue.add(next);
+                }
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    private boolean inBounds(Point p) {
+        return p.x >= 0 && p.x < collisionData[0].length && p.y >= 0 && p.y < collisionData.length;
+    }
+
     private boolean isValidMove(Point from, Point to) {
-        // Check bounds
-        if (to.x < 0 || to.x >= DEFAULT_MAP_WIDTH ||
-                to.y < 0 || to.y >= DEFAULT_MAP_HEIGHT) {
+        if (to.x < 0 || to.x >= collisionData[0].length || to.y < 0 || to.y >= collisionData.length) {
             return false;
         }
 

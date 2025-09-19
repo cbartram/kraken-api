@@ -10,7 +10,6 @@ import com.kraken.api.sim.SimulationEngine;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.CollisionDataFlag;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,7 +21,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Main visualizer for OSRS tile collision data and movement simulation
+ * Main visualizer for OSRS tile collision data and movement simulation. This class is responsible
+ * for the UI and frame for rendering the visualization.
  */
 @Slf4j
 @Singleton
@@ -33,7 +33,6 @@ public class SimulationVisualizer extends JFrame {
 
     private JButton simulateButton;
     private JButton clearPathButton;
-    private JSpinner tickDelaySpinner;
 
     // Zoom control buttons
     private JButton zoomInButton;
@@ -54,10 +53,6 @@ public class SimulationVisualizer extends JFrame {
     private int[][] collisionData;
 
     @Getter
-    @Setter
-    private Point playerPosition;
-
-    @Getter
     private List<SimNpc> npcs;
 
     @Inject
@@ -74,7 +69,6 @@ public class SimulationVisualizer extends JFrame {
 
     private void initializeData() {
         collisionData = new int[DEFAULT_MAP_HEIGHT][DEFAULT_MAP_WIDTH];
-        playerPosition = new Point(25, 25);
         npcs = new CopyOnWriteArrayList<>();
 
         // Add some sample NPCs
@@ -111,35 +105,41 @@ public class SimulationVisualizer extends JFrame {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Zoom controls
-        panel.add(new JLabel("Zoom Controls:"));
+        JLabel zoomLabel = new JLabel("Zoom Controls:");
+        zoomLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(zoomLabel);
+
         JPanel zoomPanel = createZoomControlPanel();
+        zoomPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(zoomPanel);
 
-        panel.add(Box.createVerticalStrut(10));
+        panel.add(Box.createVerticalStrut(15));
 
         // Display options
-        panel.add(new JLabel("Display Options:"));
+        JLabel displayLabel = new JLabel("Display Options:");
+        displayLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(displayLabel);
+
         showGridCheckbox = new JCheckBox("Show Grid", true);
         showGridCheckbox.addActionListener(e -> tilePanel.repaint());
+        showGridCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showGridCheckbox);
 
         showFlagsCheckbox = new JCheckBox("Show Collision Flags", true);
         showFlagsCheckbox.addActionListener(e -> tilePanel.repaint());
+        showFlagsCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showFlagsCheckbox);
 
-        panel.add(Box.createVerticalStrut(20));
+        panel.add(Box.createVerticalStrut(15));
 
         // Simulation controls
-        panel.add(new JLabel("Simulation:"));
-
-        JPanel tickPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        tickPanel.add(new JLabel("Tick Delay (ms):"));
-        tickDelaySpinner = new JSpinner(new SpinnerNumberModel(600, 100, 2000, 100));
-        tickPanel.add(tickDelaySpinner);
-        panel.add(tickPanel);
+        JLabel simLabel = new JLabel("Simulation:");
+        simLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(simLabel);
 
         simulateButton = new JButton("Start Simulation");
         simulateButton.addActionListener(e -> toggleSimulation(simulationEngine));
+        simulateButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(simulateButton);
 
         clearPathButton = new JButton("Clear Paths");
@@ -147,15 +147,21 @@ public class SimulationVisualizer extends JFrame {
             tilePanel.clearPaths();
             tilePanel.repaint();
         });
+        clearPathButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(clearPathButton);
 
-        panel.add(Box.createVerticalStrut(20));
+        panel.add(Box.createVerticalStrut(15));
 
-        // Collision flag legend
-        panel.add(new JLabel("Collision Types:"));
-        panel.add(createLegend());
+        // Collision legend
+        JLabel legendLabel = new JLabel("Collision Types:");
+        legendLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(legendLabel);
 
-        panel.add(Box.createVerticalStrut(20));
+        JPanel legend = createLegend();
+        legend.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(legend);
+
+        panel.add(Box.createVerticalStrut(15));
 
         // Instructions
         JTextArea instructions = new JTextArea(
@@ -167,15 +173,16 @@ public class SimulationVisualizer extends JFrame {
                         "• Hover: View tile info"
         );
         instructions.setEditable(false);
-        instructions.setBackground(panel.getBackground());
+        instructions.setOpaque(false); // transparent background
+        instructions.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        instructions.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(instructions);
 
         return panel;
     }
 
     private JPanel createZoomControlPanel() {
-        JPanel zoomPanel = new JPanel();
-        zoomPanel.setLayout(new GridLayout(2, 2, 5, 5));
+        JPanel zoomPanel = new JPanel(new GridLayout(2, 2, 5, 5));
 
         zoomInButton = new JButton("Zoom In");
         zoomInButton.addActionListener(e -> tilePanel.zoomIn());
@@ -192,9 +199,6 @@ public class SimulationVisualizer extends JFrame {
         centerViewButton = new JButton("Center View");
         centerViewButton.addActionListener(e -> tilePanel.centerView());
         zoomPanel.add(centerViewButton);
-
-        // Add keyboard shortcuts
-        addKeyboardShortcuts();
 
         return zoomPanel;
     }
@@ -269,28 +273,34 @@ public class SimulationVisualizer extends JFrame {
             java.lang.reflect.Type listType = new TypeToken<List<TileCollisionDump>>() {}.getType();
             List<TileCollisionDump> tiles = gson.fromJson(reader, listType);
 
-            // Determine bounds (you could also just use DEFAULT_MAP_WIDTH/HEIGHT)
-            int minX = tiles.stream().mapToInt(TileCollisionDump::getSceneX).min().orElse(0);
-            int minY = tiles.stream().mapToInt(TileCollisionDump::getSceneY).min().orElse(0);
-            int maxX = tiles.stream().mapToInt(TileCollisionDump::getSceneX).max().orElse(DEFAULT_MAP_WIDTH);
-            int maxY = tiles.stream().mapToInt(TileCollisionDump::getSceneY).max().orElse(DEFAULT_MAP_HEIGHT);
+            // Find bounds of world coordinates
+            int minX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).min().orElse(0);
+            int minY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).min().orElse(0);
+            int maxX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).max().orElse(DEFAULT_MAP_WIDTH);
+            int maxY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).max().orElse(DEFAULT_MAP_HEIGHT);
 
             int width = maxX - minX + 1;
             int height = maxY - minY + 1;
 
             collisionData = new int[height][width];
-            playerPosition.setLocation(tiles.get(0).getSceneX(), tiles.get(0).getSceneY());
+
+            // Place player at first tile relative to minX/minY (this is the tile collision data was generated from)
+            int playerLocalX = tiles.get(0).getWorldPointX() - minX;
+            int playerLocalY = tiles.get(0).getWorldPointY() - minY;
+            simulationEngine.setPlayerPosition(new Point(playerLocalX, playerLocalY));
 
             for (TileCollisionDump tile : tiles) {
-                int localX = tile.getSceneX();
-                int localY = tile.getSceneY();
+                int localX = tile.getWorldPointX() - minX;
+                int localY = tile.getWorldPointY() - minY;
+
                 if (localX >= 0 && localX < width && localY >= 0 && localY < height) {
                     collisionData[localY][localX] = tile.getRawFlags();
                 }
             }
 
             simulationEngine.setCollisionData(collisionData);
-            log.info("Loaded collision data from JSON (" + tiles.size() + " tiles)");
+            log.info("Loaded collision data from JSON (" + tiles.size() + " tiles). " +
+                    "Bounds: X[" + minX + "," + maxX + "] Y[" + minY + "," + maxY + "]");
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -302,8 +312,7 @@ public class SimulationVisualizer extends JFrame {
             engine.stop();
             simulateButton.setText("Start Simulation");
         } else {
-            int delay = (int) tickDelaySpinner.getValue();
-            engine.start(delay);
+            engine.start();
             simulateButton.setText("Stop Simulation");
         }
     }
