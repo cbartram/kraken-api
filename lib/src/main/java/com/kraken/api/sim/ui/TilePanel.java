@@ -53,6 +53,17 @@ public class TilePanel extends JPanel implements SimulationObserver {
                 (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
         ));
         setBackground(Color.BLACK);
+
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if(e.getKeyCode() == KeyEvent.VK_P && hoveredTile != null) {
+                    engine.setPlayerPosition(hoveredTile);
+                    repaint();
+                }
+            }
+        });
+
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
