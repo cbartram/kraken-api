@@ -30,21 +30,16 @@ public class SimulationVisualizer extends JFrame {
     @Getter
     private JCheckBox showFlagsCheckbox;
 
-    @Getter
-    private JLabel infoLabel;
+    private final SimulationEngine engine;
+    private final TilePanel tilePanel;
+    private final SimulationUIState state;
 
     @Inject
-    private SimulationEngine engine;
+    public SimulationVisualizer(SimulationEngine engine, TilePanel tilePanel, SimulationUIState state) {
+        this.engine = engine;
+        this.tilePanel = tilePanel;
+        this.state = state;
 
-    @Inject
-    private TilePanel tilePanel;
-
-    /**
-     * Initializes the class. There are some weird Guice injection cyclic dependency issues
-     * right now where only field level injection works thus this method is needed.
-     */
-    public void init() {
-//        engine.init();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -56,12 +51,8 @@ public class SimulationVisualizer extends JFrame {
         JPanel controlPanel = createControlPanel();
         add(controlPanel, BorderLayout.EAST);
 
-        // Info panel
-        JPanel infoPanel = new JPanel();
-        infoLabel = new JLabel("Hover over tiles for information");
-        infoPanel.add(infoLabel);
-        add(infoPanel, BorderLayout.SOUTH);
-
+        // Info panel TODO This wont work because theres no listener to update the shared state
+        // this should probably be information displayed a different way within TilePanel itself (like a little hover menu)
         pack();
         setLocationRelativeTo(null);
     }
@@ -92,12 +83,18 @@ public class SimulationVisualizer extends JFrame {
         panel.add(displayLabel);
 
         showGridCheckbox = new JCheckBox("Show Grid", true);
-        showGridCheckbox.addActionListener(e -> tilePanel.repaint());
+        showGridCheckbox.addActionListener(e -> {
+            state.setShowGrid(showGridCheckbox.isSelected());
+            tilePanel.repaint();
+        });
         showGridCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showGridCheckbox);
 
         showFlagsCheckbox = new JCheckBox("Show Collision Flags", true);
-        showFlagsCheckbox.addActionListener(e -> tilePanel.repaint());
+        showFlagsCheckbox.addActionListener(e -> {
+            state.setShowFlags(showFlagsCheckbox.isSelected());
+            tilePanel.repaint();
+        });
         showFlagsCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showFlagsCheckbox);
 
@@ -117,7 +114,7 @@ public class SimulationVisualizer extends JFrame {
         simPanel.add(simulateButton);
         JButton clearPathButton = new JButton("Clear Paths");
         clearPathButton.addActionListener(e -> {
-            tilePanel.clearPaths();
+            engine.reset();
             tilePanel.repaint();
         });
         clearPathButton.setAlignmentX(Component.LEFT_ALIGNMENT);

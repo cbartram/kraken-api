@@ -15,7 +15,7 @@ public class Simulation {
         Injector injector = Guice.createInjector();
         SimulationVisualizer visualizer = injector.getInstance(SimulationVisualizer.class);
         SwingUtilities.invokeLater(() -> {
-            visualizer.init();
+//            visualizer.init();
             visualizer.setVisible(true);
         });
     }

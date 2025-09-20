@@ -391,4 +391,14 @@ public class SimulationEngine {
     public void addNPCPathPoint(SimNpc npc, Point point) {
         npcPaths.computeIfAbsent(npc, k -> new ArrayList<>()).add(point);
     }
+
+    /**
+     * Resets the state of the simulation
+     */
+    public void reset() {
+        npcPaths.clear();
+        stop();
+        targetPosition = null;
+        playerCurrentPath.clear();
+    }
 }

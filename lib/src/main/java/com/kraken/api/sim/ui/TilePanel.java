@@ -8,7 +8,6 @@ import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.SimulationEngine;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
-import net.runelite.client.eventbus.Subscribe;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,8 +27,10 @@ import static com.kraken.api.sim.ui.SimulationVisualizer.*;
 @Singleton
 public class TilePanel extends JPanel implements SimulationObserver {
     private Point hoveredTile = null;
-    private final SimulationVisualizer visualizer;
+//    private final SimulationVisualizer visualizer;
     private final SimulationEngine engine;
+    private final SimulationUIState state;
+
 
     // Zoom and pan variables
     private double zoomLevel = 1.0;
@@ -43,8 +44,8 @@ public class TilePanel extends JPanel implements SimulationObserver {
     private boolean isPanning = false;
 
     @Inject
-    public TilePanel(final SimulationVisualizer visualizer, final SimulationEngine engine) {
-        this.visualizer = visualizer;
+    public TilePanel(final SimulationUIState state, final SimulationEngine engine) {
+        this.state = state;
         this.engine = engine;
         this.engine.addObserver(this);
         setPreferredSize(new Dimension(
@@ -52,7 +53,6 @@ public class TilePanel extends JPanel implements SimulationObserver {
                 (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
         ));
         setBackground(Color.BLACK);
-
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -202,13 +202,14 @@ public class TilePanel extends JPanel implements SimulationObserver {
      * @param y Y coordinate
      */
     private void updateInfoLabel(int x, int y) {
-        int flags = engine.getCollisionData()[y][x];
-        Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
-        String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
-        visualizer.getInfoLabel().setText(String.format("Tile [%d, %d] - Flags: %s (0x%04X) - Zoom: %.1fx",
-                x, y, flagsStr, flags, zoomLevel));
+        if (state.getInfoLabel() != null) {
+            int flags = engine.getCollisionData()[y][x];
+            Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
+            String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
+            state.getInfoLabel().setText(String.format("Tile [%d, %d] - Flags: %s (0x%04X) - Zoom: %.1fx",
+                    x, y, flagsStr, flags, zoomLevel));
+        }
     }
-
     /**
      * Zooms the map in
      */
@@ -270,14 +271,11 @@ public class TilePanel extends JPanel implements SimulationObserver {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Apply zoom and pan transformations
         g2d.translate(panX, panY);
         g2d.scale(zoomLevel, zoomLevel);
 
-        // Draw tiles
         int[][] data = engine.getCollisionData();
         for (int y = 0; y < data.length; y++) {
             for (int x = 0; x < data[y].length; x++) {
@@ -285,15 +283,11 @@ public class TilePanel extends JPanel implements SimulationObserver {
             }
         }
 
-        // Draw paths
         drawPaths(g2d);
-
-        // Draw entities
         drawPlayer(g2d);
         drawNPCs(g2d);
 
-        // Draw grid
-        if (visualizer.getShowGridCheckbox().isSelected()) {
+        if (state.isShowGrid()) {
             drawGrid(g2d);
         }
 
@@ -322,7 +316,7 @@ public class TilePanel extends JPanel implements SimulationObserver {
         g.setColor(new Color(50, 50, 50));
         g.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
-        if (flags != 0 && visualizer.getShowFlagsCheckbox().isSelected()) {
+        if (flags != 0 && state.isShowFlags()) {
             // Full block = fill whole tile
             if ((flags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0) {
                 g.setColor(Color.DARK_GRAY);
@@ -467,15 +461,5 @@ public class TilePanel extends JPanel implements SimulationObserver {
                 }
             }
         }
-    }
-
-    /**
-     * Clears and resets all paths for both NPCs and players.
-     */
-    public void clearPaths() {
-        engine.getNpcPaths().clear();
-        engine.stop();
-        engine.setPlayerTarget(null);
-        engine.getPlayerCurrentPath().clear();
     }
 }
