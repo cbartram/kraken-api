@@ -1,4 +1,4 @@
-package com.kraken.api.sim;
+package com.kraken.api.sim.model;
 
 import lombok.*;
 

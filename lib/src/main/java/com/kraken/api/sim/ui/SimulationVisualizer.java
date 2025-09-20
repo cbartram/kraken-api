@@ -44,6 +44,7 @@ public class SimulationVisualizer extends JFrame {
      * right now where only field level injection works thus this method is needed.
      */
     public void init() {
+        engine.init();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 

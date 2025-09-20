@@ -3,7 +3,7 @@ package com.kraken.api.sim.ui;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.tile.MovementFlag;
-import com.kraken.api.sim.SimNpc;
+import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.SimulationEngine;
 import lombok.Getter;
 import lombok.Setter;

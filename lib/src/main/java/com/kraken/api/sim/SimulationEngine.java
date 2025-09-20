@@ -4,15 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.interaction.tile.TileCollisionDump;
-import com.kraken.api.sim.ui.SimulationVisualizer;
+import com.kraken.api.interaction.tile.CollisionDumper;
+import com.kraken.api.interaction.tile.CollisionMap;
+import com.kraken.api.sim.model.GameState;
+import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.ui.TilePanel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
 
-import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
 import java.io.FileReader;
@@ -31,12 +32,15 @@ public class SimulationEngine {
     @Inject
     private TilePanel tilePanel;
 
+    @Inject
+    private CollisionDumper dumper;
+
     @Getter
     private boolean running = false;
 
     @Getter
     @Setter
-    private int[][] collisionData = new int[104][104];
+    private int[][] collisionData;
 
     @Getter
     @Setter
@@ -57,8 +61,11 @@ public class SimulationEngine {
     private int playerPathIndex = 0;
     private Stack<GameState> stateHistory = new Stack<>();
 
-    public SimulationEngine() {
-        loadCollisionData("./collision_dump.json");
+    public void init() {
+        // TODO Make this also be able to load directly from game with .collect() since this can be used from an API context
+        CollisionMap collisionMap = dumper.loadFromFile("collision_data.json");
+        playerPosition = new Point(collisionMap.getPlayerX(), collisionMap.getPlayerY());
+        collisionData = collisionMap.getData();
     }
 
     /**
@@ -342,52 +349,5 @@ public class SimulationEngine {
         if (dx < 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
         if (dy > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
         return dy >= 0 || (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
-    }
-
-    /**
-     * Loads the Collision data from a JSON file
-     * @param filePath String the file path containing JSON encoded collision data
-     */
-    private void loadCollisionData(final String filePath) {
-        try (FileReader reader = new FileReader(filePath)) {
-            Gson gson = new Gson();
-            java.lang.reflect.Type listType = new TypeToken<List<TileCollisionDump>>() {}.getType();
-            List<TileCollisionDump> tiles = gson.fromJson(reader, listType);
-
-            // Find bounds of world coordinates
-            int minX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).min().orElse(0);
-            int minY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).min().orElse(0);
-            int maxX = tiles.stream().mapToInt(TileCollisionDump::getWorldPointX).max().orElse(50);
-            int maxY = tiles.stream().mapToInt(TileCollisionDump::getWorldPointY).max().orElse(50);
-
-            int width = maxX - minX + 1;
-            int height = maxY - minY + 1;
-
-            this.collisionData = new int[height][width];
-
-            // Place player at first tile relative to minX/minY (this is the tile collision data was generated from)
-            int playerLocalX = tiles.get(0).getWorldPointX() - minX;
-            int playerLocalY = tiles.get(0).getWorldPointY() - minY;
-            int playerFlippedY = height - 1 - playerLocalY;
-            setPlayerPosition(new Point(playerLocalX, playerFlippedY));
-
-            for (TileCollisionDump tile : tiles) {
-                int localX = tile.getWorldPointX() - minX;
-                int localY = tile.getWorldPointY() - minY;
-
-                // Flip the Y coordinate to correct the reflection
-                int flippedY = height - 1 - localY;
-
-                if (localX >= 0 && localX < width && flippedY >= 0 && flippedY < height) {
-                    this.collisionData[flippedY][localX] = tile.getRawFlags();
-                }
-            }
-
-            log.info("Loaded collision data from JSON (" + tiles.size() + " tiles). " +
-                    "Bounds: X[" + minX + "," + maxX + "] Y[" + minY + "," + maxY + "]");
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
