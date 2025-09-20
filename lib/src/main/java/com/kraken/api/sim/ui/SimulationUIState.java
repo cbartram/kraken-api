@@ -15,6 +15,7 @@ public class SimulationUIState {
     private boolean showFlags = true;
     private boolean showTooltip = false;
     private boolean playerRunning = false;
+    private boolean npcEditDialogOpen = false;
     private JLabel infoLabel;
     private Point hoveredTile;
     private double zoomLevel = 1.0;

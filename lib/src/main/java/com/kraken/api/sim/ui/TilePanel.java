@@ -6,6 +6,7 @@ import com.kraken.api.interaction.tile.MovementFlag;
 import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.SimulationEngine;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
 
@@ -31,6 +32,9 @@ public class TilePanel extends JPanel implements SimulationObserver {
     private Point hoverTooltipPosition = null;
     private final SimulationEngine engine;
     private final SimulationUIState state;
+    private boolean npcPlacementMode = false;
+    private SimNpc hoveredNpc = null;
+    private String temporaryMessage = null;
 
     // Zoom and pan variables
     private double zoomLevel = 1.0;
@@ -42,6 +46,10 @@ public class TilePanel extends JPanel implements SimulationObserver {
     private int panY = 0;
     private Point lastMousePoint = null;
     private boolean isPanning = false;
+
+    // TODO Don't love this means of transferring data between the classes
+    @Setter
+    private SimulationVisualizer visualizer;
 
     @Inject
     public TilePanel(final SimulationUIState state, final SimulationEngine engine) {
@@ -155,85 +163,6 @@ public class TilePanel extends JPanel implements SimulationObserver {
     }
 
     /**
-     * Handles left and right mouse button clicks to either set the players target destination
-     * or configure additional obstacles for the pathing algorithm to contend with.
-     * @param e Mouse event
-     */
-    private void handleMouseClick(MouseEvent e) {
-        Point tileCoords = screenToTile(e.getX(), e.getY());
-        int tileX = tileCoords.x;
-        int tileY = tileCoords.y;
-
-        int[][] data = engine.getCollisionData();
-        if (tileY >= 0 && tileY < data.length && tileX >= 0 && tileX < data[0].length) {
-            if (SwingUtilities.isLeftMouseButton(e)) {
-                engine.setPlayerTarget(new Point(tileX, tileY));
-            } else if (SwingUtilities.isRightMouseButton(e)) {
-                // Toggle wall
-                if (engine.getCollisionData()[tileY][tileX] == 0) {
-                    engine.getCollisionData()[tileY][tileX] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
-                } else {
-                    engine.getCollisionData()[tileY][tileX] = 0;
-                }
-            }
-            repaint();
-        }
-    }
-
-    /**
-     * Handles moving a mouse across the grid highlighting the hovered tile.
-     * @param e MouseEvent
-     */
-    private void handleMouseMove(MouseEvent e) {
-        Point tileCoords = screenToTile(e.getX(), e.getY());
-        int tileX = tileCoords.x;
-        int tileY = tileCoords.y;
-
-        int[][] data = engine.getCollisionData();
-        if (tileY >= 0 && tileY < data.length &&
-                tileX >= 0 && tileX < data[0].length) {
-            hoveredTile = new Point(tileX, tileY);
-
-            if(state.isShowTooltip()) {
-                updateHoverTooltip(tileX, tileY, e.getX(), e.getY());
-            }
-            updateInfoLabel(tileX, tileY);
-        } else {
-            hoveredTile = null;
-            hoverTooltipText = null;
-            hoverTooltipPosition = null;
-        }
-        repaint();
-    }
-
-    /**
-     * Updates the hover tooltip information and position
-     * @param x Tile X coordinate
-     * @param y Tile Y coordinate
-     * @param mouseX Mouse screen X coordinate
-     * @param mouseY Mouse screen Y coordinate
-     */
-    private void updateHoverTooltip(int x, int y, int mouseX, int mouseY) {
-        int flags = engine.getCollisionData()[y][x];
-        Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
-        String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
-
-        hoverTooltipText = String.format("<html>Tile [%d, %d]<br/>Flags: %s<br/>(0x%04X)<br/>Zoom: %.1fx</html>",
-                x, y, flagsStr, flags, zoomLevel);
-
-        // Position tooltip slightly offset from mouse cursor
-        hoverTooltipPosition = new Point(mouseX + 15, mouseY - 10);
-
-        // Ensure tooltip stays within panel bounds
-        if (hoverTooltipPosition.x + 200 > getWidth()) { // Assume max tooltip width of 200
-            hoverTooltipPosition.x = mouseX - 215;
-        }
-        if (hoverTooltipPosition.y < 0) {
-            hoverTooltipPosition.y = mouseY + 20;
-        }
-    }
-
-    /**
      * Converts screen coordinates to tile coordinates
      * @param screenX Screen x coordinate
      * @param screenY Screen y coordinate
@@ -328,6 +257,7 @@ public class TilePanel extends JPanel implements SimulationObserver {
         revalidate();
     }
 
+    // Add visual feedback for NPC placement mode in paintComponent
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -354,14 +284,36 @@ public class TilePanel extends JPanel implements SimulationObserver {
 
         // Highlight hovered tile
         if (hoveredTile != null) {
-            g2d.setColor(new Color(255, 255, 0, 100));
+            Color highlightColor = new Color(161, 0, 255, 100);
+
+            // Different highlight color for NPC placement mode
+            if (npcPlacementMode) {
+                highlightColor = new Color(0, 255, 0, 100);
+            }
+
+            // Different color if NPC is present
+            if (hoveredNpc != null) {
+                highlightColor = new Color(255, 100, 100, 150);
+            }
+
+            g2d.setColor(highlightColor);
+            g2d.setStroke(new BasicStroke(2));
             g2d.fillRect(hoveredTile.x * TILE_SIZE, hoveredTile.y * TILE_SIZE,
                     TILE_SIZE, TILE_SIZE);
+
+            // Draw border for NPC placement mode
+            if (npcPlacementMode) {
+                g2d.setColor(Color.GREEN);
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRect(hoveredTile.x * TILE_SIZE, hoveredTile.y * TILE_SIZE,
+                        TILE_SIZE, TILE_SIZE);
+            }
         }
 
-        // Reset transform for tooltip drawing (draw in screen coordinates)
+        // Reset transform for tooltip and UI overlay drawing
         g2d.setTransform(new java.awt.geom.AffineTransform());
         drawHoverTooltip(g2d);
+        drawNpcPlacementOverlay(g2d);
     }
 
     /**
@@ -565,5 +517,225 @@ public class TilePanel extends JPanel implements SimulationObserver {
                 }
             }
         }
+    }
+
+
+    public void setNpcPlacementMode(boolean enabled) {
+        this.npcPlacementMode = enabled;
+        repaint();
+    }
+
+    /**
+     * Enhanced mouse click handler with NPC placement support
+     */
+    private void handleMouseClick(MouseEvent e) {
+        Point tileCoords = screenToTile(e.getX(), e.getY());
+        int tileX = tileCoords.x;
+        int tileY = tileCoords.y;
+
+        int[][] data = engine.getCollisionData();
+        if (tileY >= 0 && tileY < data.length && tileX >= 0 && tileX < data[0].length) {
+
+            // Handle NPC operations first (with modifier keys)
+            if (e.isShiftDown() && SwingUtilities.isLeftMouseButton(e)) {
+                // Shift + Left Click: Place new NPC
+                handleNpcPlacement(tileX, tileY);
+                return;
+            }
+
+            if (e.isControlDown() && SwingUtilities.isRightMouseButton(e)) {
+                // Ctrl + Right Click: Remove NPC
+                handleNpcRemoval(tileX, tileY);
+                return;
+            }
+
+            if (e.isAltDown() && SwingUtilities.isLeftMouseButton(e)) {
+                // Alt + Left Click: Select/edit NPC
+                handleNpcSelection(tileX, tileY);
+                return;
+            }
+
+            // Handle double-click on NPC for detailed editing
+            if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                SimNpc npcAtTile = getNpcAtTile(tileX, tileY);
+                if (npcAtTile != null) {
+                    // Open detailed edit dialog (implement in SimulationVisualizer)
+                    state.setNpcEditDialogOpen(true);
+                    return;
+                }
+            }
+
+            // Default behavior for regular clicks
+            if (SwingUtilities.isLeftMouseButton(e)) {
+                if (npcPlacementMode) {
+                    handleNpcPlacement(tileX, tileY);
+                } else {
+                    engine.setPlayerTarget(new Point(tileX, tileY));
+                }
+            } else if (SwingUtilities.isRightMouseButton(e)) {
+                // Toggle wall (existing functionality)
+                if (engine.getCollisionData()[tileY][tileX] == 0) {
+                    engine.getCollisionData()[tileY][tileX] = CollisionDataFlag.BLOCK_MOVEMENT_FULL;
+                } else {
+                    engine.getCollisionData()[tileY][tileX] = 0;
+                }
+            }
+            repaint();
+        }
+    }
+
+    /**
+     * Handles placing a new NPC at the specified tile
+     */
+    private void handleNpcPlacement(int tileX, int tileY) {
+        // Check if tile is walkable
+        if (engine.getCollisionData()[tileY][tileX] != 0) {
+            // Show tooltip or status message
+            showTemporaryMessage("Cannot place NPC on blocked tile!");
+            return;
+        }
+
+        // Check if there's already an NPC at this location
+        if (getNpcAtTile(tileX, tileY) != null) {
+            showTemporaryMessage("NPC already exists at this location!");
+            return;
+        }
+
+        Point position = new Point(tileX, tileY);
+        SimNpc newNpc = visualizer.createNpcFromCurrentSettings(position);
+        visualizer.addNpcToSimulation(newNpc);
+        showTemporaryMessage("NPC '" + newNpc.getName() + "' placed!");
+    }
+
+    /**
+     * Handles removing an NPC from the specified tile
+     */
+    private void handleNpcRemoval(int tileX, int tileY) {
+        SimNpc npcToRemove = getNpcAtTile(tileX, tileY);
+        if (npcToRemove != null) {
+            engine.removeNpc(npcToRemove);
+            if (visualizer != null) {
+                visualizer.removeNpcFromList(npcToRemove);
+            }
+            showTemporaryMessage("NPC '" + npcToRemove.getName() + "' removed!");
+            repaint();
+        }
+    }
+
+    /**
+     * Handles selecting an NPC for editing
+     */
+    private void handleNpcSelection(int tileX, int tileY) {
+        SimNpc npcAtTile = getNpcAtTile(tileX, tileY);
+        if (npcAtTile != null && visualizer != null) {
+            visualizer.selectNpcInList(npcAtTile);
+            showTemporaryMessage("Selected NPC: " + npcAtTile.getName());
+        }
+    }
+
+    /**
+     * Gets the NPC at the specified tile coordinates
+     */
+    private SimNpc getNpcAtTile(int tileX, int tileY) {
+        for (SimNpc npc : engine.getNpcs()) {
+            if (npc.getPosition().x == tileX && npc.getPosition().y == tileY) {
+                return npc;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Enhanced mouse move handler with NPC hover detection
+     */
+    private void handleMouseMove(MouseEvent e) {
+        Point tileCoords = screenToTile(e.getX(), e.getY());
+        int tileX = tileCoords.x;
+        int tileY = tileCoords.y;
+
+        int[][] data = engine.getCollisionData();
+        if (tileY >= 0 && tileY < data.length &&
+                tileX >= 0 && tileX < data[0].length) {
+            hoveredTile = new Point(tileX, tileY);
+            hoveredNpc = getNpcAtTile(tileX, tileY);
+
+            if(state.isShowTooltip()) {
+                updateHoverTooltip(tileX, tileY, e.getX(), e.getY());
+            }
+            updateInfoLabel(tileX, tileY);
+        } else {
+            hoveredTile = null;
+            hoveredNpc = null;
+            hoverTooltipText = null;
+            hoverTooltipPosition = null;
+        }
+        repaint();
+    }
+
+    /**
+     * Enhanced tooltip with NPC information
+     */
+    private void updateHoverTooltip(int x, int y, int mouseX, int mouseY) {
+        StringBuilder tooltipContent = new StringBuilder();
+        tooltipContent.append(String.format("<html>Tile [%d, %d]<br/>", x, y));
+
+        // Add collision flag info
+        int flags = engine.getCollisionData()[y][x];
+        Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
+        String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
+        tooltipContent.append(String.format("Flags: %s<br/>(0x%04X)<br/>", flagsStr, flags));
+
+        // Add NPC info if present
+        if (hoveredNpc != null) {
+            tooltipContent.append(String.format("<br/><b>NPC: %s</b><br/>", hoveredNpc.getName()));
+            tooltipContent.append(String.format("Type: %s<br/>", hoveredNpc.isAggressive() ? "Aggressive" : "Passive"));
+            tooltipContent.append(String.format("Aggro Radius: %d<br/>", hoveredNpc.getAggressionRadius()));
+            tooltipContent.append(String.format("Wander Radius: %d<br/>", hoveredNpc.getWanderRadius()));
+        }
+
+        tooltipContent.append(String.format("Zoom: %.1fx</html>", zoomLevel));
+
+        hoverTooltipText = tooltipContent.toString();
+
+        // Position tooltip slightly offset from mouse cursor
+        hoverTooltipPosition = new Point(mouseX + 15, mouseY - 10);
+
+        // Ensure tooltip stays within panel bounds
+        if (hoverTooltipPosition.x + 250 > getWidth()) { // Increased width for NPC info
+            hoverTooltipPosition.x = mouseX - 265;
+        }
+        if (hoverTooltipPosition.y < 0) {
+            hoverTooltipPosition.y = mouseY + 20;
+        }
+    }
+
+    /**
+     * Draws overlay information for NPC placement mode
+     */
+    private void drawNpcPlacementOverlay(Graphics2D g2d) {
+        if (npcPlacementMode) {
+            g2d.setColor(new Color(0, 255, 0, 150));
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 14));
+            g2d.drawString("NPC Placement Mode Active", 10, 25);
+
+            g2d.setColor(new Color(255, 255, 255, 200));
+            g2d.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            g2d.drawString("Shift+Click: Place NPC | Ctrl+RClick: Remove NPC | Alt+Click: Select NPC", 10, 45);
+        }
+    }
+
+    private void showTemporaryMessage(String message) {
+        temporaryMessage = message;
+        long messageTimestamp = System.currentTimeMillis();
+
+        // Auto-clear after 3 seconds
+        Timer timer = new Timer(3000, e -> {
+            temporaryMessage = null;
+            repaint();
+        });
+        timer.setRepeats(false);
+        timer.start();
+
+        repaint();
     }
 }

@@ -18,6 +18,11 @@ public class SimNpc {
 
     @NonNull
     private String name;
+
+    private boolean aggressive = true;
+    private int size = 1;
+    private int aggressionRadius = 10;
+    private int wanderRadius = 10;
     private Point target;
 }
 

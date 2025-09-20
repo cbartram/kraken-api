@@ -15,6 +15,7 @@ import javax.swing.Timer;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Simulation engine for NPC and player movement.
@@ -405,6 +406,232 @@ public class SimulationEngine {
      */
     public void addNPCPathPoint(SimNpc npc, Point point) {
         npcPaths.computeIfAbsent(npc, k -> new ArrayList<>()).add(point);
+    }
+
+
+    /**
+     * Adds an NPC to the simulation
+     */
+    public void addNpc(SimNpc npc) {
+        npcs.add(npc);
+        npcPaths.put(npc, new ArrayList<>());
+        notifyObservers();
+    }
+
+    /**
+     * Removes an NPC from the simulation
+     */
+    public void removeNpc(SimNpc npc) {
+        npcs.remove(npc);
+        npcPaths.remove(npc);
+        notifyObservers();
+    }
+
+    /**
+     * Clears all NPCs from the simulation
+     */
+    public void clearAllNpcs() {
+        npcs.clear();
+        npcPaths.clear();
+        notifyObservers();
+    }
+
+    /**
+     * Gets an NPC at a specific position
+     */
+    public SimNpc getNpcAtPosition(Point position) {
+        return npcs.stream()
+                .filter(npc -> npc.getPosition().equals(position))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Moves an NPC to a new position
+     */
+    public void moveNpc(SimNpc npc, Point newPosition) {
+        if (npcs.contains(npc)) {
+            npc.setPosition(newPosition);
+            notifyObservers();
+        }
+    }
+
+    /**
+     * Updates NPC target for pathfinding
+     */
+    public void setNpcTarget(SimNpc npc, Point target) {
+        if (npcs.contains(npc)) {
+            npc.setTarget(target);
+
+            // Calculate new path to target
+            List<Point> newPath = findPath(npc.getPosition(), target);
+            npcPaths.put(npc, newPath);
+            notifyObservers();
+        }
+    }
+
+    /**
+     * Gets all NPCs within a certain radius of a position
+     */
+    public List<SimNpc> getNpcsInRadius(Point center, int radius) {
+        return npcs.stream()
+                .filter(npc -> {
+                    int dx = npc.getPosition().x - center.x;
+                    int dy = npc.getPosition().y - center.y;
+                    return Math.sqrt(dx * dx + dy * dy) <= radius;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Updates NPC behavior during simulation tick
+     */
+    private void updateNpcBehavior() {
+        if (npcs.isEmpty()) return;
+
+        for (SimNpc npc : npcs) {
+            updateSingleNpcBehavior(npc);
+        }
+    }
+
+    /**
+     * Updates behavior for a single NPC
+     */
+    private void updateSingleNpcBehavior(SimNpc npc) {
+        Point npcPos = npc.getPosition();
+        Point playerPos = getPlayerPosition();
+
+        // Calculate distance to player
+        double distanceToPlayer = Math.sqrt(
+                Math.pow(npcPos.x - playerPos.x, 2) +
+                        Math.pow(npcPos.y - playerPos.y, 2)
+        );
+
+        if (npc.isAggressive() && distanceToPlayer <= npc.getAggressionRadius()) {
+            // Aggressive NPC: chase player
+            if (!npc.getTarget().equals(playerPos)) {
+                setNpcTarget(npc, new Point(playerPos.x, playerPos.y));
+            }
+        } else {
+            // Passive or out of aggro range: wander behavior
+            if (npc.getTarget() == null || npc.getPosition().equals(npc.getTarget())) {
+                // Generate new wander target
+                Point wanderTarget = generateWanderTarget(npc);
+                if (wanderTarget != null) {
+                    setNpcTarget(npc, wanderTarget);
+                }
+            }
+        }
+
+        // Move NPC along its path
+        moveNpcAlongPath(npc);
+    }
+
+    /**
+     * Generates a random wander target within the NPC's wander radius
+     */
+    private Point generateWanderTarget(SimNpc npc) {
+        Random random = new Random();
+        int attempts = 0;
+        int maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+            int wanderRadius = npc.getWanderRadius();
+            int deltaX = random.nextInt(wanderRadius * 2 + 1) - wanderRadius;
+            int deltaY = random.nextInt(wanderRadius * 2 + 1) - wanderRadius;
+
+            Point target = new Point(
+                    npc.getPosition().x + deltaX,
+                    npc.getPosition().y + deltaY
+            );
+
+            // Check if target is within map bounds and walkable
+            if (isValidPosition(target)) {
+                return target;
+            }
+
+            attempts++;
+        }
+
+        return null; // Couldn't find valid wander target
+    }
+
+    /**
+     * Moves an NPC along its calculated path
+     */
+    private void moveNpcAlongPath(SimNpc npc) {
+        List<Point> path = npcPaths.get(npc);
+        if (path == null || path.isEmpty()) return;
+
+        // Find current position in path
+        Point currentPos = npc.getPosition();
+        int currentIndex = -1;
+
+        for (int i = 0; i < path.size(); i++) {
+            if (path.get(i).equals(currentPos)) {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        // Move to next position in path
+        if (currentIndex >= 0 && currentIndex < path.size() - 1) {
+            Point nextPos = path.get(currentIndex + 1);
+            if (isValidPosition(nextPos)) {
+                npc.setPosition(new Point(nextPos.x, nextPos.y));
+            }
+        }
+    }
+
+    /**
+     * Checks if a position is valid (within bounds and walkable)
+     */
+    private boolean isValidPosition(Point position) {
+        int[][] data = getCollisionData();
+        return position.x >= 0 && position.x < data[0].length &&
+                position.y >= 0 && position.y < data.length &&
+                data[position.y][position.x] == 0;
+    }
+
+    /**
+     * Finds the closest NPC to a given position
+     */
+    public SimNpc getClosestNpc(Point position) {
+        if (npcs.isEmpty()) return null;
+        SimNpc closest = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (SimNpc npc : npcs) {
+            double distance = Math.sqrt(
+                    Math.pow(npc.getPosition().x - position.x, 2) +
+                            Math.pow(npc.getPosition().y - position.y, 2)
+            );
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                closest = npc;
+            }
+        }
+
+        return closest;
+    }
+
+    /**
+     * Gets count of aggressive NPCs
+     */
+    public int getAggressiveNpcCount() {
+        return (int) npcs.stream()
+                .filter(SimNpc::isAggressive)
+                .count();
+    }
+
+    /**
+     * Gets count of passive NPCs
+     */
+    public int getPassiveNpcCount() {
+        return (int) npcs.stream()
+                .filter(npc -> !npc.isAggressive())
+                .count();
     }
 
     /**

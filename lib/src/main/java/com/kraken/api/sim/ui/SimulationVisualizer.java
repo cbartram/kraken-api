@@ -3,11 +3,13 @@ package com.kraken.api.sim.ui;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.sim.SimulationEngine;
+import com.kraken.api.sim.model.SimNpc;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -34,6 +36,16 @@ public class SimulationVisualizer extends JFrame {
     private static final Color TEXT_COLOR = new Color(245, 245, 245);
     private static final Color ACCENT_COLOR = new Color(108, 117, 125);
 
+    private JCheckBox npcPlacementMode;
+    private JTextField npcNameField;
+    private JButton npcColorButton;
+    private Color selectedNpcColor = Color.BLUE;
+    private JSpinner aggressionRadiusSpinner;
+    private JSpinner wanderRadiusSpinner;
+    private JCheckBox aggressiveCheckbox;
+    private DefaultListModel<SimNpc> npcListModel;
+    private JList<SimNpc> npcList;
+
     private JButton simulateButton;
 
     @Getter
@@ -59,8 +71,16 @@ public class SimulationVisualizer extends JFrame {
         this.state = state;
 
         setupModernLookAndFeel();
-        initializeWindow();
+        setTitle("OSRS Simulator");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        // Set custom icon (you can replace this path with your own icon)
+        setIconImage(loadWindowIcon());
+
+        // Set dark background
+        getContentPane().setBackground(BACKGROUND_COLOR);
         setupLayout();
+        initializeTilePanelConnection();
     }
 
     /**
@@ -84,20 +104,6 @@ public class SimulationVisualizer extends JFrame {
         } catch (Exception e) {
             log.warn("Failed to set look and feel: {}", e.getMessage());
         }
-    }
-
-    /**
-     * Initializes the main window with title and icon
-     */
-    private void initializeWindow() {
-        setTitle("OSRS Simulator");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Set custom icon (you can replace this path with your own icon)
-        setIconImage(loadWindowIcon());
-
-        // Set dark background
-        getContentPane().setBackground(BACKGROUND_COLOR);
     }
 
     /**
@@ -327,6 +333,39 @@ public class SimulationVisualizer extends JFrame {
 
         panel.add(Box.createVerticalStrut(20));
 
+        // NPC Management Section
+        JLabel npcLabel = createSectionLabel("NPC Management");
+        panel.add(npcLabel);
+
+        // NPC Placement Mode
+        npcPlacementMode = createModernCheckBox("NPC Placement Mode", false);
+        npcPlacementMode.addActionListener(e -> updateNpcPlacementMode());
+        npcPlacementMode.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(npcPlacementMode);
+
+        panel.add(Box.createVerticalStrut(10));
+
+        // NPC Properties Panel
+        JPanel npcPropsPanel = createNpcPropertiesPanel();
+        npcPropsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(npcPropsPanel);
+
+        panel.add(Box.createVerticalStrut(10));
+
+        // NPC Action Buttons
+        JPanel npcActionsPanel = createNpcActionPanel();
+        npcActionsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(npcActionsPanel);
+
+        panel.add(Box.createVerticalStrut(10));
+
+        // NPC List
+        JPanel npcListPanel = createNpcListPanel();
+        npcListPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(npcListPanel);
+
+        panel.add(Box.createVerticalStrut(20));
+
         // Collision legend
         JLabel legendLabel = createSectionLabel("Collision Types");
         panel.add(legendLabel);
@@ -457,8 +496,526 @@ public class SimulationVisualizer extends JFrame {
     }
 
     /**
-     * Creates a modern styled instructions area
-     * @return JTextArea with instructions
+     * Toggles the state of the simulation. When the simulation is running this will
+     * turn the simulation off (pause it). When it is off it will start the simulation.
+     */
+    private void toggleSimulation() {
+        if (engine.isRunning()) {
+            engine.stop();
+            simulateButton.setText("Start Simulation");
+            // Update button color to success (green)
+            simulateButton.setBackground(SUCCESS_BUTTON_COLOR);
+        } else {
+            engine.start();
+            simulateButton.setText("Stop Simulation");
+            // Update button color to danger (red)
+            simulateButton.setBackground(DANGER_BUTTON_COLOR);
+        }
+    }
+
+
+    // NPC UI STUFF =========================
+    /**
+     * Creates the NPC properties configuration panel
+     */
+    private JPanel createNpcPropertiesPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridBagLayout());
+        panel.setBackground(PANEL_COLOR);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ACCENT_COLOR),
+                "New NPC Properties",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 12),
+                TEXT_COLOR
+        ));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Name field
+        gbc.gridx = 0; gbc.gridy = 0;
+        JLabel nameLabel = new JLabel("Name:");
+        nameLabel.setForeground(TEXT_COLOR);
+        nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(nameLabel, gbc);
+
+        gbc.gridx = 1;
+        npcNameField = new JTextField("NPC", 8);
+        npcNameField.setBackground(BACKGROUND_COLOR);
+        npcNameField.setForeground(TEXT_COLOR);
+        npcNameField.setCaretColor(TEXT_COLOR);
+        panel.add(npcNameField, gbc);
+
+        // Color button
+        gbc.gridx = 0; gbc.gridy = 1;
+        JLabel colorLabel = new JLabel("Color:");
+        colorLabel.setForeground(TEXT_COLOR);
+        colorLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(colorLabel, gbc);
+
+        gbc.gridx = 1;
+        npcColorButton = createColorButton();
+        panel.add(npcColorButton, gbc);
+
+        // Aggressive checkbox
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        aggressiveCheckbox = createModernCheckBox("Aggressive", true);
+        panel.add(aggressiveCheckbox, gbc);
+        gbc.gridwidth = 1;
+
+        // Aggression radius
+        gbc.gridx = 0; gbc.gridy = 3;
+        JLabel aggroLabel = new JLabel("Aggro Radius:");
+        aggroLabel.setForeground(TEXT_COLOR);
+        aggroLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(aggroLabel, gbc);
+
+        gbc.gridx = 1;
+        aggressionRadiusSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
+        styleSpinner(aggressionRadiusSpinner);
+        panel.add(aggressionRadiusSpinner, gbc);
+
+        // Wander radius
+        gbc.gridx = 0; gbc.gridy = 4;
+        JLabel wanderLabel = new JLabel("Wander Radius:");
+        wanderLabel.setForeground(TEXT_COLOR);
+        wanderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(wanderLabel, gbc);
+
+        gbc.gridx = 1;
+        wanderRadiusSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
+        styleSpinner(wanderRadiusSpinner);
+        panel.add(wanderRadiusSpinner, gbc);
+
+        return panel;
+    }
+
+    /**
+     * Creates action buttons for NPC management
+     */
+    private JPanel createNpcActionPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, 3, 5, 5));
+        panel.setBackground(PANEL_COLOR);
+
+        JButton clearAllNpcs = createModernButton("Clear All", "danger");
+        clearAllNpcs.addActionListener(e -> clearAllNpcs());
+        panel.add(clearAllNpcs);
+
+        JButton randomNpc = createModernButton("Random NPC", "primary");
+        randomNpc.addActionListener(e -> addRandomNpc());
+        panel.add(randomNpc);
+
+        JButton editSelected = createModernButton("Edit Selected", "secondary");
+        editSelected.addActionListener(e -> editSelectedNpc());
+        panel.add(editSelected);
+
+        return panel;
+    }
+
+    /**
+     * Creates the NPC list display
+     */
+    private JPanel createNpcListPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(PANEL_COLOR);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ACCENT_COLOR),
+                "Active NPCs",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 12),
+                TEXT_COLOR
+        ));
+
+        npcListModel = new DefaultListModel<>();
+        npcList = new JList<>(npcListModel);
+        npcList.setBackground(BACKGROUND_COLOR);
+        npcList.setForeground(TEXT_COLOR);
+        npcList.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        npcList.setSelectionBackground(PRIMARY_BUTTON_COLOR);
+        npcList.setSelectionForeground(TEXT_COLOR);
+
+        // Custom cell renderer to show NPC info nicely
+        npcList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+                if (value instanceof SimNpc) {
+                    SimNpc npc = (SimNpc) value;
+                    setText(String.format("%s [%d,%d] %s",
+                            npc.getName(),
+                            npc.getPosition().x,
+                            npc.getPosition().y,
+                            npc.isAggressive() ? "(Aggro)" : "(Passive)")
+                    );
+
+                    // Show color indicator
+                    if (!isSelected) {
+                        setForeground(npc.getColor());
+                    }
+                }
+
+                setBackground(isSelected ? PRIMARY_BUTTON_COLOR : BACKGROUND_COLOR);
+                return this;
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(npcList);
+        scrollPane.setPreferredSize(new Dimension(200, 120));
+        scrollPane.getViewport().setBackground(BACKGROUND_COLOR);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * Creates a color selection button
+     */
+    private JButton createColorButton() {
+        JButton button = new JButton("    ");
+        button.setBackground(selectedNpcColor);
+        button.setPreferredSize(new Dimension(40, 25));
+        button.setBorder(BorderFactory.createLineBorder(ACCENT_COLOR));
+        button.addActionListener(e -> {
+            Color newColor = JColorChooser.showDialog(this, "Choose NPC Color", selectedNpcColor);
+            if (newColor != null) {
+                selectedNpcColor = newColor;
+                button.setBackground(newColor);
+            }
+        });
+        return button;
+    }
+
+    /**
+     * Styles a spinner component
+     */
+    private void styleSpinner(JSpinner spinner) {
+        spinner.getEditor().getComponent(0).setBackground(BACKGROUND_COLOR);
+        spinner.getEditor().getComponent(0).setForeground(TEXT_COLOR);
+    }
+
+    /**
+     * Updates the UI when NPC placement mode changes
+     */
+    private void updateNpcPlacementMode() {
+        boolean placementMode = npcPlacementMode.isSelected();
+        tilePanel.setNpcPlacementMode(placementMode);
+
+        // Update cursor or visual feedback
+        if (placementMode) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+        } else {
+            setCursor(Cursor.getDefaultCursor());
+        }
+    }
+
+    /**
+     * Clears all NPCs from the simulation
+     */
+    private void clearAllNpcs() {
+        int result = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to remove all NPCs?",
+                "Clear All NPCs",
+                JOptionPane.YES_NO_OPTION);
+
+        if (result == JOptionPane.YES_OPTION) {
+            engine.reset();
+            engine.getNpcs().clear();
+            npcListModel.clear();
+            repaint();
+        }
+    }
+
+    /**
+     * Adds a random NPC to the simulation
+     */
+    private void addRandomNpc() {
+        Random random = new Random();
+        int[][] data = engine.getCollisionData();
+
+        // Find a random empty tile
+        Point randomPos;
+        int attempts = 0;
+        do {
+            randomPos = new Point(
+                    random.nextInt(data[0].length),
+                    random.nextInt(data.length)
+            );
+            attempts++;
+        } while (data[randomPos.y][randomPos.x] != 0 && attempts < 100);
+
+        if (attempts < 100) {
+            Color randomColor = new Color(
+                    random.nextInt(256),
+                    random.nextInt(256),
+                    random.nextInt(256)
+            );
+
+            SimNpc npc = new SimNpc(randomPos, randomColor, "Random NPC " + (npcListModel.size() + 1));
+            addNpcToSimulation(npc);
+        }
+    }
+
+    /**
+     * Opens edit dialog for selected NPC
+     */
+    private void editSelectedNpc() {
+        SimNpc selected = npcList.getSelectedValue();
+        if (selected != null) {
+            openNpcEditDialog(selected);
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select an NPC to edit.");
+        }
+    }
+
+    /**
+     * Adds an NPC to the simulation and UI list
+     */
+    public void addNpcToSimulation(SimNpc npc) {
+        engine.addNpc(npc);
+        npcListModel.addElement(npc);
+        repaint();
+    }
+
+    /**
+     * Creates a new NPC with current property settings
+     */
+    public SimNpc createNpcFromCurrentSettings(Point position) {
+        String name = npcNameField.getText().trim();
+        if (name.isEmpty()) {
+            name = "NPC " + (npcListModel.size() + 1);
+        }
+
+        SimNpc npc = new SimNpc(position, selectedNpcColor, name);
+        npc.setAggressive(aggressiveCheckbox.isSelected());
+        npc.setAggressionRadius((Integer) aggressionRadiusSpinner.getValue());
+        npc.setWanderRadius((Integer) wanderRadiusSpinner.getValue());
+
+        return npc;
+    }
+
+    /**
+     * Removes an NPC from the UI list
+     */
+    public void removeNpcFromList(SimNpc npc) {
+        npcListModel.removeElement(npc);
+    }
+
+    /**
+     * Selects an NPC in the UI list
+     */
+    public void selectNpcInList(SimNpc npc) {
+        npcList.setSelectedValue(npc, true);
+
+        // Optionally populate the property fields with selected NPC's values
+        populateFieldsFromNpc(npc);
+    }
+
+    /**
+     * Populates the property fields with an NPC's current values
+     */
+    private void populateFieldsFromNpc(SimNpc npc) {
+        npcNameField.setText(npc.getName());
+        selectedNpcColor = npc.getColor();
+        npcColorButton.setBackground(selectedNpcColor);
+        aggressiveCheckbox.setSelected(npc.isAggressive());
+        aggressionRadiusSpinner.setValue(npc.getAggressionRadius());
+        wanderRadiusSpinner.setValue(npc.getWanderRadius());
+    }
+
+    /**
+     * Opens detailed edit dialog for an NPC
+     */
+    public void openNpcEditDialog(SimNpc npc) {
+        JDialog dialog = new JDialog(this, "Edit NPC: " + npc.getName(), true);
+        dialog.setLayout(new BorderLayout());
+        dialog.getContentPane().setBackground(PANEL_COLOR);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(PANEL_COLOR);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Name field
+        gbc.gridx = 0; gbc.gridy = 0;
+        JLabel nameLabel = new JLabel("Name:");
+        nameLabel.setForeground(TEXT_COLOR);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(nameLabel, gbc);
+
+        gbc.gridx = 1;
+        JTextField nameField = new JTextField(npc.getName(), 15);
+        nameField.setBackground(BACKGROUND_COLOR);
+        nameField.setForeground(TEXT_COLOR);
+        nameField.setCaretColor(TEXT_COLOR);
+        formPanel.add(nameField, gbc);
+
+        // Position fields
+        gbc.gridx = 0; gbc.gridy = 1;
+        JLabel posLabel = new JLabel("Position:");
+        posLabel.setForeground(TEXT_COLOR);
+        posLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(posLabel, gbc);
+
+        gbc.gridx = 1;
+        JPanel posPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        posPanel.setBackground(PANEL_COLOR);
+
+        JSpinner xSpinner = new JSpinner(new SpinnerNumberModel(npc.getPosition().x, 0,
+                engine.getCollisionData()[0].length - 1, 1));
+        styleSpinner(xSpinner);
+        xSpinner.setPreferredSize(new Dimension(60, 25));
+
+        JSpinner ySpinner = new JSpinner(new SpinnerNumberModel(npc.getPosition().y, 0,
+                engine.getCollisionData().length - 1, 1));
+        styleSpinner(ySpinner);
+        ySpinner.setPreferredSize(new Dimension(60, 25));
+
+        JLabel commaLabel = new JLabel(", ");
+        commaLabel.setForeground(TEXT_COLOR);
+
+        posPanel.add(new JLabel("("));
+        posPanel.add(xSpinner);
+        posPanel.add(commaLabel);
+        posPanel.add(ySpinner);
+        posPanel.add(new JLabel(")"));
+
+        formPanel.add(posPanel, gbc);
+
+        // Color field
+        gbc.gridx = 0; gbc.gridy = 2;
+        JLabel colorLabel = new JLabel("Color:");
+        colorLabel.setForeground(TEXT_COLOR);
+        colorLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(colorLabel, gbc);
+
+        gbc.gridx = 1;
+        Color currentColor = npc.getColor();
+        JButton colorButton = new JButton("    ");
+        colorButton.setBackground(currentColor);
+        colorButton.setPreferredSize(new Dimension(50, 25));
+        colorButton.setBorder(BorderFactory.createLineBorder(ACCENT_COLOR));
+        colorButton.addActionListener(e -> {
+            Color newColor = JColorChooser.showDialog(dialog, "Choose NPC Color", currentColor);
+            if (newColor != null) {
+                colorButton.setBackground(newColor);
+            }
+        });
+        formPanel.add(colorButton, gbc);
+
+        // Aggressive checkbox
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        JCheckBox aggressiveBox = createModernCheckBox("Aggressive", npc.isAggressive());
+        formPanel.add(aggressiveBox, gbc);
+        gbc.gridwidth = 1;
+
+        // Size field
+        gbc.gridx = 0; gbc.gridy = 4;
+        JLabel sizeLabel = new JLabel("Size:");
+        sizeLabel.setForeground(TEXT_COLOR);
+        sizeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(sizeLabel, gbc);
+
+        gbc.gridx = 1;
+        JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(npc.getSize(), 1, 5, 1));
+        styleSpinner(sizeSpinner);
+        formPanel.add(sizeSpinner, gbc);
+
+        // Aggression radius
+        gbc.gridx = 0; gbc.gridy = 5;
+        JLabel aggroLabel = new JLabel("Aggression Radius:");
+        aggroLabel.setForeground(TEXT_COLOR);
+        aggroLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(aggroLabel, gbc);
+
+        gbc.gridx = 1;
+        JSpinner aggroSpinner = new JSpinner(new SpinnerNumberModel(npc.getAggressionRadius(), 1, 50, 1));
+        styleSpinner(aggroSpinner);
+        formPanel.add(aggroSpinner, gbc);
+
+        // Wander radius
+        gbc.gridx = 0; gbc.gridy = 6;
+        JLabel wanderLabel = new JLabel("Wander Radius:");
+        wanderLabel.setForeground(TEXT_COLOR);
+        wanderLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(wanderLabel, gbc);
+
+        gbc.gridx = 1;
+        JSpinner wanderSpinner = new JSpinner(new SpinnerNumberModel(npc.getWanderRadius(), 1, 50, 1));
+        styleSpinner(wanderSpinner);
+        formPanel.add(wanderSpinner, gbc);
+
+        // Buttons panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(PANEL_COLOR);
+
+        JButton saveButton = createModernButton("Save Changes", "success");
+        saveButton.addActionListener(e -> {
+            // Apply changes to NPC
+            String newName = nameField.getText().trim();
+            if (!newName.isEmpty()) {
+                npc.setName(newName);
+            }
+
+            Point newPosition = new Point((Integer) xSpinner.getValue(), (Integer) ySpinner.getValue());
+            if (engine.getCollisionData()[newPosition.y][newPosition.x] == 0) {
+                npc.setPosition(newPosition);
+            }
+
+            npc.setColor(colorButton.getBackground());
+            npc.setAggressive(aggressiveBox.isSelected());
+            npc.setSize((Integer) sizeSpinner.getValue());
+            npc.setAggressionRadius((Integer) aggroSpinner.getValue());
+            npc.setWanderRadius((Integer) wanderSpinner.getValue());
+
+            // Refresh UI
+            npcList.repaint();
+            tilePanel.repaint();
+
+            dialog.dispose();
+        });
+        buttonPanel.add(saveButton);
+
+        JButton cancelButton = createModernButton("Cancel", "secondary");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(cancelButton);
+
+        JButton deleteButton = createModernButton("Delete NPC", "danger");
+        deleteButton.addActionListener(e -> {
+            int result = JOptionPane.showConfirmDialog(dialog,
+                    "Are you sure you want to delete this NPC?",
+                    "Delete NPC",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (result == JOptionPane.YES_OPTION) {
+                engine.removeNpc(npc);
+                removeNpcFromList(npc);
+                tilePanel.repaint();
+                dialog.dispose();
+            }
+        });
+        buttonPanel.add(deleteButton);
+
+        // Add components to dialog
+        dialog.add(formPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Updates the instructions area to include NPC controls
      */
     private JTextArea createInstructionsArea() {
         JTextArea instructions = new JTextArea(
@@ -468,7 +1025,12 @@ public class SimulationVisualizer extends JFrame {
                         "• Middle Click + Drag: Pan View\n" +
                         "• Mouse Wheel: Zoom In/Out\n" +
                         "• 'P' Key: Update Player Position\n" +
-                        "• Hover: View Tile Information"
+                        "• Hover: View Tile Information\n\n" +
+                        "NPC Controls:\n" +
+                        "• Shift + Left Click: Place NPC\n" +
+                        "• Ctrl + Right Click: Remove NPC\n" +
+                        "• Alt + Left Click: Select NPC\n" +
+                        "• Double Click NPC: Edit Properties"
         );
 
         instructions.setEditable(false);
@@ -486,20 +1048,10 @@ public class SimulationVisualizer extends JFrame {
     }
 
     /**
-     * Toggles the state of the simulation. When the simulation is running this will
-     * turn the simulation off (pause it). When it is off it will start the simulation.
+     * Initialize the connection between TilePanel and SimulationVisualizer
+     * Call this in your constructor after creating the tilePanel
      */
-    private void toggleSimulation() {
-        if (engine.isRunning()) {
-            engine.stop();
-            simulateButton.setText("Start Simulation");
-            // Update button color to success (green)
-            simulateButton.setBackground(SUCCESS_BUTTON_COLOR);
-        } else {
-            engine.start();
-            simulateButton.setText("Stop Simulation");
-            // Update button color to danger (red)
-            simulateButton.setBackground(DANGER_BUTTON_COLOR);
-        }
+    private void initializeTilePanelConnection() {
+        tilePanel.setVisualizer(this);
     }
 }
