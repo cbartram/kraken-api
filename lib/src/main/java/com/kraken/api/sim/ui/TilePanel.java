@@ -3,18 +3,16 @@ package com.kraken.api.sim.ui;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.tile.MovementFlag;
+import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.SimulationEngine;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
+import net.runelite.client.eventbus.Subscribe;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,21 +26,7 @@ import static com.kraken.api.sim.ui.SimulationVisualizer.*;
  */
 @Slf4j
 @Singleton
-public class TilePanel extends JPanel {
-
-    // These are the points the user has selected for the player to simulate
-    @Getter
-    private final List<Point> playerPath = new ArrayList<>();
-
-    // This is the path to the destination tile (playerPath.get(playerPath.size() - 1)); calculated
-    // using BFS
-    @Getter
-    @Setter
-    private List<Point> calculatedPlayerPath = new ArrayList<>();
-
-    @Getter
-    private final Map<SimNpc, List<Point>> npcPaths = new HashMap<>();
-
+public class TilePanel extends JPanel implements SimulationObserver {
     private Point hoveredTile = null;
     private final SimulationVisualizer visualizer;
     private final SimulationEngine engine;
@@ -62,6 +46,7 @@ public class TilePanel extends JPanel {
     public TilePanel(final SimulationVisualizer visualizer, final SimulationEngine engine) {
         this.visualizer = visualizer;
         this.engine = engine;
+        this.engine.addObserver(this);
         setPreferredSize(new Dimension(
                 (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel),
                 (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
@@ -136,6 +121,11 @@ public class TilePanel extends JPanel {
         });
     }
 
+    @Override
+    public void onSimulationUpdated() {
+        SwingUtilities.invokeLater(this::repaint);
+    }
+
     /**
      * Handles left and right mouse button clicks to either set the players target destination
      * or configure additional obstacles for the pathing algorithm to contend with.
@@ -149,21 +139,7 @@ public class TilePanel extends JPanel {
         int[][] data = engine.getCollisionData();
         if (tileY >= 0 && tileY < data.length && tileX >= 0 && tileX < data[0].length) {
             if (SwingUtilities.isLeftMouseButton(e)) {
-
-                // Move player
-                Point oldPos = new Point(engine.getPlayerPosition());
-                Point newTarget = new Point(tileX, tileY);
-
-                // Record path
-                if (!playerPath.isEmpty() && !playerPath.get(playerPath.size() - 1).equals(oldPos)) {
-                    playerPath.add(oldPos);
-                } else if (playerPath.isEmpty()) {
-                    playerPath.add(oldPos);
-                }
-
-                engine.setPlayerTarget(newTarget);
-                playerPath.add(engine.getPlayerPosition());
-
+                engine.setPlayerTarget(new Point(tileX, tileY));
             } else if (SwingUtilities.isRightMouseButton(e)) {
                 // Toggle wall
                 if (engine.getCollisionData()[tileY][tileX] == 0) {
@@ -194,26 +170,6 @@ public class TilePanel extends JPanel {
             hoveredTile = null;
         }
         repaint();
-    }
-
-    /**
-     * Removes the last NPC pathing point
-     * @param npc Simulated NPC to remove point from
-     */
-    public void removeLastNPCPathPoint(SimNpc npc) {
-        List<Point> path = npcPaths.get(npc);
-        if (path != null && !path.isEmpty()) {
-            path.remove(path.size() - 1);
-        }
-    }
-
-    /**
-     * Adds an NPC path point
-     * @param npc NpcSim The npc to add to
-     * @param point Point the point to add
-     */
-    public void addNPCPathPoint(SimNpc npc, Point point) {
-        npcPaths.computeIfAbsent(npc, k -> new ArrayList<>()).add(point);
     }
 
     /**
@@ -495,7 +451,7 @@ public class TilePanel extends JPanel {
         }
 
         // Draw NPC paths
-        for (Map.Entry<SimNpc, java.util.List<Point>> entry : npcPaths.entrySet()) {
+        for (Map.Entry<SimNpc, java.util.List<Point>> entry : engine.getNpcPaths().entrySet()) {
             SimNpc npc = entry.getKey();
             List<Point> path = entry.getValue();
             if (path.size() > 1) {
@@ -517,8 +473,7 @@ public class TilePanel extends JPanel {
      * Clears and resets all paths for both NPCs and players.
      */
     public void clearPaths() {
-        playerPath.clear();
-        npcPaths.clear();
+        engine.getNpcPaths().clear();
         engine.stop();
         engine.setPlayerTarget(null);
         engine.getPlayerCurrentPath().clear();

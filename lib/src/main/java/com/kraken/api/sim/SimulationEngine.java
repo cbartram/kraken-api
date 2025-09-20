@@ -1,14 +1,11 @@
 package com.kraken.api.sim;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.CollisionMap;
 import com.kraken.api.sim.model.GameState;
 import com.kraken.api.sim.model.SimNpc;
-import com.kraken.api.sim.ui.TilePanel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +13,6 @@ import net.runelite.api.CollisionDataFlag;
 
 import javax.swing.Timer;
 import java.awt.*;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
@@ -28,12 +23,6 @@ import java.util.List;
 @Singleton
 public class SimulationEngine {
     private static final int MAX_HISTORY_SIZE = 50; // Limits the amount of times a user can go back in time
-
-    @Inject
-    private TilePanel tilePanel;
-
-    @Inject
-    private CollisionDumper dumper;
 
     @Getter
     private boolean running = false;
@@ -54,16 +43,23 @@ public class SimulationEngine {
     private final List<SimNpc> npcs = new ArrayList<>();
 
     @Getter
+    private final Map<SimNpc, List<Point>> npcPaths = new HashMap<>();
+
+    @Getter
     private List<Point> playerCurrentPath = new ArrayList<>();
 
+
+    private final List<SimulationObserver> observers = new ArrayList<>();
     private Timer timer;
     int tick = 0;
     private int playerPathIndex = 0;
     private Stack<GameState> stateHistory = new Stack<>();
 
-    public void init() {
-        // TODO Make this also be able to load directly from game with .collect() since this can be used from an API context
-        CollisionMap collisionMap = dumper.loadFromFile("collision_data.json");
+    @Inject
+    public SimulationEngine(final CollisionDumper collisionDumper) {
+        // TODO Make this load directly from game with .collect() since this is intended to be used from an API context
+        // within a RuneLite plugin
+        CollisionMap collisionMap = collisionDumper.loadFromFile("collision_data.json");
         playerPosition = new Point(collisionMap.getPlayerX(), collisionMap.getPlayerY());
         collisionData = collisionMap.getData();
     }
@@ -90,6 +86,29 @@ public class SimulationEngine {
             running = false;
             tick = 0;
             stateHistory.clear();
+        }
+    }
+
+    /**
+     * Add an observer to be notified of simulation updates
+     */
+    public void addObserver(SimulationObserver observer) {
+        observers.add(observer);
+    }
+
+    /**
+     * Remove an observer
+     */
+    public void removeObserver(SimulationObserver observer) {
+        observers.remove(observer);
+    }
+
+    /**
+     * Notify all observers of simulation updates
+     */
+    private void notifyObservers() {
+        for (SimulationObserver observer : observers) {
+            observer.onSimulationUpdated();
         }
     }
 
@@ -158,10 +177,11 @@ public class SimulationEngine {
 
         // Remove the last path point for each NPC (since we're going backward)
         for (SimNpc npc : npcs) {
-            tilePanel.removeLastNPCPathPoint(npc);
+            removeLastNPCPathPoint(npc);
         }
 
-        tilePanel.repaint();
+        // tilePanel.repaint();
+        notifyObservers();
     }
 
     /**
@@ -176,7 +196,7 @@ public class SimulationEngine {
             // Find next move towards player
             Point nextMove = calculateNextMove(npcPos, playerPos);
             if (nextMove != null && isValidMove(npcPos, nextMove)) {
-                tilePanel.addNPCPathPoint(npc, new Point(npcPos));
+                addNPCPathPoint(npc, new Point(npcPos));
                 npc.setPosition(nextMove);
             }
         }
@@ -195,7 +215,8 @@ public class SimulationEngine {
             }
         }
 
-        tilePanel.repaint();
+        // tilePanel.repaint();
+        notifyObservers();
         tick += 1;
     }
 
@@ -349,5 +370,25 @@ public class SimulationEngine {
         if (dx < 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
         if (dy > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
         return dy >= 0 || (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+    }
+
+    /**
+     * Removes the last NPC pathing point
+     * @param npc Simulated NPC to remove point from
+     */
+    public void removeLastNPCPathPoint(SimNpc npc) {
+        List<Point> path = npcPaths.get(npc);
+        if (path != null && !path.isEmpty()) {
+            path.remove(path.size() - 1);
+        }
+    }
+
+    /**
+     * Adds an NPC path point
+     * @param npc NpcSim The npc to add to
+     * @param point Point the point to add
+     */
+    public void addNPCPathPoint(SimNpc npc, Point point) {
+        npcPaths.computeIfAbsent(npc, k -> new ArrayList<>()).add(point);
     }
 }

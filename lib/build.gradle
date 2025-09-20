@@ -25,7 +25,7 @@ repositories {
 
 dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
-    implementation group: 'com.google.inject', name: 'guice', version: '4.1.0'
+    implementation group: 'com.google.inject', name: 'guice', version: '4.2.2'
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.guava:guava:31.1-jre")
     implementation("org.slf4j:slf4j-api:1.7.25")
