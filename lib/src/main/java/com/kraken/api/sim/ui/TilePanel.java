@@ -27,10 +27,10 @@ import static com.kraken.api.sim.ui.SimulationVisualizer.*;
 @Singleton
 public class TilePanel extends JPanel implements SimulationObserver {
     private Point hoveredTile = null;
-//    private final SimulationVisualizer visualizer;
+    private String hoverTooltipText = null;
+    private Point hoverTooltipPosition = null;
     private final SimulationEngine engine;
     private final SimulationUIState state;
-
 
     // Zoom and pan variables
     private double zoomLevel = 1.0;
@@ -93,6 +93,15 @@ public class TilePanel extends JPanel implements SimulationObserver {
                     setCursor(Cursor.getDefaultCursor());
                 }
             }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // Clear hover info when mouse leaves the panel
+                hoveredTile = null;
+                hoverTooltipText = null;
+                hoverTooltipPosition = null;
+                repaint();
+            }
         });
 
         addMouseMotionListener(new MouseMotionAdapter() {
@@ -112,6 +121,9 @@ public class TilePanel extends JPanel implements SimulationObserver {
                     panY += dy;
                     lastMousePoint = e.getPoint();
                     repaint();
+                } else if (!isPanning) {
+                    // Update hover info even while dragging (if not panning)
+                    handleMouseMove(e);
                 }
             }
         });
@@ -181,11 +193,44 @@ public class TilePanel extends JPanel implements SimulationObserver {
         if (tileY >= 0 && tileY < data.length &&
                 tileX >= 0 && tileX < data[0].length) {
             hoveredTile = new Point(tileX, tileY);
+
+            if(state.isShowTooltip()) {
+                updateHoverTooltip(tileX, tileY, e.getX(), e.getY());
+            }
             updateInfoLabel(tileX, tileY);
         } else {
             hoveredTile = null;
+            hoverTooltipText = null;
+            hoverTooltipPosition = null;
         }
         repaint();
+    }
+
+    /**
+     * Updates the hover tooltip information and position
+     * @param x Tile X coordinate
+     * @param y Tile Y coordinate
+     * @param mouseX Mouse screen X coordinate
+     * @param mouseY Mouse screen Y coordinate
+     */
+    private void updateHoverTooltip(int x, int y, int mouseX, int mouseY) {
+        int flags = engine.getCollisionData()[y][x];
+        Set<MovementFlag> setFlags = MovementFlag.getSetFlags(flags);
+        String flagsStr = setFlags.isEmpty() ? "None" : setFlags.toString();
+
+        hoverTooltipText = String.format("<html>Tile [%d, %d]<br/>Flags: %s<br/>(0x%04X)<br/>Zoom: %.1fx</html>",
+                x, y, flagsStr, flags, zoomLevel);
+
+        // Position tooltip slightly offset from mouse cursor
+        hoverTooltipPosition = new Point(mouseX + 15, mouseY - 10);
+
+        // Ensure tooltip stays within panel bounds
+        if (hoverTooltipPosition.x + 200 > getWidth()) { // Assume max tooltip width of 200
+            hoverTooltipPosition.x = mouseX - 215;
+        }
+        if (hoverTooltipPosition.y < 0) {
+            hoverTooltipPosition.y = mouseY + 20;
+        }
     }
 
     /**
@@ -312,6 +357,49 @@ public class TilePanel extends JPanel implements SimulationObserver {
             g2d.setColor(new Color(255, 255, 0, 100));
             g2d.fillRect(hoveredTile.x * TILE_SIZE, hoveredTile.y * TILE_SIZE,
                     TILE_SIZE, TILE_SIZE);
+        }
+
+        // Reset transform for tooltip drawing (draw in screen coordinates)
+        g2d.setTransform(new java.awt.geom.AffineTransform());
+        drawHoverTooltip(g2d);
+    }
+
+    /**
+     * Draws the hover tooltip near the mouse cursor
+     * @param g2d Graphics2D object
+     */
+    private void drawHoverTooltip(Graphics2D g2d) {
+        if (hoverTooltipText != null && hoverTooltipPosition != null) {
+            // Create a temporary JLabel to measure the text
+            JLabel tempLabel = new JLabel(hoverTooltipText);
+            tempLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+            tempLabel.setSize(tempLabel.getPreferredSize());
+
+            int tooltipWidth = tempLabel.getPreferredSize().width + 10;
+            int tooltipHeight = tempLabel.getPreferredSize().height + 8;
+
+            // Draw semi-transparent background
+            g2d.setColor(new Color(0, 0, 0, 200));
+            g2d.fillRoundRect(hoverTooltipPosition.x, hoverTooltipPosition.y,
+                    tooltipWidth, tooltipHeight, 8, 8);
+
+            // Draw border
+            g2d.setColor(new Color(255, 255, 255, 150));
+            g2d.setStroke(new BasicStroke(1));
+            g2d.drawRoundRect(hoverTooltipPosition.x, hoverTooltipPosition.y,
+                    tooltipWidth, tooltipHeight, 8, 8);
+
+            // Draw text
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+
+            // Parse HTML and draw line by line
+            String[] lines = hoverTooltipText.replace("<html>", "").replace("</html>", "").split("<br/>");
+            for (int i = 0; i < lines.length; i++) {
+                g2d.drawString(lines[i],
+                        hoverTooltipPosition.x + 5,
+                        hoverTooltipPosition.y + 15 + (i * 14));
+            }
         }
     }
 

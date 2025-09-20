@@ -25,7 +25,6 @@ public class SimulationVisualizer extends JFrame {
     public static final int DEFAULT_MAP_WIDTH = 50;
     public static final int DEFAULT_MAP_HEIGHT = 50;
 
-    // Modern color scheme
     private static final Color BACKGROUND_COLOR = new Color(45, 45, 50);
     private static final Color PANEL_COLOR = new Color(60, 60, 65);
     private static final Color PRIMARY_BUTTON_COLOR = new Color(70, 130, 180);
@@ -42,6 +41,9 @@ public class SimulationVisualizer extends JFrame {
 
     @Getter
     private JCheckBox showFlagsCheckbox;
+
+    @Getter
+    private JCheckBox showTooltip;
 
     private final SimulationEngine engine;
     private final TilePanel tilePanel;
@@ -292,6 +294,14 @@ public class SimulationVisualizer extends JFrame {
         });
         showFlagsCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showFlagsCheckbox);
+
+        showTooltip = createModernCheckBox("Show Tooltip", false);
+        showTooltip.addActionListener(e -> {
+            state.setShowTooltip(showTooltip.isSelected());
+            tilePanel.repaint();
+        });
+        showTooltip.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(showTooltip);
 
         panel.add(Box.createVerticalStrut(20));
 
