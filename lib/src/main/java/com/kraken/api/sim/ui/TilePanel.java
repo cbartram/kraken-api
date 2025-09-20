@@ -48,16 +48,21 @@ public class TilePanel extends JPanel implements SimulationObserver {
         this.state = state;
         this.engine = engine;
         this.engine.addObserver(this);
+
+        setFocusable(true);
+        requestFocusInWindow();
         setPreferredSize(new Dimension(
                 (int)(DEFAULT_MAP_WIDTH * TILE_SIZE * zoomLevel),
                 (int)(DEFAULT_MAP_HEIGHT * TILE_SIZE * zoomLevel)
         ));
         setBackground(Color.BLACK);
 
-        addKeyListener(new KeyAdapter() {
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("P"), "updatePlayerPosition");
+        getActionMap().put("updatePlayerPosition", new AbstractAction() {
             @Override
-            public void keyPressed(KeyEvent e) {
-                if(e.getKeyCode() == KeyEvent.VK_P && hoveredTile != null) {
+            public void actionPerformed(ActionEvent e) {
+                if(hoveredTile != null) {
+                    engine.reset();
                     engine.setPlayerPosition(hoveredTile);
                     repaint();
                 }
