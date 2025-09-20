@@ -45,6 +45,9 @@ public class SimulationVisualizer extends JFrame {
     @Getter
     private JCheckBox showTooltip;
 
+    @Getter
+    private JCheckBox playerRunning;
+
     private final SimulationEngine engine;
     private final TilePanel tilePanel;
     private final SimulationUIState state;
@@ -312,6 +315,15 @@ public class SimulationVisualizer extends JFrame {
         JPanel simPanel = createSimulationControlPanel();
         simPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(simPanel);
+
+        playerRunning = createModernCheckBox("Player Running", false);
+        playerRunning.addActionListener(e -> {
+            state.setPlayerRunning(playerRunning.isSelected());
+            engine.setPlayerRunning(playerRunning.isSelected());
+            tilePanel.repaint();
+        });
+        playerRunning.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(playerRunning);
 
         panel.add(Box.createVerticalStrut(20));
 

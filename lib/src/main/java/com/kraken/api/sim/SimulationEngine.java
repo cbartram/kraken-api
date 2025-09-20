@@ -24,8 +24,13 @@ import java.util.List;
 public class SimulationEngine {
     private static final int MAX_HISTORY_SIZE = 50; // Limits the amount of times a user can go back in time
 
+    // Simulation running (different from player run enabled move 2 tiles instead of 1)
     @Getter
     private boolean running = false;
+
+    @Getter
+    @Setter
+    private boolean playerRunning = false;
 
     @Getter
     @Setter
@@ -202,13 +207,23 @@ public class SimulationEngine {
         }
 
         if (tick > 0 && !playerCurrentPath.isEmpty()) {
-            if (playerPathIndex < playerCurrentPath.size() - 1) {
-                // Remove the current point (the one we're leaving)
+            Point nextStep;
+
+            if (playerRunning && playerCurrentPath.size() > 1) {
+                // Running: remove two tiles if possible
+                playerCurrentPath.remove(0); // current
+                nextStep = playerCurrentPath.get(0); // next
                 playerCurrentPath.remove(0);
-                Point nextStep = playerCurrentPath.get(0);
+            } else {
+                // Walking: remove one tile
+                nextStep = playerCurrentPath.get(0);
+                playerCurrentPath.remove(0);
+            }
+
+            if (nextStep != null) {
                 setPlayerPosition(nextStep);
             } else {
-                // Path completed, clear it
+                // Path is finished
                 playerCurrentPath.clear();
                 playerPathIndex = 0;
                 stop();
