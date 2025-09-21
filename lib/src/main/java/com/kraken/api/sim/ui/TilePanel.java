@@ -9,6 +9,7 @@ import com.kraken.api.sim.SimulationEngine;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
+import net.runelite.api.NPC;
 
 import javax.swing.*;
 import java.awt.*;
@@ -459,9 +460,61 @@ public class TilePanel extends JPanel implements SimulationObserver {
      */
     private void drawNPCs(Graphics2D g) {
         for (SimNpc npc : engine.getNpcs()) {
-            g.setColor(npc.getColor());
-            g.fillOval(npc.getPosition().x * TILE_SIZE + 4, npc.getPosition().y * TILE_SIZE + 4,
-                    TILE_SIZE - 8, TILE_SIZE - 8);
+            int npcSize = npc.getSize();
+            int x = npc.getPosition().x * TILE_SIZE;
+            int y = npc.getPosition().y * TILE_SIZE;
+
+            if (npcSize == 1) {
+                g.setColor(npc.getColor());
+                g.setStroke(new BasicStroke(2));
+                g.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                g.setColor(Color.BLACK);
+                g.drawString(String.valueOf(npc.getName().charAt(0)), x + 6, y + 14);
+            } else {
+                int totalWidth = npcSize * TILE_SIZE;
+                int totalHeight = npcSize * TILE_SIZE;
+
+                Color npcColor = npc.getColor();
+                Color transparentColor = new Color(
+                        npcColor.getRed(),
+                        npcColor.getGreen(),
+                        npcColor.getBlue(),
+                        180
+                );
+
+                g.setColor(transparentColor);
+                g.fillRect(x + 1, y + 1, totalWidth - 2, totalHeight - 2);
+
+                g.setColor(npcColor); // Use full opacity for border
+                g.setStroke(new BasicStroke(3));
+                g.drawRect(x + 1, y + 1, totalWidth - 2, totalHeight - 2);
+
+                g.setColor(new Color(npcColor.getRed(), npcColor.getGreen(), npcColor.getBlue(), 100));
+                g.setStroke(new BasicStroke(1));
+
+                for (int i = 1; i < npcSize; i++) {
+                    int lineX = x + i * TILE_SIZE;
+                    g.drawLine(lineX, y + 1, lineX, y + totalHeight - 1);
+                }
+
+                for (int i = 1; i < npcSize; i++) {
+                    int lineY = y + i * TILE_SIZE;
+                    g.drawLine(x + 1, lineY, x + totalWidth - 1, lineY);
+                }
+
+                int nameX = x + 6;
+                int nameY = y + (npcSize - 1) * TILE_SIZE + 14;
+
+                g.setColor(Color.WHITE);
+                g.setStroke(new BasicStroke(3));
+                g.drawString(String.valueOf(npc.getName().charAt(0)), nameX - 1, nameY);
+                g.drawString(String.valueOf(npc.getName().charAt(0)), nameX + 1, nameY);
+                g.drawString(String.valueOf(npc.getName().charAt(0)), nameX, nameY - 1);
+                g.drawString(String.valueOf(npc.getName().charAt(0)), nameX, nameY + 1);
+
+                g.setColor(Color.BLACK);
+                g.drawString(String.valueOf(npc.getName().charAt(0)), nameX, nameY);
+            }
         }
     }
 
