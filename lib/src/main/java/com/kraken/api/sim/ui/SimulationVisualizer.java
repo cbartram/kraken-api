@@ -2,7 +2,8 @@ package com.kraken.api.sim.ui;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.sim.SimulationEngine;
+import com.kraken.api.sim.engine.SimulationEngine;
+import com.kraken.api.sim.model.AttackStyle;
 import com.kraken.api.sim.model.SimNpc;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +41,9 @@ public class SimulationVisualizer extends JFrame {
     private JTextField npcNameField;
     private JButton npcColorButton;
     private Color selectedNpcColor = Color.BLUE;
-    private JSpinner aggressionRadiusSpinner;
-    private JSpinner wanderRadiusSpinner;
-    private JCheckBox aggressiveCheckbox;
+    private JSpinner sizeSpinner;
+    private JComboBox<AttackStyle> npcAttackStyleCombo;
+    private JSpinner attackRangeSpinner;
     private DefaultListModel<SimNpc> npcListModel;
     private JList<SimNpc> npcList;
 
@@ -513,8 +514,6 @@ public class SimulationVisualizer extends JFrame {
         }
     }
 
-
-    // NPC UI STUFF =========================
     /**
      * Creates the NPC properties configuration panel
      */
@@ -560,35 +559,42 @@ public class SimulationVisualizer extends JFrame {
         npcColorButton = createColorButton();
         panel.add(npcColorButton, gbc);
 
-        // Aggressive checkbox
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
-        aggressiveCheckbox = createModernCheckBox("Aggressive", true);
-        panel.add(aggressiveCheckbox, gbc);
-        gbc.gridwidth = 1;
-
-        // Aggression radius
-        gbc.gridx = 0; gbc.gridy = 3;
-        JLabel aggroLabel = new JLabel("Aggro Radius:");
-        aggroLabel.setForeground(TEXT_COLOR);
-        aggroLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        panel.add(aggroLabel, gbc);
-
-        gbc.gridx = 1;
-        aggressionRadiusSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
-        styleSpinner(aggressionRadiusSpinner);
-        panel.add(aggressionRadiusSpinner, gbc);
-
-        // Wander radius
+        // Size field
         gbc.gridx = 0; gbc.gridy = 4;
-        JLabel wanderLabel = new JLabel("Wander Radius:");
-        wanderLabel.setForeground(TEXT_COLOR);
-        wanderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        panel.add(wanderLabel, gbc);
+        JLabel sizeLabel = new JLabel("Size:");
+        sizeLabel.setForeground(TEXT_COLOR);
+        sizeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(sizeLabel, gbc);
 
         gbc.gridx = 1;
-        wanderRadiusSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
-        styleSpinner(wanderRadiusSpinner);
-        panel.add(wanderRadiusSpinner, gbc);
+        sizeSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 20, 1));
+        styleSpinner(sizeSpinner);
+        panel.add(sizeSpinner, gbc);
+
+        // Attack Style
+        gbc.gridx = 0; gbc.gridy = 2;
+        JLabel styleLabel = new JLabel("Attack Style:");
+        styleLabel.setForeground(TEXT_COLOR);
+        styleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(styleLabel, gbc);
+
+        gbc.gridx = 1;
+        npcAttackStyleCombo = new JComboBox<>(AttackStyle.values());
+        npcAttackStyleCombo.setBackground(BACKGROUND_COLOR);
+        npcAttackStyleCombo.setForeground(TEXT_COLOR);
+        panel.add(npcAttackStyleCombo, gbc);
+
+        // Attack Range
+        gbc.gridx = 0; gbc.gridy = 3;
+        JLabel rangeLabel = new JLabel("Attack Range:");
+        rangeLabel.setForeground(TEXT_COLOR);
+        rangeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(rangeLabel, gbc);
+
+        gbc.gridx = 1;
+        attackRangeSpinner = new JSpinner(new SpinnerNumberModel(1, 0, 100, 1));
+        styleSpinner(attackRangeSpinner);
+        panel.add(attackRangeSpinner, gbc);
 
         return panel;
     }
@@ -651,7 +657,7 @@ public class SimulationVisualizer extends JFrame {
                             npc.getName(),
                             npc.getPosition().x,
                             npc.getPosition().y,
-                            npc.isAggressive() ? "(Aggro)" : "(Passive)")
+                            npc.getAttackStyle().name())
                     );
 
                     // Show color indicator
@@ -792,12 +798,12 @@ public class SimulationVisualizer extends JFrame {
         }
 
         SimNpc npc = new SimNpc(position, selectedNpcColor, name);
-        npc.setAggressive(aggressiveCheckbox.isSelected());
-        npc.setAggressionRadius((Integer) aggressionRadiusSpinner.getValue());
-        npc.setWanderRadius((Integer) wanderRadiusSpinner.getValue());
-
+        npc.setSize((int) sizeSpinner.getValue());
+        npc.setAttackStyle((AttackStyle) npcAttackStyleCombo.getSelectedItem());
+        npc.setAttackRange((Integer) attackRangeSpinner.getValue());
         return npc;
     }
+
 
     /**
      * Removes an NPC from the UI list
@@ -816,18 +822,13 @@ public class SimulationVisualizer extends JFrame {
         populateFieldsFromNpc(npc);
     }
 
-    /**
-     * Populates the property fields with an NPC's current values
-     */
     private void populateFieldsFromNpc(SimNpc npc) {
         npcNameField.setText(npc.getName());
         selectedNpcColor = npc.getColor();
         npcColorButton.setBackground(selectedNpcColor);
-        aggressiveCheckbox.setSelected(npc.isAggressive());
-        aggressionRadiusSpinner.setValue(npc.getAggressionRadius());
-        wanderRadiusSpinner.setValue(npc.getWanderRadius());
+        npcAttackStyleCombo.setSelectedItem(npc.getAttackStyle());
+        attackRangeSpinner.setValue(npc.getAttackRange());
     }
-
     /**
      * Opens detailed edit dialog for an NPC
      */
@@ -912,12 +913,6 @@ public class SimulationVisualizer extends JFrame {
         });
         formPanel.add(colorButton, gbc);
 
-        // Aggressive checkbox
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
-        JCheckBox aggressiveBox = createModernCheckBox("Aggressive", npc.isAggressive());
-        formPanel.add(aggressiveBox, gbc);
-        gbc.gridwidth = 1;
-
         // Size field
         gbc.gridx = 0; gbc.gridy = 4;
         JLabel sizeLabel = new JLabel("Size:");
@@ -930,29 +925,31 @@ public class SimulationVisualizer extends JFrame {
         styleSpinner(sizeSpinner);
         formPanel.add(sizeSpinner, gbc);
 
-        // Aggression radius
-        gbc.gridx = 0; gbc.gridy = 5;
-        JLabel aggroLabel = new JLabel("Aggression Radius:");
-        aggroLabel.setForeground(TEXT_COLOR);
-        aggroLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        formPanel.add(aggroLabel, gbc);
+        // Attack Style
+        gbc.gridx = 0; gbc.gridy = 3;
+        JLabel styleLabel = new JLabel("Attack Style:");
+        styleLabel.setForeground(TEXT_COLOR);
+        styleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(styleLabel, gbc);
 
         gbc.gridx = 1;
-        JSpinner aggroSpinner = new JSpinner(new SpinnerNumberModel(npc.getAggressionRadius(), 1, 50, 1));
-        styleSpinner(aggroSpinner);
-        formPanel.add(aggroSpinner, gbc);
+        JComboBox<AttackStyle> styleCombo = new JComboBox<>(AttackStyle.values());
+        styleCombo.setSelectedItem(npc.getAttackStyle());
+        styleCombo.setBackground(BACKGROUND_COLOR);
+        styleCombo.setForeground(TEXT_COLOR);
+        formPanel.add(styleCombo, gbc);
 
-        // Wander radius
-        gbc.gridx = 0; gbc.gridy = 6;
-        JLabel wanderLabel = new JLabel("Wander Radius:");
-        wanderLabel.setForeground(TEXT_COLOR);
-        wanderLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        formPanel.add(wanderLabel, gbc);
+        // Attack Range
+        gbc.gridx = 0; gbc.gridy = 4;
+        JLabel rangeLabel = new JLabel("Attack Range:");
+        rangeLabel.setForeground(TEXT_COLOR);
+        rangeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(rangeLabel, gbc);
 
         gbc.gridx = 1;
-        JSpinner wanderSpinner = new JSpinner(new SpinnerNumberModel(npc.getWanderRadius(), 1, 50, 1));
-        styleSpinner(wanderSpinner);
-        formPanel.add(wanderSpinner, gbc);
+        JSpinner rangeSpinner = new JSpinner(new SpinnerNumberModel(npc.getAttackRange(), 0, 50, 1));
+        styleSpinner(rangeSpinner);
+        formPanel.add(rangeSpinner, gbc);
 
         // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -972,10 +969,9 @@ public class SimulationVisualizer extends JFrame {
             }
 
             npc.setColor(colorButton.getBackground());
-            npc.setAggressive(aggressiveBox.isSelected());
+            npc.setAttackStyle((AttackStyle) styleCombo.getSelectedItem());
+            npc.setAttackRange((Integer) rangeSpinner.getValue());
             npc.setSize((Integer) sizeSpinner.getValue());
-            npc.setAggressionRadius((Integer) aggroSpinner.getValue());
-            npc.setWanderRadius((Integer) wanderSpinner.getValue());
 
             // Refresh UI
             npcList.repaint();

@@ -5,11 +5,10 @@ import com.google.inject.Singleton;
 import com.kraken.api.interaction.tile.MovementFlag;
 import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.SimNpc;
-import com.kraken.api.sim.SimulationEngine;
+import com.kraken.api.sim.engine.SimulationEngine;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.CollisionDataFlag;
-import net.runelite.api.NPC;
 
 import javax.swing.*;
 import java.awt.*;
@@ -740,10 +739,9 @@ public class TilePanel extends JPanel implements SimulationObserver {
 
         // Add NPC info if present
         if (hoveredNpc != null) {
-            tooltipContent.append(String.format("<br/><b>NPC: %s</b><br/>", hoveredNpc.getName()));
-            tooltipContent.append(String.format("Type: %s<br/>", hoveredNpc.isAggressive() ? "Aggressive" : "Passive"));
-            tooltipContent.append(String.format("Aggro Radius: %d<br/>", hoveredNpc.getAggressionRadius()));
-            tooltipContent.append(String.format("Wander Radius: %d<br/>", hoveredNpc.getWanderRadius()));
+            tooltipContent.append(String.format("<br/>Name: %s<br/>", hoveredNpc.getName()));
+            tooltipContent.append(String.format("Type: %s<br/>", hoveredNpc.getAttackStyle().name()));
+            tooltipContent.append(String.format("Attack Range: %d<br/>", hoveredNpc.getAttackRange()));
         }
 
         tooltipContent.append(String.format("Zoom: %.1fx</html>", zoomLevel));

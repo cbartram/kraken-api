@@ -1,9 +1,10 @@
-package com.kraken.api.sim;
+package com.kraken.api.sim.engine;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.CollisionMap;
+import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.GameState;
 import com.kraken.api.sim.model.SimNpc;
 import lombok.Getter;
@@ -15,7 +16,10 @@ import javax.swing.Timer;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
+
+// TODO
+// 1. NPC's need to be able to try to found a way out if player moves under them
+// 2. Add canPathfind property to NPC's to enable BFS pathfinding (with special NPC movement like diag,hori,vertial order)
 
 /**
  * Simulation engine for NPC and player movement.
@@ -195,15 +199,23 @@ public class SimulationEngine {
      */
     public void tick() {
         saveCurrentState();
-        for (SimNpc npc : npcs) {
-            Point npcPos = npc.getPosition();
-            Point playerPos = getPlayerPosition();
 
-            // Find next move towards player
-            Point nextMove = calculateNextMove(npcPos, playerPos);
-            if (nextMove != null && isValidMove(npcPos, nextMove)) {
-                addNPCPathPoint(npc, new Point(npcPos));
-                npc.setPosition(nextMove);
+        if(tick > 0) {
+            for (SimNpc npc : npcs) {
+                Point npcPos = npc.getPosition();
+                Point playerPos = getPlayerPosition();
+
+                // Check for corner trap condition first
+                if (isPlayerCornerTrapped(npcPos, playerPos)) {
+                    continue; // Skip movement for this NPC
+                }
+
+                // Find next move towards player
+                Point nextMove = calculateNextMove(npcPos, playerPos, npc);
+                if (nextMove != null && !isOccupiedByNPC(nextMove, npc) && !isOccupiedByPlayer(nextMove, npc)) {
+                    addNPCPathPoint(npc, new Point(npcPos));
+                    npc.setPosition(nextMove);
+                }
             }
         }
 
@@ -250,39 +262,203 @@ public class SimulationEngine {
     }
 
     /**
+     * Returns true if the movement is valid given collision flags and false otherwise. This takes
+     * into account diagonal movement as well.
+     * @param from Point starting point
+     * @param to Point ending point
+     * @return True if the movement between the 2 points is valid and false otherwise.
+     */
+    private boolean isValidMove(Point from, Point to) {
+        if (to.x < 0 || to.x >= collisionData[0].length || to.y < 0 || to.y >= collisionData.length) {
+            return false;
+        }
+
+        // Check collision flags
+        int toFlags = collisionData[to.y][to.x];
+
+        // Check if destination is blocked
+        if ((toFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0 ||
+                (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_OBJECT) != 0) {
+            return false;
+        }
+
+        // Check directional blocks
+        int dx = to.x - from.x;
+        int dy = to.y - from.y;
+
+        if (dx > 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
+        if (dx < 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0) return false;
+        if (dy > 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
+        if (dy < 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
+
+        // Check if leaving current tile is blocked
+        int fromFlags = collisionData[from.y][from.x];
+        if (dx > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0) return false;
+        if (dx < 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
+        if (dy > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
+        return dy >= 0 || (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+    }
+
+    /**
+     * Returns true if the movement is valid for an NPC of a specific size.
+     * Checks collision for all tiles that the NPC occupies.
+     * @param from Point starting point (southwest tile)
+     * @param to Point ending point (southwest tile)
+     * @param npcSize Size of the NPC (1 for 1x1, 2 for 2x2, 3 for 3x3, etc.)
+     * @return True if the movement is valid for all tiles the NPC occupies
+     */
+    private boolean isValidMoveForNPC(Point from, Point to, int npcSize) {
+        // Check all tiles that the NPC will occupy at the destination
+        for (int dx = 0; dx < npcSize; dx++) {
+            for (int dy = 0; dy < npcSize; dy++) {
+                Point currentTile = new Point(from.x + dx, from.y + dy);
+                Point destinationTile = new Point(to.x + dx, to.y + dy);
+
+                // Check if this specific tile movement is valid
+                if (!isValidMove(currentTile, destinationTile)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Computes the next viable movement position for an NPC given 2 points.
+     * Prioritizes diagonal movement, then horizontal, then vertical.
      * @param from The point that the NPC is currently at
      * @param to The point the NPC wants to move towards.
+     * @param npc The NPC that is moving (for collision checking with other NPCs)
      * @return Point a viable point or null if no point is viable in any direction
      */
-    private Point calculateNextMove(Point from, Point to) {
+    private Point calculateNextMove(Point from, Point to, SimNpc npc) {
         int dx = Integer.compare(to.x, from.x);
         int dy = Integer.compare(to.y, from.y);
 
-        // Try diagonal movement first
+        int npcSize = npc.getSize();
+
+        // Priority 1: Try diagonal movement first
         if (dx != 0 && dy != 0) {
             Point diagonal = new Point(from.x + dx, from.y + dy);
-            if (isValidMove(from, diagonal)) {
+            if (isValidMoveForNPC(from, diagonal, npcSize) && !isOccupiedByNPC(diagonal, npc) &&
+                    !isOccupiedByPlayer(diagonal, npc)) {
                 return diagonal;
             }
         }
 
-        // Try horizontal/vertical movement
+        // Priority 2: Try horizontal movement
         if (dx != 0) {
             Point horizontal = new Point(from.x + dx, from.y);
-            if (isValidMove(from, horizontal)) {
+            if (isValidMoveForNPC(from, horizontal, npcSize) && !isOccupiedByNPC(horizontal, npc) &&
+                    !isOccupiedByPlayer(horizontal, npc)) {
                 return horizontal;
             }
         }
 
+        // Priority 3: Try vertical movement
         if (dy != 0) {
             Point vertical = new Point(from.x, from.y + dy);
-            if (isValidMove(from, vertical)) {
+            if (isValidMoveForNPC(from, vertical, npcSize) && !isOccupiedByNPC(vertical, npc) &&
+                    !isOccupiedByPlayer(vertical, npc)) {
                 return vertical;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Checks if a position is occupied by another NPC, taking into account NPC sizes.
+     * @param position The position to check
+     * @param movingNpc The NPC that wants to move (to exclude from collision check)
+     * @return True if the position would cause NPCs to overlap, false otherwise
+     */
+    private boolean isOccupiedByNPC(Point position, SimNpc movingNpc) {
+        int movingSize = movingNpc.getSize(); // Assuming getSize() returns 1 for 1x1, 2 for 2x2, etc.
+
+        for (SimNpc otherNpc : npcs) {
+            if (otherNpc == movingNpc) continue; // Skip self
+
+            Point otherPos = otherNpc.getPosition();
+            int otherSize = otherNpc.getSize();
+
+            // Check if the bounding boxes would overlap
+            if (isOverlapping(position, movingSize, otherPos, otherSize)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if two NPCs with given positions and sizes would overlap.
+     * @param pos1 Position of first NPC
+     * @param size1 Size of first NPC
+     * @param pos2 Position of second NPC
+     * @param size2 Size of second NPC
+     * @return True if they would overlap, false otherwise
+     */
+    private boolean isOverlapping(Point pos1, int size1, Point pos2, int size2) {
+        // Calculate bounding boxes
+        int left1 = pos1.x, right1 = pos1.x + size1 - 1;
+        int top1 = pos1.y, bottom1 = pos1.y + size1 - 1;
+
+        int left2 = pos2.x, right2 = pos2.x + size2 - 1;
+        int top2 = pos2.y, bottom2 = pos2.y + size2 - 1;
+
+        // Check if rectangles overlap
+        return !(right1 < left2 || right2 < left1 || bottom1 < top2 || bottom2 < top1);
+    }
+
+    /**
+     * Checks if a position would cause the NPC to overlap with the player.
+     * NPCs should position their southwest tile to be adjacent to the player, not overlapping.
+     * @param position The position the NPC wants to move to
+     * @param npc The NPC that wants to move
+     * @return True if the position would cause overlap with player, false otherwise
+     */
+    private boolean isOccupiedByPlayer(Point position, SimNpc npc) {
+        Point playerPos = getPlayerPosition();
+        int npcSize = npc.getSize();
+
+        return isOverlapping(position, npcSize, playerPos, 1);
+    }
+
+
+    /**
+     * Checks if the player is corner trapped relative to the NPC position.
+     * This happens when the NPC is diagonal to the player and the player cannot move
+     * in any direction due to collisions.
+     * @param npcPos Current NPC position
+     * @param playerPos Current player position
+     * @return True if player is corner trapped and NPC should not move, false otherwise
+     */
+    private boolean isPlayerCornerTrapped(Point npcPos, Point playerPos) {
+        int dx = playerPos.x - npcPos.x;
+        int dy = playerPos.y - npcPos.y;
+
+        if (dx == 0 || dy == 0) {
+            return false;
+        }
+
+        Point[] adjacentTiles = {
+                new Point(playerPos.x + 1, playerPos.y),     // East
+                new Point(playerPos.x - 1, playerPos.y),     // West
+                new Point(playerPos.x, playerPos.y + 1),     // South
+                new Point(playerPos.x, playerPos.y - 1),     // North
+                new Point(playerPos.x + 1, playerPos.y + 1), // Southeast
+                new Point(playerPos.x - 1, playerPos.y + 1), // Southwest
+                new Point(playerPos.x + 1, playerPos.y - 1), // Northeast
+                new Point(playerPos.x - 1, playerPos.y - 1)  // Northwest
+        };
+
+        for (Point adjacent : adjacentTiles) {
+            if (isValidMove(playerPos, adjacent)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -351,44 +527,6 @@ public class SimulationEngine {
     }
 
     /**
-     * Returns true if the movement is valid given collision flags and false otherwise. This takes
-     * into account diagonal movement as well.
-     * @param from Point starting point
-     * @param to Point ending point
-     * @return True if the movement between the 2 points is valid and false otherwise.
-     */
-    private boolean isValidMove(Point from, Point to) {
-        if (to.x < 0 || to.x >= collisionData[0].length || to.y < 0 || to.y >= collisionData.length) {
-            return false;
-        }
-
-        // Check collision flags
-        int toFlags = collisionData[to.y][to.x];
-
-        // Check if destination is blocked
-        if ((toFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0 ||
-                (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_OBJECT) != 0) {
-            return false;
-        }
-
-        // Check directional blocks
-        int dx = to.x - from.x;
-        int dy = to.y - from.y;
-
-        if (dx > 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
-        if (dx < 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0) return false;
-        if (dy > 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
-        if (dy < 0 && (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
-
-        // Check if leaving current tile is blocked
-        int fromFlags = collisionData[from.y][from.x];
-        if (dx > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0) return false;
-        if (dx < 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
-        if (dy > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
-        return dy >= 0 || (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
-    }
-
-    /**
      * Removes the last NPC pathing point
      * @param npc Simulated NPC to remove point from
      */
@@ -425,213 +563,6 @@ public class SimulationEngine {
         npcs.remove(npc);
         npcPaths.remove(npc);
         notifyObservers();
-    }
-
-    /**
-     * Clears all NPCs from the simulation
-     */
-    public void clearAllNpcs() {
-        npcs.clear();
-        npcPaths.clear();
-        notifyObservers();
-    }
-
-    /**
-     * Gets an NPC at a specific position
-     */
-    public SimNpc getNpcAtPosition(Point position) {
-        return npcs.stream()
-                .filter(npc -> npc.getPosition().equals(position))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * Moves an NPC to a new position
-     */
-    public void moveNpc(SimNpc npc, Point newPosition) {
-        if (npcs.contains(npc)) {
-            npc.setPosition(newPosition);
-            notifyObservers();
-        }
-    }
-
-    /**
-     * Updates NPC target for pathfinding
-     */
-    public void setNpcTarget(SimNpc npc, Point target) {
-        if (npcs.contains(npc)) {
-            npc.setTarget(target);
-
-            // Calculate new path to target
-            List<Point> newPath = findPath(npc.getPosition(), target);
-            npcPaths.put(npc, newPath);
-            notifyObservers();
-        }
-    }
-
-    /**
-     * Gets all NPCs within a certain radius of a position
-     */
-    public List<SimNpc> getNpcsInRadius(Point center, int radius) {
-        return npcs.stream()
-                .filter(npc -> {
-                    int dx = npc.getPosition().x - center.x;
-                    int dy = npc.getPosition().y - center.y;
-                    return Math.sqrt(dx * dx + dy * dy) <= radius;
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Updates NPC behavior during simulation tick
-     */
-    private void updateNpcBehavior() {
-        if (npcs.isEmpty()) return;
-
-        for (SimNpc npc : npcs) {
-            updateSingleNpcBehavior(npc);
-        }
-    }
-
-    /**
-     * Updates behavior for a single NPC
-     */
-    private void updateSingleNpcBehavior(SimNpc npc) {
-        Point npcPos = npc.getPosition();
-        Point playerPos = getPlayerPosition();
-
-        // Calculate distance to player
-        double distanceToPlayer = Math.sqrt(
-                Math.pow(npcPos.x - playerPos.x, 2) +
-                        Math.pow(npcPos.y - playerPos.y, 2)
-        );
-
-        if (npc.isAggressive() && distanceToPlayer <= npc.getAggressionRadius()) {
-            // Aggressive NPC: chase player
-            if (!npc.getTarget().equals(playerPos)) {
-                setNpcTarget(npc, new Point(playerPos.x, playerPos.y));
-            }
-        } else {
-            // Passive or out of aggro range: wander behavior
-            if (npc.getTarget() == null || npc.getPosition().equals(npc.getTarget())) {
-                // Generate new wander target
-                Point wanderTarget = generateWanderTarget(npc);
-                if (wanderTarget != null) {
-                    setNpcTarget(npc, wanderTarget);
-                }
-            }
-        }
-
-        // Move NPC along its path
-        moveNpcAlongPath(npc);
-    }
-
-    /**
-     * Generates a random wander target within the NPC's wander radius
-     */
-    private Point generateWanderTarget(SimNpc npc) {
-        Random random = new Random();
-        int attempts = 0;
-        int maxAttempts = 10;
-
-        while (attempts < maxAttempts) {
-            int wanderRadius = npc.getWanderRadius();
-            int deltaX = random.nextInt(wanderRadius * 2 + 1) - wanderRadius;
-            int deltaY = random.nextInt(wanderRadius * 2 + 1) - wanderRadius;
-
-            Point target = new Point(
-                    npc.getPosition().x + deltaX,
-                    npc.getPosition().y + deltaY
-            );
-
-            // Check if target is within map bounds and walkable
-            if (isValidPosition(target)) {
-                return target;
-            }
-
-            attempts++;
-        }
-
-        return null; // Couldn't find valid wander target
-    }
-
-    /**
-     * Moves an NPC along its calculated path
-     */
-    private void moveNpcAlongPath(SimNpc npc) {
-        List<Point> path = npcPaths.get(npc);
-        if (path == null || path.isEmpty()) return;
-
-        // Find current position in path
-        Point currentPos = npc.getPosition();
-        int currentIndex = -1;
-
-        for (int i = 0; i < path.size(); i++) {
-            if (path.get(i).equals(currentPos)) {
-                currentIndex = i;
-                break;
-            }
-        }
-
-        // Move to next position in path
-        if (currentIndex >= 0 && currentIndex < path.size() - 1) {
-            Point nextPos = path.get(currentIndex + 1);
-            if (isValidPosition(nextPos)) {
-                npc.setPosition(new Point(nextPos.x, nextPos.y));
-            }
-        }
-    }
-
-    /**
-     * Checks if a position is valid (within bounds and walkable)
-     */
-    private boolean isValidPosition(Point position) {
-        int[][] data = getCollisionData();
-        return position.x >= 0 && position.x < data[0].length &&
-                position.y >= 0 && position.y < data.length &&
-                data[position.y][position.x] == 0;
-    }
-
-    /**
-     * Finds the closest NPC to a given position
-     */
-    public SimNpc getClosestNpc(Point position) {
-        if (npcs.isEmpty()) return null;
-        SimNpc closest = null;
-        double minDistance = Double.MAX_VALUE;
-
-        for (SimNpc npc : npcs) {
-            double distance = Math.sqrt(
-                    Math.pow(npc.getPosition().x - position.x, 2) +
-                            Math.pow(npc.getPosition().y - position.y, 2)
-            );
-
-            if (distance < minDistance) {
-                minDistance = distance;
-                closest = npc;
-            }
-        }
-
-        return closest;
-    }
-
-    /**
-     * Gets count of aggressive NPCs
-     */
-    public int getAggressiveNpcCount() {
-        return (int) npcs.stream()
-                .filter(SimNpc::isAggressive)
-                .count();
-    }
-
-    /**
-     * Gets count of passive NPCs
-     */
-    public int getPassiveNpcCount() {
-        return (int) npcs.stream()
-                .filter(npc -> !npc.isAggressive())
-                .count();
     }
 
     /**
