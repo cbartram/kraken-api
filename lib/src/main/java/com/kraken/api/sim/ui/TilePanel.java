@@ -461,7 +461,10 @@ public class TilePanel extends JPanel implements SimulationObserver {
         for (SimNpc npc : engine.getNpcs()) {
             int npcSize = npc.getSize();
             int x = npc.getPosition().x * TILE_SIZE;
-            int y = npc.getPosition().y * TILE_SIZE;
+
+            // This ensures the southwest tile is the tile we draw from.
+            int y = (npc.getPosition().y - (npcSize - 1)) * TILE_SIZE;
+
 
             if (npcSize == 1) {
                 g.setColor(npc.getColor());
@@ -478,34 +481,35 @@ public class TilePanel extends JPanel implements SimulationObserver {
                         npcColor.getRed(),
                         npcColor.getGreen(),
                         npcColor.getBlue(),
-                        180
+                        120
                 );
 
+                // Body (semi-transparent fill)
                 g.setColor(transparentColor);
                 g.fillRect(x + 1, y + 1, totalWidth - 2, totalHeight - 2);
 
-                g.setColor(npcColor); // Use full opacity for border
+                // Border
+                g.setColor(npcColor);
                 g.setStroke(new BasicStroke(3));
                 g.drawRect(x + 1, y + 1, totalWidth - 2, totalHeight - 2);
 
+                // Grid lines
                 g.setColor(new Color(npcColor.getRed(), npcColor.getGreen(), npcColor.getBlue(), 100));
                 g.setStroke(new BasicStroke(1));
-
                 for (int i = 1; i < npcSize; i++) {
                     int lineX = x + i * TILE_SIZE;
                     g.drawLine(lineX, y + 1, lineX, y + totalHeight - 1);
                 }
-
                 for (int i = 1; i < npcSize; i++) {
                     int lineY = y + i * TILE_SIZE;
                     g.drawLine(x + 1, lineY, x + totalWidth - 1, lineY);
                 }
 
+                // Name (shadow + text)
                 int nameX = x + 6;
                 int nameY = y + (npcSize - 1) * TILE_SIZE + 14;
 
                 g.setColor(Color.WHITE);
-                g.setStroke(new BasicStroke(3));
                 g.drawString(String.valueOf(npc.getName().charAt(0)), nameX - 1, nameY);
                 g.drawString(String.valueOf(npc.getName().charAt(0)), nameX + 1, nameY);
                 g.drawString(String.valueOf(npc.getName().charAt(0)), nameX, nameY - 1);
@@ -638,6 +642,8 @@ public class TilePanel extends JPanel implements SimulationObserver {
 
     /**
      * Handles placing a new NPC at the specified tile
+     * TODO Allows placing where the SW tile may be in a valid spot for NxN NPC's other tiles may intercept with
+     *   collision tiles incorrectly
      */
     private void handleNpcPlacement(int tileX, int tileY) {
         // Check if tile is walkable
@@ -652,11 +658,43 @@ public class TilePanel extends JPanel implements SimulationObserver {
             showTemporaryMessage("NPC already exists at this location!");
             return;
         }
+        int npcSize = (int) visualizer.getSizeSpinner().getValue();
 
-        Point position = new Point(tileX, tileY);
-        SimNpc newNpc = visualizer.createNpcFromCurrentSettings(position);
+        // Check if there are already NPCs in any of the tiles this NPC will occupy
+        if (hasNpcInArea(tileX, tileY, npcSize)) {
+            showTemporaryMessage("NPC already exists in this area!");
+            return;
+        }
+
+        // Calculate the Southwest tile from this clicked location
+        Point sw = new Point(tileX, tileY);
+        SimNpc newNpc = visualizer.createNpcFromCurrentSettings(sw);
         visualizer.addNpcToSimulation(newNpc);
         showTemporaryMessage("NPC '" + newNpc.getName() + "' placed!");
+    }
+
+    /**
+     * Checks if any NPCs exist in the area where we want to place a new NPC
+     */
+    private boolean hasNpcInArea(int northwestX, int northwestY, int npcSize) {
+        for (SimNpc existingNpc : engine.getNpcs()) {
+            if (npcAreasOverlap(northwestX, northwestY, npcSize,
+                    existingNpc.getPosition().x, existingNpc.getPosition().y, existingNpc.getSize())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if two NPC areas overlap
+     */
+    private boolean npcAreasOverlap(int nw1X, int nw1Y, int size1, int nw2X, int nw2Y, int size2) {
+        // Check if rectangles overlap
+        return !(nw1X + size1 <= nw2X || // npc1 is completely to the left of npc2
+                nw2X + size2 <= nw1X || // npc2 is completely to the left of npc1
+                nw1Y + size1 <= nw2Y || // npc1 is completely above npc2
+                nw2Y + size2 <= nw1Y);  // npc2 is completely above npc1
     }
 
     /**

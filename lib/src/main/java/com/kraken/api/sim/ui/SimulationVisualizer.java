@@ -41,14 +41,15 @@ public class SimulationVisualizer extends JFrame {
     private JTextField npcNameField;
     private JButton npcColorButton;
     private Color selectedNpcColor = Color.BLUE;
-    private JSpinner sizeSpinner;
     private JCheckBox canPathfindCheckbox;
     private JComboBox<AttackStyle> npcAttackStyleCombo;
     private JSpinner attackRangeSpinner;
     private DefaultListModel<SimNpc> npcListModel;
     private JList<SimNpc> npcList;
-
     private JButton simulateButton;
+
+    @Getter
+    private JSpinner sizeSpinner;
 
     @Getter
     private JCheckBox showGridCheckbox;

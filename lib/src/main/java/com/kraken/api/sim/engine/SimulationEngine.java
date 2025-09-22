@@ -192,9 +192,6 @@ public class SimulationEngine {
         notifyObservers();
     }
 
-    /**
-     * Progresses the game state by 1 tick.
-     */
     public void tick() {
         saveCurrentState();
 
@@ -205,31 +202,24 @@ public class SimulationEngine {
 
                 if(npc.isCanPathfind()) {
                     List<Point> route = findPath(npcPos, playerPos, npc);
-                    if (!route.isEmpty()) {
-                        // findPath returns a path that starts with the starting tile (npcPos).
-                        // The next step to move to is route.get(1) if it exists.
-                        Point nextMove;
-                        if (route.size() > 1) {
-                            nextMove = route.get(1);
-                        } else {
-                            // route.size() == 1 -> start == goal; nothing to do
-                            nextMove = null;
-                        }
-
-                        if (nextMove != null && !isOccupiedByNPC(nextMove, npc) && !isOccupiedByPlayer(nextMove, npc)) {
+                    if(!route.isEmpty()) {
+                        Point nextMove = route.get(0);
+                        // Check for collisions with other entities
+                        if(!isOccupiedByNPC(nextMove, npc) && !isOccupiedByPlayer(nextMove, npc)) {
                             addNPCPathPoint(npc, new Point(npcPos));
                             npc.setPosition(nextMove);
+                            log.debug("NPC {} moved from {} to {} using pathfinding",
+                                    npc.getName(), npcPos, nextMove);
+                        } else {
+                            log.debug("NPC {} path blocked at {}", npc.getName(), nextMove);
                         }
+                    } else {
+                        log.debug("NPC {} could not find path from {} to {}",
+                                npc.getName(), npcPos, playerPos);
                     }
                     continue;
                 }
 
-                // Check for corner trap condition first
-                if (isPlayerCornerTrapped(npcPos, playerPos)) {
-                    continue; // Skip movement for this NPC
-                }
-
-                // Find next move towards player
                 Point nextMove = calculateNextMove(npcPos, playerPos, npc);
                 if (nextMove != null && !isOccupiedByNPC(nextMove, npc) && !isOccupiedByPlayer(nextMove, npc)) {
                     addNPCPathPoint(npc, new Point(npcPos));
@@ -238,16 +228,14 @@ public class SimulationEngine {
             }
         }
 
+        // Existing player movement logic
         if (tick > 0 && !playerCurrentPath.isEmpty()) {
             Point nextStep;
-
             if (playerRunning && playerCurrentPath.size() > 1) {
-                // Running: remove two tiles if possible
-                playerCurrentPath.remove(0); // current
-                nextStep = playerCurrentPath.get(0); // next
+                playerCurrentPath.remove(0);
+                nextStep = playerCurrentPath.get(0);
                 playerCurrentPath.remove(0);
             } else {
-                // Walking: remove one tile
                 nextStep = playerCurrentPath.get(0);
                 playerCurrentPath.remove(0);
             }
@@ -255,10 +243,8 @@ public class SimulationEngine {
             if (nextStep != null) {
                 setPlayerPosition(nextStep);
             } else {
-                // Path is finished
                 playerCurrentPath.clear();
                 playerPathIndex = 0;
-                stop();
             }
         }
 
@@ -329,8 +315,8 @@ public class SimulationEngine {
         // Check all tiles that the NPC will occupy at the destination
         for (int dx = 0; dx < npcSize; dx++) {
             for (int dy = 0; dy < npcSize; dy++) {
-                Point currentTile = new Point(from.x + dx, from.y + dy);
-                Point destinationTile = new Point(to.x + dx, to.y + dy);
+                Point currentTile = new Point(from.x + dx, from.y - dy);
+                Point destinationTile = new Point(to.x + dx, to.y - dy);
 
                 // Check if this specific tile movement is valid
                 if (!isValidMove(currentTile, destinationTile)) {
@@ -358,17 +344,16 @@ public class SimulationEngine {
         // Priority 1: Try diagonal movement first
         if (dx != 0 && dy != 0) {
             Point diagonal = new Point(from.x + dx, from.y + dy);
-            if (isValidMoveForNPC(from, diagonal, npcSize) && !isOccupiedByNPC(diagonal, npc) &&
-                    !isOccupiedByPlayer(diagonal, npc)) {
+            if (isValidMoveForNPC(from, diagonal, npcSize) && !isOccupiedByNPC(diagonal, npc) && !isOccupiedByPlayer(diagonal, npc)) {
                 return diagonal;
             }
         }
 
+
         // Priority 2: Try horizontal movement
         if (dx != 0) {
             Point horizontal = new Point(from.x + dx, from.y);
-            if (isValidMoveForNPC(from, horizontal, npcSize) && !isOccupiedByNPC(horizontal, npc) &&
-                    !isOccupiedByPlayer(horizontal, npc)) {
+            if (isValidMoveForNPC(from, horizontal, npcSize) && !isOccupiedByNPC(horizontal, npc) && !isOccupiedByPlayer(horizontal, npc)) {
                 return horizontal;
             }
         }
@@ -376,8 +361,7 @@ public class SimulationEngine {
         // Priority 3: Try vertical movement
         if (dy != 0) {
             Point vertical = new Point(from.x, from.y + dy);
-            if (isValidMoveForNPC(from, vertical, npcSize) && !isOccupiedByNPC(vertical, npc) &&
-                    !isOccupiedByPlayer(vertical, npc)) {
+            if (isValidMoveForNPC(from, vertical, npcSize) && !isOccupiedByNPC(vertical, npc) && !isOccupiedByPlayer(vertical, npc)) {
                 return vertical;
             }
         }
@@ -417,14 +401,11 @@ public class SimulationEngine {
      * @return True if they would overlap, false otherwise
      */
     private boolean isOverlapping(Point pos1, int size1, Point pos2, int size2) {
-        // Calculate bounding boxes
         int left1 = pos1.x, right1 = pos1.x + size1 - 1;
         int top1 = pos1.y, bottom1 = pos1.y + size1 - 1;
 
         int left2 = pos2.x, right2 = pos2.x + size2 - 1;
         int top2 = pos2.y, bottom2 = pos2.y + size2 - 1;
-
-        // Check if rectangles overlap
         return !(right1 < left2 || right2 < left1 || bottom1 < top2 || bottom2 < top1);
     }
 
@@ -442,104 +423,93 @@ public class SimulationEngine {
         return isOverlapping(position, npcSize, playerPos, 1);
     }
 
-
     /**
-     * Checks if the player is corner trapped relative to the NPC position.
-     * This happens when the NPC is diagonal to the player and the player cannot move
-     * in any direction due to collisions.
-     * @param npcPos Current NPC position
-     * @param playerPos Current player position
-     * @return True if player is corner trapped and NPC should not move, false otherwise
-     */
-    private boolean isPlayerCornerTrapped(Point npcPos, Point playerPos) {
-        int dx = playerPos.x - npcPos.x;
-        int dy = playerPos.y - npcPos.y;
-
-        if (dx == 0 || dy == 0) {
-            return false;
-        }
-
-        Point[] adjacentTiles = {
-                new Point(playerPos.x + 1, playerPos.y),     // East
-                new Point(playerPos.x - 1, playerPos.y),     // West
-                new Point(playerPos.x, playerPos.y + 1),     // South
-                new Point(playerPos.x, playerPos.y - 1),     // North
-                new Point(playerPos.x + 1, playerPos.y + 1), // Southeast
-                new Point(playerPos.x - 1, playerPos.y + 1), // Southwest
-                new Point(playerPos.x + 1, playerPos.y - 1), // Northeast
-                new Point(playerPos.x - 1, playerPos.y - 1)  // Northwest
-        };
-
-        for (Point adjacent : adjacentTiles) {
-            if (isValidMove(playerPos, adjacent)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Runs a BFS (Breadth-First-Search) algorithm to compute the shortest player path from a starting
+     * Runs a BFS (Breadth-First-Search) algorithm to compute the shortest path from a starting
      * point to a goal point taking into account collision data and obstacles.
-     * @param start Point the starting point of the player
-     * @param goal Point the ending point.
-     * @return A list of shortest path points to the destination
+     * @param start Point the starting point
+     * @param goal Point the ending point
+     * @param npc SimNpc the NPC that is pathfinding (null for player)
+     * @return A list of path points to the destination (excluding start position)
      */
     private List<Point> findPath(Point start, Point goal, SimNpc npc) {
+        if (start.equals(goal)) {
+            return Collections.emptyList();
+        }
+
         boolean[][] visited = new boolean[collisionData.length][collisionData[0].length];
         Point[][] parent = new Point[collisionData.length][collisionData[0].length];
-
         Queue<Point> queue = new ArrayDeque<>();
+
         queue.add(start);
         visited[start.y][start.x] = true;
 
+        // Movement directions: E, W, S, N, SE, NE, SW, NW
         int[] dx = {1, -1, 0, 0, 1, 1, -1, -1};
         int[] dy = {0, 0, 1, -1, 1, -1, 1, -1};
 
         while (!queue.isEmpty()) {
             Point cur = queue.poll();
 
-            if (cur.equals(goal)) {
-                // reconstruct path
+            // For NPCs, check if we're adjacent to the player (goal)
+            // For players, check if we've reached the exact goal
+            boolean reachedGoal = false;
+            if (npc != null) {
+                // NPC pathfinding - check if adjacent to player
+                reachedGoal = isAdjacentToGoal(cur, goal, npc.getSize());
+            } else {
+                // Player pathfinding - exact match
+                reachedGoal = cur.equals(goal);
+            }
+
+            if (reachedGoal) {
+                // Reconstruct path (excluding start position)
                 LinkedList<Point> path = new LinkedList<>();
-                for (Point at = goal; at != null; at = parent[at.y][at.x]) {
+                Point at = cur;
+                while (at != null && !at.equals(start)) {
                     path.addFirst(at);
+                    at = parent[at.y][at.x];
                 }
                 return path;
             }
 
+            // Explore neighbors
             for (int i = 0; i < 8; i++) {
                 Point next = new Point(cur.x + dx[i], cur.y + dy[i]);
+
                 if (!inBounds(next) || visited[next.y][next.x]) {
                     continue;
                 }
 
-                // Check diagonal blocking
-                // TODO This mostly works but with some weird movement for NPC's sometimes they stop short, sometimes they don't move at all
+                // For diagonal movement, check if we can move through the corner
                 if (Math.abs(dx[i]) == 1 && Math.abs(dy[i]) == 1) {
-                    Point horiz = new Point(cur.x + dx[i], cur.y);
-                    Point vert  = new Point(cur.x, cur.y + dy[i]);
+                    Point horizontal = new Point(cur.x + dx[i], cur.y);
+                    Point vertical = new Point(cur.x, cur.y + dy[i]);
+
+                    boolean canMoveHorizontal, canMoveVertical;
+
                     if (npc != null) {
-                        if (!isValidMoveForNPC(cur, horiz, npc.getSize()) || !isValidMoveForNPC(cur, vert, npc.getSize())) {
-                            continue; // corner blocked for big NPC
-                        }
+                        canMoveHorizontal = isValidMoveForNPC(cur, horizontal, npc.getSize());
+                        canMoveVertical = isValidMoveForNPC(cur, vertical, npc.getSize());
                     } else {
-                        if (!isValidMove(cur, horiz) || !isValidMove(cur, vert)) {
-                            continue; // corner blocked for 1x1
-                        }
+                        canMoveHorizontal = isValidMove(cur, horizontal);
+                        canMoveVertical = isValidMove(cur, vertical);
+                    }
+
+                    // Skip diagonal if either cardinal direction is blocked
+                    if (!canMoveHorizontal || !canMoveVertical) {
+                        continue;
                     }
                 }
 
-                // Validate move
-                boolean valid;
+                // Check if the move to 'next' is valid
+                boolean validMove;
                 if (npc != null) {
-                    valid = isValidMoveForNPC(cur, next, npc.getSize());
+                    validMove = isValidMoveForNPC(cur, next, npc.getSize());
                 } else {
-                    valid = isValidMove(cur, next);
+                    validMove = isValidMove(cur, next);
                 }
 
-                if (valid) {
+                if (validMove) {
                     visited[next.y][next.x] = true;
                     parent[next.y][next.x] = cur;
                     queue.add(next);
@@ -547,7 +517,67 @@ public class SimulationEngine {
             }
         }
 
-        return Collections.emptyList();
+        return Collections.emptyList(); // No path found
+    }
+
+
+    /**
+     * Checks if an NPC position is adjacent to the goal (player position)
+     * @param npcPos Current NPC position (southwest corner)
+     * @param playerPos Player position
+     * @param npcSize Size of the NPC
+     * @return True if the NPC is adjacent to the player
+     */
+    private boolean isAdjacentToGoal(Point npcPos, Point playerPos, int npcSize) {
+        // Check all tiles around the player position
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue; // Skip the player's own position
+
+                Point adjacentPos = new Point(playerPos.x + dx, playerPos.y + dy);
+
+                // Check if the NPC at this adjacent position would be touching the player
+                // but not overlapping
+                if (isTouchingButNotOverlapping(adjacentPos, npcSize, playerPos, 1)) {
+                    // Check if NPC's southwest corner matches this adjacent position
+                    if (npcPos.equals(adjacentPos)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if two entities are touching (adjacent) but not overlapping
+     * @param pos1 Position of first entity
+     * @param size1 Size of first entity
+     * @param pos2 Position of second entity
+     * @param size2 Size of second entity
+     * @return True if touching but not overlapping
+     */
+    private boolean isTouchingButNotOverlapping(Point pos1, int size1, Point pos2, int size2) {
+        // Calculate bounding boxes
+        int left1 = pos1.x, right1 = pos1.x + size1 - 1;
+        int top1 = pos1.y, bottom1 = pos1.y + size1 - 1;
+        int left2 = pos2.x, right2 = pos2.x + size2 - 1;
+        int top2 = pos2.y, bottom2 = pos2.y + size2 - 1;
+
+        // Check if they're overlapping
+        boolean overlapping = !(right1 < left2 || right2 < left1 || bottom1 < top2 || bottom2 < top1);
+
+        if (overlapping) {
+            return false; // Overlapping, not just touching
+        }
+
+        // Check if they're adjacent (touching)
+        boolean horizontallyAdjacent = (right1 + 1 == left2 || right2 + 1 == left1) &&
+                !(bottom1 < top2 || bottom2 < top1);
+        boolean verticallyAdjacent = (bottom1 + 1 == top2 || bottom2 + 1 == top1) &&
+                !(right1 < left2 || right2 < left1);
+
+        return horizontallyAdjacent || verticallyAdjacent;
     }
 
     /**
