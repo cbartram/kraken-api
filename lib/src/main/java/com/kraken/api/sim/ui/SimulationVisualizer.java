@@ -42,6 +42,7 @@ public class SimulationVisualizer extends JFrame {
     private JButton npcColorButton;
     private Color selectedNpcColor = Color.BLUE;
     private JSpinner sizeSpinner;
+    private JCheckBox canPathfindCheckbox;
     private JComboBox<AttackStyle> npcAttackStyleCombo;
     private JSpinner attackRangeSpinner;
     private DefaultListModel<SimNpc> npcListModel;
@@ -179,9 +180,7 @@ public class SimulationVisualizer extends JFrame {
      */
     private JButton createModernButton(String text, String buttonType) {
         JButton button = new JButton(text);
-
-        // Set colors based on button type
-        Color bgColor = SECONDARY_BUTTON_COLOR;
+        Color bgColor;
         switch (buttonType.toLowerCase()) {
             case "primary":
                 bgColor = PRIMARY_BUTTON_COLOR;
@@ -203,14 +202,12 @@ public class SimulationVisualizer extends JFrame {
         button.setBorderPainted(false);
         button.setOpaque(true);
 
-        // Rounded corners
         Border roundedBorder = BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(bgColor.darker(), 1),
                 BorderFactory.createEmptyBorder(8, 16, 8, 16)
         );
         button.setBorder(roundedBorder);
 
-        // Hover effects
         Color finalBgColor = bgColor;
         button.addMouseListener(new MouseAdapter() {
             @Override
@@ -596,6 +593,17 @@ public class SimulationVisualizer extends JFrame {
         styleSpinner(attackRangeSpinner);
         panel.add(attackRangeSpinner, gbc);
 
+        // Pathfinding
+        gbc.gridx = 0; gbc.gridy = 5;
+        JLabel pathfindingLabel = new JLabel("Smart Pathfinding:");
+        pathfindingLabel.setForeground(TEXT_COLOR);
+        pathfindingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panel.add(pathfindingLabel, gbc);
+
+        gbc.gridx = 1;
+        canPathfindCheckbox = new JCheckBox();
+        panel.add(canPathfindCheckbox, gbc);
+
         return panel;
     }
 
@@ -799,6 +807,7 @@ public class SimulationVisualizer extends JFrame {
 
         SimNpc npc = new SimNpc(position, selectedNpcColor, name);
         npc.setSize((int) sizeSpinner.getValue());
+        npc.setCanPathfind(canPathfindCheckbox.isSelected());
         npc.setAttackStyle((AttackStyle) npcAttackStyleCombo.getSelectedItem());
         npc.setAttackRange((Integer) attackRangeSpinner.getValue());
         return npc;
@@ -913,18 +922,6 @@ public class SimulationVisualizer extends JFrame {
         });
         formPanel.add(colorButton, gbc);
 
-        // Size field
-        gbc.gridx = 0; gbc.gridy = 4;
-        JLabel sizeLabel = new JLabel("Size:");
-        sizeLabel.setForeground(TEXT_COLOR);
-        sizeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        formPanel.add(sizeLabel, gbc);
-
-        gbc.gridx = 1;
-        JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(npc.getSize(), 1, 5, 1));
-        styleSpinner(sizeSpinner);
-        formPanel.add(sizeSpinner, gbc);
-
         // Attack Style
         gbc.gridx = 0; gbc.gridy = 3;
         JLabel styleLabel = new JLabel("Attack Style:");
@@ -951,6 +948,30 @@ public class SimulationVisualizer extends JFrame {
         styleSpinner(rangeSpinner);
         formPanel.add(rangeSpinner, gbc);
 
+        // Size field
+        gbc.gridx = 0; gbc.gridy = 5;
+        JLabel sizeLabel = new JLabel("Size:");
+        sizeLabel.setForeground(TEXT_COLOR);
+        sizeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(sizeLabel, gbc);
+
+        gbc.gridx = 1;
+        JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(npc.getSize(), 1, 5, 1));
+        styleSpinner(sizeSpinner);
+        formPanel.add(sizeSpinner, gbc);
+
+        // Size field
+        gbc.gridx = 0; gbc.gridy = 6;
+        JLabel pathfindingLabel = new JLabel("Smart Pathfinding:");
+        pathfindingLabel.setForeground(TEXT_COLOR);
+        pathfindingLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(pathfindingLabel, gbc);
+
+        gbc.gridx = 1;
+        JCheckBox pathfinding = new JCheckBox();
+        pathfinding.setSelected(npc.isCanPathfind());
+        formPanel.add(pathfinding, gbc);
+
         // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(PANEL_COLOR);
@@ -972,6 +993,7 @@ public class SimulationVisualizer extends JFrame {
             npc.setAttackStyle((AttackStyle) styleCombo.getSelectedItem());
             npc.setAttackRange((Integer) rangeSpinner.getValue());
             npc.setSize((Integer) sizeSpinner.getValue());
+            npc.setCanPathfind(pathfinding.isSelected());
 
             // Refresh UI
             npcList.repaint();

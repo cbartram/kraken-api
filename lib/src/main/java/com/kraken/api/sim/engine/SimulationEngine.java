@@ -19,7 +19,6 @@ import java.util.List;
 
 // TODO
 // 1. NPC's need to be able to try to found a way out if player moves under them
-// 2. Add canPathfind property to NPC's to enable BFS pathfinding (with special NPC movement like diag,hori,vertial order)
 
 /**
  * Simulation engine for NPC and player movement.
@@ -190,7 +189,6 @@ public class SimulationEngine {
             removeLastNPCPathPoint(npc);
         }
 
-        // tilePanel.repaint();
         notifyObservers();
     }
 
@@ -204,6 +202,27 @@ public class SimulationEngine {
             for (SimNpc npc : npcs) {
                 Point npcPos = npc.getPosition();
                 Point playerPos = getPlayerPosition();
+
+                if(npc.isCanPathfind()) {
+                    List<Point> route = findPath(npcPos, playerPos, npc);
+                    if (!route.isEmpty()) {
+                        // findPath returns a path that starts with the starting tile (npcPos).
+                        // The next step to move to is route.get(1) if it exists.
+                        Point nextMove;
+                        if (route.size() > 1) {
+                            nextMove = route.get(1);
+                        } else {
+                            // route.size() == 1 -> start == goal; nothing to do
+                            nextMove = null;
+                        }
+
+                        if (nextMove != null && !isOccupiedByNPC(nextMove, npc) && !isOccupiedByPlayer(nextMove, npc)) {
+                            addNPCPathPoint(npc, new Point(npcPos));
+                            npc.setPosition(nextMove);
+                        }
+                    }
+                    continue;
+                }
 
                 // Check for corner trap condition first
                 if (isPlayerCornerTrapped(npcPos, playerPos)) {
@@ -243,7 +262,6 @@ public class SimulationEngine {
             }
         }
 
-        // tilePanel.repaint();
         notifyObservers();
         tick += 1;
     }
@@ -255,7 +273,7 @@ public class SimulationEngine {
      */
     public void setPlayerTarget(Point target) {
         Point start = getPlayerPosition();
-        playerCurrentPath = findPath(start, target);
+        playerCurrentPath = findPath(start, target, null);
         targetPosition = target;
         playerPathIndex = 0;
         log.info("Calculated path of size: {}", playerCurrentPath.size());
@@ -468,7 +486,7 @@ public class SimulationEngine {
      * @param goal Point the ending point.
      * @return A list of shortest path points to the destination
      */
-    private List<Point> findPath(Point start, Point goal) {
+    private List<Point> findPath(Point start, Point goal, SimNpc npc) {
         boolean[][] visited = new boolean[collisionData.length][collisionData[0].length];
         Point[][] parent = new Point[collisionData.length][collisionData[0].length];
 
@@ -477,7 +495,7 @@ public class SimulationEngine {
         visited[start.y][start.x] = true;
 
         int[] dx = {1, -1, 0, 0, 1, 1, -1, -1};
-        int[] dy = {0, 0, 1, -1, 1, -1, 1, -1}; // SE, NE, SW, NW
+        int[] dy = {0, 0, 1, -1, 1, -1, 1, -1};
 
         while (!queue.isEmpty()) {
             Point cur = queue.poll();
@@ -497,16 +515,31 @@ public class SimulationEngine {
                     continue;
                 }
 
-                // Skip diagonals if one of the cardinal neighbors is blocked
+                // Check diagonal blocking
+                // TODO This mostly works but with some weird movement for NPC's sometimes they stop short, sometimes they don't move at all
                 if (Math.abs(dx[i]) == 1 && Math.abs(dy[i]) == 1) {
                     Point horiz = new Point(cur.x + dx[i], cur.y);
                     Point vert  = new Point(cur.x, cur.y + dy[i]);
-                    if (!isValidMove(cur, horiz) || !isValidMove(cur, vert)) {
-                        continue; // blocked corner
+                    if (npc != null) {
+                        if (!isValidMoveForNPC(cur, horiz, npc.getSize()) || !isValidMoveForNPC(cur, vert, npc.getSize())) {
+                            continue; // corner blocked for big NPC
+                        }
+                    } else {
+                        if (!isValidMove(cur, horiz) || !isValidMove(cur, vert)) {
+                            continue; // corner blocked for 1x1
+                        }
                     }
                 }
 
-                if (isValidMove(cur, next)) {
+                // Validate move
+                boolean valid;
+                if (npc != null) {
+                    valid = isValidMoveForNPC(cur, next, npc.getSize());
+                } else {
+                    valid = isValidMove(cur, next);
+                }
+
+                if (valid) {
                     visited[next.y][next.x] = true;
                     parent[next.y][next.x] = cur;
                     queue.add(next);
