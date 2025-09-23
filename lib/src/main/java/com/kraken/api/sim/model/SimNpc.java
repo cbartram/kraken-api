@@ -21,7 +21,7 @@ public class SimNpc {
 
     private int size = 1;
     private AttackStyle attackStyle = AttackStyle.MELEE;
-    private int attackRange = 0;
+    private int attackRange = 1;
     private boolean canPathfind = false;
     private Point target;
 }

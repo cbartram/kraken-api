@@ -14,6 +14,7 @@ public class SimulationUIState {
     private boolean showGrid = true;
     private boolean showFlags = true;
     private boolean showTooltip = false;
+    private boolean showLineOfSight = false;
     private boolean playerRunning = false;
     private boolean npcEditDialogOpen = false;
     private JLabel infoLabel;

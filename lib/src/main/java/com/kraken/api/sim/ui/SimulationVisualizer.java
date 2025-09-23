@@ -61,6 +61,9 @@ public class SimulationVisualizer extends JFrame {
     private JCheckBox showTooltip;
 
     @Getter
+    private JCheckBox showLineOfSight;
+
+    @Getter
     private JCheckBox playerRunning;
 
     private final SimulationEngine engine;
@@ -310,6 +313,15 @@ public class SimulationVisualizer extends JFrame {
         });
         showTooltip.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showTooltip);
+
+
+        showLineOfSight = createModernCheckBox("Show Line of Sight", false);
+        showLineOfSight.addActionListener(e -> {
+            state.setShowLineOfSight(showLineOfSight.isSelected());
+            tilePanel.repaint();
+        });
+        showLineOfSight.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(showLineOfSight);
 
         panel.add(Box.createVerticalStrut(20));
 

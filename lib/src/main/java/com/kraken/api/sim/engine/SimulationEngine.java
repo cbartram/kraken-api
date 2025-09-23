@@ -157,10 +157,6 @@ public class SimulationEngine {
         }
     }
 
-    public void calculateNpcLineOfSight(SimNpc simNpc) {
-
-    }
-
     /**
      * Re-winds the game state by 1 tick.
      */
@@ -305,6 +301,141 @@ public class SimulationEngine {
         if (dx < 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0) return false;
         if (dy > 0 && (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
         return dy >= 0 || (fromFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0;
+    }
+
+    public List<Point> getNpcLineOfSight(SimNpc simNpc) {
+        List<Point> lineOfSightPoints = new ArrayList<>();
+        Point npcPosition = simNpc.getPosition();
+        int attackRange = simNpc.getAttackRange();
+        int npcSize = simNpc.getSize();
+
+        // Get all tiles within attack range (square area)
+        for (int x = npcPosition.x - attackRange; x <= npcPosition.x + attackRange; x++) {
+            for (int y = npcPosition.y - attackRange; y <= npcPosition.y + attackRange; y++) {
+                Point targetTile = new Point(x, y);
+
+                // Skip if out of bounds
+                if (!inBounds(targetTile)) {
+                    continue;
+                }
+
+                // Skip the NPC's own tiles (if size > 1)
+                if (isPointWithinNpcBounds(targetTile, npcPosition, npcSize)) {
+                    continue;
+                }
+
+                // Check if this tile has line of sight from the NPC
+                if (hasLineOfSight(npcPosition, targetTile, npcSize, attackRange)) {
+                    lineOfSightPoints.add(targetTile);
+                }
+            }
+        }
+
+        return lineOfSightPoints;
+    }
+
+    /**
+     * Helper method to check if a point is within the NPC's occupied tiles
+     * @param point The point to check
+     * @param npcPosition The NPC's southwest corner position
+     * @param npcSize The size of the NPC
+     * @return True if the point is within the NPC's bounds
+     */
+    private boolean isPointWithinNpcBounds(Point point, Point npcPosition, int npcSize) {
+        return point.x >= npcPosition.x &&
+                point.x < npcPosition.x + npcSize &&
+                point.y <= npcPosition.y &&  // Changed from >= to <=
+                point.y > npcPosition.y - npcSize;  // Changed from < to > and subtracted npcSize
+    }
+
+    /**
+     * Returns true when the entity has a line of sight to its target and false otherwise. This
+     * method can be used for both the player and the NPC however, if an NPC's size is > 1x1 this method
+     * assumes that the southwest true tile of the NPC is passed as the source parameter
+     * @param source The source location for the entity for LoS calculations
+     * @param target The target location for the entity for LoS calculations
+     * @param size The size of the entity.
+     * @param range The attack range of the entity
+     * @return True when the entity has line of sight to its target and false otherwise.
+     */
+    private boolean hasLineOfSight(Point source, Point target, int size, int range) {
+         int dx = target.x - source.x;
+         int dy = target.y - source.y;
+
+         if(isBlocked(source) || isBlocked(target)) {
+             return false;
+         }
+
+         if(range == 1) {
+             return isAdjacentTo(source, target, size);
+         }
+
+         int dxAbs = Math.abs(dx);
+         int dyAbs = Math.abs(dy);
+
+        if (dxAbs > range || dyAbs > range) {
+            return false;
+        }
+
+        if (dxAbs > dyAbs) {
+            int xTile = source.x;
+            int y = (source.y << 16) + 0x8000;
+            int slope = ((dy << 16) / dxAbs);
+            int xInc = dx > 0 ? 1 : -1;
+
+            if (dy < 0) {
+                y -= 1; // For correct rounding
+            }
+
+            while (xTile != target.x) {
+                xTile += xInc;
+                int yTile = y >>> 16;
+                if (isBlocked(new Point(xTile, yTile))) {
+                    return false;
+                }
+                y += slope;
+                int newYTile = y >>> 16;
+                if (newYTile != yTile && isBlocked(new Point(xTile, newYTile))) {
+                    return false;
+                }
+            }
+        } else {
+            int yTile = source.y;
+            int x = (source.x << 16) + 0x8000;
+            int slope = (dx << 16) / dyAbs;
+            int yInc = dy > 0 ? 1 : -1;
+            if (dx < 0) {
+                x -= 1;
+            }
+
+            while (yTile != target.y) {
+                yTile += yInc;
+                int xTile = x >>> 16;
+                if (isBlocked(new Point(xTile, yTile))) {
+                    return false;
+                }
+                x += slope;
+                int newXTile = x >>> 16;
+                if (newXTile != xTile && isBlocked(new Point(newXTile, yTile))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isBlocked(Point target) {
+        if (target.x < 0 || target.x >= collisionData[0].length || target.y < 0 || target.y >= collisionData.length) {
+            return true; // Out of bounds is considered blocked
+        }
+
+        // Check collision flags
+        int toFlags = collisionData[target.y][target.x];
+
+        // Check if destination is blocked
+        return (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0 ||
+                (toFlags & CollisionDataFlag.BLOCK_MOVEMENT_OBJECT) != 0;
     }
 
     /**
@@ -459,7 +590,7 @@ public class SimulationEngine {
             boolean reachedGoal = false;
             if (npc != null) {
                 // NPC pathfinding - check if adjacent to player
-                reachedGoal = isAdjacentToGoal(cur, goal, npc.getSize());
+                reachedGoal = isAdjacentTo(cur, goal, npc.getSize());
             } else {
                 // Player pathfinding - exact match
                 reachedGoal = cur.equals(goal);
@@ -532,7 +663,7 @@ public class SimulationEngine {
      * @param npcSize Size of the NPC
      * @return True if the NPC is adjacent to the player
      */
-    private boolean isAdjacentToGoal(Point npcPos, Point playerPos, int npcSize) {
+    private boolean isAdjacentTo(Point npcPos, Point playerPos, int npcSize) {
         // Check all tiles around the player position
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
