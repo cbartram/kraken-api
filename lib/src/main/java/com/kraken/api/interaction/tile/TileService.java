@@ -10,6 +10,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -321,6 +322,75 @@ public class TileService extends AbstractService {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns a normal WorldPoint given a world point that originated in an instance.
+     * @param worldPoint WorldPoint to convert
+     * @return a normalized WorldPoint from an instance WorldPoint
+     */
+    public WorldPoint fromInstance(WorldPoint worldPoint) {
+        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+
+        // if local point is null or not in an instanced region, return the world point as is
+        if (localPoint == null || !client.getTopLevelWorldView().isInstance())
+            return worldPoint;
+
+        int sceneX = localPoint.getSceneX();
+        int sceneY = localPoint.getSceneY();
+
+        int chunkX = sceneX / CHUNK_SIZE;
+        int chunkY = sceneY / CHUNK_SIZE;
+
+        int[][][] instanceTemplateChunks = client.getTopLevelWorldView().getInstanceTemplateChunks();
+        int templateChunk = instanceTemplateChunks[worldPoint.getPlane()][chunkX][chunkY];
+
+        int rotation = templateChunk >> 1 & 0x3;
+        int templateChunkY = (templateChunk >> 3 & 0x7FF) * CHUNK_SIZE;
+        int templateChunkX = (templateChunk >> 14 & 0x3FF) * CHUNK_SIZE;
+        int templateChunkPlane = templateChunk >> 24 & 0x3;
+
+        int x = templateChunkX + (sceneX & (CHUNK_SIZE - 1));
+        int y = templateChunkY + (sceneY & (CHUNK_SIZE - 1));
+
+        return rotate(new WorldPoint(x, y, templateChunkPlane), 4 - rotation);
+    }
+
+    /**
+     * Converts a normal WorldPoint into an instanced version of the WorldPoint
+     * @param worldPoint Normal WorldPoint to convert
+     * @return The instanced WorldPoint
+     */
+    public WorldPoint toInstance(WorldPoint worldPoint) {
+        if (!client.getTopLevelWorldView().isInstance()) {
+            return worldPoint;
+        }
+
+        ArrayList<WorldPoint> worldPoints = new ArrayList<>();
+        int[][][] instanceTemplateChunks = client.getTopLevelWorldView().getInstanceTemplateChunks();
+        for (int z = 0; z < instanceTemplateChunks.length; z++) {
+            for (int x = 0; x < instanceTemplateChunks[z].length; ++x) {
+                for (int y = 0; y < instanceTemplateChunks[z][x].length; ++y) {
+                    int chunkData = instanceTemplateChunks[z][x][y];
+                    int rotation = chunkData >> 1 & 0x3;
+                    int templateChunkY = (chunkData >> 3 & 0x7FF) * CHUNK_SIZE;
+                    int templateChunkX = (chunkData >> 14 & 0x3FF) * CHUNK_SIZE;
+                    int plane = chunkData >> 24 & 0x3;
+                    if (worldPoint.getX() >= templateChunkX && worldPoint.getX() < templateChunkX + CHUNK_SIZE
+                            && worldPoint.getY() >= templateChunkY && worldPoint.getY() < templateChunkY + CHUNK_SIZE
+                            && plane == worldPoint.getPlane()) {
+                        WorldPoint p = new WorldPoint(client.getTopLevelWorldView().getBaseX() + x * CHUNK_SIZE + (worldPoint.getX() & (CHUNK_SIZE - 1)),
+                                client.getTopLevelWorldView().getBaseY() + y * CHUNK_SIZE + (worldPoint.getY() & (CHUNK_SIZE - 1)),
+                                z);
+                        p = rotate(p, rotation);
+                        worldPoints.add(p);
+                    }
+                }
+            }
+        }
+        if (worldPoints.isEmpty())
+            worldPoints.add(worldPoint);
+        return worldPoints.get(0);
     }
 
     /**

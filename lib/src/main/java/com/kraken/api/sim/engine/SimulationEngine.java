@@ -157,6 +157,10 @@ public class SimulationEngine {
         }
     }
 
+    public void calculateNpcLineOfSight(SimNpc simNpc) {
+
+    }
+
     /**
      * Re-winds the game state by 1 tick.
      */
