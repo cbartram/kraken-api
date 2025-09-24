@@ -2,6 +2,7 @@ package com.kraken.api.sim.ui;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.engine.SimulationEngine;
 import com.kraken.api.sim.model.AttackStyle;
 import com.kraken.api.sim.model.SimNpc;
@@ -23,7 +24,7 @@ import java.util.*;
  */
 @Slf4j
 @Singleton
-public class SimulationVisualizer extends JFrame {
+public class SimulationVisualizer extends JFrame implements SimulationObserver {
     public static final int TILE_SIZE = 20;
     public static final int DEFAULT_MAP_WIDTH = 50;
     public static final int DEFAULT_MAP_HEIGHT = 50;
@@ -75,6 +76,7 @@ public class SimulationVisualizer extends JFrame {
         this.engine = engine;
         this.tilePanel = tilePanel;
         this.state = state;
+        this.engine.addObserver(this);
 
         setupModernLookAndFeel();
         setTitle("OSRS Simulator");
@@ -1096,5 +1098,11 @@ public class SimulationVisualizer extends JFrame {
      */
     private void initializeTilePanelConnection() {
         tilePanel.setVisualizer(this);
+    }
+
+    @Override
+    public void onSimulationUpdated() {
+        npcListModel.clear();
+        npcListModel.addAll(engine.getNpcs());
     }
 }

@@ -465,7 +465,6 @@ public class TilePanel extends JPanel implements SimulationObserver {
             // This ensures the southwest tile is the tile we draw from.
             int y = (npc.getPosition().y - (npcSize - 1)) * TILE_SIZE;
 
-
             if (npcSize == 1) {
                 g.setColor(npc.getColor());
                 g.setStroke(new BasicStroke(2));
@@ -517,34 +516,29 @@ public class TilePanel extends JPanel implements SimulationObserver {
 
                 g.setColor(Color.BLACK);
                 g.drawString(String.valueOf(npc.getName().charAt(0)), nameX, nameY);
+            }
 
+            // Line of sight
+            if(state.isShowLineOfSight()) {
+                List<Point> los = engine.getNpcLineOfSight(npc);
 
-                // Line of sight
-                if(state.isShowLineOfSight()) {
-                    List<Point> los = engine.getNpcLineOfSight(npc);
+                // Set semi-transparent purple color
+                Color losColor = new Color(128, 0, 128, 80);
+                g.setColor(losColor);
 
-                    // Set semi-transparent purple color
-                    Color losColor = new Color(128, 0, 128, 80); // Purple with alpha 80 (out of 255)
+                // Draw each line of sight tile
+                for (Point losPoint : los) {
+                    int losX = losPoint.x * TILE_SIZE;
+                    int losY = (losPoint.y) * TILE_SIZE;
+
+                    g.fillRect(losX, losY, TILE_SIZE, TILE_SIZE);
+                    g.setColor(new Color(128, 0, 128, 200));
+                    g.setStroke(new BasicStroke(1));
+                    g.drawRect(losX, losY, TILE_SIZE, TILE_SIZE);
+
+                    // Reset color for next iteration
                     g.setColor(losColor);
-
-                    // Draw each line of sight tile
-                    for (Point losPoint : los) {
-                        int losX = losPoint.x * TILE_SIZE;
-                        int losY = (losPoint.y) * TILE_SIZE;
-
-                        // Fill the tile with semi-transparent purple
-                        g.fillRect(losX, losY, TILE_SIZE, TILE_SIZE);
-
-                        // Optional: Add a subtle border
-                        g.setColor(new Color(128, 0, 128, 120)); // Slightly more opaque purple for border
-                        g.setStroke(new BasicStroke(1));
-                        g.drawRect(losX, losY, TILE_SIZE, TILE_SIZE);
-
-                        // Reset color for next iteration
-                        g.setColor(losColor);
-                    }
                 }
-
             }
         }
     }

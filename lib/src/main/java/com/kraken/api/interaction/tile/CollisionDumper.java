@@ -126,11 +126,20 @@ public class CollisionDumper {
             int flippedY = height - 1 - localY; // Flip Y coordinate for array indexing
 
             if(potentialNpc != null) {
-                SimNpc s = new SimNpc(worldToSim(point, minX, minY, width, height), Color.WHITE, context.runOnClientThread(potentialNpc::getName));
+                String name = context.runOnClientThread(potentialNpc::getName);
+                // TODO Attack range doesn't seem to return the correct value
+                int attackRange = context.runOnClientThread(() -> potentialNpc.getComposition().getIntValue(13));
+                int attackSpeed = context.runOnClientThread(() -> potentialNpc.getComposition().getIntValue(14));
+
+                log.info("Adding NPC: {}, Attack Range = {}, Attack Speed = {}", name, attackRange, attackSpeed);
+
+                SimNpc s = new SimNpc(worldToSim(point, minX, minY, width, height), Color.WHITE, name);
                 s.setSize(potentialNpc.getComposition().getSize());
                 s.setCanPathfind(false);
-                s.setAttackRange(1);
-                s.setAttackStyle(AttackStyle.MELEE);
+                s.setAggressive(false);
+                s.setAttackRange(attackRange == 0 ? 1 : attackRange);
+                s.setAttackSpeed(attackSpeed);
+                s.setAttackStyle(attackRange > 1 ? AttackStyle.RANGE : AttackStyle.MELEE);
                 simNpcs.add(s);
             }
 
@@ -158,7 +167,6 @@ public class CollisionDumper {
         int localY = point.getY() - minY;
         int flippedY = height - 1 - localY;
         if (localX >= 0 && localX < width && flippedY >= 0 && flippedY < height) {
-            log.info("Generated Sim coordinates for NPC: ({}, {})", localX, flippedY);
             return new Point(localX, flippedY);
         }
 
