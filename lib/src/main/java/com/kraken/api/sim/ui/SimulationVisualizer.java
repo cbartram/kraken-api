@@ -453,11 +453,11 @@ public class SimulationVisualizer extends JFrame {
         });
         simPanel.add(clearPathButton);
 
-        JButton forwardTick = createModernButton("Next Tick →", "primary");
+        JButton forwardTick = createModernButton("Next Tick", "primary");
         forwardTick.addActionListener(e -> engine.tick());
         simPanel.add(forwardTick);
 
-        JButton backwardTick = createModernButton("← Prev Tick", "primary");
+        JButton backwardTick = createModernButton("Prev Tick", "primary");
         backwardTick.addActionListener(e -> engine.prevTick());
         simPanel.add(backwardTick);
 
@@ -491,7 +491,7 @@ public class SimulationVisualizer extends JFrame {
         JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
         item.setBackground(PANEL_COLOR);
 
-        JLabel colorBox = new JLabel("●");
+        JLabel colorBox = new JLabel("-");
         colorBox.setForeground(color);
         colorBox.setFont(new Font("SansSerif", Font.BOLD, 14));
         item.add(colorBox);

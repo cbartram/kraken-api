@@ -100,6 +100,7 @@ public class SimulationEngine {
 
     /**
      * Add an observer to be notified of simulation updates
+     * @param observer The simulation observer
      */
     public void addObserver(SimulationObserver observer) {
         observers.add(observer);
@@ -107,6 +108,7 @@ public class SimulationEngine {
 
     /**
      * Remove an observer
+     * @param observer The simulation observer
      */
     public void removeObserver(SimulationObserver observer) {
         observers.remove(observer);
@@ -747,6 +749,7 @@ public class SimulationEngine {
 
     /**
      * Adds an NPC to the simulation
+     * @param npc the NPC to add
      */
     public void addNpc(SimNpc npc) {
         npcs.add(npc);
@@ -756,6 +759,7 @@ public class SimulationEngine {
 
     /**
      * Removes an NPC from the simulation
+     * @param npc The NPC to remove
      */
     public void removeNpc(SimNpc npc) {
         npcs.remove(npc);
