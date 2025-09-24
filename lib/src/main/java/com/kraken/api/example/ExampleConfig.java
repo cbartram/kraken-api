@@ -21,12 +21,12 @@ public interface ExampleConfig extends Config {
 
 
     @ConfigItem(
-            name = "Dump Collision Data",
-            keyName = "collisionData",
-            description = "Dumps Collision data to disk.",
+            name = "Show Sim Visualizer",
+            keyName = "simVisualizer",
+            description = "Shows the simulation visualizer UI.",
             position = -3
     )
-    default boolean dumpCollisionData() {
+    default boolean showVisualizer() {
         return false;
     }
 

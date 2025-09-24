@@ -78,7 +78,7 @@ public class SimulationVisualizer extends JFrame {
 
         setupModernLookAndFeel();
         setTitle("OSRS Simulator");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         // Set custom icon (you can replace this path with your own icon)
         setIconImage(loadWindowIcon());
@@ -87,6 +87,15 @@ public class SimulationVisualizer extends JFrame {
         getContentPane().setBackground(BACKGROUND_COLOR);
         setupLayout();
         initializeTilePanelConnection();
+    }
+
+    /**
+     * Initializes the visualizer. This is separate from the constructor so that RuneLite's game context does not get mixed
+     * into simulation visualization logic and because the player will not be logged in when Guice creates and injects this object.
+     * This enables plugins to initialize the visualization and load data from the game manually only after the player is logged in and ready.
+     */
+    public void init() {
+        engine.refresh();
     }
 
     /**
@@ -314,7 +323,6 @@ public class SimulationVisualizer extends JFrame {
         showTooltip.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(showTooltip);
 
-
         showLineOfSight = createModernCheckBox("Show Line of Sight", false);
         showLineOfSight.addActionListener(e -> {
             state.setShowLineOfSight(showLineOfSight.isSelected());
@@ -439,7 +447,7 @@ public class SimulationVisualizer extends JFrame {
      * @return JPanel containing simulation controls
      */
     private JPanel createSimulationControlPanel() {
-        JPanel simPanel = new JPanel(new GridLayout(2, 2, 8, 8));
+        JPanel simPanel = new JPanel(new GridLayout(3, 2, 8, 8));
         simPanel.setBackground(PANEL_COLOR);
 
         simulateButton = createModernButton("Start Simulation", "success");
@@ -460,6 +468,10 @@ public class SimulationVisualizer extends JFrame {
         JButton backwardTick = createModernButton("Prev Tick", "primary");
         backwardTick.addActionListener(e -> engine.prevTick());
         simPanel.add(backwardTick);
+
+        JButton refreshBtn = createModernButton("Refresh Data", "primary");
+        refreshBtn.addActionListener(e -> engine.refresh());
+        simPanel.add(refreshBtn);
 
         return simPanel;
     }

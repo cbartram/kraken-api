@@ -71,7 +71,7 @@ public class TilePanel extends JPanel implements SimulationObserver {
             public void actionPerformed(ActionEvent e) {
                 if(hoveredTile != null) {
                     engine.reset();
-                    engine.setPlayerPosition(hoveredTile);
+                    engine.getPlayer().setPosition(hoveredTile);
                     repaint();
                 }
             }
@@ -446,11 +446,11 @@ public class TilePanel extends JPanel implements SimulationObserver {
     private void drawPlayer(Graphics2D g) {
         g.setColor(new Color(6, 239, 79, 255));
         g.setStroke(new BasicStroke(2));
-        g.fillRect(engine.getPlayerPosition().x * TILE_SIZE + 2, engine.getPlayerPosition().y * TILE_SIZE + 2,
+        g.fillRect(engine.getPlayer().getPosition().x * TILE_SIZE + 2, engine.getPlayer().getPosition().y * TILE_SIZE + 2,
                 TILE_SIZE - 4, TILE_SIZE - 4);
         g.setColor(Color.BLACK);
-        g.drawString("P", engine.getPlayerPosition().x * TILE_SIZE + 6,
-                engine.getPlayerPosition().y * TILE_SIZE + 14);
+        g.drawString("P", engine.getPlayer().getPosition().x * TILE_SIZE + 6,
+                engine.getPlayer().getPosition().y * TILE_SIZE + 14);
     }
 
     /**

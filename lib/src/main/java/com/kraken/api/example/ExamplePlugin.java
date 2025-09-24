@@ -13,6 +13,7 @@ import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.MovementFlag;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
+import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -95,7 +96,10 @@ public class ExamplePlugin extends Plugin {
     private GroundObjectServiceTest groundObjectServiceTest;
 
     @Inject
-    private CollisionDumper dumper;
+    private SimulationVisualizer visualizer;
+
+    @Inject
+    private Client client;
 
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
@@ -116,8 +120,13 @@ public class ExamplePlugin extends Plugin {
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
 
-            if(event.getKey().equals("collisionData")) {
-                dumper.collectAndSave("./collision_data.json");
+            if(event.getKey().equals("simVisualizer")) {
+                // Init will dump collision data and load the game state. This should only be called
+                // if game state is logged in
+                if(client.getGameState() == GameState.LOGGED_IN && config.showVisualizer()) {
+                    visualizer.init();
+                    visualizer.setVisible(true);
+                }
             }
 
             if(event.getKey().equals("start")) {

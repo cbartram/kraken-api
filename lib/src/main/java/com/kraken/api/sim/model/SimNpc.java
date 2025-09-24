@@ -16,13 +16,21 @@ public class SimNpc {
     @NonNull
     private Color color;
 
-    @NonNull
-    private String name;
-
+    private String name = "Unknown";
     private int size = 1;
     private AttackStyle attackStyle = AttackStyle.MELEE;
     private int attackRange = 1;
     private boolean canPathfind = false;
     private Point target;
+
+    public SimNpc(@NonNull Point position, @NonNull Color color, String name) {
+        this.position = position;
+        this.color = color;
+        this.name = name;
+
+        if(this.name == null || this.name.isEmpty()) {
+            this.name = "Unknown";
+        }
+    }
 }
 

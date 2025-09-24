@@ -105,6 +105,7 @@ public class CollisionDumper {
         // Fill the array with collision data
         for (var entry : collisionFlags.entrySet()) {
             WorldPoint point = entry.getKey();
+            // TODO Npc's at this point? add them to collision map data
             int localX = point.getX() - minX;
             int localY = point.getY() - minY;
             int flippedY = height - 1 - localY; // Flip Y coordinate for array indexing
