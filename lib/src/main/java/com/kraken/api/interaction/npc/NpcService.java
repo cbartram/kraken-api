@@ -49,7 +49,7 @@ public class NpcService extends AbstractService {
                 .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(context.getClient().getLocalPlayer().getLocalLocation())))
                 .collect(Collectors.toList()));
 
-        return npcs.<Stream<NPC>>map(Collection::stream).orElse(null);
+        return npcs.map(Collection::stream).orElse(null);
     }
 
     /**
