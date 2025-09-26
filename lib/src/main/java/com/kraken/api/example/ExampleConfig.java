@@ -388,11 +388,64 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    // =========== Movement Tests ================
+    @ConfigSection(
+            name = "Movement Tests",
+            description = "Settings for Movement tests.",
+            position = 7
+    )
+    String movement = "Movement Tests";
+
+    @ConfigItem(
+            keyName = "enableMovement",
+            name = "Enable Movement",
+            description = "Enable movement tests",
+            section = movement,
+            position = 1
+    )
+    default boolean enableMovementTests() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "enableMovementOverlay",
+            name = "Enable Movement Overlay",
+            description = "Enables the target point overlay",
+            section = movement,
+            position = 2
+    )
+    default boolean enableMovementOverlay() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "walkTo",
+            name = "Start Movement",
+            description = "Walk to Target Point",
+            section = movement,
+            position = 3
+    )
+    default boolean walkTo() {
+        return false;
+    }
+
+
+    @ConfigItem(
+            keyName = "pathTo",
+            name = "Start Pathing",
+            description = "Path to a farther point",
+            section = movement,
+            position = 3
+    )
+    default boolean pathTo() {
+        return false;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
             description = "General overlay configuration.",
-            position = 7
+            position = 8
     )
     String overlaySettings = "Overlay Settings";
 

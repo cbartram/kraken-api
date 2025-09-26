@@ -65,6 +65,11 @@ public class ShortestPathService {
         setTarget(null);
     }
 
+    /**
+     * Restarts the current pathfinding with a new start position and end positions
+     * @param start The packed start position
+     * @param ends The packet end positions
+     */
     public void restartPathfinding(int start, Set<Integer> ends) {
         clientThread.invokeLater(() -> {
             this.pathfinder = new Pathfinder(start, ends);
@@ -78,8 +83,7 @@ public class ShortestPathService {
      * @return The list of world points representing the currently calculated path
      */
     public List<WorldPoint> getCurrentPath() {
-        if (pathfinder == null
-                || pathfinder.getPath() == null) {
+        if (pathfinder == null || pathfinder.getPath() == null) {
             return new ArrayList<>();
         }
 
