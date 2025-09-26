@@ -9,33 +9,35 @@ import com.kraken.api.Context;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
+import com.kraken.api.interaction.movement.WalkService;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.MovementFlag;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
+import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.CollisionData;
-import net.runelite.api.GameState;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.ColorUtil;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -92,10 +94,22 @@ public class ExamplePlugin extends Plugin {
     private PlayerServiceTest playerServiceTest;
 
     @Inject
+    private WalkService walkService;
+
+    @Inject
     private GroundObjectServiceTest groundObjectServiceTest;
 
     @Inject
-    private CollisionDumper dumper;
+    private SimulationVisualizer visualizer;
+
+    @Inject
+    private Client client;
+
+    @Getter
+    private WorldPoint targetTile;
+
+    private WorldPoint trueTile;
+    private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
 
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
@@ -116,8 +130,23 @@ public class ExamplePlugin extends Plugin {
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
 
-            if(event.getKey().equals("collisionData")) {
-                dumper.collectAndSave("./collision_data.json");
+            if(event.getKey().equals("simVisualizer")) {
+                // Init will dump collision data and load the game state. This should only be called
+                // if game state is logged in
+                if(client.getGameState() == GameState.LOGGED_IN && config.showVisualizer()) {
+                    visualizer.init();
+                    visualizer.setVisible(true);
+                }
+            }
+
+            if(config.enableMovementTests()) {
+                if(event.getKey().equals("walkTo") && config.walkTo()) {
+                    walkService.moveTo(targetTile);
+                }
+
+                if(event.getKey().equals("pathTo") && config.pathTo()) {
+                    walkService.walkToAsync(targetTile);
+                }
             }
 
             if(event.getKey().equals("start")) {
@@ -200,5 +229,50 @@ public class ExamplePlugin extends Plugin {
             default:
                 break;
         }
+    }
+
+    @Subscribe
+    public void onMenuOpened(MenuOpened event) {
+        trueTile = getSelectedWorldPoint();
+    }
+
+    @Subscribe
+    private void onMenuEntryAdded(MenuEntryAdded event) {
+        if (client.isKeyPressed(KeyCode.KC_SHIFT) && event.getOption().equals("Walk here") && event.getTarget().isEmpty()) {
+            addMenuEntry(event, "Set", TARGET_TILE, 1);
+        }
+    }
+
+    private void addMenuEntry(MenuEntryAdded event, String option, String target, int position) {
+        List<MenuEntry> entries = new LinkedList<>(Arrays.asList(client.getMenu().getMenuEntries()));
+        if (entries.stream().anyMatch(e -> e.getOption().equals(option) && e.getTarget().equals(target))) {
+            return;
+        }
+
+        client.getMenu().createMenuEntry(position)
+                .setOption(option)
+                .setTarget(target)
+                .setParam0(event.getActionParam0())
+                .setParam1(event.getActionParam1())
+                .setIdentifier(event.getIdentifier())
+                .setType(MenuAction.RUNELITE)
+                .onClick(this::onMenuOptionClicked);
+    }
+
+    private void onMenuOptionClicked(MenuEntry entry) {
+        if (entry.getOption().equals("Set") && entry.getTarget().equals(TARGET_TILE)) {
+            targetTile = trueTile;
+        }
+    }
+
+    private WorldPoint getSelectedWorldPoint() {
+        if (client.getWidget(ComponentID.WORLD_MAP_MAPVIEW) == null) {
+            if (client.getTopLevelWorldView().getSelectedSceneTile() != null) {
+                return client.getTopLevelWorldView().isInstance() ?
+                        WorldPoint.fromLocalInstance(client, client.getTopLevelWorldView().getSelectedSceneTile().getLocalLocation()) :
+                        client.getTopLevelWorldView().getSelectedSceneTile().getWorldLocation();
+            }
+        }
+        return null;
     }
 }

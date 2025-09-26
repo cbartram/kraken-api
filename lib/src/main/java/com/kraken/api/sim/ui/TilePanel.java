@@ -71,7 +71,7 @@ public class TilePanel extends JPanel implements SimulationObserver {
             public void actionPerformed(ActionEvent e) {
                 if(hoveredTile != null) {
                     engine.reset();
-                    engine.setPlayerPosition(hoveredTile);
+                    engine.getPlayer().setPosition(hoveredTile);
                     repaint();
                 }
             }
@@ -446,11 +446,11 @@ public class TilePanel extends JPanel implements SimulationObserver {
     private void drawPlayer(Graphics2D g) {
         g.setColor(new Color(6, 239, 79, 255));
         g.setStroke(new BasicStroke(2));
-        g.fillRect(engine.getPlayerPosition().x * TILE_SIZE + 2, engine.getPlayerPosition().y * TILE_SIZE + 2,
+        g.fillRect(engine.getPlayer().getPosition().x * TILE_SIZE + 2, engine.getPlayer().getPosition().y * TILE_SIZE + 2,
                 TILE_SIZE - 4, TILE_SIZE - 4);
         g.setColor(Color.BLACK);
-        g.drawString("P", engine.getPlayerPosition().x * TILE_SIZE + 6,
-                engine.getPlayerPosition().y * TILE_SIZE + 14);
+        g.drawString("P", engine.getPlayer().getPosition().x * TILE_SIZE + 6,
+                engine.getPlayer().getPosition().y * TILE_SIZE + 14);
     }
 
     /**
@@ -464,7 +464,6 @@ public class TilePanel extends JPanel implements SimulationObserver {
 
             // This ensures the southwest tile is the tile we draw from.
             int y = (npc.getPosition().y - (npcSize - 1)) * TILE_SIZE;
-
 
             if (npcSize == 1) {
                 g.setColor(npc.getColor());
@@ -517,34 +516,29 @@ public class TilePanel extends JPanel implements SimulationObserver {
 
                 g.setColor(Color.BLACK);
                 g.drawString(String.valueOf(npc.getName().charAt(0)), nameX, nameY);
+            }
 
+            // Line of sight
+            if(state.isShowLineOfSight()) {
+                List<Point> los = engine.getNpcLineOfSight(npc);
 
-                // Line of sight
-                if(state.isShowLineOfSight()) {
-                    List<Point> los = engine.getNpcLineOfSight(npc);
+                // Set semi-transparent purple color
+                Color losColor = new Color(128, 0, 128, 80);
+                g.setColor(losColor);
 
-                    // Set semi-transparent purple color
-                    Color losColor = new Color(128, 0, 128, 80); // Purple with alpha 80 (out of 255)
+                // Draw each line of sight tile
+                for (Point losPoint : los) {
+                    int losX = losPoint.x * TILE_SIZE;
+                    int losY = (losPoint.y) * TILE_SIZE;
+
+                    g.fillRect(losX, losY, TILE_SIZE, TILE_SIZE);
+                    g.setColor(new Color(128, 0, 128, 200));
+                    g.setStroke(new BasicStroke(1));
+                    g.drawRect(losX, losY, TILE_SIZE, TILE_SIZE);
+
+                    // Reset color for next iteration
                     g.setColor(losColor);
-
-                    // Draw each line of sight tile
-                    for (Point losPoint : los) {
-                        int losX = losPoint.x * TILE_SIZE;
-                        int losY = (losPoint.y) * TILE_SIZE;
-
-                        // Fill the tile with semi-transparent purple
-                        g.fillRect(losX, losY, TILE_SIZE, TILE_SIZE);
-
-                        // Optional: Add a subtle border
-                        g.setColor(new Color(128, 0, 128, 120)); // Slightly more opaque purple for border
-                        g.setStroke(new BasicStroke(1));
-                        g.drawRect(losX, losY, TILE_SIZE, TILE_SIZE);
-
-                        // Reset color for next iteration
-                        g.setColor(losColor);
-                    }
                 }
-
             }
         }
     }

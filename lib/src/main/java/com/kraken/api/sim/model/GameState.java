@@ -1,8 +1,11 @@
 package com.kraken.api.sim.model;
 
+import com.kraken.api.interaction.tile.CollisionMap;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import java.awt.Point;
+
+import java.awt.*;
 import java.util.List;
 
 /**
@@ -10,6 +13,7 @@ import java.util.List;
  * Used for implementing time travel functionality (prev/next tick).
  */
 @Data
+@Builder
 @AllArgsConstructor
 public class GameState {
 

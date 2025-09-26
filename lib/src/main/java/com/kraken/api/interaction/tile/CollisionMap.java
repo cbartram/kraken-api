@@ -1,8 +1,11 @@
 package com.kraken.api.interaction.tile;
 
+import com.kraken.api.sim.model.SimNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * Collision map data container with all necessary information.
@@ -12,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CollisionMap {
     private int[][] data;
+    private List<SimNpc> npcs;
     private int minX, minY, maxX, maxY;
     private int playerX, playerY;
     private int plane;

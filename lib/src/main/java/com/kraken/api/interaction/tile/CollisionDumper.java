@@ -5,18 +5,25 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.kraken.api.Context;
+import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.sim.model.AttackStyle;
+import com.kraken.api.sim.model.SimNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.CollisionData;
+import net.runelite.api.NPC;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.RuneLite;
 
+import java.awt.*;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +36,12 @@ public class CollisionDumper {
 
     @Inject
     private Gson gson;
+
+    @Inject
+    private NpcService npcService;
+
+    @Inject
+    private Context context;
 
     /**
      * Collects collision data from the game within default distance (104 tiles).
@@ -49,7 +62,9 @@ public class CollisionDumper {
     public CollisionMap collect(int distance) {
         Client client = RuneLite.getInjector().getInstance(Client.class);
         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
-
+        List<SimNpc> simNpcs = new ArrayList<>();
+        Map<WorldPoint, NPC> npcs = npcService.getNpcs()
+                .collect(Collectors.toMap(NPC::getWorldLocation, Function.identity()));
         final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
         tileDistances.put(playerLocation, 0);
 
@@ -105,9 +120,28 @@ public class CollisionDumper {
         // Fill the array with collision data
         for (var entry : collisionFlags.entrySet()) {
             WorldPoint point = entry.getKey();
+            NPC potentialNpc = npcs.get(point);
             int localX = point.getX() - minX;
             int localY = point.getY() - minY;
             int flippedY = height - 1 - localY; // Flip Y coordinate for array indexing
+
+            if(potentialNpc != null) {
+                String name = context.runOnClientThread(potentialNpc::getName);
+                // TODO Attack range doesn't seem to return the correct value
+                int attackRange = context.runOnClientThread(() -> potentialNpc.getComposition().getIntValue(13));
+                int attackSpeed = context.runOnClientThread(() -> potentialNpc.getComposition().getIntValue(14));
+
+                log.info("Adding NPC: {}, Attack Range = {}, Attack Speed = {}", name, attackRange, attackSpeed);
+
+                SimNpc s = new SimNpc(worldToSim(point, minX, minY, width, height), Color.WHITE, name);
+                s.setSize(potentialNpc.getComposition().getSize());
+                s.setCanPathfind(false);
+                s.setAggressive(false);
+                s.setAttackRange(attackRange == 0 ? 1 : attackRange);
+                s.setAttackSpeed(attackSpeed);
+                s.setAttackStyle(attackRange > 1 ? AttackStyle.RANGE : AttackStyle.MELEE);
+                simNpcs.add(s);
+            }
 
             collisionArray[flippedY][localX] = entry.getValue();
         }
@@ -117,12 +151,28 @@ public class CollisionDumper {
         int playerLocalY = playerLocation.getY() - minY;
         int playerFlippedY = height - 1 - playerLocalY;
 
-        log.info("Collected collision data for {} tiles. Bounds: X[{},{}] Y[{},{}]. Player at: ({},{})",
-                collisionFlags.size(), minX, maxX, minY, maxY, playerLocalX, playerFlippedY);
+        log.info("Collected collision data for {} tiles. Bounds: X[{},{}] Y[{},{}]. Player at: ({},{}), NPCs: {}",
+                collisionFlags.size(), minX, maxX, minY, maxY, playerLocalX, playerFlippedY, simNpcs.size());
 
-        return new CollisionMap(collisionArray, minX, minY, maxX, maxY,
+        return new CollisionMap(collisionArray, simNpcs, minX, minY, maxX, maxY,
                 playerLocalX, playerFlippedY, playerLocation.getPlane());
     }
+
+    /**
+     * Converts world coordinates to simulation coordinates.
+     * @return Array coordinates as [x, y], or null if out of bounds
+     */
+    public Point worldToSim(WorldPoint point, int minX, int minY, int width, int height) {
+        int localX = point.getX() - minX;
+        int localY = point.getY() - minY;
+        int flippedY = height - 1 - localY;
+        if (localX >= 0 && localX < width && flippedY >= 0 && flippedY < height) {
+            return new Point(localX, flippedY);
+        }
+
+        return new Point(1, 1);
+    }
+
 
     /**
      * Saves collision map to a JSON file.

@@ -2,11 +2,13 @@ package com.kraken.api.sim.engine;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.CollisionMap;
 import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.GameState;
 import com.kraken.api.sim.model.SimNpc;
+import com.kraken.api.sim.model.SimPlayer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,12 @@ import java.util.List;
 public class SimulationEngine {
     private static final int MAX_HISTORY_SIZE = 50; // Limits the amount of times a user can go back in time
 
+    @Inject
+    private CollisionDumper collisionDumper;
+
+    @Inject
+    private PlayerService playerService;
+
     // Simulation running (different from player run enabled move 2 tiles instead of 1)
     @Getter
     private boolean running = false;
@@ -41,15 +49,17 @@ public class SimulationEngine {
     private int[][] collisionData;
 
     @Getter
-    @Setter
-    private Point playerPosition;
+    private CollisionMap map;
+
+    @Getter
+    private SimPlayer player;
 
     @Getter
     @Setter
     private Point targetPosition;
 
     @Getter
-    private final List<SimNpc> npcs = new ArrayList<>();
+    private List<SimNpc> npcs = new ArrayList<>();
 
     @Getter
     private final Map<SimNpc, List<Point>> npcPaths = new HashMap<>();
@@ -57,20 +67,43 @@ public class SimulationEngine {
     @Getter
     private List<Point> playerCurrentPath = new ArrayList<>();
 
-
     private final List<SimulationObserver> observers = new ArrayList<>();
     private Timer timer;
     int tick = 0;
     private int playerPathIndex = 0;
     private Stack<GameState> stateHistory = new Stack<>();
 
-    @Inject
-    public SimulationEngine(final CollisionDumper collisionDumper) {
-        // TODO Make this load directly from game with .collect() since this is intended to be used from an API context
-        // within a RuneLite plugin
-        CollisionMap collisionMap = collisionDumper.loadFromFile("collision_data.json");
-        playerPosition = new Point(collisionMap.getPlayerX(), collisionMap.getPlayerY());
-        collisionData = collisionMap.getData();
+
+    /**
+     * Refresh will re-load the simulation with collision, npc, and player data gathered directly from the game. The collision
+     * map is passed as a parameter so that when refresh() is called without parameters the players location will be set to their
+     * in-game location. This prevents the collision map load from being called twice in the event a refresh is needed for player,
+     * tick or npc data WITHOUT the need to reload collision data.
+     * @param map The calculated collision maps from the collision dumper.
+     * @param playerPosition The players current position (this determines where the player is placed on the visualization initially).
+     * @param tick The game tick
+     * @param playerPathIndex The current index in the players current path
+     * @param playerCurrentPath The players current path
+     */
+    public void refresh(CollisionMap map, Point playerPosition, int tick, int playerPathIndex, List<Point> playerCurrentPath) {
+        this.map = map;
+        this.tick = tick;
+        this.collisionData = map.getData();
+        this.player = new SimPlayer(playerPosition, 1,
+                playerService.isRunEnabled(), playerService.getSpecialAttackEnergy(),
+                playerPathIndex, playerCurrentPath);
+        this.npcs = map.getNpcs();
+        notifyObservers();
+    }
+
+    /**
+     * Refresh will re-load the simulation with collision, npc, and player data gathered directly from the game USING
+     * defaults like 0 for the tick and player path index. This method assumes that the player has no current path
+     * but will still create the players and NPC's at their proper locations in game.
+     */
+    public void refresh() {
+        CollisionMap map = collisionDumper.collect();
+        refresh(map, new Point(map.getPlayerX(), map.getPlayerY()), 0, 0, Collections.emptyList());
     }
 
     /**
@@ -142,7 +175,7 @@ public class SimulationEngine {
 
         // Save current state to history
         GameState currentState = new GameState(tick,
-                playerPosition != null ? new Point(playerPosition) : null,
+                new Point(player.getPosition()),
                 pathCopy,
                 playerPathIndex,
                 currentNpcPositions);
@@ -171,19 +204,15 @@ public class SimulationEngine {
         GameState previousState = stateHistory.pop();
 
         // Restore previous state
-        tick = previousState.tick;
-
-        if (previousState.playerPosition != null) {
-            setPlayerPosition(previousState.playerPosition);
-        }
-
-        playerCurrentPath = new ArrayList<>(previousState.playerPath);
-        playerPathIndex = previousState.playerPathIndex;
+        tick = previousState.getTick();
+        player.setPosition(previousState.getPlayerPosition());
+        player.setCurrentPath(new ArrayList<>(previousState.getPlayerPath()));
+        player.setPathIndex(previousState.getPlayerPathIndex());
 
         // Restore previous NPC positions
         List<SimNpc> prevNpcs = npcs;
-        for (int i = 0; i < Math.min(prevNpcs.size(), previousState.npcPositions.size()); i++) {
-            prevNpcs.get(i).setPosition(previousState.npcPositions.get(i));
+        for (int i = 0; i < Math.min(prevNpcs.size(), previousState.getNpcPositions().size()); i++) {
+            prevNpcs.get(i).setPosition(previousState.getNpcPositions().get(i));
         }
 
         // Remove the last path point for each NPC (since we're going backward)
@@ -200,7 +229,7 @@ public class SimulationEngine {
         if(tick > 0) {
             for (SimNpc npc : npcs) {
                 Point npcPos = npc.getPosition();
-                Point playerPos = getPlayerPosition();
+                Point playerPos = player.getPosition();
 
                 if(npc.isCanPathfind()) {
                     List<Point> route = findPath(npcPos, playerPos, npc);
@@ -243,7 +272,7 @@ public class SimulationEngine {
             }
 
             if (nextStep != null) {
-                setPlayerPosition(nextStep);
+                player.setPosition(new Point(nextStep));
             } else {
                 playerCurrentPath.clear();
                 playerPathIndex = 0;
@@ -260,7 +289,7 @@ public class SimulationEngine {
      * @param target Target point to move towards
      */
     public void setPlayerTarget(Point target) {
-        Point start = getPlayerPosition();
+        Point start = player.getPosition();
         playerCurrentPath = findPath(start, target, null);
         targetPosition = target;
         playerPathIndex = 0;
@@ -554,10 +583,7 @@ public class SimulationEngine {
      * @return True if the position would cause overlap with player, false otherwise
      */
     private boolean isOccupiedByPlayer(Point position, SimNpc npc) {
-        Point playerPos = getPlayerPosition();
-        int npcSize = npc.getSize();
-
-        return isOverlapping(position, npcSize, playerPos, 1);
+        return isOverlapping(position, npc.getSize(), player.getPosition(), 1);
     }
 
     /**

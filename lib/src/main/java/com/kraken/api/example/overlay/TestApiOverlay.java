@@ -3,6 +3,7 @@ package com.kraken.api.example.overlay;
 import com.google.inject.Inject;
 import com.kraken.api.Context;
 import com.kraken.api.example.ExampleConfig;
+import com.kraken.api.example.ExamplePlugin;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
@@ -20,6 +21,8 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import java.awt.*;
 import java.util.stream.Stream;
 
+import static net.runelite.client.ui.overlay.OverlayUtil.renderPolygon;
+
 public class TestApiOverlay extends Overlay {
 
     private final Client client;
@@ -30,11 +33,12 @@ public class TestApiOverlay extends Overlay {
     private final GroundObjectService groundObjectService;
     private final NpcService npcService;
     private final GameObjectService gameObjectService;
+    private final ExamplePlugin plugin;
 
     @Inject
     public TestApiOverlay(Client client, ExampleConfig config, Context context,
                           InventoryService inventoryService, PlayerService playerService,
-                          GroundObjectService groundObjectService, NpcService npcService, GameObjectService gameObjectService) {
+                          GroundObjectService groundObjectService, NpcService npcService, GameObjectService gameObjectService, ExamplePlugin plugin) {
         this.client = client;
         this.config = config;
         this.context = context;
@@ -43,6 +47,7 @@ public class TestApiOverlay extends Overlay {
         this.groundObjectService = groundObjectService;
         this.npcService = npcService;
         this.gameObjectService = gameObjectService;
+        this.plugin = plugin;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
@@ -73,6 +78,10 @@ public class TestApiOverlay extends Overlay {
                 renderGameObjectOverlays(graphics);
             }
 
+            if(config.enableMovementOverlay() && config.enableMovementTests()) {
+                renderTargetTile(graphics);
+            }
+
         } catch (Exception e) {
             // Catch any exceptions to prevent overlay crashes
             graphics.setColor(Color.RED);
@@ -80,6 +89,17 @@ public class TestApiOverlay extends Overlay {
         }
 
         return null;
+    }
+
+    private void renderTargetTile(Graphics2D g) {
+        if(plugin.getTargetTile() != null) {
+            LocalPoint lp = LocalPoint.fromWorld(client.getTopLevelWorldView(), plugin.getTargetTile());
+            if(lp == null) return;
+            Polygon polygon = Perspective.getCanvasTilePoly(client, lp);
+            if(polygon == null) return;
+
+            renderPolygon(g, polygon, new Color(241, 160, 9), new Color(241, 160, 9, 20), new BasicStroke(2));
+        }
     }
 
     private void renderGameObjectOverlays(Graphics2D graphics) {
