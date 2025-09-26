@@ -8,6 +8,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.interaction.player.PlayerService;
+import com.kraken.api.interaction.tile.TileService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,9 @@ public class WalkService extends AbstractService {
 
     @Inject
     private PlayerService playerService;
+
+    @Inject
+    private TileService tileService;
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final AtomicReference<MovementTask> currentTask = new AtomicReference<>();
@@ -258,18 +262,42 @@ public class WalkService extends AbstractService {
     }
 
     /**
-     * Moves the player to a specific world point.
+     * Moves the player to a specific world point. This takes into account when it is called
+     * from within an instance and will convert the world point from an instance world point into a
+     * normal world point
+     * @param point The world point to move towards
      */
     public void moveTo(WorldPoint point) {
-        MousePackets.queueClickPacket();
-        MovementPackets.queueMovement(point);
+        WorldPoint pt;
+        if (client.getTopLevelWorldView().isInstance()) {
+            pt = tileService.fromInstance(point);
+        } else {
+            pt = point;
+        }
+
+        moveToInternal(pt);
     }
 
     /**
-     * Moves the player to a given local point using packets.
+     * Moves the player to a given local point using packets. This method takes into account
+     * instances and will convert the local point into a world point for an instance (or normal
+     * local point).
+     * @param point The local point to move to
      */
     public void moveTo(LocalPoint point) {
-        moveTo(WorldPoint.fromLocalInstance(client, point));
+        WorldPoint pt;
+        if(client.getTopLevelWorldView().isInstance()) {
+            pt = WorldPoint.fromLocalInstance(client, point);
+        } else {
+            pt = WorldPoint.fromLocal(client, point);
+        }
+
+        moveToInternal(pt);
+    }
+
+    private void moveToInternal(WorldPoint point) {
+        MousePackets.queueClickPacket();
+        MovementPackets.queueMovement(point);
     }
 
     /**
