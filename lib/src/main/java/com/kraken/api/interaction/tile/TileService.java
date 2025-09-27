@@ -417,7 +417,21 @@ public class TileService extends AbstractService {
         return point;
     }
 
+    /**
+     * Returns the distance from a world point to another world point in local point distance.
+     * @param distance Distance to convert
+     * @return The distance in local points between a world point and another world point
+     */
     public static Integer worldToLocalDistance(int distance) {
         return distance * Perspective.LOCAL_TILE_SIZE;
+    }
+
+    /**
+     * Returns the distance from a local point to another local point in world point distance.
+     * @param distance Distance to convert
+     * @return The distance in world points between a local point and another local point
+     */
+    public static Integer localToWorldDistance(int distance) {
+        return distance / Perspective.LOCAL_TILE_SIZE;
     }
 }

@@ -429,6 +429,17 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "walkToWorld",
+            name = "Start Movement (no instance)",
+            description = "Walk to Target Point",
+            section = movement,
+            position = 3
+    )
+    default boolean walkToWorld() {
+        return false;
+    }
+
 
     @ConfigItem(
             keyName = "pathTo",

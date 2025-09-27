@@ -140,6 +140,10 @@ public class ExamplePlugin extends Plugin {
             }
 
             if(config.enableMovementTests()) {
+                if(event.getKey().equals("walkToWorld") && config.walkToWorld()) {
+                    walkService.moveToInternal(targetTile);
+                }
+
                 if(event.getKey().equals("walkTo") && config.walkTo()) {
                     walkService.moveTo(targetTile);
                 }

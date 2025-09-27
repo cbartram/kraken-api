@@ -271,6 +271,7 @@ public class WalkService extends AbstractService {
         WorldPoint pt;
         if (client.getTopLevelWorldView().isInstance()) {
             pt = tileService.fromInstance(point);
+            log.info("Point is instance, converting: Original ({}, {}, {}), Converted: ({}, {}, {})", point.getX(), point.getY(), point.getPlane(), pt.getX(), pt.getY(), pt.getPlane());
         } else {
             pt = point;
         }
@@ -295,7 +296,7 @@ public class WalkService extends AbstractService {
         moveToInternal(pt);
     }
 
-    private void moveToInternal(WorldPoint point) {
+    public void moveToInternal(WorldPoint point) {
         MousePackets.queueClickPacket();
         MovementPackets.queueMovement(point);
     }
