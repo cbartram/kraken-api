@@ -2,19 +2,24 @@ package com.kraken.api.interaction.movement;
 
 import com.example.Packets.MousePackets;
 import com.example.Packets.MovementPackets;
-import com.example.Packets.ObjectPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.interaction.player.PlayerService;
+import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
+import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.MenuAction;
+import net.runelite.api.Perspective;
+import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
+import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -37,6 +42,9 @@ public class WalkService extends AbstractService {
 
     @Inject
     private TileService tileService;
+
+    @Inject
+    private ReflectionService reflectionService;
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final AtomicReference<MovementTask> currentTask = new AtomicReference<>();
@@ -271,7 +279,6 @@ public class WalkService extends AbstractService {
         WorldPoint pt;
         if (client.getTopLevelWorldView().isInstance()) {
             pt = tileService.fromInstance(point);
-            log.info("Point is instance, converting: Original ({}, {}, {}), Converted: ({}, {}, {})", point.getX(), point.getY(), point.getPlane(), pt.getX(), pt.getY(), pt.getPlane());
         } else {
             pt = point;
         }
@@ -299,6 +306,22 @@ public class WalkService extends AbstractService {
     public void moveToInternal(WorldPoint point) {
         MousePackets.queueClickPacket();
         MovementPackets.queueMovement(point);
+    }
+
+    public void moveToReflect(WorldPoint point) {
+        moveToReflect(LocalPoint.fromWorld(client.getTopLevelWorldView(), point));
+    }
+
+    // TODO Walk to the last place your mouse left the canvas.
+    public void moveToReflect(LocalPoint point) {
+        if(point == null) return;
+
+        Point canv = Perspective.localToCanvas(client, point, client.getTopLevelWorldView().getPlane());
+        int canvasX = canv != null ? canv.getX() : -1;
+        int canvasY = canv != null ? canv.getY() : -1;
+
+        log.info("Canvas: ({}, {}), Point: ({}, {})", canvasX, canvasY, point.getX(), point.getY());
+        reflectionService.invokeMenuAction(canvasX, canvasY, MenuAction.WALK.getId(), 0, -1, -1, "Walk here", "", canvasX, canvasY);
     }
 
     /**

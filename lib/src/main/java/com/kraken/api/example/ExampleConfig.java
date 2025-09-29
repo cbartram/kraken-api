@@ -452,6 +452,17 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "walkToReflect",
+            name = "Start Reflect Walk",
+            description = "Path to a point using reflection",
+            section = movement,
+            position = 4
+    )
+    default boolean walkToReflect() {
+        return false;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",

@@ -83,30 +83,6 @@ public class ReflectionService extends AbstractService {
     private static int selectedSpellItemIDMultiplier;
 
     @Setter
-    private static String actorAnimationObjectClassName;
-
-    @Setter
-    private static String actorAnimationObjectFieldName;
-
-    @Setter
-    private static String actorAnimationIdClassName;
-
-    @Setter
-    private static String actorAnimationIdFieldName;
-
-    @Setter
-    private static int actorAnimationIdMultiplier;
-
-    @Setter
-    private static String actorPathLengthClassName;
-
-    @Setter
-    private static String actorPathLengthFieldName;
-
-    @Setter
-    private static int actorPathLengthMultiplier;
-
-    @Setter
     private static String menuOptionsCountClassName;
 
     @Setter
@@ -421,40 +397,6 @@ public class ReflectionService extends AbstractService {
         });
     }
 
-    //Actor Hook Methods
-    public int getNpcAnimationId(Actor npc) {
-        if (actorAnimationObjectClassName.isBlank())
-        {
-            Field animation = getField(actorAnimationIdClassName, actorAnimationIdFieldName);
-            String errorMsg = "Failed to get NPC animation id.";
-            return getFieldIntValue(animation, npc, actorAnimationIdMultiplier, errorMsg);
-        }
-        else
-        {
-            Field animationClass = getField(actorAnimationObjectClassName, actorAnimationObjectFieldName);
-            String objectErrorMsg = "Failed to get the new Actor animation class object.";
-            Object animationObject = getFieldObjectValue(animationClass, npc, objectErrorMsg);
-            Field animation = getField(actorAnimationIdClassName, actorAnimationIdFieldName);
-            String errorMsg = "Failed to get NPC animation id.";
-            return getFieldIntValue(animation, animationObject, actorAnimationIdMultiplier, errorMsg);
-        }
-    }
-
-    public int getActorPathLength(Actor actor) {
-        Field pathLength = getField(actorPathLengthClassName, actorPathLengthFieldName);
-        String errorMsg = "Failed to get Actor \"" + (actor.getName() != null ? actor.getName() : "null") + "\" path length.";
-        return getFieldIntValue(pathLength, actor, actorPathLengthMultiplier, errorMsg);
-    }
-
-    public boolean isLocalPlayerMoving() {
-        Player you = client.getLocalPlayer();
-        return getActorPathLength(you) != 0;
-    }
-
-    public boolean isActorMoving(Actor actor) {
-        return getActorPathLength(actor) != 0;
-    }
-
     //Menus Hook Methods
     public int getMenuOptionsCount() {
         Field optionsCount = getField(menuOptionsCountClassName, menuOptionsCountFieldName);
@@ -508,7 +450,7 @@ public class ReflectionService extends AbstractService {
         setFieldIntArrayValue(menuOpcodes, client.getMenu(), index, value, errorMsg);
     }
 
-    public void insertMenuEntry(int index, String option, String target, int opcode, int id, int param0, int param1, int itemId) {
+    public void insertMenuEntry(int param0, int param1, int index, int opcode, int id, int itemId, String option, String target) {
         clientThread.invoke(() -> {
             setMenuOption(index, option);
             setMenuTarget(index, target);

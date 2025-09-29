@@ -149,24 +149,10 @@ public class HooksLoader {
                     ReflectionService.setSceneSelectedYClassName(hookInfo.getC());
                     ReflectionService.setSceneSelectedYFieldName(hookInfo.getP());
                     break;
-                case "isMoving":
-                    ReflectionService.setActorPathLengthClassName(hookInfo.getC());
-                    ReflectionService.setActorPathLengthFieldName(hookInfo.getP());
-                    ReflectionService.setActorPathLengthMultiplier(hookInfo.getM());
-                    break;
-                case "getActorAnimationId":
-                    ReflectionService.setActorAnimationIdClassName(hookInfo.getC());
-                    ReflectionService.setActorAnimationIdFieldName(hookInfo.getP());
-                    ReflectionService.setActorAnimationIdMultiplier(hookInfo.getM());
-                    break;
-                case "getActorAnimationObject":
-                    ReflectionService.setActorAnimationObjectClassName(hookInfo.getC());
-                    ReflectionService.setActorAnimationObjectFieldName(hookInfo.getP());
-                    break;
             }
         }
 
-        log.info("Hooks successfully loaded into client.");
+        log.info("Loaded hooks");
     }
 
     private int getObfuscatedSetter(long a) {

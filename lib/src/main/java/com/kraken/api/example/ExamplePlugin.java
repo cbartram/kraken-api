@@ -151,6 +151,11 @@ public class ExamplePlugin extends Plugin {
                 if(event.getKey().equals("pathTo") && config.pathTo()) {
                     walkService.walkToAsync(targetTile);
                 }
+
+                // Reflect
+                if(event.getKey().equals("walkToReflect") && config.walkToReflect()) {
+                    walkService.moveToReflect(targetTile);
+                }
             }
 
             if(event.getKey().equals("start")) {
