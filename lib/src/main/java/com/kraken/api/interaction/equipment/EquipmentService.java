@@ -1,6 +1,12 @@
 package com.kraken.api.interaction.equipment;
 
+import com.example.EthanApiPlugin.Collections.Equipment;
+import com.example.EthanApiPlugin.Collections.EquipmentItemWidget;
+import com.example.EthanApiPlugin.Collections.query.EquipmentItemQuery;
+import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.InventoryInteraction;
+import com.example.Packets.MousePackets;
+import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -13,6 +19,7 @@ import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.eventbus.Subscribe;
 
 import java.util.*;
@@ -31,6 +38,22 @@ public class EquipmentService extends AbstractService {
 
     @Getter
     private final List<InventoryItem> equipment = new ArrayList<>();
+
+    static HashMap<Integer, Integer> equipmentSlotWidgetMapping = new HashMap<>();
+
+    static {
+        equipmentSlotWidgetMapping.put(0, 15);
+        equipmentSlotWidgetMapping.put(1, 16);
+        equipmentSlotWidgetMapping.put(2, 17);
+        equipmentSlotWidgetMapping.put(3, 18);
+        equipmentSlotWidgetMapping.put(4, 19);
+        equipmentSlotWidgetMapping.put(5, 20);
+        equipmentSlotWidgetMapping.put(7, 21);
+        equipmentSlotWidgetMapping.put(9, 22);
+        equipmentSlotWidgetMapping.put(10, 23);
+        equipmentSlotWidgetMapping.put(12, 24);
+        equipmentSlotWidgetMapping.put(13, 25);
+    }
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
@@ -196,6 +219,80 @@ public class EquipmentService extends AbstractService {
         }
 
         return true;
+    }
+
+    /**
+     * Removes an item in an inventory slot.
+     * @param slot The inventory slot with the item to remove.
+     * @return True if the item was un-equipped successfully and false otherwise
+     */
+    public boolean remove(EquipmentInventorySlot slot) {
+        return context.runOnClientThreadOptional(() -> {
+            Widget widget = client.getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(slot.getSlotIdx()));
+            if(widget == null) {
+                log.warn("Could not find item in slot: {}, index: {}", slot.name(), slot.getSlotIdx());
+                return false;
+            }
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(widget, "Remove");
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Removes an item from your equipment given the item id.
+     * @param itemId The id of the item to remove.
+     * @return True if the item was un-equipped successfully and false otherwise
+     */
+    public boolean remove(int itemId) {
+        return context.runOnClientThreadOptional(() -> {
+            EquipmentItemWidget widget = Equipment.search()
+                    .withId(itemId)
+                    .first()
+                    .orElse(null);
+
+            if(widget == null) {
+                log.warn("Could not find item with id: {}", itemId);
+                return false;
+            }
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(client.getWidget(widget.getId()), "Remove");
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Removes the first item with a given name from your equipment.
+     * @param name The name of the item to remove.
+     * @return True if the item was un-equipped successfully and false otherwise
+     */
+    public boolean remove(String name) {
+        return context.runOnClientThreadOptional(() -> {
+            EquipmentItemWidget widget = Equipment.search()
+                    .withName(name)
+                    .first()
+                    .orElse(null);
+
+            if(widget == null) {
+                log.warn("Could not find item with name: {}", name);
+                return false;
+            }
+
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetAction(client.getWidget(widget.getId()), "Remove");
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Removes an inventory item from your equipment.
+     * @param item The item to remove.
+     * @return True if the item was un-equipped successfully and false otherwise
+     */
+    public boolean remove(InventoryItem item) {
+        return remove(item.getId());
     }
 
     /**

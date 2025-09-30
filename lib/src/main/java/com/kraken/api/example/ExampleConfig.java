@@ -429,6 +429,17 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "removeWeapon",
+            name = "Remove Weapon",
+            description = "Remove weapon in slot.",
+            section = movement,
+            position = 5
+    )
+    default boolean removeWeapon() {
+        return false;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
