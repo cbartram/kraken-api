@@ -10,9 +10,11 @@ import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.player.PlayerService;
+import com.kraken.api.interaction.tile.TileService;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -28,23 +30,19 @@ public class TestApiOverlay extends Overlay {
     private final Client client;
     private final ExampleConfig config;
     private final Context context;
-    private final InventoryService inventoryService;
-    private final PlayerService playerService;
     private final GroundObjectService groundObjectService;
     private final NpcService npcService;
     private final GameObjectService gameObjectService;
     private final ExamplePlugin plugin;
+    private final TileService tileService;
 
     @Inject
-    public TestApiOverlay(Client client, ExampleConfig config, Context context,
-                          InventoryService inventoryService, PlayerService playerService,
-                          GroundObjectService groundObjectService, NpcService npcService, GameObjectService gameObjectService, ExamplePlugin plugin) {
+    public TestApiOverlay(Client client, ExampleConfig config, Context context, TileService tileService, GroundObjectService groundObjectService, NpcService npcService, GameObjectService gameObjectService, ExamplePlugin plugin) {
         this.client = client;
         this.config = config;
         this.context = context;
-        this.inventoryService = inventoryService;
-        this.playerService = playerService;
         this.groundObjectService = groundObjectService;
+        this.tileService = tileService;
         this.npcService = npcService;
         this.gameObjectService = gameObjectService;
         this.plugin = plugin;
@@ -93,7 +91,13 @@ public class TestApiOverlay extends Overlay {
 
     private void renderTargetTile(Graphics2D g) {
         if(plugin.getTargetTile() != null) {
-            LocalPoint lp = LocalPoint.fromWorld(client.getTopLevelWorldView(), plugin.getTargetTile());
+            LocalPoint lp;
+            if(client.getTopLevelWorldView().isInstance()) {
+                lp = tileService.fromWorldInstance(plugin.getTargetTile());
+            } else {
+                lp = LocalPoint.fromWorld(client.getTopLevelWorldView(), plugin.getTargetTile());
+            }
+
             if(lp == null) return;
             Polygon polygon = Perspective.getCanvasTilePoly(client, lp);
             if(polygon == null) return;

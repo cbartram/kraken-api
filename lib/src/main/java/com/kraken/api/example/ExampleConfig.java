@@ -419,47 +419,13 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "walkTo",
-            name = "Start Movement",
-            description = "Walk to Target Point",
-            section = movement,
-            position = 3
-    )
-    default boolean walkTo() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "walkToWorld",
-            name = "Start Movement (no instance)",
-            description = "Walk to Target Point",
-            section = movement,
-            position = 3
-    )
-    default boolean walkToWorld() {
-        return false;
-    }
-
-
-    @ConfigItem(
-            keyName = "pathTo",
-            name = "Start Pathing",
-            description = "Path to a farther point",
-            section = movement,
-            position = 3
-    )
-    default boolean pathTo() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "walkToReflect",
-            name = "Start Reflect Walk",
-            description = "Path to a point using reflection",
+            keyName = "fromWorldInstance",
+            name = "Walk to Target",
+            description = "Walk to Target tile selected by shift + right clicking and selecting the target tile.",
             section = movement,
             position = 4
     )
-    default boolean walkToReflect() {
+    default boolean fromWorldInstance() {
         return false;
     }
 

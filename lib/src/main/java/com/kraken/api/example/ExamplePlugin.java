@@ -12,6 +12,7 @@ import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.movement.WalkService;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.MovementFlag;
+import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -125,6 +126,8 @@ public class ExamplePlugin extends Plugin {
         }
     }
 
+    @Inject
+    private TileService tileService;
 
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
@@ -139,22 +142,10 @@ public class ExamplePlugin extends Plugin {
                 }
             }
 
+            String k = event.getKey();
             if(config.enableMovementTests()) {
-                if(event.getKey().equals("walkToWorld") && config.walkToWorld()) {
-                    walkService.moveToInternal(targetTile);
-                }
-
-                if(event.getKey().equals("walkTo") && config.walkTo()) {
+                if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
                     walkService.moveTo(targetTile);
-                }
-
-                if(event.getKey().equals("pathTo") && config.pathTo()) {
-                    walkService.walkToAsync(targetTile);
-                }
-
-                // Reflect
-                if(event.getKey().equals("walkToReflect") && config.walkToReflect()) {
-                    walkService.moveToReflect(targetTile);
                 }
             }
 

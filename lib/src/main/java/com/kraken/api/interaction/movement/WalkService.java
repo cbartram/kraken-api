@@ -272,47 +272,58 @@ public class WalkService extends AbstractService {
     /**
      * Moves the player to a specific world point. This takes into account when it is called
      * from within an instance and will convert the world point from an instance world point into a
-     * normal world point
+     * normal world point which is moveable.
      * @param point The world point to move towards
      */
     public void moveTo(WorldPoint point) {
-        WorldPoint pt;
+        WorldPoint convertedPoint;
         if (client.getTopLevelWorldView().isInstance()) {
-            pt = tileService.fromInstance(point);
+            // multiple conversions here: 1 which takes WP and creates instanced LP and
+            // 2 which converts a LP to WP
+            convertedPoint = WorldPoint.fromLocal(client, tileService.fromWorldInstance(point));
         } else {
-            pt = point;
+            convertedPoint = point;
         }
 
-        moveToInternal(pt);
+        MousePackets.queueClickPacket();
+        MovementPackets.queueMovement(convertedPoint);
     }
 
     /**
-     * Moves the player to a given local point using packets. This method takes into account
-     * instances and will convert the local point into a world point for an instance (or normal
-     * local point).
+     * Moves the player to a given local point using packets. This method assumes that if the local point passed
+     * is in an instance it
      * @param point The local point to move to
      */
     public void moveTo(LocalPoint point) {
-        WorldPoint pt;
+        WorldPoint converted;
         if(client.getTopLevelWorldView().isInstance()) {
-            pt = WorldPoint.fromLocalInstance(client, point);
+            // TODO May not work right
+            converted = WorldPoint.fromLocalInstance(client, point);
+            LocalPoint lp = tileService.fromWorldInstance(converted);
+            converted = WorldPoint.fromLocal(client, lp);
         } else {
-            pt = WorldPoint.fromLocal(client, point);
+            converted = WorldPoint.fromLocal(client, point);
         }
 
-        moveToInternal(pt);
-    }
 
-    public void moveToInternal(WorldPoint point) {
         MousePackets.queueClickPacket();
-        MovementPackets.queueMovement(point);
+        MovementPackets.queueMovement(converted);
     }
 
+    /**
+     * Moves to the specified world point using reflection
+     * @param point The world point to move towards.
+     */
     public void moveToReflect(WorldPoint point) {
         moveToReflect(LocalPoint.fromWorld(client.getTopLevelWorldView(), point));
     }
 
-    // TODO Walk to the last place your mouse left the canvas.
+    /**
+     * Moves to the specified local point using reflection. Note: TODO this function
+     * will not correctly move to the point. It only moves to the last place your mouse left
+     * the canvas
+     * @param point Local point to move towards
+     */
     public void moveToReflect(LocalPoint point) {
         if(point == null) return;
 
