@@ -9,6 +9,7 @@ import com.kraken.api.Context;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
+import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.movement.WalkService;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.MovementFlag;
@@ -98,6 +99,9 @@ public class ExamplePlugin extends Plugin {
     private WalkService walkService;
 
     @Inject
+    private EquipmentService equipmentService;
+
+    @Inject
     private GroundObjectServiceTest groundObjectServiceTest;
 
     @Inject
@@ -147,6 +151,10 @@ public class ExamplePlugin extends Plugin {
                 if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
                     walkService.moveTo(targetTile);
                 }
+            }
+
+            if(k.equals("removeWeapon") && config.removeWeapon()) {
+                equipmentService.remove(EquipmentInventorySlot.WEAPON);
             }
 
             if(event.getKey().equals("start")) {
