@@ -76,9 +76,7 @@ public class VirtualMouse {
     public VirtualMouse click(Point point, boolean rightClick) {
         if (point == null) return this;
 
-        Runnable clickAction = () -> {
-            handleClick(point, rightClick);
-        };
+        Runnable clickAction = () -> handleClick(point, rightClick);
 
         if (client.isClientThread()) {
             scheduledExecutorService.schedule(clickAction, 0, TimeUnit.MILLISECONDS);
@@ -88,56 +86,9 @@ public class VirtualMouse {
 
         return this;
     }
-
-
-    public VirtualMouse click(Point point, boolean rightClick, NewMenuEntry entry) {
-        if (point == null) return this;
-
-        Runnable clickAction = () -> {
-            Context.targetMenu = entry;
-            handleClick(point, rightClick);
-        };
-
-        if (client.isClientThread()) {
-            scheduledExecutorService.schedule(clickAction, 0, TimeUnit.MILLISECONDS);
-        } else {
-            clickAction.run();
-        }
-
-        return this;
-    }
-
-
-    public VirtualMouse click(int x, int y) {
-        return click(new Point(x, y), false);
-    }
-
-    public VirtualMouse click(double x, double y) {
-        return click(new Point((int) x, (int) y), false);
-    }
-
-    public VirtualMouse click(Rectangle rectangle) {
-        return click(UIService.getClickingPoint(rectangle, true), false);
-    }
-
-    
-    public VirtualMouse click(int x, int y, boolean rightClick) {
-        return click(new Point(x, y), rightClick);
-    }
-
     
     public VirtualMouse click(Point point) {
         return click(point, false);
-    }
-
-    
-    public VirtualMouse click(Point point, NewMenuEntry entry) {
-        return click(point, false, entry);
-    }
-
-    
-    public VirtualMouse click() {
-        return click(client.getMouseCanvasPosition());
     }
 
     public VirtualMouse move(Point point) {
@@ -258,30 +209,6 @@ public class VirtualMouse {
         event.setSource("Kraken");
         getCanvas().dispatchEvent(event);
     }
-
-    // New drag method
-//    public VirtualMouse drag(Point startPoint, Point endPoint) {
-//        if (startPoint == null || endPoint == null) return this;
-//
-//        if (Rs2AntibanSettings.naturalMouse && (startPoint.getX() > 1 && startPoint.getY() > 1))
-//            Microbot.naturalMouse.moveTo(startPoint.getX(), startPoint.getY());
-//        else
-//            move(startPoint);
-//        sleep(50, 80);
-//        // Press the mouse button at the start point
-//        pressed(startPoint, MouseEvent.BUTTON1);
-//        sleep(80, 120);
-//        // Move to the end point while holding the button down
-//        if (Rs2AntibanSettings.naturalMouse && (endPoint.getX() > 1 && endPoint.getY() > 1))
-//            Microbot.naturalMouse.moveTo(endPoint.getX(), endPoint.getY());
-//        else
-//            move(endPoint);
-//        sleep(80, 120);
-//        // Release the mouse button at the end point
-//        released(endPoint, MouseEvent.BUTTON1);
-//
-//        return this;
-//    }
 }
 
 
