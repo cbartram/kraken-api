@@ -222,7 +222,7 @@ public class EquipmentService extends AbstractService {
     }
 
     /**
-     * Removes an item in an inventory slot.
+     * Removes an item in an inventory slot. TODO in the future add reflect methods for these (shouldn't be terribly difficult)
      * @param slot The inventory slot with the item to remove.
      * @return True if the item was un-equipped successfully and false otherwise
      */
