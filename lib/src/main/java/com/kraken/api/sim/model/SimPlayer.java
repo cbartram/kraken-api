@@ -9,6 +9,9 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A model of a player within a simulation.
+ */
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
@@ -25,6 +28,9 @@ public class SimPlayer {
 
     @NonNull
     private Integer specRemaining;
+
+    @NonNull
+    private AttackStyle attackStyle;
 
     private Integer pathIndex = 0;
     private List<Point> currentPath = new ArrayList<>();
