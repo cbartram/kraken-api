@@ -429,22 +429,30 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
-    @ConfigItem(
-            keyName = "removeWeapon",
-            name = "Remove Weapon",
-            description = "Remove weapon in slot.",
-            section = movement,
-            position = 5
+    // =========== Prayer Tests ================
+    @ConfigSection(
+            name = "Prayer Tests",
+            description = "Settings for Prayer tests.",
+            position = 8
     )
-    default boolean removeWeapon() {
-        return false;
+    String prayer = "Prayer Tests";
+
+    @ConfigItem(
+            keyName = "enablePrayer",
+            name = "Enable Prayer",
+            description = "Enable Prayer tests",
+            section = prayer,
+            position = 1
+    )
+    default boolean enablePrayerTests() {
+        return true;
     }
 
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
             description = "General overlay configuration.",
-            position = 8
+            position = 99
     )
     String overlaySettings = "Overlay Settings";
 

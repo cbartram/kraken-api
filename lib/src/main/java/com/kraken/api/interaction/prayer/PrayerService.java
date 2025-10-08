@@ -1,10 +1,11 @@
 package com.kraken.api.interaction.prayer;
 
+import com.example.Packets.MousePackets;
+import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.model.NewMenuEntry;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Prayer;
@@ -23,7 +24,7 @@ public class PrayerService extends AbstractService {
      * @param prayer The prayer to turn on.
      */
     public void activatePrayer(Prayer prayer) {
-        toggle(prayer, true, true);
+        toggle(prayer, true, false);
     }
 
     /**
@@ -32,7 +33,7 @@ public class PrayerService extends AbstractService {
      * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
      */
     public boolean deactivatePrayer(Prayer prayer) {
-        return toggle(prayer, false, true);
+        return toggle(prayer, false, false);
     }
 
     /**
@@ -42,7 +43,7 @@ public class PrayerService extends AbstractService {
      * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
      */
     public boolean toggle(Prayer prayer, boolean activate) {
-        return toggle(prayer, activate, true);
+        return toggle(prayer, activate, false);
     }
 
     /**
@@ -92,7 +93,8 @@ public class PrayerService extends AbstractService {
         if (useReflect) {
             reflectionService.invokeMenuAction(-1, prayerExtended.getIndex(), MenuAction.CC_OP.getId(), 1, -1);
         } else {
-            context.doInvoke(new NewMenuEntry(-1, prayerExtended.getIndex(), MenuAction.CC_OP.getId(), 1, -1, "Activate"));
+            MousePackets.queueClickPacket();
+            WidgetPackets.queueWidgetActionPacket(1, prayerExtended.getIndex(), -1, -1);
         }
 
         return true;
@@ -104,15 +106,15 @@ public class PrayerService extends AbstractService {
      * @return Boolean true if the prayer is active (on) and false otherwise.
      */
     public boolean isActive(Prayer prayer) {
-        boolean basicPrayerActive = client.isPrayerActive(prayer);
-        boolean inLMS = client.getVarbitValue(VarbitID.BR_INGAME) != 0;
+        boolean basicPrayerActive = context.runOnClientThreadOptional(() -> client.isPrayerActive(prayer)).orElse(false);
+        boolean inLMS = context.getVarbitValue(VarbitID.BR_INGAME) != 0;
 
         switch (prayer) {
             case DEADEYE:
-                boolean deadeye = client.getVarbitValue(VarbitID.PRAYER_DEADEYE_UNLOCKED) != 0;
+                boolean deadeye = context.getVarbitValue(VarbitID.PRAYER_DEADEYE_UNLOCKED) != 0;
                 return basicPrayerActive && (deadeye && !inLMS);
             case MYSTIC_VIGOUR:
-                boolean mysticVigour = client.getVarbitValue(VarbitID.PRAYER_MYSTIC_VIGOUR_UNLOCKED) != 0;
+                boolean mysticVigour = context.getVarbitValue(VarbitID.PRAYER_MYSTIC_VIGOUR_UNLOCKED) != 0;
                 return basicPrayerActive && (mysticVigour && !inLMS);
             default:
                 return basicPrayerActive;
