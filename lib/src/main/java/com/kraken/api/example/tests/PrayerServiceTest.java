@@ -1,0 +1,70 @@
+package com.kraken.api.example.tests;
+
+import com.google.inject.Inject;
+import com.kraken.api.interaction.prayer.PrayerService;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Prayer;
+
+@Slf4j
+public class PrayerServiceTest extends BaseApiTest {
+
+    @Inject
+    private PrayerService prayer;
+
+    @Override
+    protected boolean runTest() {
+        boolean testsPassed = true;
+
+        try {
+            boolean prayerReflectTest = testPrayerReflect();
+            testsPassed &= prayerReflectTest;
+
+            boolean prayerPacketTest = testPrayerPacket();
+            testsPassed &= prayerPacketTest;
+
+            boolean testIsActive = testIsActive();
+            testsPassed &= testIsActive;
+
+        } catch (Exception e) {
+            log.error("Exception during player service test", e);
+            return false;
+        }
+
+        return testsPassed;
+    }
+
+    private boolean testIsActive() {
+        try {
+            prayer.toggle(Prayer.PROTECT_FROM_MELEE, true, true);
+            Thread.sleep(1000);
+            return prayer.isActive(Prayer.PROTECT_FROM_MELEE);
+        } catch (Exception e) {
+            log.error("Error testing prayer isActive", e);
+            return false;
+        }
+    }
+
+    private boolean testPrayerReflect() {
+        try {
+            return prayer.toggle(Prayer.PROTECT_FROM_MELEE, true, true);
+        } catch (Exception e) {
+            log.error("Error testing prayer reflect ", e);
+            return false;
+        }
+    }
+
+    private boolean testPrayerPacket() {
+        try {
+            return prayer.toggle(Prayer.PROTECT_ITEM, true, false);
+        } catch (Exception e) {
+            log.error("Error testing prayer via packet", e);
+            return false;
+        }
+    }
+
+    @Override
+    protected String getTestName() {
+        return "Prayer Service";
+    }
+}
+

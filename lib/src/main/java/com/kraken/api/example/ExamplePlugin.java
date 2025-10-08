@@ -1,7 +1,5 @@
 package com.kraken.api.example;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -11,16 +9,12 @@ import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.movement.WalkService;
-import com.kraken.api.interaction.tile.CollisionDumper;
-import com.kraken.api.interaction.tile.MovementFlag;
-import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
@@ -29,18 +23,17 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 @Slf4j
 @Singleton
@@ -105,6 +98,9 @@ public class ExamplePlugin extends Plugin {
     private GroundObjectServiceTest groundObjectServiceTest;
 
     @Inject
+    private PrayerServiceTest prayerServiceTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -130,9 +126,6 @@ public class ExamplePlugin extends Plugin {
         }
     }
 
-    @Inject
-    private TileService tileService;
-
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
@@ -151,10 +144,6 @@ public class ExamplePlugin extends Plugin {
                 if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
                     walkService.moveTo(targetTile);
                 }
-            }
-
-            if(k.equals("removeWeapon") && config.removeWeapon()) {
-                equipmentService.remove(EquipmentInventorySlot.WEAPON);
             }
 
             if(event.getKey().equals("start")) {
@@ -184,6 +173,10 @@ public class ExamplePlugin extends Plugin {
 
                     if(config.enableBankTests()) {
                         testResultManager.startTest("BankServiceTest", bankServiceTest.executeTest());
+                    }
+
+                    if(config.enablePrayerTests()) {
+                        testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
                     }
                 } else {
                     log.info("Stopping API tests...");

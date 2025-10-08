@@ -41,6 +41,8 @@ public enum InteractablePrayer {
     AUGURY("Augury", 35455012, 77, 40.0, VarbitID.PRAYER_AUGURY, 27);
 
     private final String name;
+
+    // The Widget ID for the Prayer
     @Component
     private final int index;
     private final int level;
