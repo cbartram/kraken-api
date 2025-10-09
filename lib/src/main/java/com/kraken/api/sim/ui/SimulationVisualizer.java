@@ -816,6 +816,7 @@ public class SimulationVisualizer extends JFrame implements SimulationObserver {
 
     /**
      * Adds an NPC to the simulation and UI list
+     * @param npc The NPC to add to the simulation
      */
     public void addNpcToSimulation(SimNpc npc) {
         engine.addNpc(npc);
@@ -825,6 +826,8 @@ public class SimulationVisualizer extends JFrame implements SimulationObserver {
 
     /**
      * Creates a new NPC with current property settings
+     * @param position The position used to create the NPC
+     * @return The simulation NPC created from the currently filled out settings in the UI
      */
     public SimNpc createNpcFromCurrentSettings(Point position) {
         String name = npcNameField.getText().trim();
@@ -843,6 +846,7 @@ public class SimulationVisualizer extends JFrame implements SimulationObserver {
 
     /**
      * Removes an NPC from the UI list
+     * @param npc The simulation npc to remove from the UI list
      */
     public void removeNpcFromList(SimNpc npc) {
         npcListModel.removeElement(npc);
@@ -850,6 +854,7 @@ public class SimulationVisualizer extends JFrame implements SimulationObserver {
 
     /**
      * Selects an NPC in the UI list
+     * @param npc The simulation NPC to set selected
      */
     public void selectNpcInList(SimNpc npc) {
         npcList.setSelectedValue(npc, true);
@@ -858,6 +863,10 @@ public class SimulationVisualizer extends JFrame implements SimulationObserver {
         populateFieldsFromNpc(npc);
     }
 
+    /**
+     * Populates fields when editing a placed NPC in a simulation
+     * @param npc The npc to set fields for.
+     */
     private void populateFieldsFromNpc(SimNpc npc) {
         npcNameField.setText(npc.getName());
         selectedNpcColor = npc.getColor();
@@ -865,8 +874,10 @@ public class SimulationVisualizer extends JFrame implements SimulationObserver {
         npcAttackStyleCombo.setSelectedItem(npc.getAttackStyle());
         attackRangeSpinner.setValue(npc.getAttackRange());
     }
+
     /**
      * Opens detailed edit dialog for an NPC
+     * @param npc The NPC to edit within the dialogue box.
      */
     public void openNpcEditDialog(SimNpc npc) {
         JDialog dialog = new JDialog(this, "Edit NPC: " + npc.getName(), true);

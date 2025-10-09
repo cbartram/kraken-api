@@ -1,8 +1,6 @@
 package com.kraken.api.interaction.tile;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
@@ -160,6 +158,11 @@ public class CollisionDumper {
 
     /**
      * Converts world coordinates to simulation coordinates.
+     * @param point The world point to convert
+     * @param minX The minimum x value of all points in the currently loaded scene
+     * @param minY The minimum y value of all points in the currently loaded scene
+     * @param width The width of the scene
+     * @param height The height of the scene
      * @return Array coordinates as [x, y], or null if out of bounds
      */
     public Point worldToSim(WorldPoint point, int minX, int minY, int width, int height) {
