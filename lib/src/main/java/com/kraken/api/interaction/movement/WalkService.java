@@ -9,7 +9,6 @@ import com.kraken.api.core.SleepService;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
-import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,6 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
-import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -75,6 +73,9 @@ public class WalkService extends AbstractService {
 
     /**
      * Synchronous version that blocks until movement completes.
+     * @param point The world point to walk to
+     * @return The current movement state. This is an enum value representing
+     * the current state of the players path traversal i.e blocked, walking, completed, etc...
      */
     public MovementState walkTo(WorldPoint point) {
         try {
@@ -87,6 +88,8 @@ public class WalkService extends AbstractService {
 
     /**
      * Gets the current movement status.
+     * @return The current movement state. This is an enum value representing
+     * the current state of the players path traversal i.e blocked, walking, completed, etc...
      */
     public MovementState getCurrentMovementState() {
         MovementTask task = currentTask.get();
@@ -95,6 +98,7 @@ public class WalkService extends AbstractService {
 
     /**
      * Gets the current destination if movement is active.
+     * @return The current world point for the destination tile
      */
     public WorldPoint getCurrentDestination() {
         MovementTask task = currentTask.get();

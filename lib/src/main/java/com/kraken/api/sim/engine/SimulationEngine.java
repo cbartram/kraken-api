@@ -6,6 +6,7 @@ import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.tile.CollisionDumper;
 import com.kraken.api.interaction.tile.CollisionMap;
 import com.kraken.api.sim.SimulationObserver;
+import com.kraken.api.sim.model.AttackStyle;
 import com.kraken.api.sim.model.GameState;
 import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.model.SimPlayer;
@@ -91,7 +92,7 @@ public class SimulationEngine {
         this.collisionData = map.getData();
         this.player = new SimPlayer(playerPosition, 1,
                 playerService.isRunEnabled(), playerService.getSpecialAttackEnergy(),
-                playerPathIndex, playerCurrentPath);
+                AttackStyle.MELEE, playerPathIndex, playerCurrentPath);
         this.npcs = map.getNpcs();
         notifyObservers();
     }
