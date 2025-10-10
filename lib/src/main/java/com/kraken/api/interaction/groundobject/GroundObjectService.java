@@ -1,8 +1,5 @@
 package com.kraken.api.interaction.groundobject;
 
-import com.example.EthanApiPlugin.Collections.ETileItem;
-import com.example.EthanApiPlugin.Collections.TileItems;
-import com.example.EthanApiPlugin.Collections.TileObjects;
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.example.Packets.MousePackets;
 import com.example.Packets.ObjectPackets;
@@ -11,39 +8,25 @@ import com.google.common.collect.Table;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
-import com.kraken.api.model.NewMenuEntry;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameTick;
-import net.runelite.api.events.GroundObjectDespawned;
 import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemSpawned;
-import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.util.RSTimeUnit;
 
 import java.awt.*;
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // TODO This class has potential for more helpful methods which can loot entire stacks of items, loot by item value, etc.
 @Slf4j
@@ -286,6 +269,8 @@ public class GroundObjectService extends AbstractService {
         return context.runOnClientThread(() -> {
             GroundItem groundItem = get(name);
             if (groundItem == null) return false;
+
+
             MousePackets.queueClickPacket();
             ObjectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
             return true;

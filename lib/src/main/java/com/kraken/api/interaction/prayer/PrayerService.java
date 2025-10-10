@@ -6,11 +6,14 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
+import net.runelite.api.Point;
 import net.runelite.api.Prayer;
 import net.runelite.api.Skill;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.widgets.Widget;
 
 @Slf4j
 @Singleton
@@ -18,6 +21,9 @@ public class PrayerService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private UIService uiService;
 
     /**
      * Wrapper method which turns a prayer on.
@@ -93,7 +99,9 @@ public class PrayerService extends AbstractService {
         if (useReflect) {
             reflectionService.invokeMenuAction(-1, prayerExtended.getIndex(), MenuAction.CC_OP.getId(), 1, -1);
         } else {
-            MousePackets.queueClickPacket();
+            Widget widget = context.getWidget(prayerExtended.getIndex());
+            Point point = uiService.getClickbox(widget);
+            MousePackets.queueClickPacket(point.getX(), point.getY());
             WidgetPackets.queueWidgetActionPacket(1, prayerExtended.getIndex(), -1, -1);
         }
 

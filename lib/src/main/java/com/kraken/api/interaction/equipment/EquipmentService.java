@@ -2,17 +2,15 @@ package com.kraken.api.interaction.equipment;
 
 import com.example.EthanApiPlugin.Collections.Equipment;
 import com.example.EthanApiPlugin.Collections.EquipmentItemWidget;
-import com.example.EthanApiPlugin.Collections.query.EquipmentItemQuery;
-import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.InventoryInteraction;
 import com.example.Packets.MousePackets;
 import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.inventory.InventoryItem;
+import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.ui.UIService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -32,6 +30,9 @@ public class EquipmentService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private UIService uiService;
 
     @Getter
     private final List<InventoryItem> inventory = new ArrayList<>();
@@ -234,7 +235,8 @@ public class EquipmentService extends AbstractService {
                 return false;
             }
 
-            MousePackets.queueClickPacket();
+            Point clickingPoint = uiService.getClickbox(widget);
+            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
             WidgetPackets.queueWidgetAction(widget, "Remove");
             return true;
         }).orElse(false);
@@ -257,8 +259,9 @@ public class EquipmentService extends AbstractService {
                 return false;
             }
 
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(client.getWidget(widget.getId()), "Remove");
+            Point clickingPoint = uiService.getClickbox(widget);
+            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+            WidgetPackets.queueWidgetAction(context.getWidget(widget.getId()), "Remove");
             return true;
         }).orElse(false);
     }
@@ -280,8 +283,9 @@ public class EquipmentService extends AbstractService {
                 return false;
             }
 
-            MousePackets.queueClickPacket();
-            WidgetPackets.queueWidgetAction(client.getWidget(widget.getId()), "Remove");
+            Point clickingPoint = uiService.getClickbox(widget);
+            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+            WidgetPackets.queueWidgetAction(context.getWidget(widget.getId()), "Remove");
             return true;
         }).orElse(false);
     }
