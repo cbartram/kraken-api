@@ -1,25 +1,25 @@
 package com.kraken.api.interaction.bank;
 
 import com.example.EthanApiPlugin.Collections.Bank;
-import com.example.EthanApiPlugin.EthanApiPlugin;
 import com.example.InteractionApi.BankInteraction;
 import com.example.Packets.MousePackets;
 import com.example.Packets.WidgetPackets;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
+import com.kraken.api.interaction.inventory.InventoryItem;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.interaction.widget.WidgetService;
-import com.kraken.api.interaction.inventory.InventoryItem;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
+import net.runelite.api.Point;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.awt.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -49,6 +49,9 @@ public class BankService extends AbstractService {
     @Inject
     private ReflectionService reflectionService;
 
+    @Inject
+    private UIService uiService;
+
     private static final int BANK_INVENTORY_ITEM_CONTAINER = 983043;
 
     /**
@@ -77,18 +80,18 @@ public class BankService extends AbstractService {
     public boolean withdrawX(Widget item, int amount) {
         if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThread(() -> {
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
-
-            if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
-                MousePackets.queueClickPacket();
+            setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+            if (context.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+                Point pt = uiService.getClickbox(item);
+                MousePackets.queueClickPacket(pt.getX(), pt.getY());
                 WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
                 return Optional.of(true);
             }
             BankInteraction.useItem(item, "Withdraw-X");
-            EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
-            EthanApiPlugin.getClient().setVarcIntValue(5, 7);
-            EthanApiPlugin.getClient().runScript(681);
-            EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+            client.setVarcStrValue(359, Integer.toString(amount));
+            client.setVarcIntValue(5, 7);
+            client.runScript(681);
+            client.setVarbit(WITHDRAW_QUANTITY, amount);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -104,16 +107,17 @@ public class BankService extends AbstractService {
         if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThread(() -> {
             setWithdrawMode(noted? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-            if (EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_QUANTITY) == amount) {
-                MousePackets.queueClickPacket();
+            if (client.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+                Point pt = uiService.getClickbox(item);
+                MousePackets.queueClickPacket(pt.getX(), pt.getY());
                 WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
                 return Optional.of(true);
             }
             BankInteraction.useItem(item, noted, "Withdraw-X");
-            EthanApiPlugin.getClient().setVarcStrValue(359, Integer.toString(amount));
-            EthanApiPlugin.getClient().setVarcIntValue(5, 7);
-            EthanApiPlugin.getClient().runScript(681);
-            EthanApiPlugin.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
+            client.setVarcStrValue(359, Integer.toString(amount));
+            client.setVarcIntValue(5, 7);
+            client.runScript(681);
+            client.setVarbit(WITHDRAW_QUANTITY, amount);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -157,9 +161,10 @@ public class BankService extends AbstractService {
     public boolean withdraw(String name, String... actions) {
         if(!context.isPacketsLoaded()) return false;
         return Bank.search().withName(name).first().flatMap(item -> {
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+            setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
 
-            MousePackets.queueClickPacket();
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         }).orElse(false);
@@ -174,9 +179,10 @@ public class BankService extends AbstractService {
     public boolean withdraw(int id, String... actions) {
         if(!context.isPacketsLoaded()) return false;
         return Bank.search().withId(id).first().flatMap(item -> {
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+            setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
 
-            MousePackets.queueClickPacket();
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         }).orElse(false);
@@ -191,9 +197,10 @@ public class BankService extends AbstractService {
     public boolean withdrawIndex(int index, String... actions) {
         if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThread(() -> Bank.search().indexIs(index).first().flatMap(item -> {
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
+            setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
 
-            MousePackets.queueClickPacket();
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         })).orElse(false);
@@ -212,8 +219,9 @@ public class BankService extends AbstractService {
                 return Optional.of(false);
             }
 
-            setWithdrawMode(EthanApiPlugin.getClient().getVarbitValue(WITHDRAW_AS_VARBIT));
-            MousePackets.queueClickPacket();
+            setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         }).orElse(false);
@@ -231,7 +239,8 @@ public class BankService extends AbstractService {
         return context.runOnClientThread(() -> Bank.search().withName(name).first().flatMap(item -> {
             setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
 
-            MousePackets.queueClickPacket();
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         })).orElse(false);
@@ -248,7 +257,8 @@ public class BankService extends AbstractService {
         if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThread(() -> Bank.search().withId(id).first().flatMap(item -> {
             setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-            MousePackets.queueClickPacket();
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         })).orElse(false);
