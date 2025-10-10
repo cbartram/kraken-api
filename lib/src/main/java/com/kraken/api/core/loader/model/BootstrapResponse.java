@@ -12,5 +12,6 @@ import java.util.List;
 public class BootstrapResponse {
     private List<Artifact> artifacts;
     private String hash;
+    private String hookHash;
     private String errorMessage;
 }

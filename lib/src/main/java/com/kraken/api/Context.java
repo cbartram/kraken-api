@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.SleepService;
+import com.kraken.api.core.loader.HooksLoader;
 import com.kraken.api.core.loader.PacketUtilsLoader;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
@@ -16,14 +17,12 @@ import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
 import com.kraken.api.interaction.movement.ShortestPathService;
 import com.kraken.api.interaction.npc.NpcService;
-import com.kraken.api.interaction.packet.PacketService;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.prayer.PrayerService;
 import com.kraken.api.interaction.spells.SpellService;
 import com.kraken.api.interaction.ui.TabService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.interaction.widget.WidgetService;
-import com.kraken.api.core.loader.HooksLoader;
 import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Point;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -75,7 +75,6 @@ public class Context {
             CameraService.class,
             GameObjectService.class,
             GroundObjectService.class,
-            PacketService.class,
             InventoryService.class,
             MovementService.class,
             MinimapService.class,
@@ -211,8 +210,24 @@ public class Context {
     }
 
 
+    /**
+     * Returns a varbit value from the RuneLite client. This method is
+     * thread safe and runs on the client thread to retrieve the value.
+     * @param varbit The varbit value to retrieve.
+     * @return The varbit value (either 0 for false/unset or 1 for true/set).
+     */
     public int getVarbitValue(int varbit) {
         return runOnClientThread(() -> client.getVarbitValue(varbit));
+    }
+
+    /**
+     * Retrieves a Widget from the RuneLite client. This method is
+     * thread safe and will run on the client thread to retrieve the Widget.
+     * @param widgetId int The widget id
+     * @return Widget
+     */
+    public Widget getWidget(int widgetId) {
+        return runOnClientThread(() -> client.getWidget(widgetId));
     }
 
     public void doInvoke(NewMenuEntry entry) {
@@ -244,6 +259,12 @@ public class Context {
         }
     }
 
+    /**
+     * Run a method on the client thread, returning the result directly.
+     * @param method The method to call
+     * @param <T> The type of the method's return value
+     * @return The result from the called method
+     */
     @SneakyThrows
     public <T> T runOnClientThread(Callable<T> method) {
         if (client.isClientThread()) {

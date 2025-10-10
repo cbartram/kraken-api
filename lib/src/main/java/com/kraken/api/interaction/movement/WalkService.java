@@ -9,6 +9,7 @@ import com.kraken.api.core.SleepService;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
+import com.kraken.api.interaction.ui.UIService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,9 @@ public class WalkService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private UIService uiService;
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final AtomicReference<MovementTask> currentTask = new AtomicReference<>();
@@ -289,7 +293,8 @@ public class WalkService extends AbstractService {
             convertedPoint = point;
         }
 
-        MousePackets.queueClickPacket();
+        Point clickingPoint = uiService.getClickbox(convertedPoint);
+        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         MovementPackets.queueMovement(convertedPoint);
     }
 
@@ -310,7 +315,8 @@ public class WalkService extends AbstractService {
         }
 
 
-        MousePackets.queueClickPacket();
+        Point clickingPoint = uiService.getClickbox(converted);
+        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         MovementPackets.queueMovement(converted);
     }
 
@@ -335,7 +341,7 @@ public class WalkService extends AbstractService {
         int canvasX = canv != null ? canv.getX() : -1;
         int canvasY = canv != null ? canv.getY() : -1;
 
-        log.info("Canvas: ({}, {}), Point: ({}, {})", canvasX, canvasY, point.getX(), point.getY());
+        log.debug("Canvas: ({}, {}), Point: ({}, {})", canvasX, canvasY, point.getX(), point.getY());
         reflectionService.invokeMenuAction(canvasX, canvasY, MenuAction.WALK.getId(), 0, -1, -1, "Walk here", "", canvasX, canvasY);
     }
 

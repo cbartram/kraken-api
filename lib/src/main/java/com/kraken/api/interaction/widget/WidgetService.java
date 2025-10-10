@@ -4,24 +4,28 @@ package com.kraken.api.interaction.widget;
 import com.example.Packets.MousePackets;
 import com.example.Packets.WidgetPackets;
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.RandomService;
-import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.model.NewMenuEntry;
+import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.MenuAction;
+import net.runelite.api.Point;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.widgets.Widget;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 @Singleton
 public class WidgetService extends AbstractService {
+
+    @Inject
+    private UIService uiService;
 
     /**
      * Interacts with a widget using the specified action.
@@ -34,7 +38,8 @@ public class WidgetService extends AbstractService {
         if(widget == null) return false;
 
         return context.runOnClientThread(() -> {
-            MousePackets.queueClickPacket();
+            Point pt = uiService.getClickbox(widget);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
             WidgetPackets.queueWidgetAction(widget, action);
             return Optional.of(true);
         }).orElse(false);

@@ -17,10 +17,18 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
+/**
+ * Loads the Packet Utils jar by identifying the latest version from the bootstrap.json file used to launch this plugin.
+ * Packet utils is required in order to use packet functionality within plugins and provides a base for the Kraken API.
+ * This jar should be loaded for both development work and production builds
+ */
 @Slf4j
 public class PacketUtilsLoader {
 
@@ -37,11 +45,6 @@ public class PacketUtilsLoader {
     @Getter
     public List<URL> localUrls;
 
-    /**
-     * Loads the Packet Utils jar by identifying the latest version from the bootstrap.json file used to launch this plugin.
-     * Packet utils is required in order to use packet functionality within plugins and provides a base for the Kraken API.
-     * This jar should be loaded for both development work and production builds
-     */
     public void loadPacketUtils() {
         try {
             bootstrap.load(URI.create(BOOTSTRAP_URL));
@@ -55,7 +58,7 @@ public class PacketUtilsLoader {
                             Class<?> clazz = loader.loadClass(className);
                             if (clazz.getSuperclass() != null) {
                                 if (clazz.getSuperclass().getName().equals(PLUGIN_BASE_CLASS_NAME)) {
-                                    log.info("Found Packet Utils plugin class: {}", clazz.getSimpleName());
+                                    log.info("Found packet-utils plugin class: {}", clazz.getSimpleName());
                                     startPlugin((Class<? extends Plugin>) clazz);
                                 }
                             }
@@ -137,7 +140,7 @@ public class PacketUtilsLoader {
                     String className = name.substring(0, name.length() - 6)
                             .replace('/', '.');
 
-                    log.debug("Adding plugin class: {}", className);
+                    log.debug("Queueing packet-utils class for load: {}", className);
                     classData.put(className, classBytes);
                 }
             }

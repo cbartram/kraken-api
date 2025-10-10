@@ -1,7 +1,6 @@
 package com.kraken.api.core.loader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
 import com.kraken.api.core.loader.model.Artifact;
 import com.kraken.api.core.loader.model.BootstrapResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,7 @@ import java.util.function.Predicate;
 /**
  * This class is responsible for downloading and parsing a RuneLite structured bootstrap file. A bootstrap
  * file is a JSON file which contains jar files necessary for the process to run. RuneLite's bootstrap file follow the following format
- *
+ * <p>
  * {
  *     "artifacts": [
  *         {
@@ -26,7 +25,7 @@ import java.util.function.Predicate;
  *         },
  *     ],
  * }
- *
+ * <p>
  * This class fetches the bootstrap file from a given URL, parses it, and provides access the artifacts. It is intended to
  * be used with RuneLite's bootstrap.json file, but can be used with any similar structured file to load additional classes
  * at runtime.

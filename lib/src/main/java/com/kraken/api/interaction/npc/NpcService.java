@@ -7,12 +7,10 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.ui.UIService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.HeadIcon;
-import net.runelite.api.MenuAction;
-import net.runelite.api.NPC;
-import net.runelite.api.NPCComposition;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
@@ -31,6 +29,9 @@ public class NpcService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private UIService uiService;
 
     /**
      * Retrieves a stream of NPCs filtered by a given condition.
@@ -85,7 +86,9 @@ public class NpcService extends AbstractService {
         if(!context.isPacketsLoaded()) return false;
         NPC npc = getNpcs(predicate).findFirst().orElse(null);
         if(npc == null) return false;
-        MousePackets.queueClickPacket();
+
+        Point clickingPoint = uiService.getClickbox(npc);
+        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         NPCPackets.queueNPCAction(npc, actions);
         return true;
     }
@@ -116,7 +119,9 @@ public class NpcService extends AbstractService {
         if (comp == null) {
             return false;
         }
-        MousePackets.queueClickPacket();
+
+        Point clickingPoint = uiService.getClickbox(npc);
+        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         NPCPackets.queueNPCAction(npc, actions);
         return true;
     }
