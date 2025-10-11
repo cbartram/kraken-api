@@ -5,10 +5,13 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
+import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
-import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.movement.WalkService;
+import com.kraken.api.interaction.prayer.InteractablePrayer;
+import com.kraken.api.interaction.prayer.PrayerService;
+import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.overlay.MouseTrackerOverlay;
 import com.kraken.api.overlay.MovementOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -16,10 +19,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.MenuOpened;
-import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.*;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -92,9 +92,6 @@ public class ExamplePlugin extends Plugin {
     private WalkService walkService;
 
     @Inject
-    private EquipmentService equipmentService;
-
-    @Inject
     private GroundObjectServiceTest groundObjectServiceTest;
 
     @Inject
@@ -105,6 +102,9 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private Client client;
+
+    @Inject
+    private SceneOverlay sceneOverlay;
 
     @Getter
     private WorldPoint targetTile;
@@ -123,6 +123,25 @@ public class ExamplePlugin extends Plugin {
             log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
                     event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
                     event.getId(), event.getItemOp(), event);
+        }
+    }
+
+    @Inject
+    private PrayerService prayerService;
+
+    @Inject
+    private UIService uiService;
+
+    @Getter
+    private Point point;
+
+    @Subscribe
+    private void onGameTick(GameTick e) {
+        if(prayerService.isActive(Prayer.PROTECT_FROM_MAGIC)) {
+            prayerService.toggle(Prayer.PROTECT_FROM_MAGIC, false, true);
+        } else {
+            this.point = uiService.getClickbox(client.getWidget(InteractablePrayer.PROTECT_MAGIC.getIndex()));
+            prayerService.toggle(Prayer.PROTECT_FROM_MAGIC, true, true);
         }
     }
 
@@ -199,6 +218,7 @@ public class ExamplePlugin extends Plugin {
         overlayManager.add(overlay);
         overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
+        overlayManager.add(sceneOverlay);
     }
 
     @Override
@@ -211,6 +231,7 @@ public class ExamplePlugin extends Plugin {
         overlayManager.remove(overlay);
         overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);
+        overlayManager.remove(sceneOverlay);
     }
 
     @Subscribe
