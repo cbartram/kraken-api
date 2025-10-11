@@ -92,6 +92,21 @@ public class WidgetService extends AbstractService {
     }
 
     /**
+     * Uses a source widget on a destination widget (i.e. High Alchemy)
+     * @param srcWidget The source widget to use on the destination widget
+     * @param destWidget The destination widget
+     * @return true if the operation is successful and false otherwise
+     */
+    public boolean widgetOnWidget(Widget srcWidget, Widget destWidget) {
+        return context.runOnClientThreadOptional(() -> {
+            Point pt = uiService.getClickbox(srcWidget);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
+            WidgetPackets.queueWidgetOnWidget(srcWidget, destWidget);
+            return true;
+        }).orElse(false);
+    }
+
+    /**
      * Returns a widget by its ID and child index.
      * @param id the widget ID
      * @param child the child index

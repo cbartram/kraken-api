@@ -59,9 +59,9 @@ public class PrayerService extends AbstractService {
      */
     public boolean toggle(Prayer prayer) {
         if(client.isPrayerActive(prayer)) {
-            return toggle(prayer, false, true);
+            return toggle(prayer, false, false);
         } else {
-            return toggle(prayer, true, true);
+            return toggle(prayer, true, false);
         }
     }
 
@@ -211,11 +211,20 @@ public class PrayerService extends AbstractService {
         }
     }
 
+    /**
+     * Checks if a given quick prayer is set
+     * @param prayer The quick prayer to check
+     * @return True if the quick prayer is set and false otherwise
+     */
     public boolean isQuickPrayerSet(InteractablePrayer prayer) {
         int selectedQuickPrayersVarbit = context.getVarbitValue(4102);
         return (selectedQuickPrayersVarbit & (1 << prayer.getQuickPrayerIndex())) != 0;
     }
 
+    /**
+     * Checks if the player is out of prayer.
+     * @return Returns true if the player is out of prayer and false if they still have prayer.
+     */
     public boolean isOutOfPrayer() {
         return client.getBoostedSkillLevel(Skill.PRAYER) <= 0;
     }
