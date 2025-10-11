@@ -448,6 +448,58 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    // =========== Equipment Tests ================
+    @ConfigSection(
+            name = "Equipment Tests",
+            description = "Settings for Equipment tests.",
+            position = 9
+    )
+    String equipment = "Equipment Tests";
+
+    @ConfigItem(
+            keyName = "enableEquipment",
+            name = "Enable Equipment",
+            description = "Enable Equipment tests",
+            section = equipment,
+            position = 1
+    )
+    default boolean enableEquipmentTests() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "equipId",
+            name = "Equip Id Packets",
+            description = "The id of an item to equip using packets",
+            section = equipment,
+            position = 2
+    )
+    default String equipIdPacket() {
+        return "";
+    }
+
+    @ConfigItem(
+            keyName = "equipIdReflect",
+            name = "Equip Id Reflection",
+            description = "The id of an item to equip using reflection",
+            section = equipment,
+            position = 3
+    )
+    default String equipIdPacketReflect() {
+        return "";
+    }
+
+    @ConfigItem(
+            keyName = "unequipHeadSlot",
+            name = "Unequip Head Slot",
+            description = "Test unequiping by removing the head slot",
+            section = equipment,
+            position = 4
+    )
+    default boolean headSlotUnequip() {
+        return true;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
