@@ -2,7 +2,6 @@ package com.kraken.api.interaction.equipment;
 
 import com.example.EthanApiPlugin.Collections.Equipment;
 import com.example.EthanApiPlugin.Collections.EquipmentItemWidget;
-import com.example.InteractionApi.InventoryInteraction;
 import com.example.Packets.MousePackets;
 import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
@@ -88,17 +87,38 @@ public class EquipmentService extends AbstractService {
      */
     public boolean wield(int id) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> {
+        return context.runOnClientThreadOptional(() -> {
+            client.runScript(6009, 9764864, 28, 1, -1);
+            InventoryItem item = inventory.stream()
+                    .filter(i -> i.getId() == id)
+                    .findFirst()
+                    .orElse(null);
+
+            if(item == null) return false;
+
             List<String> actions = Arrays.stream(client.getItemDefinition(id).getInventoryActions())
+                    .filter(Objects::nonNull)
                     .filter(action -> action.equalsIgnoreCase("wield") || action.equalsIgnoreCase("wear"))
                     .collect(Collectors.toList());
-            if(actions.isEmpty()) {
-                log.info("No actions found for id: {}", id);
-                return false;
-            }
 
-            return InventoryInteraction.useItem(id, actions.get(0));
-        });
+            if(actions.isEmpty()) return false;
+
+            Widget inven = client.getWidget(WidgetInfo.INVENTORY);
+            if(inven == null) return false;
+            Widget[] items = inven.getDynamicChildren();
+
+            Widget widget = Arrays.stream(items)
+                    .filter(Objects::nonNull)
+                    .filter(x -> x.getItemId() != 6512 && x.getItemId() != -1)
+                    .filter(x -> x.getItemId() == id)
+                    .findFirst().orElse(null);
+
+            if(widget == null) return false;
+            Point pt = uiService.getClickbox(item);
+            MousePackets.queueClickPacket(pt.getX(), pt.getY());
+            WidgetPackets.queueWidgetAction(widget, actions.toArray(new String[0]));
+            return true;
+        }).orElse(false);
     }
 
     /**
