@@ -44,7 +44,7 @@ public class UIService extends AbstractService {
             return getDefaultRectangle();
         }
 
-        Shape clickbox = context.runOnClientThreadOptional(() -> Perspective.getClickbox(client, actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
+        Shape clickbox = context.runOnClientThreadOptional(() -> Perspective.getClickbox(client, client.getTopLevelWorldView(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
                         Perspective.getTileHeight(client, lp, actor.getWorldLocation().getPlane())))
                 .orElse(null);
 
