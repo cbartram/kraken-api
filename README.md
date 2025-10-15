@@ -20,10 +20,12 @@
 
 ---
 
-# 🚀 Getting Started (For Developers)
+# 🚀 Getting Started
 
 Kraken API is designed to extend the RuneLite API with additional client-interaction utilities for writing automation based plugins that are compatible with RuneLite. If you are
 just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.com](https://kraken-plugins.com).
+
+For more documentation on the API and Kraken plugins please see our [official documentation here](https://kraken-plugins.com/docs/).
 
 ### Prerequisites
 - [Java 11+](https://adoptium.net/) (JDK required)
@@ -100,10 +102,6 @@ dependencies {
 }
 ```
 
-Each release also includes a `latest` tag.
-You can optionally use this instead of a semantic version for the API to use the latest published version.
-
-> ⚠️ Be careful using `latest` in your plugins though as API functionality can change dramatically between patch versions (especially while the API is under development).
 > ⚠️ If you are using the MovementService in your plugin for character pathing you should also include the `shortest-path` dependency.
 
 ### Example Plugin Setup
@@ -116,10 +114,6 @@ Once you have the example plugin cloned and setup within Intellij you can run th
 the example plugin loaded in the plugin panel within RuneLite's sidebar. 
 
 ![example-plugin](./images/example-plugin.png)
-
-In order for the plugin to run correctly your game must be in:
-- Fixed mode
-- Have the "Stretched Mode" plugin disabled
 
 ### Packets & Reflection
 
