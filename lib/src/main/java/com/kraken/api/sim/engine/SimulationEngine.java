@@ -294,7 +294,6 @@ public class SimulationEngine {
         playerCurrentPath = findPath(start, target, null);
         targetPosition = target;
         playerPathIndex = 0;
-        log.info("Calculated path of size: {}", playerCurrentPath.size());
     }
 
     /**
