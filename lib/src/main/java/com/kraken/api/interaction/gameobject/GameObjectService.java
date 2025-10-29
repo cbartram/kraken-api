@@ -5,8 +5,6 @@ import com.example.InteractionApi.TileObjectInteraction;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.interaction.ui.UIService;
-import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

@@ -10,12 +10,12 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import javax.inject.Inject;
 import java.awt.*;
 
-public class MouseTrackerOverlay extends Overlay {
+public class MouseOverlay extends Overlay {
     private final Client client;
     private final VirtualMouse mouse;
 
     @Inject
-    public MouseTrackerOverlay(Client client, VirtualMouse mouse) {
+    public MouseOverlay(Client client, VirtualMouse mouse) {
         this.client = client;
         this.mouse = mouse;
 

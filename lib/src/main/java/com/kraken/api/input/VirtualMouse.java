@@ -1,14 +1,10 @@
 package com.kraken.api.input;
 
 import com.google.inject.Singleton;
-import com.kraken.api.Context;
 import com.kraken.api.core.RandomService;
-import com.kraken.api.interaction.ui.UIService;
-import com.kraken.api.model.NewMenuEntry;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
-import net.runelite.client.callback.ClientThread;
 
 import javax.inject.Inject;
 import javax.swing.*;

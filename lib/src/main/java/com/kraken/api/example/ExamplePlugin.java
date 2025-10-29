@@ -9,8 +9,7 @@ import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.movement.WalkService;
-import com.kraken.api.overlay.MouseTrackerOverlay;
-import com.kraken.api.overlay.MovementOverlay;
+import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -53,16 +52,13 @@ public class ExamplePlugin extends Plugin {
     private OverlayManager overlayManager;
 
     @Inject
-    private MovementOverlay movementOverlay;
-
-    @Inject
     private Context context;
 
     @Inject
     private ExampleConfig config;
 
     @Inject
-    private MouseTrackerOverlay overlay;
+    private MouseOverlay overlay;
 
     @Inject
     private TestApiOverlay testApiOverlay;
@@ -202,7 +198,6 @@ public class ExamplePlugin extends Plugin {
         context.loadPacketUtils();
 
         // Add overlays
-        overlayManager.add(movementOverlay);
         overlayManager.add(overlay);
         overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
@@ -215,7 +210,6 @@ public class ExamplePlugin extends Plugin {
         testResultManager.cancelAllTests();
 
         // Remove overlays
-        overlayManager.remove(movementOverlay);
         overlayManager.remove(overlay);
         overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);
