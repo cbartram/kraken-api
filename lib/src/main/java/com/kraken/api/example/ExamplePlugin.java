@@ -1,9 +1,13 @@
 package com.kraken.api.example;
 
+import com.example.PacketUtils.PacketDef;
+import com.example.PacketUtils.WidgetInfoExtended;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.core.packet.PacketSender;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
@@ -108,6 +112,9 @@ public class ExamplePlugin extends Plugin {
     @Getter
     private WorldPoint targetTile;
 
+    @Inject
+    private Provider<PacketSender> packetSenderProvider;
+
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
 
@@ -143,6 +150,12 @@ public class ExamplePlugin extends Plugin {
                 if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
                     walkService.moveTo(targetTile);
                 }
+            }
+
+            if(event.getKey().equals("prayerOn") && config.prayerOn()) {
+                int mouseInfo = ((int) 0L << 1);
+                packetSenderProvider.get().sendPacket(PacketDef.getEventMouseClick(), mouseInfo, 1, 1, 0);
+                packetSenderProvider.get().sendPacket(PacketDef.getIfButtonX(), 1, WidgetInfoExtended.PRAYER_PROTECT_FROM_MISSILES.getPackedId(), -1, -1);
             }
 
             if(event.getKey().equals("start")) {

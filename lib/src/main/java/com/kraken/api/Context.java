@@ -27,7 +27,6 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.MenuEntry;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
@@ -61,8 +60,6 @@ public class Context {
 
     @Getter
     private boolean packetsLoaded = false;
-
-    public static MenuEntry targetMenu;
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),

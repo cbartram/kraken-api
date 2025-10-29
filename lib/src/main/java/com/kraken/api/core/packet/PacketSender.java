@@ -16,11 +16,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * An instance-based packet sending utility.
- * <p>
- * This class should be instantiated *after* PacketMethodLocator.initialize()
- * has successfully completed. It finds and stores all required reflective
- * objects upon creation, making packet sending highly efficient.
+ * An instance-based RuneLite client packet sending utility.
  */
 @Slf4j
 @Singleton
@@ -35,23 +31,20 @@ public class PacketSender {
     private final Field packetBufferField;
 
     /**
-     * Creates a new PacketSender. This constructor performs all
-     * reflective lookups and caching.
+     * Creates a new PacketSender. This constructor initializes packet queueing functionality by either loading the client packet
+     * sending method from the cached json file or running an analysis on the RuneLite injected client
+     * to determine the packet sending method.
      *
      * @param client The RuneLite Client instance.
      */
     @Inject
     @SneakyThrows
     public PacketSender(Client client) {
-        if (PacketMethodLocator.packetMethods == null) {
-            log.info("Discovering client packet queueing method before constructing the packet sender instance.");
-            PacketMethodLocator.initialize(client);
-        }
-
         this.methods = PacketMethodLocator.packetMethods;
 
         if(this.methods == null) {
-            throw new RuntimeException("Packet queuing method could not be determined. See error messages above for details");
+            throw new RuntimeException("Packet queuing method could not be determined. Make sure you initialize packets with context.initializePackets()" +
+                    "before constructing this class.");
         }
 
         // 1. Get PacketWriter Field and Object

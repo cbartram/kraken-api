@@ -29,7 +29,8 @@ import java.util.stream.Collectors;
  * A static utility class to find and cache the obfuscated packet-sending method
  * ("addNode") from the game client.
  * <p>
- * This class is intended to be run once at startup within a RuneLite context.
+ * This class is intended to be run once at startup within a RuneLite context and is not intended
+ * to be run directly by plugins. It should be called and instantiated through the {@code Context} class.
  */
 @Slf4j
 @Singleton
@@ -49,17 +50,16 @@ public class PacketMethodLocator {
      * if no valid cache is found.
      *
      * @param client The RuneLite Client instance.
-     * @return true if the packet methods were successfully located, false otherwise.
      */
-    public static synchronized boolean initialize(Client client) {
+    public static synchronized void initialize(Client client) {
         if (packetMethods != null) {
             log.info("client packet functionality is already initialized.");
-            return true;
+            return;
         }
 
         if (Runtime.version().feature() != 11) {
             log.error("PacketMethodLocator class is detected a Java version that is not 11. Older Java versions are NOT supported.");
-            return false;
+            return;
         }
 
         if (client.getRevision() != REQUIRED_CLIENT_REV) {
@@ -81,15 +81,13 @@ public class PacketMethodLocator {
 
             if (packetMethods == null) {
                 log.error("Failed to locate client packet methods from cache or analysis.");
-                return false;
+                return;
             }
 
             log.info("Client packet method loaded successfully, Client AddNode: {}, " +
                     "AddNode Method: {}", packetMethods.usingClientAddNode, packetMethods.addNodeMethod != null ? packetMethods.addNodeMethod.getName() : "N/A");
-            return true;
         } catch (Exception e) {
             log.error("A critical error occurred during PacketMethodLocator initialization: ", e);
-            return false;
         }
     }
 
