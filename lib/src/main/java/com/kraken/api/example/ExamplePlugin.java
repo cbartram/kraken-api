@@ -195,7 +195,7 @@ public class ExamplePlugin extends Plugin {
         log.info("Starting up Example Plugin...");
         context.register();
         context.loadHooks();
-        context.loadPacketUtils();
+        context.initializePackets();
 
         // Add overlays
         overlayManager.add(overlay);

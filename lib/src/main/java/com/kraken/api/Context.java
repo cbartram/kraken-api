@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.loader.HooksLoader;
-import com.kraken.api.core.loader.PacketUtilsLoader;
+import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
@@ -89,18 +89,16 @@ public class Context {
     private final Injector injector;
     private final EventBus eventBus;
     private final HooksLoader loader;
-    private final PacketUtilsLoader packetUtilsLoader;
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
-                   final EventBus eventBus, final Injector injector, final HooksLoader loader, final PacketUtilsLoader packetUtilsLoader) {
+                   final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.loader = loader;
-        this.packetUtilsLoader = packetUtilsLoader;
     }
 
     /**
@@ -129,20 +127,25 @@ public class Context {
     }
 
     /**
-     * Loads the PacketUtils class and plugin which contains key methods for sending packets to the RuneLite client.
+     * Initializes packet queueing functionality by either loading the client packet
+     * sending method from the cached json file or running an analysis on the RuneLite injected client
+     * to determine the packet sending method.
+     *
+     * This is required to be called before packets can actually be sent i.e. its necessary to know the packet
+     * method in the client before calling it with reflection.
      */
-    public void loadPacketUtils() {
+    public void initializePackets() {
         if (packetsLoaded) {
-            log.warn("Packets already loaded, skipping.");
+            log.warn("packet functionality already initialized, skipping.");
             return;
         }
 
         try {
-            packetUtilsLoader.loadPacketUtils();
+            PacketMethodLocator.initialize(client);
             packetsLoaded = true;
-            log.info("Packet utils loaded successfully.");
+            log.info("client packet functionality initialized");
         } catch (Exception e) {
-            log.error("Failed to load packet utils with exception: {}", e.getMessage());
+            log.error("failed to enable packet sending functionality with exception: {}", e.getMessage());
         }
     }
 

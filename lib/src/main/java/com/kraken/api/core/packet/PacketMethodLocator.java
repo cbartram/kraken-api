@@ -21,35 +21,26 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.jar.JarFile;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * A static utility class to find and cache the obfuscated packet-sending method
  * ("addNode") from the game client.
  * <p>
- * This class is intended to be run once at startup.
+ * This class is intended to be run once at startup within a RuneLite context.
  */
 @Slf4j
 @Singleton
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PacketMethodLocator {
 
-    // This is the primary output of the locator.
-    // It will be null until initialize() is successfully called.
+    // This is the primary output of the locator and will be null until initialize() is successfully called.
     public static PacketMethods packetMethods;
-    private static final int REQUIRED_CLIENT_REV = 234;
+    private static final int REQUIRED_CLIENT_REV = 235;
     private static final Path WORKING_DIRECTORY = RuneLite.RUNELITE_DIR.toPath().resolve("kraken");
     private static String loadedCacheFileName = "";
-
-    // A regex to find method calls like "someName.someMethod("
-    private static final Pattern METHOD_CALL_PATTERN = Pattern.compile("(\\w+)\\.(\\w+)\\s*\\(");
     private static final Gson gson = new Gson();
 
     /**
@@ -62,7 +53,7 @@ public class PacketMethodLocator {
      */
     public static synchronized boolean initialize(Client client) {
         if (packetMethods != null) {
-            log.info("PacketMethodLocator class is already initialized.");
+            log.info("client packet functionality is already initialized.");
             return true;
         }
 
@@ -77,13 +68,9 @@ public class PacketMethodLocator {
         }
 
         try {
-            // 3. Find packet methods (cache or analysis)
             findPacketMethods(client, RuneLiteProperties.getVersion());
-
-            // 4. Clean up old analysis files
             cleanupStaleFiles();
 
-            // 5. Verify config
             if (loadedCacheFileName.isEmpty()) {
                 log.warn("Client packet method analysis failed to produce a cache file.");
             } else if (!loadedCacheFileName.equals(getCacheFileName(client))) {
@@ -188,20 +175,15 @@ public class PacketMethodLocator {
 
         downloadInjectedClient(runeliteVersion, injectedClientJarPath);
         extractClassFile(injectedClientJarPath, doActionClassName, targetClassFilePath);
-
-        // 3. Decompile the target method
         decompileMethod(targetClassFilePath, doActionMethodName, decompiledSourcePath);
-
-        // 4. Parse the decompiled code to find the most frequent method call
         String packetMethodName = findMostFrequentMethodCall(decompiledSourcePath);
 
         if (packetMethodName == null) {
             throw new RuntimeException("Failed to find most frequent method call in decompiled code.");
         }
 
-        log.info("Analysis complete. Most frequent method call: {}", packetMethodName);
+        log.info("Client packet analysis complete. Packet Queueing Method: {}", packetMethodName);
 
-        // 5. Set the public API fields based on the result
         boolean usingClient = packetMethodName.contains("client");
         Method addNodeMethod = null;
 
@@ -219,14 +201,14 @@ public class PacketMethodLocator {
                     break;
                 }
             }
+
             if (addNodeMethod == null) {
+                cleanupStaleFiles();
                 throw new RuntimeException("Analysis found method " + packetMethodName + " but it could not be located via reflection.");
             }
         }
 
         packetMethods = new PacketMethods(addNodeMethod, usingClient);
-
-        // 6. Save the result to the cache for next time
         saveToCache(client, packetMethodName);
     }
 
@@ -278,8 +260,8 @@ public class PacketMethodLocator {
                 if (jarEntry.getName().equals(className + ".class")) {
                     try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
                         Files.copy(inputStream, destination, StandardCopyOption.REPLACE_EXISTING);
-                        log.info("Extraction complete.");
                     } catch (IOException e) {
+                        log.error("Failed to extract {}.class from {}", className, jarPath.getFileName(), e);
                         throw new UncheckedIOException(e); // Propagate exception
                     }
                 }
@@ -292,7 +274,7 @@ public class PacketMethodLocator {
      */
     @SneakyThrows
     private static void decompileMethod(Path classFilePath, String methodName, Path destination) {
-        log.info("Decompiling {}.{}... this may take a second.", classFilePath.getFileName(), methodName);
+        log.info("Decompiling class: {}, method: {}", classFilePath.getFileName(), methodName);
 
         // Redirect System.out to our output file
         try (OutputStream decompilationOutputStream = Files.newOutputStream(destination);
@@ -301,7 +283,7 @@ public class PacketMethodLocator {
             PrintStream originalOut = System.out;
             System.setOut(printStream);
             try {
-                // Run the decompiler
+                // Runs the decompiler
                 Main.main(new String[]{classFilePath.toAbsolutePath().toString(), "--methodname", methodName});
             } finally {
                 // Restore System.out
@@ -313,7 +295,9 @@ public class PacketMethodLocator {
 
     /**
      * Parses the decompiled source code to find the most frequently called method.
-     * This is the core heuristic of the analysis.
+     * This is the core heuristic of the client packet analysis. The idea is that every action in the game sends a
+     * packet so the packet queueing functionality will be called by just about every method thus making it the most
+     * frequently called method.
      *
      * @return The name of the most frequent method (e.g., "client.af" or "bw.a")
      */
@@ -323,26 +307,27 @@ public class PacketMethodLocator {
 
         try (BufferedReader reader = Files.newBufferedReader(decompiledSourcePath)) {
             String line;
+            String prevLine = null;
             while ((line = reader.readLine()) != null) {
-                // Use regex to find all method calls on the line
-                Matcher matcher = METHOD_CALL_PATTERN.matcher(line);
-                while (matcher.find()) {
-                    String match = matcher.group(1) + "." + matcher.group(2);
-                    methodCalls.add(match);
+                if (line.length() < 300) {
+                    if (line.contains("}")) {
+                        if (prevLine != null && prevLine.contains("(")) {
+                            methodCalls.add(prevLine.split("\\(")[0].trim());
+                        }
+                    }
+                    prevLine = line;
                 }
             }
         }
 
-        // Group by call signature and count occurrences
-        Map<String, Long> callCounts = methodCalls.stream()
-                .collect(Collectors.groupingBy(e -> e, Collectors.counting()));
+        // Group by call signature and count occurrences, finding the max call count
+        Optional<Map.Entry<String, Long>> mostUsedMethod = methodCalls.stream()
+                .filter(str -> !str.contains("** while"))
+                .collect(Collectors.groupingBy(str -> str, Collectors.counting()))
+                .entrySet().stream().min(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
-        // Find the one with the highest count
-        Optional<Map.Entry<String, Long>> maxEntry = callCounts.entrySet().stream()
-                .max(Map.Entry.comparingByValue());
-
-        if (maxEntry.isPresent()) {
-            return maxEntry.get().getKey();
+        if (mostUsedMethod.isPresent()) {
+            return mostUsedMethod.get().getKey();
         }
 
         log.error("Could not find any method calls in decompiled source.");
