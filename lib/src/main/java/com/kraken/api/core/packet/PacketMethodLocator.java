@@ -85,7 +85,7 @@ public class PacketMethodLocator {
             }
 
             log.info("Client packet method loaded successfully, Client AddNode: {}, " +
-                    "AddNode Method: {}", packetMethods.usingClientAddNode, packetMethods.addNodeMethod != null ? packetMethods.addNodeMethod.getName() : "N/A");
+                    "AddNode Method: {}", packetMethods.isUsingClientAddNode(), packetMethods.getAddNodeMethod() != null ? packetMethods.getAddNodeMethod().getName() : "N/A");
         } catch (Exception e) {
             log.error("A critical error occurred during PacketMethodLocator initialization: ", e);
         }
@@ -340,7 +340,7 @@ public class PacketMethodLocator {
         String cacheFileName = getCacheFileName(client);
         Path cacheFilePath = WORKING_DIRECTORY.resolve(cacheFileName);
 
-        PacketCache cache = new PacketCache(packetMethods.usingClientAddNode, methodName);
+        PacketCache cache = new PacketCache(packetMethods.isUsingClientAddNode(), methodName);
         String output = gson.toJson(cache);
         Files.write(cacheFilePath, output.getBytes(StandardCharsets.UTF_8));
         loadedCacheFileName = cacheFileName;

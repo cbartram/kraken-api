@@ -154,8 +154,11 @@ public class ExamplePlugin extends Plugin {
 
             if(event.getKey().equals("prayerOn") && config.prayerOn()) {
                 int mouseInfo = ((int) 0L << 1);
-                packetSenderProvider.get().sendPacket(PacketDef.getEventMouseClick(), mouseInfo, 1, 1, 0);
-                packetSenderProvider.get().sendPacket(PacketDef.getIfButtonX(), 1, WidgetInfoExtended.PRAYER_PROTECT_FROM_MISSILES.getPackedId(), -1, -1);
+                packetSenderProvider.get().sendPacket(PacketDef.getEventMouseClick(), mouseInfo, 0, 0, 0);
+                // PacketDef.getIfButtonX(), widgetId, childId, itemId, actionFieldNo & 65535
+                // ActionFieldNo = 1, WidgetId = prayerWidgetExtended.getPackedId(), item id = -1, child Id = -1
+
+                packetSenderProvider.get().sendPacket(PacketDef.getIfButtonX(), WidgetInfoExtended.PRAYER_PROTECT_FROM_MELEE.getPackedId(), -1, -1, 1 & 65535);
             }
 
             if(event.getKey().equals("start")) {

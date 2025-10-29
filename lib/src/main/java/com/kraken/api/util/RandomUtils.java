@@ -1,7 +1,5 @@
 package com.kraken.api.util;
 
-import lombok.Getter;
-
 import java.util.Random;
 import java.util.Set;
 
@@ -30,5 +28,9 @@ public class RandomUtils {
 
         // This should never be reached, but just in case
         throw new RuntimeException("Failed to select random element from set");
+    }
+
+    public static long randomDelay() {
+        return Math.max(1, Math.min(13000, Math.round(random.nextGaussian() * 8000)));
     }
 }

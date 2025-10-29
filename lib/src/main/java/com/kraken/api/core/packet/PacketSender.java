@@ -24,14 +24,8 @@ import java.util.stream.Collectors;
 @Singleton
 public class PacketSender {
     private final PacketMethods methods;
-
-    private final Object packetWriter;
-    private final Class<?> clientPacketClass;
-    private final Class<?> packetBufferNodeClass;
-    private final Method getPacketBufferNodeMethod;
-    private final Field packetBufferField;
-    private final Object isaacCipher;
-
+    private final Client client;
+    
     /**
      * Creates a new PacketSender. This constructor initializes packet queueing functionality by either loading the client packet
      * sending method from the cached json file or running an analysis on the RuneLite injected client
@@ -43,261 +37,277 @@ public class PacketSender {
     @SneakyThrows
     public PacketSender(Client client) {
         this.methods = PacketMethodLocator.packetMethods;
+        this.client = client;
 
         if(this.methods == null) {
             throw new RuntimeException("Packet queuing method could not be determined. Make sure you initialize packets with context.initializePackets()" +
                     "before constructing this class.");
         }
+    }
+    
+    public Class<?> loadClassFromClientClassLoader(String name) {
+        try {
+            ClassLoader clientLoader = client.getClass().getClassLoader();
+            return clientLoader.loadClass(name);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
-        // Get Packet Class and method definitions
-        ClassLoader clientLoader = client.getClass().getClassLoader();
-        this.clientPacketClass = clientLoader.loadClass(ObfuscatedNames.clientPacketClassName);
-        this.packetBufferNodeClass = clientLoader.loadClass(ObfuscatedNames.packetBufferNodeClassName);
+        return null;
+    }
 
-        Class<?> factoryClass = clientLoader.loadClass(ObfuscatedNames.classContainingGetPacketBufferNodeName);
-        this.getPacketBufferNodeMethod = Arrays.stream(factoryClass.getDeclaredMethods())
-                .filter(m -> m.getReturnType().equals(this.packetBufferNodeClass))
-                .collect(Collectors.toList())
-                .get(0);
+    public Class<?> getClassWithGetPacketBufferNode() {
+        return loadClassFromClientClassLoader(ObfuscatedNames.classContainingGetPacketBufferNodeName);
+    }
 
-        // Get PacketWriter Field and Object
-        Field packetWriterField = client.getClass().getDeclaredField(ObfuscatedNames.packetWriterFieldName);
+    public Method getGetPacketBufferNode() {
+        try {
+            return Arrays.stream(getClassWithGetPacketBufferNode().getDeclaredMethods()).filter(m -> m.getReturnType().equals(getPacketBufferNodeClass())).collect(Collectors.toList()).get(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Class<?> getClientPacketClass(){
+        return loadClassFromClientClassLoader(ObfuscatedNames.clientPacketClassName);
+    }
+
+    public  Field getPacketWriterField() {
+        try {
+            return client.getClass().getDeclaredField(ObfuscatedNames.packetWriterFieldName);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Class<?> getPacketWriterClass(){
+        try {
+            Field packetWriterField = getPacketWriterField();
+            packetWriterField.setAccessible(true);
+            Class<?> packetWriterClass = packetWriterField.get(null).getClass();
+            packetWriterField.setAccessible(false);
+            return packetWriterClass;
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Object getIsaacObject() {
+        try {
+            Field isaacField = getPacketWriterClass().getDeclaredField(com.example.PacketUtils.ObfuscatedNames.isaacCipherFieldName);
+            isaacField.setAccessible(true);
+            Object isaacObject = isaacField.get(getPacketWriteObject());
+            isaacField.setAccessible(false);
+            return isaacObject;
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Class<?> getPacketBufferNodeClass() {
+        return loadClassFromClientClassLoader(com.example.PacketUtils.ObfuscatedNames.packetBufferNodeClassName);
+    }
+
+    public Object getPacketWriteObject() {
+        Field packetWriterField = getPacketWriterField();
         packetWriterField.setAccessible(true);
-        this.packetWriter = packetWriterField.get(null);
-        packetWriterField.setAccessible(false);
-
-        // Get IsaacCipher
-        Class<?> packetWriterClass = packetWriter.getClass();
-        Field isaacField = packetWriterClass.getDeclaredField(ObfuscatedNames.isaacCipherFieldName);
-        isaacField.setAccessible(true);
-        this.isaacCipher = isaacField.get(packetWriter);
-        isaacField.setAccessible(false);
-
-        // 5. Get PacketBuffer field from PacketBufferNode
-        this.packetBufferField = this.packetBufferNodeClass.getDeclaredField(ObfuscatedNames.packetBufferFieldName);
+        try {
+            Object packetWriter = packetWriterField.get(null);
+            packetWriterField.setAccessible(false);
+            return packetWriter;
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    /**
-     * Creates and allocates a new PacketBufferNode for a given packet definition. A packet biffer
-     * node functions as a container or wrapper containing the packet data, ISAAC Cipher, and garbage value for the packet to be sent.
-     *
-     * @param def The packet definition.
-     * @return The allocated PacketBufferNode object.
-     */
-    @SneakyThrows
-    private Object createPacketBufferNode(PacketDef def) {
-        Field packetField = clientPacketClass.getDeclaredField(def.name);
-        Object clientPacket = packetField.get(null); // It's a static field
-
-        getPacketBufferNodeMethod.setAccessible(true);
+    public void sendPacket(PacketDef def, Object... objects) {
         Object packetBufferNode = null;
+        Method getPacketBufferNode = getGetPacketBufferNode();
+        Class ClientPacket = getClientPacketClass();
+        Object isaac = getIsaacObject();
+
+        getPacketBufferNode.setAccessible(true);
+        long garbageValue = Math.abs(Long.parseLong(com.example.PacketUtils.ObfuscatedNames.getPacketBufferNodeGarbageValue));
+        if (garbageValue < 256) {
+            try {
+                packetBufferNode = getPacketBufferNode.invoke(null, fetchPacketField(def.name).get(ClientPacket),
+                        isaac, Byte.parseByte(com.example.PacketUtils.ObfuscatedNames.getPacketBufferNodeGarbageValue));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        } else if (garbageValue < 32768) {
+            try {
+                packetBufferNode = getPacketBufferNode.invoke(null, fetchPacketField(def.name).get(ClientPacket),
+                        isaac, Short.parseShort(com.example.PacketUtils.ObfuscatedNames.getPacketBufferNodeGarbageValue));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        } else if (garbageValue < Integer.MAX_VALUE) {
+            try {
+                packetBufferNode = getPacketBufferNode.invoke(null, fetchPacketField(def.name).get(ClientPacket),
+                        isaac, Integer.parseInt(com.example.PacketUtils.ObfuscatedNames.getPacketBufferNodeGarbageValue));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Object buffer = null;
         try {
-            // This replicates the original "garbage value" logic
-            long garbageValue = Math.abs(Long.parseLong(ObfuscatedNames.getPacketBufferNodeGarbageValue));
-            if (garbageValue < 256) {
-                packetBufferNode = getPacketBufferNodeMethod.invoke(null, clientPacket, isaacCipher, (byte) garbageValue);
-            } else if (garbageValue < 32768) {
-                packetBufferNode = getPacketBufferNodeMethod.invoke(null, clientPacket, isaacCipher, (short) garbageValue);
-            } else if (garbageValue < Integer.MAX_VALUE) {
-                packetBufferNode = getPacketBufferNodeMethod.invoke(null, clientPacket, isaacCipher, (int) garbageValue);
-            } else {
-                throw new IllegalArgumentException("Unsupported garbage value: " + garbageValue);
-            }
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            log.error("Failed to invoke getPacketBufferNode", e);
-        } finally {
-            getPacketBufferNodeMethod.setAccessible(false);
-        }
-        return packetBufferNode;
-    }
-
-    /**
-     * Gets the raw PacketBuffer object from inside a PacketBufferNode.
-     */
-    @SneakyThrows
-    private Object getBufferFromNode(Object packetBufferNode) {
-        return packetBufferField.get(packetBufferNode);
-    }
-
-    /**
-     * Queues a finalized PacketBufferNode to be sent by the PacketWriter.
-     * This is the refactored "addNode" method.
-     *
-     * @param packetBufferNode The populated packet to send.
-     */
-    @SneakyThrows
-    private void queuePacket(Object packetBufferNode) {
-        Method addNodeMethod;
-        Object[] args;
-        Object targetInstance; // null for static, packetWriter for member
-
-        if (methods.usingClientAddNode) {
-            // Method is on the PacketWriter instance
-            targetInstance = this.packetWriter;
-
-            // Replicate garbage value logic for the addNode method
-            long garbageValue = Math.abs(Long.parseLong(ObfuscatedNames.addNodeGarbageValue));
-            if (garbageValue < 256) {
-                addNodeMethod = packetWriter.getClass().getDeclaredMethod(ObfuscatedNames.addNodeMethodName, packetBufferNodeClass, byte.class);
-                args = new Object[]{packetBufferNode, (byte) garbageValue};
-            } else if (garbageValue < 32768) {
-                addNodeMethod = packetWriter.getClass().getDeclaredMethod(ObfuscatedNames.addNodeMethodName, packetBufferNodeClass, short.class);
-                args = new Object[]{packetBufferNode, (short) garbageValue};
-            } else if (garbageValue < Integer.MAX_VALUE) {
-                addNodeMethod = packetWriter.getClass().getDeclaredMethod(ObfuscatedNames.addNodeMethodName, packetBufferNodeClass, int.class);
-                args = new Object[]{packetBufferNode, (int) garbageValue};
-            } else {
-                throw new IllegalArgumentException("Unsupported addNode garbage value: " + garbageValue);
-            }
-
-        } else {
-            // Method is static, retrieved from PacketMethodLocator
-            targetInstance = null;
-            addNodeMethod = methods.addNodeMethod; // This is the cached Method object
-
-            // Replicate garbage value logic for the static method
-            long garbageValue = Math.abs(Long.parseLong(ObfuscatedNames.addNodeGarbageValue));
-            if (addNodeMethod.getParameterCount() == 2) {
-                args = new Object[]{packetWriter, packetBufferNode};
-            } else if (garbageValue < 256) {
-                args = new Object[]{packetWriter, packetBufferNode, (byte) garbageValue};
-            } else if (garbageValue < 32768) {
-                args = new Object[]{packetWriter, packetBufferNode, (short) garbageValue};
-            } else if (garbageValue < Integer.MAX_VALUE) {
-                args = new Object[]{packetWriter, packetBufferNode, (int) garbageValue};
-            } else {
-                throw new IllegalArgumentException("Unsupported static addNode garbage value: " + garbageValue);
-            }
+            buffer = packetBufferNode.getClass().getDeclaredField(com.example.PacketUtils.ObfuscatedNames.packetBufferFieldName).get(packetBufferNode);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            e.printStackTrace();
         }
 
-        // --- Invoke ---
-        try {
-            addNodeMethod.setAccessible(true);
-            addNodeMethod.invoke(targetInstance, args);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            log.error("Failed to invoke addNode method: {}", addNodeMethod.getName(), e);
-        } finally {
-            addNodeMethod.setAccessible(false);
-        }
-    }
+        getPacketBufferNode.setAccessible(false);
+        List<String> params = null;
 
-    /**
-     * This method preserves the original, brittle mapping logic from the
-     * PacketReflection class. Ideally, this info would be on the PacketDef enum.
-     *
-     * @param def The PacketDef.
-     * @return A list of parameter names in the order they are expected.
-     */
-    private List<String> getParameterOrderForDef(PacketDef def) {
         if (def.type == PacketType.RESUME_NAMEDIALOG || def.type == PacketType.RESUME_STRINGDIALOG) {
-            return List.of("length", "string");
+            params = List.of("length", "string");
         }
         if (def.type == PacketType.OPHELDD) {
-            return List.of("selectedId", "selectedChildIndex", "selectedItemId", "destId", "destChildIndex", "destItemId");
+            params = List.of("selectedId", "selectedChildIndex", "selectedItemId", "destId", "destChildIndex", "destItemId");
         }
         if (def.type == PacketType.RESUME_COUNTDIALOG || def.type == PacketType.RESUME_OBJDIALOG) {
-            return List.of("var0");
+            params = List.of("var0");
         }
         if (def.type == PacketType.RESUME_PAUSEBUTTON) {
-            return List.of("var0", "var1");
+            params = List.of("var0", "var1");
         }
         if (def.type == PacketType.IF_BUTTON) {
-            return List.of("widgetId", "slot", "itemId");
+            params = List.of("widgetId", "slot", "itemId");
         }
         if (def.type == PacketType.IF_SUBOP) {
-            return List.of("widgetId", "slot", "itemId", "menuIndex", "subActionIndex");
+            params = List.of("widgetId", "slot", "itemId", "menuIndex", "subActionIndex");
         }
         if (def.type == PacketType.IF_BUTTONX) {
-            return List.of("widgetId", "slot", "itemId", "opCode");
+            params = List.of("widgetId", "slot", "itemId", "opCode");
         }
         if (def.type == PacketType.OPLOC) {
-            return List.of("objectId", "worldPointX", "worldPointY", "ctrlDown");
+            params = List.of("objectId", "worldPointX", "worldPointY", "ctrlDown");
         }
         if (def.type == PacketType.OPNPC) {
-            return List.of("npcIndex", "ctrlDown");
+            params = List.of("npcIndex", "ctrlDown");
         }
         if (def.type == PacketType.OPPLAYER) {
-            return List.of("playerIndex", "ctrlDown");
+            params = List.of("playerIndex", "ctrlDown");
         }
         if (def.type == PacketType.OPOBJ) {
-            return List.of("objectId", "worldPointX", "worldPointY", "ctrlDown");
+            params = List.of("objectId", "worldPointX", "worldPointY", "ctrlDown");
         }
         if (def.type == PacketType.OPOBJT) {
-            return List.of("objectId", "worldPointX", "worldPointY", "slot", "itemId", "widgetId", "ctrlDown");
+            params = List.of("objectId", "worldPointX", "worldPointY", "slot", "itemId", "widgetId",
+                    "ctrlDown");
         }
         if (def.type == PacketType.EVENT_MOUSE_CLICK) {
-            return List.of("mouseInfo", "mouseX", "mouseY", "0");
+            params = List.of("mouseInfo", "mouseX", "mouseY", "0");
         }
         if (def.type == PacketType.MOVE_GAMECLICK) {
-            return List.of("worldPointX", "worldPointY", "ctrlDown", "5");
+            params = List.of("worldPointX", "worldPointY", "ctrlDown", "5");
         }
         if (def.type == PacketType.IF_BUTTONT) {
-            return List.of("sourceWidgetId", "sourceSlot", "sourceItemId", "destinationWidgetId", "destinationSlot", "destinationItemId");
+            params = List.of("sourceWidgetId", "sourceSlot", "sourceItemId", "destinationWidgetId",
+                    "destinationSlot", "destinationItemId");
         }
         if (def.type == PacketType.OPLOCT) {
-            return List.of("objectId", "worldPointX", "worldPointY", "slot", "itemId", "widgetId", "ctrlDown");
+            params = List.of("objectId", "worldPointX", "worldPointY", "slot", "itemId", "widgetId",
+                    "ctrlDown");
         }
         if (def.type == PacketType.OPPLAYERT) {
-            return List.of("playerIndex", "itemId", "slot", "widgetId", "ctrlDown");
+            params = List.of("playerIndex", "itemId", "slot", "widgetId", "ctrlDown");
         }
         if (def.type == PacketType.OPNPCT) {
-            return List.of("npcIndex", "itemId", "slot", "widgetId", "ctrlDown");
-        }
-        return null; // No mapping found
-    }
-
-    /**
-     * Constructs, populates, and sends a packet.
-     *
-     * @param def  The packet definition (e.g., OPLOC).
-     * @param data The data for the packet, which must be in the exact
-     * order specified by the internal parameter mapping.
-     */
-    public void sendPacket(PacketDef def, Object... data) {
-        Object packetBufferNode = createPacketBufferNode(def);
-        Object buffer = getBufferFromNode(packetBufferNode);
-
-        List<String> paramOrder = getParameterOrderForDef(def);
-        if (paramOrder == null) {
-            log.error("No parameter mapping found for packet type: {}. Packet not sent.", def.type);
-            return;
+            params = List.of("npcIndex", "itemId", "slot", "widgetId", "ctrlDown");
         }
 
-        if (paramOrder.size() != data.length) {
-            log.error("Packet data/param mismatch for {}. Expected {} args, got {}. Packet not sent.",
-                    def.name, paramOrder.size(), data.length);
-            return;
-        }
-
-        // This logic is preserved from the original. It maps the packet's
-        // required write operations (def.writeData) to the ordered
-        // input data (data) via the parameter name list (paramOrder).
-        try {
+        if (params != null) {
             for (int i = 0; i < def.writeData.length; i++) {
-                int index = paramOrder.indexOf(def.writeData[i]);
-                if (index == -1) {
-                    log.warn("Packet {}: could not find param '{}' in mapping.", def.name, def.writeData[i]);
-                    continue;
-                }
-
-                Object writeValue = data[index];
-                for (String writeMethod : def.writeMethods[i]) {
-                    // Use BufferMethods to write the data
-                    if (writeMethod.equalsIgnoreCase("strn")) {
+                int index = params.indexOf(def.writeData[i]);
+                Object writeValue = objects[index];
+                for (String s : def.writeMethods[i]) {
+                    if (s.equalsIgnoreCase("strn")) {
                         BufferMethods.writeStringCp1252NullTerminated((String) writeValue, buffer);
-                    } else if (writeMethod.equalsIgnoreCase("strc")) {
-                        BufferMethods.writeStringCp1252NullCircumfixed((String) writeValue, buffer);
-                    } else {
-                        BufferMethods.writeValue(writeMethod, (Integer) writeValue, buffer);
+                        continue;
                     }
+                    if (s.equalsIgnoreCase("strc")) {
+                        BufferMethods.writeStringCp1252NullCircumfixed((String) writeValue, buffer);
+                        continue;
+                    }
+                    log.info("Writing " + s + " " + writeValue);
+                    BufferMethods.writeValue(s, (Integer) writeValue, buffer);
                 }
             }
-        } catch (Exception e) {
-            log.error("Failed to write packet data for {}. Packet not sent.", def.name, e);
-            return;
-        }
 
-        queuePacket(packetBufferNode);
-        log.debug("Sent packet: {}", def.name);
+            Field PACKETWRITER = getPacketWriterField();
+            PACKETWRITER.setAccessible(true);
+            try {
+                addNode(PACKETWRITER.get(null), packetBufferNode);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            PACKETWRITER.setAccessible(false);
+        }
+    }
+
+    public void addNode(Object packetWriter, Object packetBufferNode) {
+        if (methods.isUsingClientAddNode()) {
+            try {
+                Method addNode = null;
+                long garbageValue = Math.abs(Long.parseLong(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                if (garbageValue < 256) {
+                    addNode = packetWriter.getClass().getDeclaredMethod(com.example.PacketUtils.ObfuscatedNames.addNodeMethodName, packetBufferNode.getClass(), byte.class);
+                    addNode.setAccessible(true);
+                    addNode.invoke(packetWriter, packetBufferNode, Byte.parseByte(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                } else if (garbageValue < 32768) {
+                    addNode = packetWriter.getClass().getDeclaredMethod(com.example.PacketUtils.ObfuscatedNames.addNodeMethodName, packetBufferNode.getClass(), short.class);
+                    addNode.setAccessible(true);
+                    addNode.invoke(packetWriter, packetBufferNode, Short.parseShort(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                } else if (garbageValue < Integer.MAX_VALUE) {
+                    addNode = packetWriter.getClass().getDeclaredMethod(com.example.PacketUtils.ObfuscatedNames.addNodeMethodName, packetBufferNode.getClass(), int.class);
+                    //System.out.println("addnode: "+addNode);
+                    addNode.setAccessible(true);
+                    addNode.invoke(packetWriter, packetBufferNode, Integer.parseInt(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                }
+                if (addNode != null) {
+                    addNode.setAccessible(false);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                Method addNode = methods.getAddNodeMethod();
+                addNode.setAccessible(true);
+                if (addNode.getParameterCount() == 2) {
+                    addNode.invoke(null, packetWriter, packetBufferNode);
+                } else {
+                    long garbageValue = Math.abs(Long.parseLong(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                    if (garbageValue < 256) {
+                        addNode.invoke(null, packetWriter, packetBufferNode, Byte.parseByte(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                    } else if (garbageValue < 32768) {
+                        addNode.invoke(null, packetWriter, packetBufferNode, Short.parseShort(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                    } else if (garbageValue < Integer.MAX_VALUE) {
+                        addNode.invoke(null, packetWriter, packetBufferNode, Integer.parseInt(com.example.PacketUtils.ObfuscatedNames.addNodeGarbageValue));
+                    }
+                }
+                addNode.setAccessible(false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+     private Field fetchPacketField(String name) {
+        try {
+            Class<?> ClientPacket = getClientPacketClass();
+            return ClientPacket.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
