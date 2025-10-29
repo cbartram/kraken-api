@@ -13,7 +13,9 @@ import net.runelite.api.Client;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * An instance-based RuneLite client packet sending utility.
@@ -24,11 +26,11 @@ public class PacketSender {
     private final PacketMethods methods;
 
     private final Object packetWriter;
-    private final Object isaacCipher;
     private final Class<?> clientPacketClass;
     private final Class<?> packetBufferNodeClass;
     private final Method getPacketBufferNodeMethod;
     private final Field packetBufferField;
+    private final Object isaacCipher;
 
     /**
      * Creates a new PacketSender. This constructor initializes packet queueing functionality by either loading the client packet
@@ -47,46 +49,32 @@ public class PacketSender {
                     "before constructing this class.");
         }
 
-        // 1. Get PacketWriter Field and Object
-        // Field for the PacketWriter itself
+        // Get Packet Class and method definitions
+        ClassLoader clientLoader = client.getClass().getClassLoader();
+        this.clientPacketClass = clientLoader.loadClass(ObfuscatedNames.clientPacketClassName);
+        this.packetBufferNodeClass = clientLoader.loadClass(ObfuscatedNames.packetBufferNodeClassName);
+
+        Class<?> factoryClass = clientLoader.loadClass(ObfuscatedNames.classContainingGetPacketBufferNodeName);
+        this.getPacketBufferNodeMethod = Arrays.stream(factoryClass.getDeclaredMethods())
+                .filter(m -> m.getReturnType().equals(this.packetBufferNodeClass))
+                .collect(Collectors.toList())
+                .get(0);
+
+        // Get PacketWriter Field and Object
         Field packetWriterField = client.getClass().getDeclaredField(ObfuscatedNames.packetWriterFieldName);
         packetWriterField.setAccessible(true);
         this.packetWriter = packetWriterField.get(null);
         packetWriterField.setAccessible(false);
-        log.debug("Cached PacketWriter instance.");
 
-        // 2. Get IsaacCipher
+        // Get IsaacCipher
         Class<?> packetWriterClass = packetWriter.getClass();
         Field isaacField = packetWriterClass.getDeclaredField(ObfuscatedNames.isaacCipherFieldName);
         isaacField.setAccessible(true);
         this.isaacCipher = isaacField.get(packetWriter);
         isaacField.setAccessible(false);
-        log.debug("Cached IsaacCipher instance.");
-
-        // 3. Get Packet Class definitions
-        ClassLoader clientLoader = client.getClass().getClassLoader();
-        this.clientPacketClass = clientLoader.loadClass(ObfuscatedNames.clientPacketClassName);
-        this.packetBufferNodeClass = clientLoader.loadClass(ObfuscatedNames.packetBufferNodeClassName);
-        log.debug("Cached ClientPacket and PacketBufferNode classes.");
-
-        // 4. Get getPacketBufferNode() factory method
-        Class<?> factoryClass = clientLoader.loadClass(ObfuscatedNames.classContainingGetPacketBufferNodeName);
-        Method foundMethod = null;
-        for (Method method : factoryClass.getDeclaredMethods()) {
-            if (method.getReturnType().equals(packetBufferNodeClass)) {
-                foundMethod = method;
-                break;
-            }
-        }
-        this.getPacketBufferNodeMethod = foundMethod;
-        if (this.getPacketBufferNodeMethod == null) {
-            throw new NoSuchMethodException("Could not find getPacketBufferNode method in " + factoryClass.getName());
-        }
-        log.debug("Cached getPacketBufferNode method: {}", getPacketBufferNodeMethod.getName());
 
         // 5. Get PacketBuffer field from PacketBufferNode
         this.packetBufferField = this.packetBufferNodeClass.getDeclaredField(ObfuscatedNames.packetBufferFieldName);
-        log.debug("Cached packetBuffer field: {}", packetBufferField.getName());
     }
 
     /**
