@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * "use-on" actions (e.g., using an item on an object). It abstracts the low-level
  * packet construction and world coordinate calculations.
  */
-public class ObjectPackets {
+public class GameObjectPackets {
 
     @Inject
     private Provider<PacketClient> packetClientProvider;
