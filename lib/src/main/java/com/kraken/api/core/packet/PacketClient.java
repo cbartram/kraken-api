@@ -18,11 +18,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * An instance-based RuneLite client packet sending utility. Generally you should not use this class directly
- * as it functions at a low level to send packets via the RuneLite client using reflection.
+ * {@code PacketClient} is an instance-based RuneLite client packet sending utility which uses reflection to
+ * construct and send low level packets directly to the game servers. Generally you should not use this class directly
+ * as it functions at a low level when sending packets.
  * <p />
- * Instead, it's recommended to use the higher level API's like {@code MousePackets}, {@code WidgetPackets}, {@code NpcPackets} etc... for
- * sending game packets to the server.
+ * Instead, it's recommended to use the higher level API's like {@code MousePackets}, {@code WidgetPackets}, or {@code NpcPackets} for
+ * sending game packets to the server based on your specific entity interaction needs (clicking interfaces, NPC's, GameObjects, etc...
  */
 @Slf4j
 @Singleton
@@ -50,27 +51,32 @@ public class PacketClient {
         }
     }
 
-    public Class<?> loadGameClientClass(String name) {
+    /**
+     * Loads a class from the game client via RuneLite's class loader.
+     * @param name The name of the class to load
+     * @return The loaded {@code Class} object.
+     */
+    private Class<?> loadGameClientClass(String name) {
         try {
             ClassLoader clientLoader = client.getClass().getClassLoader();
             return clientLoader.loadClass(name);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            log.error("failed to load game client class from RuneLite class loader: ", e);
         }
-
         return null;
-    }
-
-    public Class<?> getClassWithGetPacketBufferNode() {
-        return loadGameClientClass(ObfuscatedNames.classContainingGetPacketBufferNodeName);
     }
 
     public Method getGetPacketBufferNode() {
         try {
+            Class<?> packetBufferNodeAccessorClass = loadGameClientClass(ObfuscatedNames.classContainingGetPacketBufferNodeName);
+            if(packetBufferNodeAccessorClass == null) {
+                return null;
+            }
+
             Class<?> packetBufferNodeClass = loadGameClientClass(ObfuscatedNames.packetBufferNodeClassName);
-            return Arrays.stream(getClassWithGetPacketBufferNode().getDeclaredMethods()).filter(m -> m.getReturnType().equals(packetBufferNodeClass)).collect(Collectors.toList()).get(0);
+            return Arrays.stream(packetBufferNodeAccessorClass.getDeclaredMethods()).filter(m -> m.getReturnType().equals(packetBufferNodeClass)).collect(Collectors.toList()).get(0);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("failed to get packet buffer node from RuneLite class loader: ", e);
         }
         return null;
     }
@@ -79,18 +85,17 @@ public class PacketClient {
         return loadGameClientClass(ObfuscatedNames.clientPacketClassName);
     }
 
-    public  Field getPacketWriterField() {
+    public Field getPacketWriterField() {
         try {
             return client.getClass().getDeclaredField(ObfuscatedNames.packetWriterFieldName);
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            log.error("failed to get field packetWriterFieldName: ", e);
         }
         return null;
     }
 
     public Object getIsaacObject() {
         try {
-
             Field packetWriterField = getPacketWriterField();
             packetWriterField.setAccessible(true);
             Class<?> packetWriterClass = packetWriterField.get(null).getClass();
@@ -104,7 +109,17 @@ public class PacketClient {
             isaacField.setAccessible(false);
             return isaacObject;
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            log.error("failed to get ISAAC object: ", e);
+        }
+        return null;
+    }
+
+    private Field fetchPacketField(String name) {
+        try {
+            Class<?> ClientPacket = getClientPacketClass();
+            return ClientPacket.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            log.error("failed to get packet field: ", e);
         }
         return null;
     }
@@ -286,16 +301,6 @@ public class PacketClient {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-     private Field fetchPacketField(String name) {
-        try {
-            Class<?> ClientPacket = getClientPacketClass();
-            return ClientPacket.getDeclaredField(name);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-            return null;
         }
     }
 }
