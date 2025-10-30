@@ -192,9 +192,7 @@ public class PacketMethodLocator {
             Class<?> addNodeClass = client.getClass().getClassLoader().loadClass(className);
 
             for (Method method : addNodeClass.getDeclaredMethods()) {
-                if (method.getName().equals(methodName) &&
-                        method.getParameterCount() > 0 &&
-                        method.getParameterTypes()[0].getSimpleName().equals(ObfuscatedNames.packetWriterClassName)) {
+                if (method.getName().equals(methodName) && method.getParameterCount() > 0 && method.getParameterTypes().length != 0 && method.getParameterTypes()[0].getSimpleName().equals(ObfuscatedNames.packetWriterClassName)) {
                     addNodeMethod = method;
                     break;
                 }
