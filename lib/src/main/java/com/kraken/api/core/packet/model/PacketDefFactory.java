@@ -401,7 +401,7 @@ public class PacketDefFactory {
             case 3: return getOpObj3();
             case 4: return getOpObj4();
             case 5: return getOpObj5();
-            default: throw new IllegalArgumentException("Invalid OPOBJ action: " + action);
+            default: throw new IllegalArgumentException("Invalid OPOBJ action (supports 1-5): " + action);
         }
     }
 
@@ -412,7 +412,7 @@ public class PacketDefFactory {
             case 3: return getOpLoc3();
             case 4: return getOpLoc4();
             case 5: return getOpLoc5();
-            default: throw new IllegalArgumentException("Invalid OPLOC action: " + action);
+            default: throw new IllegalArgumentException("Invalid OPLOC action (support 1-5): " + action);
         }
     }
 
@@ -423,7 +423,7 @@ public class PacketDefFactory {
             case 3: return getOpNpc3();
             case 4: return getOpNpc4();
             case 5: return getOpNpc5();
-            default: throw new IllegalArgumentException("Invalid OPNPC action: " + action);
+            default: throw new IllegalArgumentException("Invalid OPNPC action (supports 1-5): " + action);
         }
     }
 
@@ -437,7 +437,7 @@ public class PacketDefFactory {
             case 6: return getOpPlayer6();
             case 7: return getOpPlayer7();
             case 8: return getOpPlayer8();
-            default: throw new IllegalArgumentException("Invalid OPPLAYER action: " + action);
+            default: throw new IllegalArgumentException("Invalid OPPLAYER action (supports 1-8): " + action);
         }
     }
 

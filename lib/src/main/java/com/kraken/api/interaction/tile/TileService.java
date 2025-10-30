@@ -9,10 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.api.worldmap.WorldMap;
-import shortestpath.WorldPointUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,6 +26,19 @@ public class TileService extends AbstractService {
 
     @Inject
     private WidgetService widgetService;
+
+    /**
+     * Returns the object composition for a given TileObject.
+     * @param tileObject The tile object to retrieve the composition for
+     * @return The object composition for a given tile object
+     */
+    public ObjectComposition getObjectComposition(TileObject tileObject) {
+        if(client.getObjectDefinition(tileObject.getId()).getImpostorIds() != null && client.getObjectDefinition(tileObject.getId()).getImpostor() != null) {
+            return context.runOnClientThread(() -> client.getObjectDefinition(tileObject.getId()).getImpostor());
+        }
+
+        return context.runOnClientThread(() -> client.getObjectDefinition(tileObject.getId()));
+    }
 
     /**
      * This method calculates the distances to a specified tile in the game world
