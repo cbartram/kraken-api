@@ -6,12 +6,14 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.movement.WalkService;
+import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
@@ -115,7 +117,10 @@ public class ExamplePlugin extends Plugin {
     private MousePackets mousePackets;
 
     @Inject
-    private WidgetPackets widgetPackets;
+    private NPCPackets npcPackets;
+
+    @Inject
+    private NpcService npcService;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -156,7 +161,11 @@ public class ExamplePlugin extends Plugin {
 
             if(event.getKey().equals("prayerOn") && config.prayerOn()) {
                 mousePackets.queueClickPacket(0, 0);
-                widgetPackets.queueWidgetActionPacket(WidgetInfoExtended.PRAYER_PROTECT_FROM_MELEE.getPackedId(), -1, -1, 1);
+                NPC npc = npcService.getAttackableNpcs().findFirst().orElse(null);
+                if(npc != null) {
+                    log.info("Attacking NPC");
+                    npcPackets.queueNPCAction(npc, "Attack");
+                }
             }
 
             if(event.getKey().equals("start")) {
