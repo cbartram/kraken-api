@@ -1,13 +1,11 @@
 package com.kraken.api.example;
 
-import com.example.PacketUtils.WidgetInfoExtended;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.NPCPackets;
-import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;

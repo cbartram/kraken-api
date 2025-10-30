@@ -1,6 +1,5 @@
 package com.kraken.api.interaction.groundobject;
 
-import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.inject.Inject;
@@ -336,7 +335,7 @@ public class GroundObjectService extends AbstractService {
         if (tileObject == null) return false;
 
         return context.runOnClientThread(() -> {
-            ObjectComposition comp = TileObjectQuery.getObjectComposition(tileObject);
+            ObjectComposition comp = tileService.getObjectComposition(tileObject);
             if (comp == null) return false;
 
             Point clickingPoint = uiService.getClickbox(tileObject);

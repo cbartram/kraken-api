@@ -17,21 +17,16 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 @Slf4j
+@Getter
 @AllArgsConstructor
 public class InventoryItem {
 
-    @Getter
-    private int id;
-
-    @Getter
     @Setter
     private int quantity;
-
-    @Getter
+    private int id;
     private int slot;
-
+    private Widget widget;
     private List<String> equipmentActions = new ArrayList<>();
-
     private String name;
     private String[] inventoryActions;
     private boolean isStackable;
@@ -55,8 +50,9 @@ public class InventoryItem {
             ParamID.OC_ITEM_OP8
     };
 
-    public InventoryItem(Item item, ItemComposition itemComposition, int slot, Context context) {
+    public InventoryItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget) {
         this.id = item.getId();
+        this.widget = widget;
         this.quantity = item.getQuantity();
         this.slot = slot;
         this.name = itemComposition.getName();

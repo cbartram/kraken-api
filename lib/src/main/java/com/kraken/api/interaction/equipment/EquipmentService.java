@@ -1,7 +1,5 @@
 package com.kraken.api.interaction.equipment;
 
-import com.example.EthanApiPlugin.Collections.Equipment;
-import com.example.EthanApiPlugin.Collections.EquipmentItemWidget;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
@@ -46,6 +44,8 @@ public class EquipmentService extends AbstractService {
     private final List<InventoryItem> equipment = new ArrayList<>();
 
     static HashMap<Integer, Integer> equipmentSlotWidgetMapping = new HashMap<>();
+    static HashMap<Integer, Integer> mappingToIterableInts = new HashMap<>();
+    private int lastUpdateTick = 0;
 
     static {
         equipmentSlotWidgetMapping.put(0, 15);
@@ -59,6 +59,18 @@ public class EquipmentService extends AbstractService {
         equipmentSlotWidgetMapping.put(10, 23);
         equipmentSlotWidgetMapping.put(12, 24);
         equipmentSlotWidgetMapping.put(13, 25);
+
+        mappingToIterableInts.put(0, 0);
+        mappingToIterableInts.put(1, 1);
+        mappingToIterableInts.put(2, 2);
+        mappingToIterableInts.put(3, 3);
+        mappingToIterableInts.put(4, 4);
+        mappingToIterableInts.put(5, 5);
+        mappingToIterableInts.put(6, 7);
+        mappingToIterableInts.put(7, 9);
+        mappingToIterableInts.put(8, 10);
+        mappingToIterableInts.put(9, 12);
+        mappingToIterableInts.put(10, 13);
     }
 
     @Subscribe
@@ -249,7 +261,7 @@ public class EquipmentService extends AbstractService {
     }
 
     /**
-     * Removes an item in an inventory slot. TODO in the future add reflect methods for these (shouldn't be terribly difficult)
+     * Removes an item in an inventory slot.
      * @param slot The inventory slot with the item to remove.
      * @return True if the item was un-equipped successfully and false otherwise
      */
@@ -275,16 +287,14 @@ public class EquipmentService extends AbstractService {
      */
     public boolean remove(int itemId) {
         return context.runOnClientThreadOptional(() -> {
-            EquipmentItemWidget widget = Equipment.search()
-                    .withId(itemId)
-                    .first()
-                    .orElse(null);
+            Map<Integer, Widget> widgets = getEquipmentWidgets();
 
-            if(widget == null) {
+            if(!widgets.containsKey(itemId)) {
                 log.warn("Could not find item with id: {}", itemId);
                 return false;
             }
 
+            Widget widget = widgets.get(itemId);
             Point clickingPoint = uiService.getClickbox(widget);
             mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
             widgetPackets.queueWidgetAction(context.getWidget(widget.getId()), "Remove");
@@ -293,27 +303,43 @@ public class EquipmentService extends AbstractService {
     }
 
     /**
-     * Removes the first item with a given name from your equipment.
-     * @param name The name of the item to remove.
-     * @return True if the item was un-equipped successfully and false otherwise
+     * Returns a mapping of item ids to their corresponding widgets for all equipment slots.
+     * @return Map where the key is the item id and the value is the Widget for the equipment in the given slot.
      */
-    public boolean remove(String name) {
-        return context.runOnClientThreadOptional(() -> {
-            EquipmentItemWidget widget = Equipment.search()
-                    .withName(name)
-                    .first()
-                    .orElse(null);
-
-            if(widget == null) {
-                log.warn("Could not find item with name: {}", name);
-                return false;
+    public Map<Integer, Widget> getEquipmentWidgets() {
+        Map<Integer, Widget> equipmentWidgets = new HashMap<>();
+        if (lastUpdateTick < client.getTickCount()) {
+            int x = 25362447;
+            for (int i = 0; i < 11; i++) {
+                client.runScript(545, (x + i), mappingToIterableInts.get(i), 1, 1, 2);
             }
 
-            Point clickingPoint = uiService.getClickbox(widget);
-            mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-            widgetPackets.queueWidgetAction(context.getWidget(widget.getId()), "Remove");
-            return true;
-        }).orElse(false);
+            equipment.clear();
+            int i = -1;
+            if(client.getItemContainer(94) == null) {
+                return equipmentWidgets;
+            }
+
+            for (Item item : client.getItemContainer(94).getItems()) {
+                i++;
+                if (item == null) {
+                    continue;
+                }
+
+                if (item.getId() == 6512 || item.getId() == -1) {
+                    continue;
+                }
+
+                Widget w = client.getWidget(InterfaceID.WORNITEMS, equipmentSlotWidgetMapping.get(i));
+                if (w == null || w.getActions() == null) {
+                    continue;
+                }
+                equipmentWidgets.put(item.getId(), w);
+            }
+            lastUpdateTick = client.getTickCount();
+        }
+
+        return equipmentWidgets;
     }
 
     /**
