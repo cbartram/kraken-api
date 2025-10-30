@@ -392,4 +392,60 @@ public class PacketDefFactory {
                 PacketType.EVENT_MOUSE_CLICK
         ));
     }
+
+
+    public PacketDef getOpObj(int action) {
+        switch (action) {
+            case 1: return getOpObj1();
+            case 2: return getOpObj2();
+            case 3: return getOpObj3();
+            case 4: return getOpObj4();
+            case 5: return getOpObj5();
+            default: throw new IllegalArgumentException("Invalid OPOBJ action: " + action);
+        }
+    }
+
+    public PacketDef getOpLoc(int action) {
+        switch (action) {
+            case 1: return getOpLoc1();
+            case 2: return getOpLoc2();
+            case 3: return getOpLoc3();
+            case 4: return getOpLoc4();
+            case 5: return getOpLoc5();
+            default: throw new IllegalArgumentException("Invalid OPLOC action: " + action);
+        }
+    }
+
+    public PacketDef getOpNpc(int action) {
+        switch (action) {
+            case 1: return getOpNpc1();
+            case 2: return getOpNpc2();
+            case 3: return getOpNpc3();
+            case 4: return getOpNpc4();
+            case 5: return getOpNpc5();
+            default: throw new IllegalArgumentException("Invalid OPNPC action: " + action);
+        }
+    }
+
+    public PacketDef getOpPlayer(int action) {
+        switch (action) {
+            case 1: return getOpPlayer1();
+            case 2: return getOpPlayer2();
+            case 3: return getOpPlayer3();
+            case 4: return getOpPlayer4();
+            case 5: return getOpPlayer5();
+            case 6: return getOpPlayer6();
+            case 7: return getOpPlayer7();
+            case 8: return getOpPlayer8();
+            default: throw new IllegalArgumentException("Invalid OPPLAYER action: " + action);
+        }
+    }
+
+    /**
+     * Clears the cache for the packet definition factory forcing the factory
+     * to re-create the objects again.
+     */
+    public void clearCache() {
+        cache.clear();
+    }
 }
