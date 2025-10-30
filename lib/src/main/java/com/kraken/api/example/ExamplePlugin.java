@@ -1,13 +1,12 @@
 package com.kraken.api.example;
 
-import com.example.PacketUtils.PacketDef;
 import com.example.PacketUtils.WidgetInfoExtended;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.core.packet.PacketSender;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
@@ -113,7 +112,10 @@ public class ExamplePlugin extends Plugin {
     private WorldPoint targetTile;
 
     @Inject
-    private Provider<PacketSender> packetSenderProvider;
+    private MousePackets mousePackets;
+
+    @Inject
+    private WidgetPackets widgetPackets;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -153,12 +155,8 @@ public class ExamplePlugin extends Plugin {
             }
 
             if(event.getKey().equals("prayerOn") && config.prayerOn()) {
-                int mouseInfo = ((int) 0L << 1);
-                packetSenderProvider.get().sendPacket(PacketDef.getEventMouseClick(), mouseInfo, 0, 0, 0);
-                // PacketDef.getIfButtonX(), widgetId, childId, itemId, actionFieldNo & 65535
-                // ActionFieldNo = 1, WidgetId = prayerWidgetExtended.getPackedId(), item id = -1, child Id = -1
-
-                packetSenderProvider.get().sendPacket(PacketDef.getIfButtonX(), WidgetInfoExtended.PRAYER_PROTECT_FROM_MELEE.getPackedId(), -1, -1, 1 & 65535);
+                mousePackets.queueClickPacket(0, 0);
+                widgetPackets.queueWidgetActionPacket(WidgetInfoExtended.PRAYER_PROTECT_FROM_MELEE.getPackedId(), -1, -1, 1);
             }
 
             if(event.getKey().equals("start")) {

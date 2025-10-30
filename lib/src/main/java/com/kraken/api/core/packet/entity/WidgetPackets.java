@@ -1,8 +1,10 @@
 package com.kraken.api.core.packet.entity;
 
-import com.example.PacketUtils.PacketDef;
-import com.example.PacketUtils.PacketReflection;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import com.kraken.api.core.packet.PacketClient;
+import com.kraken.api.core.packet.model.PacketDefFactory;
 import lombok.SneakyThrows;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.util.Text;
@@ -14,22 +16,30 @@ import java.util.stream.Collectors;
 @Singleton
 public class WidgetPackets {
 
+    @Inject
+    private Provider<PacketClient> packetSenderProvider;
+
+    @Inject
+    private  PacketDefFactory packetDefFactory;
+
     @SneakyThrows
-    public static void queueWidgetActionPacket(int actionFieldNo, int widgetId, int itemId, int childId) {
-        PacketReflection.sendPacket(PacketDef.getIfButtonX(), widgetId, childId, itemId, actionFieldNo & 65535);
+    public void queueWidgetActionPacket(int widgetId, int childId, int itemId, int actionFieldNo) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getIfButtonX(), widgetId, childId, itemId, actionFieldNo & 65535);
     }
 
     @SneakyThrows
-    public static void queueWidgetAction(Widget widget, String... actionlist) {
-        if (widget == null) {
+    public void queueWidgetAction(Widget widget, String... actionlist) {
+        if (widget == null || widget.getActions() == null || widget.getActions().length == 0) {
             return;
         }
+
         List<String> actions = Arrays.stream(widget.getActions()).collect(Collectors.toList());
         for (int i = 0; i < actions.size(); i++) {
             if (actions.get(i) == null)
                 continue;
             actions.set(i, actions.get(i).toLowerCase());
         }
+
         int num = -1;
         for (String action : actions) {
             for (String action2 : actionlist) {
@@ -42,6 +52,7 @@ public class WidgetPackets {
         if (num < 1 || num > 10) {
             return;
         }
+
         queueWidgetActionPacket(num, widget.getId(), widget.getItemId(), widget.getIndex());
     }
 

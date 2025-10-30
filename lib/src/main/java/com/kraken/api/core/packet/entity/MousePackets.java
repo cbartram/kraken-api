@@ -1,11 +1,11 @@
 package com.kraken.api.core.packet.entity;
 
-import com.example.PacketUtils.PacketDef;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.kraken.api.core.packet.ObfuscatedNames;
-import com.kraken.api.core.packet.PacketSender;
+import com.kraken.api.core.packet.PacketClient;
+import com.kraken.api.core.packet.model.PacketDefFactory;
 import com.kraken.api.util.MathUtils;
 import com.kraken.api.util.RandomUtils;
 import lombok.SneakyThrows;
@@ -24,7 +24,10 @@ public class MousePackets {
     private Client client;
 
     @Inject
-    private Provider<PacketSender> packetSenderProvider;
+    private Provider<PacketClient> packetSenderProvider;
+
+    @Inject
+    private PacketDefFactory packetDefFactory;
 
     private static long randomDelay = RandomUtils.randomDelay();
     
@@ -40,7 +43,7 @@ public class MousePackets {
         if (deltaMs > 32767) deltaMs = 32767L;
         int mouseInfo = ((int) deltaMs << 1);
 
-        packetSenderProvider.get().sendPacket(PacketDef.getEventMouseClick(), mouseInfo, x, y, 0);
+        packetSenderProvider.get().sendPacket(packetDefFactory.getEventMouseClick(), mouseInfo, x, y, 0);
 
         int idleClientTicks = client.getKeyboardIdleTicks();
         if (client.getMouseIdleTicks() < idleClientTicks) {

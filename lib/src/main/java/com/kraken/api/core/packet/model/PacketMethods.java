@@ -5,6 +5,10 @@ import lombok.Getter;
 
 import java.lang.reflect.Method;
 
+/**
+ * An object which holds references to the parsed packet methods from the game client. The {@code PacketMethodLocator}
+ * will parse the method which sends packets to the game server and store references to the method in this object.
+ */
 @Getter
 @AllArgsConstructor
 public class PacketMethods {
