@@ -30,7 +30,14 @@ public class MousePackets {
     private PacketDefFactory packetDefFactory;
 
     private static long randomDelay = RandomUtils.randomDelay();
-    
+
+    /**
+     * Queues a click packet to send to the game server. The click packet should be sent before
+     * any game interaction (Widget, Movement, Npc, Object etc...) packets are sent. The click packet
+     * encapsulates the x and y coordinates of the canvas for the click that was made.
+     * @param x The x canvas coordinate.
+     * @param y The y canvas coordinate.
+     */
     @SneakyThrows
     public void queueClickPacket(int x, int y) {
         long mouseHandlerMS = System.currentTimeMillis();
