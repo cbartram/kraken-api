@@ -93,4 +93,106 @@ public class WidgetPackets {
 
         queueWidgetActionPacket(widget.getId(), widget.getIndex(), widget.getItemId(), num);
     }
+
+    /**
+     * Queues a packet simulating the use of one widget item (source) on another
+     * widget item (destination). This is typically used for "Use" menu actions
+     * like using a potion on a bank slot or an item on a piece of equipment.
+     * <p>
+     * Delegates to the overloaded method using the raw IDs and indices.
+     *
+     * @param srcWidget The source widget (e.g., the item being "used").
+     * @param destWidget The destination widget (e.g., the item or slot being used "on").
+     */
+    public void queueWidgetOnWidget(Widget srcWidget, Widget destWidget) {
+        queueWidgetOnWidget(srcWidget.getId(), srcWidget.getIndex(), srcWidget.getItemId(), destWidget.getId(), destWidget.getIndex(), destWidget.getItemId());
+    }
+
+    /**
+     * Queues the raw IF_BUTTONT packet, simulating using an item/slot from a
+     * source widget on an item/slot of a destination widget.
+     *
+     * @param sourceWidgetId The ID of the source widget (interface).
+     * @param sourceSlot The slot/index within the source widget.
+     * @param sourceItemId The item ID within the source slot.
+     * @param destinationWidgetId The ID of the destination widget (interface).
+     * @param destinationSlot The slot/index within the destination widget.
+     * @param destinationItemId The item ID within the destination slot.
+     */
+    public void queueWidgetOnWidget(int sourceWidgetId, int sourceSlot, int sourceItemId, int destinationWidgetId, int destinationSlot, int destinationItemId) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getIfButtonT(), sourceWidgetId, sourceSlot, sourceItemId, destinationWidgetId,
+                destinationSlot, destinationItemId);
+    }
+
+    /**
+     * Queues the RESUME_PAUSEBUTTON packet, typically sent when the player
+     * clicks a "Click here to continue" or "Close" button on a standard,
+     * non-interactable dialog, such as a completion message or a pause screen.
+     *
+     * @param widgetId The ID of the top-level widget.
+     * @param childId The ID of the child component that was clicked.
+     */
+    public void queueResumePause(int widgetId, int childId) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumePausebutton(), widgetId, childId);
+    }
+
+    /**
+     * Queues the RESUME_COUNTDIALOG packet, sent in response to a numerical
+     * input dialog (e.g., "How many?" or "Enter amount").
+     *
+     * @param id The integer value entered by the player.
+     */
+    public void queueResumeCount(int id) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeCountDialog(), id);
+    }
+
+    /**
+     * Queues the RESUME_OBJDIALOG packet, typically sent as a continuation
+     * packet after selecting an option in a multi-choice dialog, where the
+     * value represents an item ID or object ID relevant to the dialog option.
+     *
+     * @param value The numerical value associated with the dialog option.
+     */
+    public void queueResumeObj(int value) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeObjDialog(), value);
+    }
+
+    /**
+     * Queues the OPHELDD packet, which simulates a drag-and-drop action
+     * between two slots within the same or different widgets (e.g., moving
+     * an item in the inventory or bank).
+     *
+     * @param src The source widget/slot from which the item is dragged.
+     * @param dest The destination widget/slot onto which the item is dropped.
+     */
+    public void queueDragAndDrop(Widget src, Widget dest) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getOpHeldd(), src.getId(), src.getIndex(),
+                src.getItemId(), dest.getId(), dest.getIndex(), dest.getItemId());
+    }
+
+    /**
+     * Queues the RESUME_NAMEDIALOG packet, sent in response to a chat dialog
+     * asking the player to enter a name (e.g., setting a clan name).
+     * <p>
+     * Note: The packet data includes the length of the string plus one for the null terminator.
+     *
+     * @param name The string name entered by the player.
+     */
+    public void queueResumeName(String name) {
+        int length = name.length() + 1;
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeNameDialog(), length, name);
+    }
+
+    /**
+     * Queues the RESUME_STRINGDIALOG packet, sent in response to a chat dialog
+     * asking the player to enter a generic string (e.g., a search query).
+     * <p>
+     * Note: The packet data includes the length of the string plus one for the null terminator.
+     *
+     * @param string The string input entered by the player.
+     */
+    public void queueResumeString(String string) {
+        int length = string.length() + 1;
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeStringDialog(), length, string);
+    }
 }

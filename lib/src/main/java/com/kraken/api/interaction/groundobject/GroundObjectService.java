@@ -1,13 +1,13 @@
 package com.kraken.api.interaction.groundobject;
 
 import com.example.EthanApiPlugin.Collections.query.TileObjectQuery;
-import com.example.Packets.MousePackets;
-import com.example.Packets.ObjectPackets;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.packet.entity.GameObjectPackets;
+import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.interaction.ui.UIService;
@@ -43,6 +43,12 @@ public class GroundObjectService extends AbstractService {
 
     @Inject
     private TileService tileService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private GameObjectPackets objectPackets;
 
     @Inject
     private UIService uiService;
@@ -276,8 +282,8 @@ public class GroundObjectService extends AbstractService {
             if (groundItem == null) return false;
 
             Point clickingPoint = uiService.getClickbox(groundItem.getTileObject());
-            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-            ObjectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
+            mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+            objectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
             return true;
         });
     }
@@ -294,8 +300,8 @@ public class GroundObjectService extends AbstractService {
             GroundItem item = get(id);
             if(item == null) return false;
             Point clickingPoint = uiService.getClickbox(item.getTileObject());
-            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-            ObjectPackets.queueObjectAction(item.getTileObject(), false, actions);
+            mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+            objectPackets.queueObjectAction(item.getTileObject(), false, actions);
             return true;
         });
     }
@@ -313,8 +319,8 @@ public class GroundObjectService extends AbstractService {
             if(groundItem == null) return false;
 
             Point clickingPoint = uiService.getClickbox(groundItem.getTileObject());
-            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-            ObjectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
+            mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+            objectPackets.queueObjectAction(groundItem.getTileObject(), false, actions);
             return true;
         });
     }
@@ -334,8 +340,8 @@ public class GroundObjectService extends AbstractService {
             if (comp == null) return false;
 
             Point clickingPoint = uiService.getClickbox(tileObject);
-            MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-            ObjectPackets.queueObjectAction(tileObject, false, actions);
+            mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+            objectPackets.queueObjectAction(tileObject, false, actions);
             return true;
         });
     }

@@ -197,6 +197,21 @@ packages developers will use when writing scripts or plugins.
 For more information on writing scripts using the Kraken API 
 check out the detailed [scripting guide](docs/SCRIPTING.md).
 
+### Game Updates
+
+Game updates (especially new revisions) can quickly break a lot of the packet and interaction functionality in the API. 
+Since the packet functionality is based on the [PacketUtils repository](https://github.com/Ethan-Vann/PacketUtils) this API
+is constrained to the time it takes their developers to run their update and mapping process to generate a new `ObfuscatedNames.java`
+file.
+
+This file maps specific fields, methods, values, and classes from the obfuscated game client to be used in order to send packets and provide much of the API's functionality correctly.
+
+- Check the [PRs](https://github.com/Ethan-Vann/PacketUtils/pulls) for the Packet Utils repository. 
+- Once the new `ObfuscatedNames` is updated copy the contents of the file into `core.packets.ObfuscatedNames` 
+- Run a build to make sure everything compiles
+- Run the example plugin to make sure packets still function correctly and the right packet class can be located for the RuneLite version and revision
+- Commit and open a PR to build a new version of the API
+
 ### Running Tests
 
 Run the full test suite with:

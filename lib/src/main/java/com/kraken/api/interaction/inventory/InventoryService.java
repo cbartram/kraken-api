@@ -1,8 +1,6 @@
 package com.kraken.api.interaction.inventory;
 
 import com.example.InteractionApi.InventoryInteraction;
-import com.example.Packets.MousePackets;
-import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 

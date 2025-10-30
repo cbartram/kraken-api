@@ -2,11 +2,13 @@ package com.kraken.api.interaction.bank;
 
 import com.example.EthanApiPlugin.Collections.Bank;
 import com.example.InteractionApi.BankInteraction;
-import com.example.Packets.MousePackets;
-import com.example.Packets.WidgetPackets;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
+import com.kraken.api.core.packet.entity.mousePackets;
+import com.kraken.api.core.packet.entity.widgetPackets;
 import com.kraken.api.interaction.inventory.InventoryItem;
 import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
@@ -20,14 +22,10 @@ import net.runelite.api.widgets.Widget;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.example.InteractionApi.BankInteraction.setWithdrawMode;
 
 @Slf4j
 @Singleton
@@ -36,6 +34,10 @@ public class BankService extends AbstractService {
     private static final int WITHDRAW_AS_VARBIT = 3958;
     private static final int WITHDRAW_ITEM_MODE = 0;
     private static final int WITHDRAW_NOTES_MODE = 1;
+    private static final int WITHDRAW_ITEM_MODE_WIDGET = 786456;
+    private static final int WITHDRAW_NOTE_MODE_WIDGET = 786458;
+    private static final String ITEM_MODE_ACTION = "Item";
+    private static final String NOTE_MODE_ACTION = "Note";
 
     @Inject
     private WidgetService widgetService;
@@ -51,6 +53,12 @@ public class BankService extends AbstractService {
 
     @Inject
     private UIService uiService;
+    
+    @Inject
+    private MousePackets mousePackets;
+    
+    @Inject
+    private WidgetPackets widgetPackets;
 
     private static final int BANK_INVENTORY_ITEM_CONTAINER = 983043;
 
@@ -72,6 +80,39 @@ public class BankService extends AbstractService {
     }
 
     /**
+     * Sets the withdrawal mode as either a note or item.
+     * @param withdrawMode The integer representing which withdraw mode to set. When set to 0 items will be withdrawn while 1 will withdraw
+     *                     items in a noted format.
+     * @return True if the withdraw mode was set correctly and false otherwise.
+     */
+    public boolean setWithdrawMode(int withdrawMode) {
+        int withdrawAsVarbitValue =  client.getVarbitValue(WITHDRAW_AS_VARBIT);
+        Widget itemWidget = widgetService.getWidget(WITHDRAW_ITEM_MODE_WIDGET);
+        Widget noteWidget = widgetService.getWidget(WITHDRAW_NOTE_MODE_WIDGET);
+        if (Arrays.stream(itemWidget.getActions()).noneMatch((s) -> Objects.equals(s, ITEM_MODE_ACTION)) || Arrays.stream(noteWidget.getActions()).noneMatch((s) -> Objects.equals(s, NOTE_MODE_ACTION))) {
+            return false;
+        }
+
+        if (withdrawMode == WITHDRAW_ITEM_MODE && withdrawAsVarbitValue != WITHDRAW_ITEM_MODE) {
+            Point pt = uiService.getClickbox(itemWidget);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(itemWidget, "Item");
+
+            return true;
+        }
+
+        if (withdrawMode == WITHDRAW_NOTES_MODE && withdrawAsVarbitValue != WITHDRAW_NOTES_MODE) {
+            Point pt = uiService.getClickbox(noteWidget);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(noteWidget, "Note");
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Withdraws a specified amount of an item from the bank.
      * @param item the Widget representing the item to withdraw
      * @param amount the amount of the item to withdraw
@@ -83,10 +124,11 @@ public class BankService extends AbstractService {
             setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
             if (context.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
                 Point pt = uiService.getClickbox(item);
-                MousePackets.queueClickPacket(pt.getX(), pt.getY());
-                WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
+                mousePackets.queueClickPacket(pt.getX(), pt.getY());
+                widgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
                 return Optional.of(true);
             }
+
             BankInteraction.useItem(item, "Withdraw-X");
             client.setVarcStrValue(359, Integer.toString(amount));
             client.setVarcIntValue(5, 7);
@@ -106,11 +148,11 @@ public class BankService extends AbstractService {
     public boolean withdrawX(Widget item, int amount, boolean noted) {
         if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThread(() -> {
-            setWithdrawMode(noted? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
+            setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
             if (client.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
                 Point pt = uiService.getClickbox(item);
-                MousePackets.queueClickPacket(pt.getX(), pt.getY());
-                WidgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
+                mousePackets.queueClickPacket(pt.getX(), pt.getY());
+                widgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
                 return Optional.of(true);
             }
             BankInteraction.useItem(item, noted, "Withdraw-X");
@@ -164,8 +206,8 @@ public class BankService extends AbstractService {
             setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
 
             Point pt = uiService.getClickbox(item);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(item, actions);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -182,8 +224,8 @@ public class BankService extends AbstractService {
             setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
 
             Point pt = uiService.getClickbox(item);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(item, actions);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -200,8 +242,8 @@ public class BankService extends AbstractService {
             setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
 
             Point pt = uiService.getClickbox(item);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(item, actions);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         })).orElse(false);
     }
@@ -221,8 +263,8 @@ public class BankService extends AbstractService {
 
             setWithdrawMode(client.getVarbitValue(WITHDRAW_AS_VARBIT));
             Point pt = uiService.getClickbox(item);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(item, actions);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -240,8 +282,8 @@ public class BankService extends AbstractService {
             setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
 
             Point pt = uiService.getClickbox(item);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(item, actions);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         })).orElse(false);
     }
@@ -258,8 +300,8 @@ public class BankService extends AbstractService {
         return context.runOnClientThread(() -> Bank.search().withId(id).first().flatMap(item -> {
             setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
             Point pt = uiService.getClickbox(item);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(item, actions);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, actions);
             return Optional.of(true);
         })).orElse(false);
     }

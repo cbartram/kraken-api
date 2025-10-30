@@ -37,7 +37,6 @@ dependencies {
 
 
     implementation group: 'com.github.cbartram', name:'shortest-path', version: shortestPathPluginVersion
-    implementation group: 'com.github.cbartram', name:'packet-utils', version: packetUtilsVersion
     implementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion

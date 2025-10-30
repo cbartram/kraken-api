@@ -1,11 +1,11 @@
 package com.kraken.api.interaction.movement;
 
-import com.example.Packets.MousePackets;
-import com.example.Packets.MovementPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.MovementPackets;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
@@ -47,6 +47,12 @@ public class WalkService extends AbstractService {
 
     @Inject
     private UIService uiService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private MovementPackets movementPackets;
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final AtomicReference<MovementTask> currentTask = new AtomicReference<>();
@@ -294,8 +300,8 @@ public class WalkService extends AbstractService {
         }
 
         Point clickingPoint = uiService.getClickbox(convertedPoint);
-        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-        MovementPackets.queueMovement(convertedPoint);
+        mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+        movementPackets.queueMovement(convertedPoint);
     }
 
     /**
@@ -316,8 +322,8 @@ public class WalkService extends AbstractService {
 
 
         Point clickingPoint = uiService.getClickbox(converted);
-        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-        MovementPackets.queueMovement(converted);
+        mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+        movementPackets.queueMovement(converted);
     }
 
     /**
