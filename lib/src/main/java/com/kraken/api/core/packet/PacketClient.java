@@ -19,7 +19,7 @@ import java.util.List;
  * {@code PacketClient} is an instance-based RuneLite client packet sending utility which uses reflection to
  * construct and send low level packets directly to the game servers. Generally you should not use this class directly
  * as it functions at a low level when sending packets.
- * <p />
+ * <p>
  * Instead, it's recommended to use the higher level API's like {@code MousePackets}, {@code WidgetPackets}, or {@code NpcPackets} for
  * sending game packets to the server based on your specific entity interaction needs (clicking interfaces, NPC's, GameObjects, etc...
  */

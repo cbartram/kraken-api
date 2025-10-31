@@ -292,9 +292,9 @@ public class BufferUtils {
                 output[var6 + outputStartIndex] = -111;
             } else if(var7 == 8217) { // ’
                 output[var6 + outputStartIndex] = -110;
-            } else if(var7 == 8220) { // “
+            } else if(var7 == 8220) { // "
                 output[var6 + outputStartIndex] = -109;
-            } else if(var7 == 8221) { // ”
+            } else if(var7 == 8221) { // "
                 output[var6 + outputStartIndex] = -108;
             } else if(var7 == 8226) { // •
                 output[var6 + outputStartIndex] = -107;
