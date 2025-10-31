@@ -2,7 +2,7 @@ package com.kraken.api.core.packet.model;
 
 /**
  * Enum containing references to various packet types sent by the game client.
- * <p />
+ * <p>
  * - IF Button types are sent when any of the normal buttons on newer interfaces are clicked
  * - Move game click is the packet that the client sends upon clicking on a game square to move towards it.
  * - Event Mouse click packets are written whenever the player clicks anywhere on their client, whether it be dead space, or any entity in-game
