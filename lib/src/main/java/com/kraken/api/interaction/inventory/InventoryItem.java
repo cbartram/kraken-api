@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
 
+import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +26,10 @@ public class InventoryItem {
     private int quantity;
     private int id;
     private int slot;
+
+    @Nullable
     private Widget widget;
+
     private List<String> equipmentActions = new ArrayList<>();
     private String name;
     private String[] inventoryActions;
@@ -77,21 +81,6 @@ public class InventoryItem {
     }
 
     /**
-     * Creates an ItemModel from cached data (ID, quantity, slot).
-     * This is used when loading bank data from config where we don't have the full ItemComposition.
-     * ItemComposition data will be loaded lazily when needed.
-     *
-     * @param id Item ID
-     * @param quantity Item quantity
-     * @param slot Item slot position
-     * @param context The context for the cache
-     * @return ItemModel with basic data, ItemComposition loaded lazily
-     */
-    public static InventoryItem createFromCache(int id, int quantity, int slot, Context context) {
-        return new InventoryItem(id, quantity, slot, context);
-    }
-
-    /**
      * Private constructor for creating ItemModel from cached data.
      * ItemComposition will be loaded lazily when needed.
      */
@@ -138,6 +127,12 @@ public class InventoryItem {
         }
     }
 
+    /**
+     * Returns the rectangle bounds of an inventory item
+     * @param context API Context
+     * @param client RuneLite client instance
+     * @return Rectangle bounds for the bank item.
+     */
     public Rectangle getBounds(Context context, Client client) {
         int[] containerIds = {
                 9764864, // Inventory

@@ -85,7 +85,13 @@ public class EquipmentService extends AbstractService {
                 continue;
             }
 
-            list.add(new InventoryItem(item, context.getClient().getItemDefinition(item.getId()), index, context));
+            Widget widget = Arrays.stream(client.getWidget(WidgetInfo.INVENTORY).getDynamicChildren())
+                    .filter(Objects::nonNull)
+                    .filter(x -> x.getItemId() != 6512 && item.getId() == x.getId())
+                    .findFirst()
+                    .orElse(null);
+
+            list.add(new InventoryItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget));
         }
 
         if(event.getContainerId() == 93) {
