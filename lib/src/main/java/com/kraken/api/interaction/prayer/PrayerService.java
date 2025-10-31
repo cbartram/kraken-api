@@ -108,7 +108,7 @@ public class PrayerService extends AbstractService {
             Widget widget = context.getWidget(prayerExtended.getIndex());
             Point point = uiService.getClickbox(widget);
             mousePackets.queueClickPacket(point.getX(), point.getY());
-            widgetPackets.queueWidgetActionPacket(1, prayerExtended.getIndex(), -1, -1);
+            widgetPackets.queueWidgetActionPacket(prayerExtended.getIndex(), -1, -1, 1);
         }
 
         return true;
