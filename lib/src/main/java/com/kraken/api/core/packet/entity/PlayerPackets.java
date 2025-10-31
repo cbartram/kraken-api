@@ -1,14 +1,9 @@
 package com.kraken.api.core.packet.entity;
 
-
-import com.example.PacketUtils.PacketDef;
-import com.example.PacketUtils.PacketReflection;
 import com.kraken.api.core.packet.PacketClient;
 import com.kraken.api.core.packet.model.PacketDefFactory;
-import com.kraken.api.interaction.tile.TileService;
 import lombok.SneakyThrows;
 import net.runelite.api.Client;
-import net.runelite.api.GameObject;
 import net.runelite.api.Player;
 import net.runelite.api.widgets.Widget;
 
