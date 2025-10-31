@@ -1,18 +1,21 @@
 package com.kraken.api.interaction.gameobject;
 
 
-import com.example.InteractionApi.TileObjectInteraction;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.packet.entity.GameObjectPackets;
+import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.interaction.ui.UIService;
-import com.kraken.api.model.NewMenuEntry;
 import com.kraken.api.util.StringUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameTick;
+import net.runelite.client.eventbus.Subscribe;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -33,6 +36,64 @@ public class GameObjectService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private TileService tileService;
+
+    @Inject
+    private UIService uiService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private GameObjectPackets gameObjectPackets;
+
+    private final HashSet<TileObject> tileObjects = new HashSet<>();
+
+    @Subscribe(priority = 10000)
+    public void onGameTick(GameTick e) {
+        HashSet<TileObject> tileObjectHashSet = new HashSet<>();
+        tileObjects.clear();
+        for (Tile[] tiles : client.getTopLevelWorldView().getScene().getTiles()[client.getTopLevelWorldView().getPlane()]) {
+            if (tiles == null) {
+                continue;
+            }
+            for (Tile tile : tiles) {
+                if (tile == null) {
+                    continue;
+                }
+                for (GameObject gameObject : tile.getGameObjects()) {
+                    if (gameObject == null) {
+                        continue;
+                    }
+                    if (gameObject.getId() == -1) {
+                        continue;
+                    }
+                    tileObjectHashSet.add(gameObject);
+                }
+                if (tile.getGroundObject() != null) {
+                    if (tile.getGroundObject().getId() == -1) {
+                        continue;
+                    }
+                    tileObjectHashSet.add(tile.getGroundObject());
+                }
+                if (tile.getWallObject() != null) {
+                    if (tile.getWallObject().getId() == -1) {
+                        continue;
+                    }
+                    tileObjectHashSet.add(tile.getWallObject());
+                }
+                if (tile.getDecorativeObject() != null) {
+                    if (tile.getDecorativeObject().getId() == -1) {
+                        continue;
+                    }
+                    tileObjectHashSet.add(tile.getDecorativeObject());
+                }
+            }
+        }
+        tileObjects.addAll(tileObjectHashSet);
+    }
 
     /**
      * Extracts all {@link GameObject}s located on a given {@link Tile}.
@@ -67,7 +128,11 @@ public class GameObjectService extends AbstractService {
      */
     public boolean interact(int id, String action) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> TileObjectInteraction.interact(id, action));
+        return context.runOnClientThread(() -> {
+            TileObject obj = tileObjects.stream().filter(tileObject -> tileObject.getId() == id).findFirst().orElse(null);
+            if (obj == null) return false;
+            return interact(obj, action);
+        });
     }
 
     /**
@@ -78,7 +143,21 @@ public class GameObjectService extends AbstractService {
      */
     public boolean interact(TileObject object, String action) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> TileObjectInteraction.interact(object, action));
+        return context.runOnClientThread(() -> {
+            if (object == null) {
+                return false;
+            }
+
+            ObjectComposition comp = tileService.getObjectComposition(object);
+            if (comp == null) {
+                return false;
+            }
+
+            Point pt = uiService.getClickbox(object);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            gameObjectPackets.queueObjectAction(object, false, action);
+            return true;
+        });
     }
 
     /**
@@ -89,12 +168,20 @@ public class GameObjectService extends AbstractService {
      */
     public boolean interact(String name, String action) {
         if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> TileObjectInteraction.interact(name, action));
+        return context.runOnClientThread(() -> {
+            TileObject obj = tileObjects.stream().filter(o -> {
+                ObjectComposition objectComposition = tileService.getObjectComposition(o);
+                if (objectComposition == null) return false;
+                return objectComposition.getName().equalsIgnoreCase(name);
+            }).findFirst().orElse(null);
+
+            if(obj == null) return false;
+            return interact(obj, action);
+        });
     }
 
     /**
-     * Interacts with a game object located at the specified world point using the default action. By default
-     * the action used is: "Walk".
+     * Interacts with a game object located at the specified world point using the default action.
      * @param worldPoint The world point of the game object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
@@ -104,9 +191,9 @@ public class GameObjectService extends AbstractService {
 
     /**
      * Interacts with a game object located at the specified world point using the specified action.
-     * If the action is an empty string, the default action "Walk" is used.
+     * If the action is an empty string.
      * @param worldPoint The world point of the game object to interact with.
-     * @param action The action to perform on the game object. If empty, the default action "Walk" is used.
+     * @param action The action to perform on the game object.
      * @return True if the interaction was successful and false otherwise.
      */
     public boolean interactReflect(WorldPoint worldPoint, String action) {
@@ -115,7 +202,7 @@ public class GameObjectService extends AbstractService {
     }
 
     /**
-     * Interacts with the specified game object using the default action. By default the action used is: "Walk".
+     * Interacts with the specified game object using the default action.
      * @param gameObject The game object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
@@ -124,7 +211,7 @@ public class GameObjectService extends AbstractService {
     }
 
     /**
-     * Interacts with the specified tile object using the default action. By default the action used is: "Walk".
+     * Interacts with the specified tile object using the default action.
      * @param tileObject The tile object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */
@@ -133,7 +220,7 @@ public class GameObjectService extends AbstractService {
     }
 
     /**
-     * Interacts with the first game object found with the specified ID using the default action. By default the action used is: "Walk".
+     * Interacts with the first game object found with the specified ID using the default action.
      * @param id The ID of the game object to interact with.
      * @return True if the interaction was successful, false otherwise.
      */

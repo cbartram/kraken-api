@@ -1,25 +1,26 @@
 package com.kraken.api.interaction.inventory;
 
-import com.example.InteractionApi.InventoryInteraction;
-import com.example.Packets.MousePackets;
-import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.InterfaceTab;
 import com.kraken.api.interaction.ui.TabService;
+import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.util.RandomUtils;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.Point;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.eventbus.Subscribe;
 
 import java.awt.*;
@@ -43,6 +44,15 @@ public class InventoryService extends AbstractService {
 
     @Inject
     private ReflectionService reflectionService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private WidgetPackets widgetPackets;
+
+    @Inject
+    private UIService uiService;
 
     @Subscribe
     private void onGameStateChanged(GameStateChanged event) {
@@ -80,8 +90,16 @@ public class InventoryService extends AbstractService {
             final Item item = itemContainer.getItems()[i];
             if (item.getId() == -1) continue;
             final ItemComposition itemComposition = context.runOnClientThreadOptional(() -> client.getItemDefinition(item.getId())).orElse(null);
+
+            // Also lookup the widget associated with this item.
+            Widget widget = Arrays.stream(client.getWidget(WidgetInfo.INVENTORY).getDynamicChildren())
+                    .filter(Objects::nonNull)
+                    .filter(x -> x.getItemId() != 6512 && item.getId() == x.getId())
+                    .findFirst()
+                    .orElse(null);
+
             if(itemComposition == null) continue;
-            inventoryItems.add(new InventoryItem(item, itemComposition, i, context));
+            inventoryItems.add(new InventoryItem(item, itemComposition, i, context, widget));
         }
     }
 
@@ -372,7 +390,15 @@ public class InventoryService extends AbstractService {
             tmp = action;
         }
 
-        return context.runOnClientThreadOptional(() -> InventoryInteraction.useItem(id, tmp)).orElse(false);
+        return context.runOnClientThreadOptional(() -> {
+            InventoryItem item = inventoryItems.stream().filter(i -> i.getId() == id).findFirst().orElse(null);
+            if(item == null) return false;
+
+            Point pt = uiService.getClickbox(item);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item.getWidget(), tmp);
+            return true;
+        }).orElse(false);
     }
 
     /**
@@ -394,7 +420,7 @@ public class InventoryService extends AbstractService {
             tmp = action;
         }
 
-        return context.runOnClientThreadOptional(() -> InventoryInteraction.useItem(item.getId(), tmp)).orElse(false);
+        return context.runOnClientThreadOptional(() -> interact(item.getId(), tmp)).orElse(false);
     }
 
     /**

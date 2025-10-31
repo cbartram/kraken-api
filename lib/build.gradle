@@ -7,9 +7,9 @@ plugins {
 // Project version is set via the VERSION environment
 // variable in the Github Actions workflow and should not be changed here.
 def projectVersion = System.getenv("VERSION") ?: '1.0.0'
-def runeLiteVersion = '1.11.24.1' // latest.release
+def runeLiteVersion = '1.11.25' // latest.release
 def shortestPathPluginVersion = '1.0.3'
-def packetUtilsVersion = '1.0.6'
+def packetUtilsVersion = '1.0.8'
 
 version = projectVersion
 project.version = projectVersion
@@ -28,6 +28,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.1'
     implementation group: 'com.google.inject', name: 'guice', version: '4.2.2'
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.benf:cfr:0.152")
     implementation("com.google.guava:guava:31.1-jre")
     implementation("org.slf4j:slf4j-api:1.7.25")
     implementation("org.slf4j:slf4j-simple:1.7.25")
@@ -36,7 +37,6 @@ dependencies {
 
 
     implementation group: 'com.github.cbartram', name:'shortest-path', version: shortestPathPluginVersion
-    implementation group: 'com.github.cbartram', name:'packet-utils', version: packetUtilsVersion
     implementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion

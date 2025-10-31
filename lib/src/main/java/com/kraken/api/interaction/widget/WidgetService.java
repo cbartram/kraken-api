@@ -1,9 +1,9 @@
 package com.kraken.api.interaction.widget;
 
 
-import com.example.Packets.MousePackets;
-import com.example.Packets.WidgetPackets;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +27,12 @@ public class WidgetService extends AbstractService {
     @Inject
     private UIService uiService;
 
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private WidgetPackets widgetPackets;
+
     /**
      * Interacts with a widget using the specified action.
      * @param widget the widget to interact with
@@ -39,8 +45,8 @@ public class WidgetService extends AbstractService {
 
         return context.runOnClientThread(() -> {
             Point pt = uiService.getClickbox(widget);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetAction(widget, action);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(widget, action);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -100,8 +106,8 @@ public class WidgetService extends AbstractService {
     public boolean widgetOnWidget(Widget srcWidget, Widget destWidget) {
         return context.runOnClientThreadOptional(() -> {
             Point pt = uiService.getClickbox(srcWidget);
-            MousePackets.queueClickPacket(pt.getX(), pt.getY());
-            WidgetPackets.queueWidgetOnWidget(srcWidget, destWidget);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetOnWidget(srcWidget, destWidget);
             return true;
         }).orElse(false);
     }

@@ -19,6 +19,15 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            name = "Test Packet Send",
+            keyName = "prayerOn",
+            description = "Test packet send",
+            position = -5
+    )
+    default boolean prayerOn() {
+        return false;
+    }
 
     @ConfigItem(
             name = "Show Sim Visualizer",

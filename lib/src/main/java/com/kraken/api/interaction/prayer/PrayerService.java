@@ -1,10 +1,10 @@
 package com.kraken.api.interaction.prayer;
 
-import com.example.Packets.MousePackets;
-import com.example.Packets.WidgetPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,12 @@ public class PrayerService extends AbstractService {
 
     @Inject
     private UIService uiService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private WidgetPackets widgetPackets;
 
     /**
      * Wrapper method which turns a prayer on.
@@ -101,8 +107,8 @@ public class PrayerService extends AbstractService {
         } else {
             Widget widget = context.getWidget(prayerExtended.getIndex());
             Point point = uiService.getClickbox(widget);
-            MousePackets.queueClickPacket(point.getX(), point.getY());
-            WidgetPackets.queueWidgetActionPacket(1, prayerExtended.getIndex(), -1, -1);
+            mousePackets.queueClickPacket(point.getX(), point.getY());
+            widgetPackets.queueWidgetActionPacket(1, prayerExtended.getIndex(), -1, -1);
         }
 
         return true;

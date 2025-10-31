@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
 
+import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,21 +18,19 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 @Slf4j
+@Getter
 @AllArgsConstructor
 public class InventoryItem {
 
-    @Getter
-    private int id;
-
-    @Getter
     @Setter
     private int quantity;
-
-    @Getter
+    private int id;
     private int slot;
 
-    private List<String> equipmentActions = new ArrayList<>();
+    @Nullable
+    private Widget widget;
 
+    private List<String> equipmentActions = new ArrayList<>();
     private String name;
     private String[] inventoryActions;
     private boolean isStackable;
@@ -55,8 +54,9 @@ public class InventoryItem {
             ParamID.OC_ITEM_OP8
     };
 
-    public InventoryItem(Item item, ItemComposition itemComposition, int slot, Context context) {
+    public InventoryItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget) {
         this.id = item.getId();
+        this.widget = widget;
         this.quantity = item.getQuantity();
         this.slot = slot;
         this.name = itemComposition.getName();
@@ -78,21 +78,6 @@ public class InventoryItem {
             addEquipmentActions(itemComposition);
             return true;
         });
-    }
-
-    /**
-     * Creates an ItemModel from cached data (ID, quantity, slot).
-     * This is used when loading bank data from config where we don't have the full ItemComposition.
-     * ItemComposition data will be loaded lazily when needed.
-     *
-     * @param id Item ID
-     * @param quantity Item quantity
-     * @param slot Item slot position
-     * @param context The context for the cache
-     * @return ItemModel with basic data, ItemComposition loaded lazily
-     */
-    public static InventoryItem createFromCache(int id, int quantity, int slot, Context context) {
-        return new InventoryItem(id, quantity, slot, context);
     }
 
     /**
@@ -142,6 +127,12 @@ public class InventoryItem {
         }
     }
 
+    /**
+     * Returns the rectangle bounds of an inventory item
+     * @param context API Context
+     * @param client RuneLite client instance
+     * @return Rectangle bounds for the bank item.
+     */
     public Rectangle getBounds(Context context, Client client) {
         int[] containerIds = {
                 9764864, // Inventory

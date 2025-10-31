@@ -1,10 +1,10 @@
 package com.kraken.api.interaction.npc;
 
-import com.example.Packets.MousePackets;
-import com.example.Packets.NPCPackets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
@@ -32,6 +32,12 @@ public class NpcService extends AbstractService {
 
     @Inject
     private UIService uiService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private NPCPackets npcPackets;
 
     /**
      * Retrieves a stream of NPCs filtered by a given condition.
@@ -88,8 +94,8 @@ public class NpcService extends AbstractService {
         if(npc == null) return false;
 
         Point clickingPoint = uiService.getClickbox(npc);
-        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-        NPCPackets.queueNPCAction(npc, actions);
+        mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+        npcPackets.queueNPCAction(npc, actions);
         return true;
     }
 
@@ -121,8 +127,8 @@ public class NpcService extends AbstractService {
         }
 
         Point clickingPoint = uiService.getClickbox(npc);
-        MousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
-        NPCPackets.queueNPCAction(npc, actions);
+        mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
+        npcPackets.queueNPCAction(npc, actions);
         return true;
     }
 

@@ -177,55 +177,40 @@ public class ClickRockAction {
 
 Dependency injection ensures that your script classes remain lightweight, testable, and easy to debug.
 
-### Script Structure
+### Structure
 
-There are 2 main structures you can use for actually writing scripts with the Kraken API,
-although, you can implement other ways of maintaining script state if you'd like!
+The Kraken API exposes both high and low level functions for working with
+game objects, NPC's, movement, pathing, simulations, packets and more. The documentation below describes the most likely
+packages developers will use when writing scripts or plugins.
 
-1. Extending the basic `Script` class
-2. Behavior Trees
+- `core` - The package contains logic which is used internally by different API methods and exposes the `Script` class.
+  - `core.packet` - The package includes low and high level API's to send network packets to game servers for automation actions.
+    - `core.packet.entity` - Generally most packet layer use cases will use the `core.packet.entity` API for interaction with Game Objects, NPC's, interfaces, and players.
+- `interaction` - The package contains the highest level API's for scripting and plugin development. Each sub package within
+  `interaction` contains high level API's for directly interacting with game elements (banking, inventory, ground objects, etc...) and use the `core.packet` package to form the backbone for the interactions
+- `overlay` - Contains simple and common overlays which can be directly used in RuneLite plugins e.g. Mouse position
+- `sim` - Includes classes for simulating game ticks, NPC pathing, movement, line of sight, and players. This is useful for advanced
+  plugins which evaluate hundreds of potential outcomes every game tick to determine the best "decision". e.g. Inferno and Colosseum plugins
 
-#### Extending the Script Class
+### Scripting
 
-For simple plugins, most users will want to extend the `Script` class which provides helpful methods like `onStart()`, `onLoop()`, and `onEnd()` for 
-managing script state. You can opt to implement a Finite State Machine (FSM) pattern for your scripts where, when certain conditions are met
-the script transitions to a state and performs an action. For example a mining script may have:
+For more information on writing scripts using the Kraken API 
+check out the detailed [scripting guide](docs/SCRIPTING.md).
 
-States:
-- IDLE: Initial state, ready to begin mining
-- FINDING_ROCKS: Searching for available mining rocks
-- MOVING_TO_ROCKS: Walking to the selected mining location
-- MINING: Actively mining ore from rocks
-- INVENTORY_FULL: Inventory is full, need to bank
-- MOVING_TO_BANK: Walking to the bank
-- BANKING: Depositing ore into bank
-- ERROR: Something went wrong, needs intervention
+### Game Updates
 
-and governing logic like: 
+Game updates (especially new revisions) can quickly break a lot of the packet and interaction functionality in the API. 
+Since the packet functionality is based on the [PacketUtils repository](https://github.com/Ethan-Vann/PacketUtils) this API
+is constrained to the time it takes their developers to run their update and mapping process to generate a new `ObfuscatedNames.java`
+file.
 
-IDLE → FINDING_ROCKS → MOVING_TO_ROCKS → MINING → MINING → MINING →
-INVENTORY_FULL → MOVING_TO_BANK → BANKING → FINDING_ROCKS → ...
+This file maps specific fields, methods, values, and classes from the obfuscated game client to be used in order to send packets and provide much of the API's functionality correctly.
 
-This approach has several benefits:
-
-- Clear Logic Flow: Easy to understand and debug bot behavior
-- Error Handling: Structured approach to handle failures
-- Maintainability: Simple to add new states or modify existing ones
-- Predictable Behavior: Bot actions are deterministic based on current state
-- Logging: Easy to track state transitions for debugging
-
-Extending the `Script` class gives you a blank slate to work with,
-giving your freedom to determine how your script operates with the Kraken API. 
-
-#### Behavior Trees
-
-As you move to making more complex scripts you may run into issues with large FSM's that make managing states difficult to debug. This is where Behavior Trees come
-into play. Traditionally, behavior trees have been used to give depth to A.I. enemies in video games, however, the Kraken API includes a foundation for creating
-scripts using Behavior Trees. This document won't cover the mechanics behind behavior trees in detail however, you can check out the [Kraken Example Mining Plugin](https://github.com/cbartram/kraken-example-plugin)
-to see a fully implemented example of a Behavior tree based script. 
-
-Behavior trees are one of those things where you don't need them until you do. You may eventually get to a point in your script where the state transitions
-become too complex and unwieldy to maintain which is why the Kraken API provides this programming paradigm to you!
+- Check the [PRs](https://github.com/Ethan-Vann/PacketUtils/pulls) for the Packet Utils repository. 
+- Once the new `ObfuscatedNames` is updated copy the contents of the file into `core.packets.ObfuscatedNames` 
+- Run a build to make sure everything compiles
+- Run the example plugin to make sure packets still function correctly and the right packet class can be located for the RuneLite version and revision
+- Commit and open a PR to build a new version of the API
 
 ### Running Tests
 
@@ -251,12 +236,16 @@ Run the full test suite with:
 The Kraken API is automatically built and deployed via GitHub actions on every push to the `master` branch.
 The latest version can be found in the [releases](https://github.com/cbartram/kraken-api/releases) section of the repository.
 
-A deployment consists of:
+The deployment is fully automated and consists of:
 
-- Building the API JAR
+-  Building the API JAR
 - Publishing a new version to the GitHub Releases section
   - This will be picked up by Github Packages for easy integration into other gradle projects.
 - Uploading the JAR file to the Minio storage server used by the Kraken Client at runtime.
+
+The following optional steps will be handled automatically by CI when a new
+version of the Kraken suite of plugins is released.
+
 - (Optional) Updating the `bootstrap.json` in the Kraken Client to point to the latest version of the API JAR file
 - (Optional) Updating the build.gradle file in the Kraken Client to use the latest version of the API JAR file
 
@@ -292,7 +281,7 @@ This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
 ## 🙏 Acknowledgments
 
 * **RuneLite** — The splash screen and much of the core codebase come from RuneLite.
-* **Packet Utils** - Plugin from Ethan Vann providing access to complex packet sending functionality
+* **Packet Utils** - [Plugin](https://github.com/Ethan-Vann/PacketUtils) from Ethan Vann providing access to complex packet sending functionality which was used to develop the `core.packet` package of the API
 * **Microbot** — For clever ideas on client and plugin interaction.
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-api.svg?style=for-the-badge

@@ -4,13 +4,15 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.movement.WalkService;
-import com.kraken.api.overlay.MouseTrackerOverlay;
-import com.kraken.api.overlay.MovementOverlay;
+import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -53,16 +55,13 @@ public class ExamplePlugin extends Plugin {
     private OverlayManager overlayManager;
 
     @Inject
-    private MovementOverlay movementOverlay;
-
-    @Inject
     private Context context;
 
     @Inject
     private ExampleConfig config;
 
     @Inject
-    private MouseTrackerOverlay overlay;
+    private MouseOverlay overlay;
 
     @Inject
     private TestApiOverlay testApiOverlay;
@@ -112,6 +111,15 @@ public class ExamplePlugin extends Plugin {
     @Getter
     private WorldPoint targetTile;
 
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private NPCPackets npcPackets;
+
+    @Inject
+    private NpcService npcService;
+
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
 
@@ -146,6 +154,15 @@ public class ExamplePlugin extends Plugin {
             if(config.enableMovementTests()) {
                 if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
                     walkService.moveTo(targetTile);
+                }
+            }
+
+            if(event.getKey().equals("prayerOn") && config.prayerOn()) {
+                mousePackets.queueClickPacket(0, 0);
+                NPC npc = npcService.getAttackableNpcs().findFirst().orElse(null);
+                if(npc != null) {
+                    log.info("Attacking NPC");
+                    npcPackets.queueNPCAction(npc, "Attack");
                 }
             }
 
@@ -199,10 +216,9 @@ public class ExamplePlugin extends Plugin {
         log.info("Starting up Example Plugin...");
         context.register();
         context.loadHooks();
-        context.loadPacketUtils();
+        context.initializePackets();
 
         // Add overlays
-        overlayManager.add(movementOverlay);
         overlayManager.add(overlay);
         overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
@@ -215,7 +231,6 @@ public class ExamplePlugin extends Plugin {
         testResultManager.cancelAllTests();
 
         // Remove overlays
-        overlayManager.remove(movementOverlay);
         overlayManager.remove(overlay);
         overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);

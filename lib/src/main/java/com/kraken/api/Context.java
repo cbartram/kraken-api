@@ -3,9 +3,8 @@ package com.kraken.api;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.kraken.api.core.SleepService;
 import com.kraken.api.core.loader.HooksLoader;
-import com.kraken.api.core.loader.PacketUtilsLoader;
+import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
@@ -23,20 +22,16 @@ import com.kraken.api.interaction.spells.SpellService;
 import com.kraken.api.interaction.ui.TabService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.interaction.widget.WidgetService;
-import com.kraken.api.model.NewMenuEntry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 
-import java.awt.*;
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.Set;
@@ -66,8 +61,6 @@ public class Context {
     @Getter
     private boolean packetsLoaded = false;
 
-    public static MenuEntry targetMenu;
-
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),
             EquipmentService.class,
@@ -93,18 +86,16 @@ public class Context {
     private final Injector injector;
     private final EventBus eventBus;
     private final HooksLoader loader;
-    private final PacketUtilsLoader packetUtilsLoader;
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
-                   final EventBus eventBus, final Injector injector, final HooksLoader loader, final PacketUtilsLoader packetUtilsLoader) {
+                   final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.loader = loader;
-        this.packetUtilsLoader = packetUtilsLoader;
     }
 
     /**
@@ -133,20 +124,24 @@ public class Context {
     }
 
     /**
-     * Loads the PacketUtils class and plugin which contains key methods for sending packets to the RuneLite client.
+     * Initializes packet queueing functionality by either loading the client packet
+     * sending method from the cached json file or running an analysis on the RuneLite injected client
+     * to determine the packet sending method.
+     *
+     * This is required to be called before packets can actually be sent i.e. its necessary to know the packet
+     * method in the client before calling it with reflection.
      */
-    public void loadPacketUtils() {
+    public void initializePackets() {
         if (packetsLoaded) {
-            log.warn("Packets already loaded, skipping.");
+            log.warn("packet functionality already initialized, skipping.");
             return;
         }
 
         try {
-            packetUtilsLoader.loadPacketUtils();
+            PacketMethodLocator.initialize(client);
             packetsLoaded = true;
-            log.info("Packet utils loaded successfully.");
         } catch (Exception e) {
-            log.error("Failed to load packet utils with exception: {}", e.getMessage());
+            log.error("failed to enable packet sending functionality with exception: {}", e.getMessage());
         }
     }
 
@@ -228,35 +223,6 @@ public class Context {
      */
     public Widget getWidget(int widgetId) {
         return runOnClientThread(() -> client.getWidget(widgetId));
-    }
-
-    public void doInvoke(NewMenuEntry entry) {
-        doInvoke(entry, null);
-    }
-
-    public void doInvoke(NewMenuEntry entry, Rectangle rectangle) {
-        doInvoke(entry, rectangle, true);
-    }
-
-    public void doInvoke(NewMenuEntry entry, Rectangle rectangle, boolean randomPoint) {
-        Point pt;
-        if(rectangle == null) {
-            pt = new Point(1, 1);
-        } else {
-            pt = UIService.getClickingPoint(rectangle, randomPoint);
-        }
-
-        try {
-            Context.targetMenu = entry;
-            mouse.click(pt);
-
-            // This almost always invokes this while NOT on the client thread. So the sleep will occur
-            if (!client.isClientThread()) {
-                SleepService.sleep(10L, 30L);
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            log.error("Index out of bounds exception for KrakenClient: {}", e.getMessage());
-        }
     }
 
     /**
