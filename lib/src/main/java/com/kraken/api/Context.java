@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.loader.HooksLoader;
-import com.kraken.api.core.loader.PacketUtilsLoader;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.bank.BankService;
@@ -87,18 +86,16 @@ public class Context {
     private final Injector injector;
     private final EventBus eventBus;
     private final HooksLoader loader;
-    private final PacketUtilsLoader packetLoader;
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
-                   final EventBus eventBus, final Injector injector, final HooksLoader loader, final PacketUtilsLoader packetLoader) {
+                   final EventBus eventBus, final Injector injector, final HooksLoader loader) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.loader = loader;
-        this.packetLoader = packetLoader;
     }
 
     /**
@@ -141,7 +138,6 @@ public class Context {
         }
 
         try {
-            packetLoader.loadPacketUtils();
             PacketMethodLocator.initialize(client);
             packetsLoaded = true;
         } catch (Exception e) {

@@ -1,8 +1,5 @@
 package com.kraken.api.core.packet.entity;
 
-import com.example.EthanApiPlugin.Collections.query.NPCQuery;
-import com.example.PacketUtils.PacketDef;
-import com.example.PacketUtils.PacketReflection;
 import com.google.inject.Provider;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.PacketClient;
