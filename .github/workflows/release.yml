@@ -6,7 +6,6 @@ on:
     branches:
       - main
       - master
-      - develop
 
 permissions:
   contents: write
@@ -34,22 +33,23 @@ jobs:
           # Read base version from file
           BASE_VERSION=$(cat version.txt | tr -d '[:space:]')
           
-          # Get the last tag that matches this base version
-          LAST_TAG=$(git tag -l "${BASE_VERSION}.*" --sort=-version:refname | head -n 1)
+          # Extract major.minor from base version (e.g., "1.1" from "1.1.0")
+          MAJOR_MINOR=$(echo $BASE_VERSION | cut -d. -f1,2)
           
-          if [ -z "$LAST_TAG" ]; then
-            # No previous tag for this base version, start at 0
-            echo "No previous tag for this base version, starting at 0"
-            PATCH=0
+          # Check if base version tag already exists
+          if git rev-parse "refs/tags/${BASE_VERSION}" >/dev/null 2>&1; then
+            # Base version exists, find the highest patch number
+            LAST_TAG=$(git tag -l "${MAJOR_MINOR}.*" --sort=-version:refname | head -n 1)
+            LAST_PATCH=$(echo $LAST_TAG | awk -F. '{print $NF}')
+            PATCH=$((LAST_PATCH + 1))
+            VERSION="${MAJOR_MINOR}.${PATCH}"
           else
-            # Extract patch number from last tag and increment
-            PATCH=$(echo $LAST_TAG | awk -F. '{print $NF}')
-            PATCH=$((PATCH + 1))
+            # Base version doesn't exist yet, use it as-is
+            VERSION="${BASE_VERSION}"
           fi
           
-          VERSION="${BASE_VERSION}.${PATCH}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Base version: $BASE_VERSION, Patch: $PATCH, Full version: $VERSION"
+          echo "Calculated version: $VERSION"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
