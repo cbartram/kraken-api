@@ -37,6 +37,8 @@ jobs:
           # Extract major.minor from base version (e.g., "1.1" from "1.1.0")
           MAJOR_MINOR=$(echo $BASE_VERSION | cut -d. -f1,2)
           
+          # test build 1.1.1
+          
           # Check if base version tag already exists
           if git rev-parse "refs/tags/${BASE_VERSION}" >/dev/null 2>&1; then
             # Base version exists, find the highest patch number
