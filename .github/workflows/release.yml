@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - develop
 
 permissions:
   contents: write
@@ -106,7 +107,7 @@ jobs:
         run: |
           JAR_FILE=$(find lib/build/libs -name "kraken-api-*.jar" | head -n 1)
           echo "Uploading $JAR_FILE to MinIO..."
-          mc cp "$JAR_FILE" s3/kraken-bootstrap-static/kraken-api-${VERSION}.jar
+          mc cp "$JAR_FILE" s3/kraken-bootstrap-static/api/kraken-api-${VERSION}.jar
 
       - name: Upload hooks.json file in MinIO
         run: |
