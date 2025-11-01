@@ -2,10 +2,8 @@ package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.interaction.bank.BankService;
-import com.kraken.api.interaction.equipment.EquipmentService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -29,6 +27,8 @@ public class BankServiceTest extends BaseApiTest {
             bankService.withdraw("Rune platebody", false, "Withdraw-1");
             sleepService.sleep(120, 600);
             bankService.withdraw("Rune scimitar", false, "Withdraw-1");
+            sleepService.sleep(2000, 3000);
+            bankService.depositOne("Rune platebody");
         } else {
             log.info("Bank is not open.");
             testPassed = false;

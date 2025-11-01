@@ -96,6 +96,28 @@ public class SleepService extends AbstractService {
         return done;
     }
 
+    /**
+     * Sleeps the current thread for one game tick
+     */
+    public void tick() {
+        tick(1);
+    }
+
+    /**
+     * Sleeps the current thread by the specified number of game ticks
+     * @param ticks ticks
+     */
+    public void tick(int ticks) {
+        int tick = client.getTickCount() + ticks;
+        int start = client.getTickCount();
+        while(client.getTickCount() < tick && client.getTickCount() >= start) {
+            if(Thread.currentThread().isInterrupted()) {
+                throw new RuntimeException();
+            }
+            sleep(20);
+        }
+    }
+
     public boolean sleepUntil(BooleanSupplier awaitedCondition, Runnable action, long timeoutMillis, int sleepMillis) {
         if (client.isClientThread()) return false;
         long startTime = System.nanoTime();

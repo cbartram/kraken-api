@@ -18,7 +18,6 @@ import net.runelite.api.*;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.game.ItemManager;
 
 import javax.inject.Inject;
@@ -82,56 +81,49 @@ public class BankService extends AbstractService {
 
 
     /**
-     * Returns a list of {@code InventoryItem} objects stored in a players bank. This can only be called when
+     * Returns a list of {@code BankItemWidget} objects stored in a players bank. This can only be called when
      * the bank interface is open.
      * @return List of Inventory Items in the players bank
      */
-    public List<InventoryItem> getItems() {
-        List<InventoryItem> bankItems = new ArrayList<>();
-        if (lastUpdateTick < client.getTickCount()) {
-            int i = 0;
-            ItemContainer container = context.runOnClientThread(() -> client.getItemContainer(InventoryID.BANK));
-            if(container == null) {
-                return Collections.emptyList();
-            }
-
-            for (Item item : container.getItems()) {
-                try {
-                    if (item == null) {
-                        i++;
-                        continue;
-                    }
-                    if (itemDefs.get(item.getId()).getPlaceholderTemplateId() == 14401) {
-                        i++;
-                        continue;
-                    }
-
-
-                    // TODO This is extremely slow and the widgets are always null.
-                    ItemComposition comp = context.runOnClientThread(() -> itemManager.getItemComposition(item.getId()));
-                    itemDefs.put(item.getId(), comp);
-                    log.info("Found bank item: {}", comp.getName());
-                    Widget widget = Arrays.stream(client.getWidget(WidgetInfo.BANK_ITEM_CONTAINER).getDynamicChildren())
-                            .filter(Objects::nonNull)
-                            .filter(x -> item.getId() == x.getId())
-                            .findFirst()
-                            .orElse(null);
-
-                    if(widget == null) {
-                        log.info("Widget null");
-                    } else {
-                        log.info("Widget is: {}", widget.getText());
-                    }
-
-                    bankItems.add(new InventoryItem(item, comp, i, context, widget));
-                } catch (NullPointerException | ExecutionException ex) {
-                    log.error("exception thrown while attempting to get items from bank:", ex);
+    public List<BankItemWidget> getItems() {
+        List<BankItemWidget> bankItems = new ArrayList<>();
+        return context.runOnClientThread(() -> {
+            if (lastUpdateTick < client.getTickCount()) {
+                int i = 0;
+                ItemContainer container = client.getItemContainer(InventoryID.BANK);
+                if(container == null) {
+                    return Collections.emptyList();
                 }
-                i++;
+
+                for (Item item : container.getItems()) {
+                    try {
+                        if (item == null) {
+                            i++;
+                            continue;
+                        }
+
+                        if (itemDefs.get(item.getId()).getPlaceholderTemplateId() == 14401) {
+                            i++;
+                            continue;
+                        }
+
+                        ItemComposition comp = itemManager.getItemComposition(item.getId());
+                        if(comp.getName().equalsIgnoreCase("Bank filler")) {
+                            i++;
+                            continue;
+                        }
+
+                        itemDefs.put(item.getId(), comp);
+                        bankItems.add(new BankItemWidget(itemDefs.get(item.getId()).getName(), item.getId(), item.getQuantity(), i, context));
+                    } catch (NullPointerException | ExecutionException ex) {
+                        log.error("exception thrown while attempting to get items from bank:", ex);
+                    }
+                    i++;
+                }
+                lastUpdateTick = client.getTickCount();
             }
-            lastUpdateTick = client.getTickCount();
-        }
-        return bankItems;
+            return bankItems;
+        });
     }
 
     /**
@@ -155,7 +147,7 @@ public class BankService extends AbstractService {
      * Sets the withdrawal mode as either a note or item.
      * @param withdrawMode The integer representing which withdraw mode to set. When set to 0 items will be withdrawn while 1 will withdraw
      *                     items in a noted format.
-     * @return True if the withdraw mode was set correctly and false otherwise.
+     * @return True if the withdrawal mode was set correctly and false otherwise.
      */
     public boolean setWithdrawMode(int withdrawMode) {
         int withdrawAsVarbitValue = context.getVarbitValue(WITHDRAW_AS_VARBIT);
@@ -283,12 +275,12 @@ public class BankService extends AbstractService {
      */
     public boolean withdraw(String name, String... actions) {
         if(!context.isPacketsLoaded() || !isOpen()) return false;
-        InventoryItem item = getItems().stream().filter(i -> i.getName().equals(name)).findFirst().orElse(null);
+        BankItemWidget item = getItems().stream().filter(i -> i.getName().equals(name)).findFirst().orElse(null);
         setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
-        widgetPackets.queueWidgetAction(item.getWidget(), actions);
+        widgetPackets.queueWidgetAction(item, actions);
         return true;
     }
 
@@ -300,12 +292,12 @@ public class BankService extends AbstractService {
      */
     public boolean withdraw(int id, String... actions) {
         if(!context.isPacketsLoaded() || !isOpen()) return false;
-        InventoryItem item = getItems().stream().filter(i -> i.getId() == id).findFirst().orElse(null);
+        BankItemWidget item = getItems().stream().filter(i -> i.getId() == id).findFirst().orElse(null);
         setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
-        widgetPackets.queueWidgetAction(item.getWidget(), actions);
+        widgetPackets.queueWidgetAction(item, actions);
         return true;
     }
 
@@ -340,12 +332,12 @@ public class BankService extends AbstractService {
     public boolean withdraw(String name, boolean noted, String... actions) {
         if(!context.isPacketsLoaded() || !isOpen()) return false;
         setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-        InventoryItem item = getItems().stream().filter(i -> i.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+        BankItemWidget item = getItems().stream().filter(i -> i.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
         setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
-        widgetPackets.queueWidgetAction(item.getWidget(), actions);
+        widgetPackets.queueWidgetAction(item, actions);
         return true;
     }
 
@@ -359,12 +351,12 @@ public class BankService extends AbstractService {
     public boolean withdraw(int id, boolean noted, String... actions) {
         if(!context.isPacketsLoaded()) return false;
         setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-        InventoryItem item = getItems().stream().filter(i -> i.getId() == id).findFirst().orElse(null);
+        BankItemWidget item = getItems().stream().filter(i -> i.getId() == id).findFirst().orElse(null);
         setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
-        widgetPackets.queueWidgetAction(item.getWidget(), actions);
+        widgetPackets.queueWidgetAction(item, actions);
         return true;
     }
 
@@ -459,6 +451,11 @@ public class BankService extends AbstractService {
         return depositAll(item);
     }
 
+    /**
+     * Deposits all items in the inventory which match a given predicate.
+     * @param predicate Predicate to filter items in the inventory.
+     * @return True if the deposit was successful and false otherwise
+     */
     public boolean depositAll(Predicate<InventoryItem> predicate) {
         boolean result = false;
         List<InventoryItem> items = inventoryService.all().stream().filter(predicate).distinct().collect(Collectors.toList());
@@ -509,6 +506,14 @@ public class BankService extends AbstractService {
         return true;
     }
 
+    /**
+     * Deposits all items in the player's inventory into the bank, except for the items which match the predicate.
+     * This method uses a lambda function to filter out the items with the specified IDs from the deposit operation.
+     *
+     * @param predicate The predicate filter of the items to be excluded from the deposit.
+     *
+     * @return true if any items were deposited, false otherwise.
+     */
     public boolean depositAllExcept(Predicate<InventoryItem> predicate) {
         return depositAll(predicate.negate());
     }
