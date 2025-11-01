@@ -39,6 +39,7 @@ jobs:
           
           if [ -z "$LAST_TAG" ]; then
             # No previous tag for this base version, start at 0
+            echo "No previous tag for this base version, starting at 0"
             PATCH=0
           else
             # Extract patch number from last tag and increment
