@@ -270,6 +270,12 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 We use [Semantic Versioning](http://semver.org/).
 See the [tags on this repository](https://github.com/cbartram/kraken-api/tags) for available releases.
 
+CI will automatically bump the patch version on each merge to master i.e. `1.1.4` -> `1.1.5`. If you want to bump 
+a minor or major version then update the `version.txt` file in the root of the repository with the new version you
+want to use as a base.
+
+For example, moving from version: `1.3.5` -> `1.4.0` the `version.txt` should be `1.4.0`.
+
 ---
 
 ## 📜 License
