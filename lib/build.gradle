@@ -7,7 +7,7 @@ plugins {
 // Project version is set via the VERSION environment
 // variable in the Github Actions workflow and should not be changed here.
 def projectVersion = System.getenv("VERSION") ?: '1.0.0'
-def runeLiteVersion = '1.12.0' // latest.release
+def runeLiteVersion = '1.12.1' // latest.release
 def shortestPathPluginVersion = '1.0.3'
 
 version = projectVersion
