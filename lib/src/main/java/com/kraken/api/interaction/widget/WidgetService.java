@@ -6,6 +6,7 @@ import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.util.StringUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.annotations.Component;
@@ -13,10 +14,7 @@ import net.runelite.api.widgets.Widget;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,6 +30,11 @@ public class WidgetService extends AbstractService {
 
     @Inject
     private WidgetPackets widgetPackets;
+
+    private int lastSearchIdleTicks = -10;
+
+    @Getter
+    private HashSet<Widget> cachedWidgets = new HashSet<>();
 
     /**
      * Interacts with a widget using the specified action.
@@ -381,5 +384,70 @@ public class WidgetService extends AbstractService {
         }
 
         return false;
+    }
+
+    public WidgetQuery query() {
+        if(lastSearchIdleTicks == client.getKeyboardIdleTicks()) {
+            return new WidgetQuery(cachedWidgets);
+        }
+
+        HashSet<Widget> returnList = new HashSet<>();
+        Widget[] currentQueue;
+        ArrayList<Widget> buffer = new ArrayList<>();
+
+        currentQueue = client.getWidgetRoots();
+
+        while(currentQueue.length != 0) {
+            for (Widget widget : currentQueue) {
+                if (widget == null) {
+                    continue;
+                }
+
+                returnList.add(widget);
+
+                if (widget.getDynamicChildren() != null) {
+                    for (Widget dynamicChild : widget.getDynamicChildren()) {
+                        if (dynamicChild == null) {
+                            continue;
+                        }
+                        buffer.add(dynamicChild);
+                        returnList.add(dynamicChild);
+                    }
+                }
+
+                if (widget.getNestedChildren() != null) {
+                    for (Widget nestedChild : widget.getNestedChildren()) {
+                        if (nestedChild == null) {
+                            continue;
+                        }
+                        buffer.add(nestedChild);
+                        returnList.add(nestedChild);
+                    }
+                }
+
+                Widget[] staticChildren;
+                try {
+                    staticChildren = widget.getStaticChildren();
+                } catch (NullPointerException e) {
+                    continue;
+                }
+
+                if (staticChildren != null) {
+                    for (Widget staticChild : staticChildren) {
+                        if (staticChild == null) {
+                            continue;
+                        }
+                        buffer.add(staticChild);
+                        returnList.add(staticChild);
+                    }
+                }
+            }
+
+            currentQueue = buffer.toArray(new Widget[]{});
+            buffer.clear();
+        }
+        lastSearchIdleTicks = client.getKeyboardIdleTicks();
+        cachedWidgets = returnList;
+        return new WidgetQuery(cachedWidgets);
     }
 }
