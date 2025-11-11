@@ -85,6 +85,8 @@ public class InventoryService extends AbstractService {
      */
     private void refresh(ItemContainer itemContainer) {
         inventoryItems.clear();
+        Widget inven = client.getWidget(WidgetInfo.INVENTORY);
+        Widget[] items = inven.getDynamicChildren();
 
         for (int i = 0; i < itemContainer.getItems().length; i++) {
             final Item item = itemContainer.getItems()[i];
@@ -92,13 +94,16 @@ public class InventoryService extends AbstractService {
             final ItemComposition itemComposition = context.runOnClientThreadOptional(() -> client.getItemDefinition(item.getId())).orElse(null);
 
             // Also lookup the widget associated with this item.
-            Widget widget = Arrays.stream(client.getWidget(WidgetInfo.INVENTORY).getDynamicChildren())
+            Widget widget = Arrays.stream(items)
                     .filter(Objects::nonNull)
-                    .filter(x -> x.getItemId() != 6512 && item.getId() == x.getId())
-                    .findFirst()
-                    .orElse(null);
+                    .filter(x -> x.getItemId() != 6512 && x.getItemId() != -1)
+                    .filter(x -> x.getItemId() == item.getId())
+                    .findFirst().orElse(null);
 
             if(itemComposition == null) continue;
+            if(widget == null) {
+                log.info("Widget not found for name={}, id={}. Packet interactions on this item will not function.", itemComposition.getName(), item.getId());
+            }
             inventoryItems.add(new InventoryItem(item, itemComposition, i, context, widget));
         }
     }
@@ -396,6 +401,7 @@ public class InventoryService extends AbstractService {
 
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            // TODO This doesn't work.
             widgetPackets.queueWidgetAction(item.getWidget(), tmp);
             return true;
         }).orElse(false);
