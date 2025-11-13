@@ -1,4 +1,4 @@
-package com.kraken.api.interaction.bank;
+package com.kraken.api.interaction.container.bank;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -8,8 +8,8 @@ import com.kraken.api.core.RandomService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.interaction.inventory.InventoryItem;
-import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.container.inventory.ContainerItem;
+import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.interaction.widget.WidgetService;
@@ -374,7 +374,7 @@ public class BankService extends AbstractService {
      *
      * @param item The ItemWidget representing the item to deposit.
      */
-    private boolean depositOne(InventoryItem item) {
+    private boolean depositOne(ContainerItem item) {
         if (item == null) return false;
         if (!isOpen()) return false;
         if (!inventoryService.hasItem(item.getId())) return false;
@@ -425,7 +425,7 @@ public class BankService extends AbstractService {
      * @param item item to deposit
      * @return True if the deposit was successful and false otherwise
      */
-    private boolean depositAll(InventoryItem item) {
+    private boolean depositAll(ContainerItem item) {
         if (item == null) return false;
         if (!isOpen()) return false;
         if (!inventoryService.hasItem(item)) return false;
@@ -446,7 +446,7 @@ public class BankService extends AbstractService {
      * @return true if anything deposited
      */
     public boolean depositAll(int id) {
-        InventoryItem item = inventoryService.getRandom(id);
+        ContainerItem item = inventoryService.getRandom(id);
         if (item == null) return false;
         return depositAll(item);
     }
@@ -456,10 +456,10 @@ public class BankService extends AbstractService {
      * @param predicate Predicate to filter items in the inventory.
      * @return True if the deposit was successful and false otherwise
      */
-    public boolean depositAll(Predicate<InventoryItem> predicate) {
+    public boolean depositAll(Predicate<ContainerItem> predicate) {
         boolean result = false;
-        List<InventoryItem> items = inventoryService.all().stream().filter(predicate).distinct().collect(Collectors.toList());
-        for (InventoryItem item : items) {
+        List<ContainerItem> items = inventoryService.all().stream().filter(predicate).distinct().collect(Collectors.toList());
+        for (ContainerItem item : items) {
             if (item == null) continue;
             depositAll(item);
             sleepService.sleep(RandomService.randomGaussian(400,200));
@@ -514,7 +514,7 @@ public class BankService extends AbstractService {
      *
      * @return true if any items were deposited, false otherwise.
      */
-    public boolean depositAllExcept(Predicate<InventoryItem> predicate) {
+    public boolean depositAllExcept(Predicate<ContainerItem> predicate) {
         return depositAll(predicate.negate());
     }
 
@@ -539,7 +539,7 @@ public class BankService extends AbstractService {
      * @return true if any items were deposited, false otherwise.
      */
     public boolean depositAllExcept(String... names) {
-        return depositAllExcept(InventoryItem.matches(false, names));
+        return depositAllExcept(ContainerItem.matches(false, names));
     }
 
     /**

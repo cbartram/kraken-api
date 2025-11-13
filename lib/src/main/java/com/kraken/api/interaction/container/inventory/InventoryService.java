@@ -1,4 +1,4 @@
-package com.kraken.api.interaction.inventory;
+package com.kraken.api.interaction.container.inventory;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -34,7 +34,7 @@ import static com.kraken.api.util.StringUtils.stripColTags;
 @Slf4j
 @Singleton
 public class InventoryService extends AbstractService {
-    private final List<InventoryItem> inventoryItems = new ArrayList<>();
+    private final List<ContainerItem> containerItems = new ArrayList<>();
 
     @Inject
     private SleepService sleepService;
@@ -60,8 +60,9 @@ public class InventoryService extends AbstractService {
         // their plugins as often as they want and the Context (accessible through super class) will continually register/unregister
         // the necessary classes from the eventbus to keep the inventory in sync.
         if(event.getGameState() == GameState.LOGGED_IN) {
-            Optional<ItemContainer> container = context.runOnClientThreadOptional(() -> client.getItemContainer(InventoryID.INV));
-            container.ifPresent(this::refresh);
+            ItemContainer container = context.runOnClientThread(() -> client.getItemContainer(InventoryID.INV));
+            if(container == null) return;
+            refresh(container);
         }
     }
 
@@ -84,7 +85,7 @@ public class InventoryService extends AbstractService {
      * @param itemContainer The item container to refresh with.
      */
     private void refresh(ItemContainer itemContainer) {
-        inventoryItems.clear();
+        containerItems.clear();
         Widget inven = client.getWidget(WidgetInfo.INVENTORY);
         Widget[] items = inven.getDynamicChildren();
 
@@ -96,15 +97,12 @@ public class InventoryService extends AbstractService {
             // Also lookup the widget associated with this item.
             Widget widget = Arrays.stream(items)
                     .filter(Objects::nonNull)
-                    .filter(x -> x.getItemId() != 6512 && x.getItemId() != -1)
-                    .filter(x -> x.getItemId() == item.getId())
+                    .filter(w -> w.getItemId() != 6512 && w.getItemId() != -1)
+                    .filter(w -> w.getItemId() == item.getId())
                     .findFirst().orElse(null);
 
             if(itemComposition == null) continue;
-            if(widget == null) {
-                log.info("Widget not found for name={}, id={}. Packet interactions on this item will not function.", itemComposition.getName(), item.getId());
-            }
-            inventoryItems.add(new InventoryItem(item, itemComposition, i, context, widget));
+            containerItems.add(new ContainerItem(item, itemComposition, i, context, widget));
         }
     }
 
@@ -132,8 +130,8 @@ public class InventoryService extends AbstractService {
      *
      * @return A list of all items in the inventory.
      */
-    public List<InventoryItem> all() {
-        return inventoryItems;
+    public List<ContainerItem> all() {
+        return containerItems;
     }
 
     /**
@@ -143,8 +141,8 @@ public class InventoryService extends AbstractService {
      *
      * @return A list of items that match the filter.
      */
-    public List<InventoryItem> all(Predicate<InventoryItem> filter) {
-        return inventoryItems.stream().filter(filter).collect(Collectors.toList());
+    public List<ContainerItem> all(Predicate<ContainerItem> filter) {
+        return containerItems.stream().filter(filter).collect(Collectors.toList());
     }
 
 
@@ -154,15 +152,15 @@ public class InventoryService extends AbstractService {
      * @return True when the users inventory contains the item and false otherwise
      */
     public boolean hasItem(int id) {
-        return inventoryItems.stream().anyMatch((item) -> context.runOnClientThreadOptional(() -> item.getId() == id).orElse(false));
+        return containerItems.stream().anyMatch((item) -> context.runOnClientThreadOptional(() -> item.getId() == id).orElse(false));
     }
 
     /**
      * Returns true if the inventory contains an item with the specified ID.
-     * @param item The InventoryItem to check for.
+     * @param item The ContainerItem to check for.
      * @return True when the users inventory contains the item and false otherwise
      */
-    public boolean hasItem(InventoryItem item) {
+    public boolean hasItem(ContainerItem item) {
         return hasItem(item.getId());
     }
 
@@ -172,7 +170,7 @@ public class InventoryService extends AbstractService {
      * @return True when the users inventory contains the item and false otherwise
      */
     public boolean hasItem(String name) {
-        return inventoryItems.stream().anyMatch((item) -> context.runOnClientThreadOptional(() -> item.getName().equalsIgnoreCase(name)).orElse(false));
+        return containerItems.stream().anyMatch((item) -> context.runOnClientThreadOptional(() -> item.getName().equalsIgnoreCase(name)).orElse(false));
     }
 
     /**
@@ -180,7 +178,7 @@ public class InventoryService extends AbstractService {
      * @return true if the inventory is empty and false otherwise.
      */
     public boolean isEmpty() {
-        return inventoryItems.isEmpty();
+        return containerItems.isEmpty();
     }
 
     /**
@@ -188,7 +186,7 @@ public class InventoryService extends AbstractService {
      * @return True if the inventory is full and false otherwise.
      */
     public boolean isFull() {
-        return inventoryItems.size() >= 28;
+        return containerItems.size() >= 28;
     }
 
     /**
@@ -196,7 +194,7 @@ public class InventoryService extends AbstractService {
      * @return The count of items in the players inventory
      */
     public int count() {
-        return inventoryItems.size();
+        return containerItems.size();
     }
 
     /**
@@ -204,7 +202,7 @@ public class InventoryService extends AbstractService {
      * @return The amount of free space available in the players inventory
      */
     public int freeSpace() {
-        return 28 - inventoryItems.size();
+        return 28 - containerItems.size();
     }
 
     /**
@@ -245,7 +243,7 @@ public class InventoryService extends AbstractService {
     }
 
     /**
-     * Combines two items in the inventory using InventoryItem objects, ensuring distinct items are used.
+     * Combines two items in the inventory using ContainerItem objects, ensuring distinct items are used.
      *
      * @param primary   The primary item.
      * @param secondary The secondary item.
@@ -253,11 +251,11 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the combine operation was successful, false otherwise.
      */
-    public boolean combine(InventoryItem primary, InventoryItem secondary, boolean shortSleep) {
+    public boolean combine(ContainerItem primary, ContainerItem secondary, boolean shortSleep) {
         // Get the primary item
-        InventoryItem primaryItem = get(item -> item.getId() == primary.getId());
+        ContainerItem primaryItem = get(item -> item.getId() == primary.getId());
         if (primaryItem == null) {
-            log.error("Primary item not found in the inventory.");
+            log.error("Primary item not found in the inventory, can't combine");
             return false;
         }
 
@@ -270,7 +268,7 @@ public class InventoryService extends AbstractService {
             sleepService.sleep(100, 175);
         }
         // Get a secondary item that isn't the same as the primary
-        InventoryItem secondaryItem = get(item -> item.getId() == secondary.getId() && item.getSlot() != primaryItem.getSlot());
+        ContainerItem secondaryItem = get(item -> item.getId() == secondary.getId() && item.getSlot() != primaryItem.getSlot());
         if (secondaryItem == null) {
             log.error("No valid secondary item found to combine with.");
             return false;
@@ -309,7 +307,7 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the item is successfully used, false otherwise.
      */
-    public boolean use(InventoryItem item) {
+    public boolean use(ContainerItem item) {
         if (item == null) return false;
         return interact(item, "Use");
     }
@@ -321,7 +319,7 @@ public class InventoryService extends AbstractService {
      * @param action The action to perform on the item.
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interactReflect(InventoryItem item, String action) {
+    public boolean interactReflect(ContainerItem item, String action) {
         return interactReflect(item, action, -1);
     }
 
@@ -332,7 +330,7 @@ public class InventoryService extends AbstractService {
      * @param providedIdentifier An optional identifier to provide for the interaction. Defaults to -1
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interactReflect(InventoryItem item, String action, int providedIdentifier) {
+    public boolean interactReflect(ContainerItem item, String action, int providedIdentifier) {
         if(!context.isHooksLoaded()) return false;
         int identifier;
         if(item == null) return false;
@@ -386,23 +384,32 @@ public class InventoryService extends AbstractService {
      */
     public boolean interact(int id, String action) {
         if(!context.isPacketsLoaded()) return false;
-        String tmp;
-
-        if(action == null || action.trim().isEmpty()) {
-           Optional<String> firstAction = Arrays.stream(client.getItemDefinition(id).getInventoryActions()).findFirst();
-            tmp = firstAction.orElse(action);
-        } else {
-            tmp = action;
-        }
+        String parsedAction = (action == null || action.trim().isEmpty())
+                ? Arrays.stream(client.getItemDefinition(id).getInventoryActions())
+                .findFirst().orElse(null)
+                : action;
 
         return context.runOnClientThreadOptional(() -> {
-            InventoryItem item = inventoryItems.stream().filter(i -> i.getId() == id).findFirst().orElse(null);
+            ContainerItem item = containerItems.stream().filter(i -> i.getId() == id).findFirst().orElse(null);
             if(item == null) return false;
+
+            Widget w = item.getWidget();
+
+            // This can happen if the user hasn't changed something in their inventory since logging in, since widgets
+            // weren't loaded when refresh() was called.
+            if(w == null) {
+                Widget inven = client.getWidget(WidgetInfo.INVENTORY);
+                Widget[] items = inven.getDynamicChildren();
+                w = Arrays.stream(items)
+                        .filter(Objects::nonNull)
+                        .filter(wid -> wid.getItemId() != 6512 && wid.getItemId() != -1)
+                        .filter(wid -> wid.getItemId() == item.getId())
+                        .findFirst().orElse(null);
+            }
 
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
-            // TODO This doesn't work.
-            widgetPackets.queueWidgetAction(item.getWidget(), tmp);
+            widgetPackets.queueWidgetAction(w, parsedAction);
             return true;
         }).orElse(false);
     }
@@ -415,18 +422,13 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(InventoryItem item, String action) {
+    public boolean interact(ContainerItem item, String action) {
         if(!context.isPacketsLoaded()) return false;
-        String tmp;
+        String parsedAction = (action == null || action.trim().isEmpty())
+                ? Arrays.stream(item.getInventoryActions()).findFirst().orElse(action)
+                : action;
 
-        if(action == null || action.trim().isEmpty()) {
-            Optional<String> firstAction = Arrays.stream(item.getInventoryActions()).findFirst();
-            tmp = firstAction.orElse(action);
-        } else {
-            tmp = action;
-        }
-
-        return context.runOnClientThreadOptional(() -> interact(item.getId(), tmp)).orElse(false);
+        return context.runOnClientThreadOptional(() -> interact(item.getId(), parsedAction)).orElse(false);
     }
 
     /**
@@ -507,7 +509,7 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(Predicate<InventoryItem> filter) {
+    public boolean interact(Predicate<ContainerItem> filter) {
         return interact(filter, "Use");
     }
 
@@ -519,7 +521,7 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(Predicate<InventoryItem> filter, String action) {
+    public boolean interact(Predicate<ContainerItem> filter, String action) {
         return interact(get(filter), action);
     }
 
@@ -531,7 +533,7 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the interaction was successful, false otherwise.
      */
-    public boolean interact(InventoryItem item) {
+    public boolean interact(ContainerItem item) {
         return interact(item, "");
     }
 
@@ -540,8 +542,8 @@ public class InventoryService extends AbstractService {
      * @param predicate The filter to apply
      * @return The item that matches the filter criteria or null if not found.
      */
-    public InventoryItem getRandom(Predicate<InventoryItem> predicate) {
-        List<InventoryItem> items = inventoryItems.stream()
+    public ContainerItem getRandom(Predicate<ContainerItem> predicate) {
+        List<ContainerItem> items = containerItems.stream()
                 .filter(predicate)
                 .collect(Collectors.toList());
 
@@ -558,7 +560,7 @@ public class InventoryService extends AbstractService {
      * @param ids The ids to search for
      * @return The item that matches the filter criteria or null if not found.
      */
-    public InventoryItem getRandom(int... ids) {
+    public ContainerItem getRandom(int... ids) {
         return getRandom(item -> Arrays.stream(ids).anyMatch(id -> id == item.getId()));
     }
 
@@ -571,7 +573,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The item that matches the filter criteria, or null if not found.
      */
-    public InventoryItem getFirst(Predicate<InventoryItem> predicate) {
+    public ContainerItem getFirst(Predicate<ContainerItem> predicate) {
         return get(predicate);
     }
 
@@ -582,8 +584,8 @@ public class InventoryService extends AbstractService {
      *
      * @return The item that matches the filter criteria, or null if not found.
      */
-    public InventoryItem get(Predicate<InventoryItem> predicate) {
-        return inventoryItems.stream().filter(predicate).findFirst().orElse(null);
+    public ContainerItem get(Predicate<ContainerItem> predicate) {
+        return containerItems.stream().filter(predicate).findFirst().orElse(null);
     }
 
     /**
@@ -593,7 +595,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The first item that matches one of the IDs, or null if not found.
      */
-    public InventoryItem get(int... ids) {
+    public ContainerItem get(int... ids) {
         return get(item -> Arrays.stream(ids).anyMatch(id -> id == context.runOnClientThreadOptional(item::getId).orElse(-1)));
     }
 
@@ -604,7 +606,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The item with one of the specified names, or null if not found.
      */
-    public InventoryItem get(String... names) {
+    public ContainerItem get(String... names) {
         return get(names, false);
     }
 
@@ -617,7 +619,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The item with the specified name, or null if not found.
      */
-    public InventoryItem get(String name, boolean exact) {
+    public ContainerItem get(String name, boolean exact) {
         return get(name, false, exact);
     }
 
@@ -629,7 +631,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The item with one of the specified names, or null if not found.
      */
-    public InventoryItem get(String[] names, boolean exact) {
+    public ContainerItem get(String[] names, boolean exact) {
         return get(names, false, exact);
     }
 
@@ -643,7 +645,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The item with the specified name, or null if not found.
      */
-    public InventoryItem get(String name, boolean stackable, boolean exact) {
+    public ContainerItem get(String name, boolean stackable, boolean exact) {
         return get(new String[] {name}, stackable, exact);
     }
 
@@ -657,19 +659,19 @@ public class InventoryService extends AbstractService {
      *
      * @return The item with the specified name, or null if not found.
      */
-    public InventoryItem get(String[] names, boolean stackable, boolean exact) {
-        Predicate<InventoryItem> filter = InventoryItem.matches(exact, names);
-        if (stackable) filter = filter.and(InventoryItem::isStackable);
-        return exact ? inventoryItems.stream().filter(filter).findFirst().orElse(null) :
-                inventoryItems.stream().filter(filter).min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
+    public ContainerItem get(String[] names, boolean stackable, boolean exact) {
+        Predicate<ContainerItem> filter = ContainerItem.matches(exact, names);
+        if (stackable) filter = filter.and(ContainerItem::isStackable);
+        return exact ? containerItems.stream().filter(filter).findFirst().orElse(null) :
+                containerItems.stream().filter(filter).min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
     }
 
     /**
      * Returns a list of Inventory Items which can be consumed for health.
      * @return List of Inventory items which are food.
      */
-    public List<InventoryItem> getFood() {
-        return new ArrayList<>(all(InventoryItem::isFood));
+    public List<ContainerItem> getFood() {
+        return new ArrayList<>(all(ContainerItem::isFood));
     }
 
     /**
@@ -677,7 +679,7 @@ public class InventoryService extends AbstractService {
      * @return boolean
      */
     public boolean hasFood() {
-        return !new ArrayList<>(all(InventoryItem::isFood)).isEmpty();
+        return !new ArrayList<>(all(ContainerItem::isFood)).isEmpty();
     }
 
     /**
@@ -686,10 +688,10 @@ public class InventoryService extends AbstractService {
      * @param item The item to drop
      * @return True if the item was successfully dropped, false otherwise.
      */
-    private boolean drop(InventoryItem item) {
+    private boolean drop(ContainerItem item) {
         if (item == null) return false;
 
-        interactReflect(item, "Drop");
+        interact(item, "Drop");
         return true;
     }
 
@@ -700,7 +702,7 @@ public class InventoryService extends AbstractService {
      *
      * @return True if the item was successfully dropped, false otherwise.
      */
-    public boolean drop(Predicate<InventoryItem> predicate) {
+    public boolean drop(Predicate<ContainerItem> predicate) {
         return drop(get(predicate));
     }
 
@@ -743,8 +745,8 @@ public class InventoryService extends AbstractService {
      *
      * @return True if all matching items were successfully dropped, false otherwise.
      */
-    public boolean dropAll(Predicate<InventoryItem> predicate) {
-        inventoryItems.stream().filter(predicate).forEachOrdered(item -> {
+    public boolean dropAll(Predicate<ContainerItem> predicate) {
+        containerItems.stream().filter(predicate).forEachOrdered(item -> {
             drop(item);
             sleepService.sleep(150, 300);
         });
@@ -769,7 +771,7 @@ public class InventoryService extends AbstractService {
      *
      * @return The bounding rectangle for the item's slot, or null if the item is not found.
      */
-    public Rectangle itemBounds(InventoryItem item) {
+    public Rectangle itemBounds(ContainerItem item) {
         Widget inventory = getInventory();
         if (inventory == null) return null;
 

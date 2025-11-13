@@ -2,7 +2,7 @@ package com.kraken.api.interaction.ui;
 
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.RandomService;
-import com.kraken.api.interaction.inventory.InventoryItem;
+import com.kraken.api.interaction.container.inventory.ContainerItem;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.Point;
@@ -179,7 +179,7 @@ public class UIService extends AbstractService {
      * @param item The inventory item
      * @return The canvas point for the inventory items clickbox (randomizes the point).
      */
-    public Point getClickbox(InventoryItem item) {
+    public Point getClickbox(ContainerItem item) {
         return getClickbox(item, true);
     }
 
@@ -189,7 +189,7 @@ public class UIService extends AbstractService {
      * @param randomize True if the point should be randomized. If false it will return the center point.
      * @return Center point or random point within the bounds of the inventory item.
      */
-    public Point getClickbox(InventoryItem item, boolean randomize) {
+    public Point getClickbox(ContainerItem item, boolean randomize) {
         Rectangle bounds = item.getBounds(context, client);
         if(bounds == null) return getClickingPoint(getDefaultRectangle(), true);
         return getClickingPoint(bounds, randomize);

@@ -1,4 +1,4 @@
-package com.kraken.api.interaction.bank;
+package com.kraken.api.interaction.container.bank;
 
 import com.kraken.api.Context;
 import lombok.AllArgsConstructor;

@@ -3,8 +3,8 @@ package com.kraken.api.example.overlay;
 import com.google.inject.Inject;
 import com.kraken.api.example.ExampleConfig;
 import com.kraken.api.example.TestResultManager;
-import com.kraken.api.interaction.inventory.InventoryItem;
-import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.container.inventory.ContainerItem;
+import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.player.PlayerService;
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -249,7 +249,7 @@ public class InfoPanelOverlay extends OverlayPanel {
     private void addInventoryInfo() {
         try {
             // Food count
-            List<InventoryItem> foodItems = new ArrayList<>(inventoryService.getFood());
+            List<ContainerItem> foodItems = new ArrayList<>(inventoryService.getFood());
 
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Food Items:")
@@ -265,7 +265,7 @@ public class InfoPanelOverlay extends OverlayPanel {
                     .build());
 
             // Total items count
-            List<InventoryItem> allItems = new ArrayList<>(inventoryService.all());
+            List<ContainerItem> allItems = new ArrayList<>(inventoryService.all());
 
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Total Items:")
@@ -274,7 +274,7 @@ public class InfoPanelOverlay extends OverlayPanel {
                     .build());
 
             // Check for test item
-            InventoryItem testItem = inventoryService.get(config.testItemName());
+            ContainerItem testItem = inventoryService.get(config.testItemName());
             panelComponent.getChildren().add(LineComponent.builder()
                     .left(config.testItemName() + ":")
                     .right(testItem != null ? "Found (x" + testItem.getQuantity() + ")" : "Not Found")
@@ -288,14 +288,14 @@ public class InfoPanelOverlay extends OverlayPanel {
                         .build());
 
                 int count = 0;
-                for (InventoryItem item : allItems) {
+                for (ContainerItem item : allItems) {
                     if (count >= 5) break; // Limit to first 5 items
 
                     Color itemColor = config.inventoryOverlayColor();
 
                     // Highlight food items
                     if (config.highlightFood()) {
-                        for (InventoryItem foodItem : foodItems) {
+                        for (ContainerItem foodItem : foodItems) {
                             if (foodItem.getName().equals(item.getName())) {
                                 itemColor = config.foodOverlayColor();
                                 break;
