@@ -1,4 +1,4 @@
-package com.kraken.api.interaction.inventory;
+package com.kraken.api.interaction.container.inventory;
 
 import com.kraken.api.Context;
 import lombok.AllArgsConstructor;
@@ -17,10 +17,13 @@ import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+/**
+ * Represents an item stored in an item container (either the inventory or Bank).
+ */
 @Slf4j
 @Getter
 @AllArgsConstructor
-public class InventoryItem {
+public class ContainerItem {
 
     @Setter
     private int quantity;
@@ -54,7 +57,7 @@ public class InventoryItem {
             ParamID.OC_ITEM_OP8
     };
 
-    public InventoryItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget) {
+    public ContainerItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget) {
         this.id = item.getId();
         this.widget = widget;
         this.quantity = item.getQuantity();
@@ -84,7 +87,7 @@ public class InventoryItem {
      * Private constructor for creating ItemModel from cached data.
      * ItemComposition will be loaded lazily when needed.
      */
-    private InventoryItem(int id, int quantity, int slot, Context context) {
+    private ContainerItem(int id, int quantity, int slot, Context context) {
         this.id = id;
         this.quantity = quantity;
         this.slot = slot;
@@ -284,14 +287,14 @@ public class InventoryItem {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        InventoryItem other = (InventoryItem) obj;
+        ContainerItem other = (ContainerItem) obj;
         return id == other.id;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("ItemModel {\n");
+        sb.append("ContainerItem {\n");
         sb.append("\tid: ").append(id).append("\n");
         sb.append("\tname: '").append(getName()).append("'\n");
         sb.append("\tquantity: ").append(quantity).append("\n");
@@ -335,20 +338,20 @@ public class InventoryItem {
         return sb.toString();
     }
 
-    private static <T> Predicate<InventoryItem> matches(T[] values, BiPredicate<InventoryItem, T> biPredicate) {
+    private static <T> Predicate<ContainerItem> matches(T[] values, BiPredicate<ContainerItem, T> biPredicate) {
         return item -> Arrays.stream(values).filter(Objects::nonNull).anyMatch(value -> biPredicate.test(item, value));
     }
 
-    public static Predicate<InventoryItem> matches(boolean exact, String... names) {
+    public static Predicate<ContainerItem> matches(boolean exact, String... names) {
         return matches(names, exact ? (item, name) -> item.getName().equalsIgnoreCase(name) :
                 (item, name) -> item.getName().toLowerCase().contains(name.toLowerCase()));
     }
 
-    public static Predicate<InventoryItem> matches(int... ids) {
+    public static Predicate<ContainerItem> matches(int... ids) {
         return item -> Arrays.stream(ids).anyMatch(id -> item.getId() == id);
     }
 
-    public static Predicate<InventoryItem> matches(EquipmentInventorySlot... slots) {
+    public static Predicate<ContainerItem> matches(EquipmentInventorySlot... slots) {
         return matches(slots, (item, slot) -> item.getSlot() == slot.getSlotIdx());
     }
 }

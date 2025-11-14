@@ -7,18 +7,14 @@ import com.kraken.api.example.ExamplePlugin;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
-import com.kraken.api.interaction.inventory.InventoryService;
 import com.kraken.api.interaction.npc.NpcService;
-import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.tile.TileService;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.OverlayPriority;
 
 import java.awt.*;
 import java.util.stream.Stream;

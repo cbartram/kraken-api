@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.interaction.inventory.InventoryItem;
+import com.kraken.api.interaction.container.inventory.ContainerItem;
 import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.Getter;
@@ -38,10 +38,10 @@ public class EquipmentService extends AbstractService {
     private WidgetPackets widgetPackets;
 
     @Getter
-    private final List<InventoryItem> inventory = new ArrayList<>();
+    private final List<ContainerItem> inventory = new ArrayList<>();
 
     @Getter
-    private final List<InventoryItem> equipment = new ArrayList<>();
+    private final List<ContainerItem> equipment = new ArrayList<>();
 
     static HashMap<Integer, Integer> equipmentSlotWidgetMapping = new HashMap<>();
     static HashMap<Integer, Integer> mappingToIterableInts = new HashMap<>();
@@ -76,7 +76,7 @@ public class EquipmentService extends AbstractService {
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
         var containerItems = event.getItemContainer().getItems();
-        List<InventoryItem> list = new ArrayList<>();
+        List<ContainerItem> list = new ArrayList<>();
 
         for (int index = 0; index < containerItems.length; index++) {
             var item = containerItems[index];
@@ -91,7 +91,7 @@ public class EquipmentService extends AbstractService {
                     .findFirst()
                     .orElse(null);
 
-            list.add(new InventoryItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget));
+            list.add(new ContainerItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget));
         }
 
         if(event.getContainerId() == 93) {
@@ -113,7 +113,7 @@ public class EquipmentService extends AbstractService {
         if(!context.isPacketsLoaded()) return false;
         return context.runOnClientThreadOptional(() -> {
             client.runScript(6009, 9764864, 28, 1, -1);
-            InventoryItem item = inventory.stream()
+            ContainerItem item = inventory.stream()
                     .filter(i -> i.getId() == id)
                     .findFirst()
                     .orElse(null);
@@ -151,7 +151,7 @@ public class EquipmentService extends AbstractService {
      * @return True when the wield operation was successful and false otherwise
      */
     public boolean wield(String name) {
-        List<InventoryItem> items = inventory.stream()
+        List<ContainerItem> items = inventory.stream()
                 .filter(item -> name.equalsIgnoreCase(item.getName()))
                 .collect(Collectors.toList());
         if(items.isEmpty()) {
@@ -162,20 +162,20 @@ public class EquipmentService extends AbstractService {
     }
 
     /**
-     * Wields gear from the players inventory by InventoryItem.
-     * @param item The InventoryItem to equip.
+     * Wields gear from the players inventory by ContainerItem.
+     * @param item The ContainerItem to equip.
      * @return True when the wield operation was successful and false otherwise
      */
-    public boolean wield(InventoryItem item) {
+    public boolean wield(ContainerItem item) {
         return wield(item.getId());
     }
 
     /**
      * Wields gear from the players inventory using reflection to make the menu invocations.
-     * @param item The InventoryItem to equip.
+     * @param item The ContainerItem to equip.
      * @return True when the wield operation was successful and false otherwise
      */
-    public boolean wieldReflect(InventoryItem item) {
+    public boolean wieldReflect(ContainerItem item) {
         return wieldReflect(item.getId());
     }
 
@@ -186,7 +186,7 @@ public class EquipmentService extends AbstractService {
      */
     public boolean wieldReflect(String name) {
         List<Integer> ids = new ArrayList<>();
-        for (InventoryItem item : inventory) {
+        for (ContainerItem item : inventory) {
             if (name.equalsIgnoreCase(item.getName())) {
                 ids.add(item.getId());
             }
@@ -353,7 +353,7 @@ public class EquipmentService extends AbstractService {
      * @param item The item to remove.
      * @return True if the item was un-equipped successfully and false otherwise
      */
-    public boolean remove(InventoryItem item) {
+    public boolean remove(ContainerItem item) {
         return remove(item.getId());
     }
 
@@ -366,7 +366,7 @@ public class EquipmentService extends AbstractService {
         return this.equipment
                 .stream()
                 .filter(i -> id == i.getId())
-                .max(Comparator.comparing(InventoryItem::getName))
+                .max(Comparator.comparing(ContainerItem::getName))
                 .isPresent();
     }
 
@@ -378,7 +378,7 @@ public class EquipmentService extends AbstractService {
     public boolean isWearing(String name) {
         return this.equipment.stream()
                 .filter(i -> name.equalsIgnoreCase(i.getName()))
-                .max(Comparator.comparing(InventoryItem::getName))
+                .max(Comparator.comparing(ContainerItem::getName))
                 .isPresent();
     }
 

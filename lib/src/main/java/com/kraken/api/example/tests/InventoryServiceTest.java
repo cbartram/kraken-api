@@ -1,8 +1,8 @@
 package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
-import com.kraken.api.interaction.inventory.InventoryItem;
-import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.container.inventory.ContainerItem;
+import com.kraken.api.interaction.container.inventory.InventoryService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -20,13 +20,13 @@ public class InventoryServiceTest extends BaseApiTest {
 
         try {
             // Test 1: Get all inventory items
-            List<InventoryItem> allItems = new ArrayList<>(inventoryService.all());
+            List<ContainerItem> allItems = new ArrayList<>(inventoryService.all());
 
             log.info("Found {} items in inventory", allItems.size());
 
             // Test 2: Verify each item has valid properties
             int validItemCount = 0;
-            for (InventoryItem item : allItems) {
+            for (ContainerItem item : allItems) {
                 if (item.getName() != null && !item.getName().isEmpty() && item.getQuantity() > 0) {
                     validItemCount++;
                     log.debug("Valid item: {} (Quantity: {})", item.getName(), item.getQuantity());
@@ -69,7 +69,7 @@ public class InventoryServiceTest extends BaseApiTest {
             log.info("Inventory has food: {}", hasFood);
 
             // Test getFood() method
-            List<InventoryItem> foodItems = new ArrayList<>(inventoryService.getFood());
+            List<ContainerItem> foodItems = new ArrayList<>(inventoryService.getFood());
 
             log.info("Found {} food items", foodItems.size());
 
@@ -79,7 +79,7 @@ public class InventoryServiceTest extends BaseApiTest {
                     "hasFood() and getFood() should be consistent");
 
             // Log food items found
-            for (InventoryItem foodItem : foodItems) {
+            for (ContainerItem foodItem : foodItems) {
                 log.info("Food item: {} (Quantity: {})", foodItem.getName(), foodItem.getQuantity());
             }
 
@@ -94,7 +94,7 @@ public class InventoryServiceTest extends BaseApiTest {
     private boolean testSpecificItemLookup() {
         try {
             String testItemName = config.testItemName();
-            InventoryItem testItem = inventoryService.get(testItemName);
+            ContainerItem testItem = inventoryService.get(testItemName);
 
             if (testItem != null) {
                 log.info("Test item '{}' found - Quantity: {}", testItemName, testItem.getQuantity());
@@ -117,17 +117,10 @@ public class InventoryServiceTest extends BaseApiTest {
         }
     }
 
-    private boolean testItemInteraction(InventoryItem item) {
+    private boolean testItemInteraction(ContainerItem item) {
         try {
             log.info("Testing interaction with: {}", item.getName());
-
-            // Test the interact method (this should not throw an exception)
-            inventoryService.interactReflect(item, "Use");
-
-            // If we get here without exception, the test passed
-            log.debug("Item interaction test completed successfully");
-            return true;
-
+            return inventoryService.interact(item, "Drop");
         } catch (Exception e) {
             log.error("Error testing item interaction", e);
             return false;

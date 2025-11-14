@@ -3,9 +3,9 @@ package com.kraken.api.interaction.spells;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.interaction.inventory.InventoryService;
+import com.kraken.api.interaction.container.inventory.ContainerItem;
+import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.interaction.inventory.InventoryItem;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Varbit;
@@ -132,7 +132,7 @@ public class SpellService extends AbstractService {
         Map<Integer, Integer> combinedRunes = new HashMap<>();
 
         // Add runes from inventory
-        for(InventoryItem item : inventoryService.all()) {
+        for(ContainerItem item : inventoryService.all()) {
             Runes rune = Runes.byItemId(item.getId());
             if(rune != null) {
                 // If the rune is a combo rune add all base runes to the combined runes because it functions as any of the base runes.
