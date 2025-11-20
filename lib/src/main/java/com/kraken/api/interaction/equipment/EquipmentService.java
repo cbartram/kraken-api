@@ -85,7 +85,12 @@ public class EquipmentService extends AbstractService {
                 continue;
             }
 
-            Widget widget = Arrays.stream(client.getWidget(WidgetInfo.INVENTORY).getDynamicChildren())
+            Widget inventory = client.getWidget(WidgetInfo.INVENTORY);
+            if(inventory == null) {
+                return;
+            }
+
+            Widget widget = Arrays.stream(inventory.getDynamicChildren())
                     .filter(Objects::nonNull)
                     .filter(x -> x.getItemId() != 6512 && item.getId() == x.getId())
                     .findFirst()

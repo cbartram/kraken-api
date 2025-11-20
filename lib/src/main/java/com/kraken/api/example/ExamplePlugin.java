@@ -12,6 +12,9 @@ import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.movement.WalkService;
 import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.spells.SpellService;
+import com.kraken.api.interaction.spells.Spells;
+import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
@@ -120,6 +123,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private NpcService npcService;
 
+    @Inject
+    private SpellService spellService;
+
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
 
@@ -157,13 +163,19 @@ public class ExamplePlugin extends Plugin {
                 }
             }
 
-            if(event.getKey().equals("prayerOn") && config.prayerOn()) {
-                mousePackets.queueClickPacket(0, 0);
+            if(event.getKey().equals("attackNpc") && config.prayerOn()) {
                 NPC npc = npcService.getAttackableNpcs().findFirst().orElse(null);
                 if(npc != null) {
+                    Point pt = UIService.getClickingPoint(npc.getConvexHull().getBounds(),  true);
                     log.info("Attacking NPC");
+                    mousePackets.queueClickPacket(pt.getX(), pt.getY());
                     npcPackets.queueNPCAction(npc, "Attack");
                 }
+            }
+
+            if(event.getKey().equals("magicSpellCast") && config.magicSpellCast()) {
+                log.info("Teleporting to Varrock");
+                spellService.cast(Spells.VARROCK_TELEPORT);
             }
 
             if(event.getKey().equals("start")) {

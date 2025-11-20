@@ -20,22 +20,41 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
-            name = "Test Packet Send",
-            keyName = "prayerOn",
-            description = "Test packet send",
-            position = -5
-    )
-    default boolean prayerOn() {
-        return false;
-    }
-
-    @ConfigItem(
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
             position = -3
     )
     default boolean showVisualizer() {
+        return false;
+    }
+
+    @ConfigSection(
+            name = "General",
+            description = "General settings for testing",
+            position = 0
+    )
+    String general = "General";
+
+    @ConfigItem(
+            name = "Send NPC Attack",
+            keyName = "attackNpc",
+            description = "Test NPC attack packet send.",
+            position = -1,
+            section = general
+    )
+    default boolean prayerOn() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Send Spell Packet",
+            keyName = "magicSpellCast",
+            description = "Test magic spell cast",
+            position = -2,
+            section = general
+    )
+    default boolean magicSpellCast() {
         return false;
     }
 

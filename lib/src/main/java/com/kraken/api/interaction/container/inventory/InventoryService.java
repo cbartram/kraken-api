@@ -87,6 +87,12 @@ public class InventoryService extends AbstractService {
     private void refresh(ItemContainer itemContainer) {
         containerItems.clear();
         Widget inven = client.getWidget(WidgetInfo.INVENTORY);
+
+        if(inven == null) {
+            log.info("Could not get inventory widget, refresh failed");
+            return;
+        }
+
         Widget[] items = inven.getDynamicChildren();
 
         for (int i = 0; i < itemContainer.getItems().length; i++) {

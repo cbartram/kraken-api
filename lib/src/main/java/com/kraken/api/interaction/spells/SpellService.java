@@ -3,14 +3,17 @@ package com.kraken.api.interaction.spells;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.container.inventory.ContainerItem;
 import com.kraken.api.interaction.container.inventory.InventoryService;
-import com.kraken.api.interaction.reflect.ReflectionService;
+import com.kraken.api.interaction.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Varbit;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.game.ItemManager;
 
 import java.util.HashMap;
@@ -28,7 +31,10 @@ public class SpellService extends AbstractService {
     private ItemManager itemManager;
 
     @Inject
-    private ReflectionService reflectionService;
+    private WidgetPackets widgetPackets;
+
+    @Inject
+    private MousePackets mousePackets;
 
     private static final List<Integer> SPELLS_REQUIRING_PRAYER = List.of(
             14287032,
@@ -88,7 +94,17 @@ public class SpellService extends AbstractService {
             return false;
         }
 
-        reflectionService.invokeMenuAction(-1, spell.getWidgetId(), MenuAction.CC_OP.getId(), 1, -1);
+        // TODO Packets
+        Widget w = client.getWidget(spell.getWidgetId());
+
+        if(w == null) {
+            log.info("Cannot cast spell {}. Missing widget: {}", spell.getName(), spell.getWidgetId());
+            return false;
+        }
+
+        Point pt = UIService.getClickingPoint(w.getBounds(), true);
+        mousePackets.queueClickPacket(pt.getX(), pt.getY());
+        widgetPackets.queueWidgetAction(w, "Cast");
         return true;
     }
 
