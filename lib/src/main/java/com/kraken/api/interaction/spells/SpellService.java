@@ -94,9 +94,7 @@ public class SpellService extends AbstractService {
             return false;
         }
 
-        // TODO Packets
         Widget w = client.getWidget(spell.getWidgetId());
-
         if(w == null) {
             log.info("Cannot cast spell {}. Missing widget: {}", spell.getName(), spell.getWidgetId());
             return false;
