@@ -7,14 +7,11 @@ import com.kraken.api.core.SleepService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.MovementPackets;
 import com.kraken.api.interaction.player.PlayerService;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.MenuAction;
-import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -41,9 +38,6 @@ public class MovementService extends AbstractService {
 
     @Inject
     private TileService tileService;
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private UIService uiService;
@@ -324,31 +318,6 @@ public class MovementService extends AbstractService {
         Point clickingPoint = uiService.getClickbox(converted);
         mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         movementPackets.queueMovement(converted);
-    }
-
-    /**
-     * Moves to the specified world point using reflection
-     * @param point The world point to move towards.
-     */
-    public void moveToReflect(WorldPoint point) {
-        moveToReflect(LocalPoint.fromWorld(client.getTopLevelWorldView(), point));
-    }
-
-    /**
-     * Moves to the specified local point using reflection. Note: TODO this function
-     * will not correctly move to the point. It only moves to the last place your mouse left
-     * the canvas
-     * @param point Local point to move towards
-     */
-    public void moveToReflect(LocalPoint point) {
-        if(point == null) return;
-
-        Point canv = Perspective.localToCanvas(client, point, client.getTopLevelWorldView().getPlane());
-        int canvasX = canv != null ? canv.getX() : -1;
-        int canvasY = canv != null ? canv.getY() : -1;
-
-        log.debug("Canvas: ({}, {}), Point: ({}, {})", canvasX, canvasY, point.getX(), point.getY());
-        reflectionService.invokeMenuAction(canvasX, canvasY, MenuAction.WALK.getId(), 0, -1, -1, "Walk here", "", canvasX, canvasY);
     }
 
     /**

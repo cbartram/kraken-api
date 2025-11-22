@@ -1,12 +1,13 @@
 package com.kraken.api.interaction.camera;
 
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.input.KeyboardService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.callback.ClientThread;
@@ -15,8 +16,6 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.camera.CameraPlugin;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
@@ -46,73 +45,156 @@ public class CameraService extends AbstractService {
     @Inject
     private ClientThread runeliteClientThread;
 
+    /**
+     * Calculates the angle in degrees from the local player to the specified actor.
+     *
+     * @param t the target actor
+     * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
+     */
     public int angleToTile(Actor t) {
         int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - client.getLocalPlayer().getWorldLocation().getY(),
                 t.getWorldLocation().getX() - client.getLocalPlayer().getWorldLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
+    /**
+     * Calculates the angle in degrees from the local player to the specified tile object.
+     *
+     * @param t the target tile object
+     * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
+     */
     public int angleToTile(TileObject t) {
         int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - client.getLocalPlayer().getWorldLocation().getY(),
                 t.getWorldLocation().getX() - client.getLocalPlayer().getWorldLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
+    /**
+     * Calculates the angle in degrees from the local player to the specified local point.
+     *
+     * @param localPoint the target local point
+     * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
+     */
     public int angleToTile(LocalPoint localPoint) {
         int angle = (int) Math.toDegrees(Math.atan2(localPoint.getY() - client.getLocalPlayer().getLocalLocation().getY(),
                 localPoint.getX() - client.getLocalPlayer().getLocalLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
+    /**
+     * Calculates the angle in degrees from the local player to the specified world point.
+     *
+     * @param worldPoint the target world point
+     * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
+     */
     public int angleToTile(WorldPoint worldPoint) {
         int angle = (int) Math.toDegrees(Math.atan2(worldPoint.getY() - client.getLocalPlayer().getWorldLocation().getY(),
                 worldPoint.getX() - client.getLocalPlayer().getWorldLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
+    /**
+     * Rotates the camera to face the specified actor with a default maximum angle of 40 degrees.
+     *
+     * @param actor the actor to turn towards
+     */
     public void turnTo(final Actor actor) {
         int angle = getCharacterAngle(actor);
         setAngle(angle, 40);
     }
 
+    /**
+     * Rotates the camera to face the specified actor with a custom maximum angle.
+     *
+     * @param actor the actor to turn towards
+     * @param maxAngle the maximum angle to rotate in a single adjustment
+     */
     public void turnTo(final Actor actor, int maxAngle) {
         int angle = getCharacterAngle(actor);
         setAngle(angle, maxAngle);
     }
 
+    /**
+     * Rotates the camera to face the specified tile object with a default maximum angle of 40 degrees.
+     *
+     * @param tileObject the tile object to turn towards
+     */
     public void turnTo(final TileObject tileObject) {
         int angle = getObjectAngle(tileObject);
         setAngle(angle, 40);
     }
 
+    /**
+     * Rotates the camera to face the specified tile object with a custom maximum angle.
+     *
+     * @param tileObject the tile object to turn towards
+     * @param maxAngle the maximum angle to rotate in a single adjustment
+     */
     public void turnTo(final TileObject tileObject, int maxAngle) {
         int angle = getObjectAngle(tileObject);
         setAngle(angle, maxAngle);
     }
 
+    /**
+     * Rotates the camera to face the specified local point with a default maximum angle of 40 degrees.
+     *
+     * @param localPoint the local point to turn towards
+     */
     public void turnTo(final LocalPoint localPoint) {
         int angle = (angleToTile(localPoint) - 90) % 360;
         setAngle(angle, 40);
     }
 
+    /**
+     * Rotates the camera to face the specified local point with a custom maximum angle.
+     *
+     * @param localPoint the local point to turn towards
+     * @param maxAngle the maximum angle to rotate in a single adjustment
+     */
     public void turnTo(final LocalPoint localPoint, int maxAngle) {
         int angle = (angleToTile(localPoint) - 90) % 360;
         setAngle(angle, maxAngle);
     }
 
+    /**
+     * Gets the camera angle needed to face the specified actor.
+     *
+     * @param actor the target actor
+     * @return the camera angle in degrees (0-359)
+     */
     public int getCharacterAngle(Actor actor) {
         return getTileAngle(actor);
     }
 
+    /**
+     * Gets the camera angle needed to face the specified tile object.
+     *
+     * @param tileObject the target tile object
+     * @return the camera angle in degrees (0-359)
+     */
     public int getObjectAngle(TileObject tileObject) {
         return getTileAngle(tileObject);
     }
 
+    /**
+     * Calculates the camera angle needed to face the specified actor.
+     * Adjusts the mathematical angle to camera coordinates.
+     *
+     * @param actor the target actor
+     * @return the camera angle in degrees (0-359)
+     */
     public int getTileAngle(Actor actor) {
         int a = (angleToTile(actor) - 90) % 360;
         return a < 0 ? a + 360 : a;
     }
 
+    /**
+     * Calculates the camera angle needed to face the specified tile object.
+     * Adjusts the mathematical angle to camera coordinates.
+     *
+     * @param tileObject the target tile object
+     * @return the camera angle in degrees (0-359)
+     */
     public int getTileAngle(TileObject tileObject) {
         int a = (angleToTile(tileObject) - 90) % 360;
         return a < 0 ? a + 360 : a;
@@ -139,7 +221,7 @@ public class CameraService extends AbstractService {
     public void setAngle(int targetDegrees, int maxAngle) {
         double defaultCameraSpeed = 1f;
 
-       Plugin cameraPlugin =  pluginManager.getPlugins().stream()
+        Plugin cameraPlugin =  pluginManager.getPlugins().stream()
                 .filter(plugin -> plugin.getClass() == CameraPlugin.class)
                 .map(CameraPlugin.class::cast).findFirst().orElse(null);
 
@@ -166,6 +248,12 @@ public class CameraService extends AbstractService {
         client.setCameraSpeed((float) defaultCameraSpeed);
     }
 
+    /**
+     * Adjusts the camera pitch to the specified percentage.
+     * Uses keyboard input to smoothly transition to the target pitch.
+     *
+     * @param percentage the target pitch as a percentage (0.0 to 1.0, where 0 is looking down and 1 is looking up)
+     */
     public void adjustPitch(float percentage) {
         float currentPitchPercentage = cameraPitchPercentage();
 
@@ -180,11 +268,21 @@ public class CameraService extends AbstractService {
         }
     }
 
+    /**
+     * Gets the current camera pitch value.
+     *
+     * @return the current camera pitch (128-383, where 128 is looking down and 383 is looking up)
+     */
     public int getPitch() {
         return client.getCameraPitch();
     }
 
-    // set camera pitch
+    /**
+     * Sets the camera pitch to the specified value.
+     * The pitch is clamped between the minimum (128) and maximum (383) values.
+     *
+     * @param pitch the target pitch value (will be clamped to 128-383 range)
+     */
     public void setPitch(int pitch) {
         int minPitch = 128;
         int maxPitch = 383;
@@ -193,6 +291,11 @@ public class CameraService extends AbstractService {
         client.setCameraPitchTarget(pitch);
     }
 
+    /**
+     * Calculates the current camera pitch as a percentage of the total pitch range.
+     *
+     * @return the pitch percentage (0.0 to 1.0, where 0 is looking down and 1 is looking up)
+     */
     public float cameraPitchPercentage() {
         int minPitch = 128;
         int maxPitch = 383;
@@ -204,6 +307,13 @@ public class CameraService extends AbstractService {
         return (float) adjustedPitch / (float) adjustedMaxPitch;
     }
 
+    /**
+     * Calculates the angular difference between the current camera angle and the target angle.
+     * Returns a positive value if the target is to the left, negative if to the right.
+     *
+     * @param degrees the target angle in degrees
+     * @return the angular difference (-180 to 180 degrees)
+     */
     public int getAngleTo(int degrees) {
         int ca = getAngle();
         if (ca < degrees) {
@@ -216,6 +326,12 @@ public class CameraService extends AbstractService {
         return da;
     }
 
+    /**
+     * Gets the current camera yaw angle.
+     * Converts from the client's fixed-point radians to degrees.
+     *
+     * @return the current camera angle in degrees (0-359)
+     */
     public int getAngle() {
         // the client uses fixed point radians 0 - 2^14
         // degrees = yaw * 360 / 2^14 = yaw / 45.5111...
@@ -285,6 +401,12 @@ public class CameraService extends AbstractService {
         client.setCameraYawTarget(calculateCameraYaw(angleToTile(npc)));
     }
 
+    /**
+     * Checks if the specified tile object is visible on the screen.
+     *
+     * @param tileObject the tile object to check
+     * @return true if the tile object is within the viewport bounds, false otherwise
+     */
     public boolean isTileOnScreen(TileObject tileObject) {
         int viewportHeight = client.getViewportHeight();
         int viewportWidth = client.getViewportWidth();
@@ -297,6 +419,13 @@ public class CameraService extends AbstractService {
         return poly.getBounds2D().getX() <= viewportWidth && poly.getBounds2D().getY() <= viewportHeight;
     }
 
+    /**
+     * Checks if the specified local point is visible on the screen.
+     * Verifies that the tile polygon intersects with the viewport and that the tile is in front of the camera.
+     *
+     * @param localPoint the local point to check
+     * @return true if the tile is within the viewport bounds and in front of the camera, false otherwise
+     */
     public boolean isTileOnScreen(LocalPoint localPoint) {
         int viewportHeight = client.getViewportHeight();
         int viewportWidth = client.getViewportWidth();
@@ -309,32 +438,54 @@ public class CameraService extends AbstractService {
         if (!poly.intersects(viewportBounds)) return false;
 
         // Optionally, check if the tile is in front of the camera
-        Point canvasPoint = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
+        net.runelite.api.Point canvasPoint = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
         return canvasPoint != null;
     }
 
-    // get the camera zoom
+    /**
+     * Gets the current camera zoom level.
+     *
+     * @return the current zoom value from VarClientInt.CAMERA_ZOOM_RESIZABLE_VIEWPORT
+     */
     public int getZoom() {
         // VarClientInt.CAMERA_ZOOM_RESIZABLE_VIEWPORT
         return client.getVarcIntValue(74);
     }
 
+    /**
+     * Sets the camera zoom to the specified level.
+     * Invokes the CAMERA_DO_ZOOM script on the client thread.
+     *
+     * @param zoom the target zoom level
+     */
     public void setZoom(int zoom) {
         runeliteClientThread.invokeLater(() -> {
             client.runScript(ScriptID.CAMERA_DO_ZOOM, zoom, zoom);
         });
     }
 
-    // Get camera/compass facing
+    /**
+     * Gets the current camera yaw (compass facing direction).
+     *
+     * @return the current yaw value (0-2047, where 0/2048=North, 512=West, 1024=South, 1536=East)
+     */
     public int getYaw() {
         return client.getCameraYaw();
     }
 
-    // Set camera/compass facing
-    // North = 0, 2048
-    // East = 1536
-    // South = 1024
-    // West = 512
+    /**
+     * Sets the camera yaw (compass facing direction).
+     * <p>
+     * Yaw values:
+     * <ul>
+     * <li>North = 0, 2048</li>
+     * <li>East = 1536</li>
+     * <li>South = 1024</li>
+     * <li>West = 512</li>
+     * </ul>
+     *
+     * @param yaw the target yaw value (must be between 0 and 2047)
+     */
     public void setYaw(int yaw) {
         if ( yaw >= 0 && yaw < 2048 ) {
             client.setCameraYawTarget(yaw);
@@ -370,7 +521,7 @@ public class CameraService extends AbstractService {
      * @param tile             the local tile coordinate to test (may not be null)
      * @param marginPercentage the size of the centered tolerance box, expressed as a percentage
      *                         of the viewport (e.g. 10.0 for 10%)
-     * @return {@code true} if the tile’s screen bounds lie entirely within the centered margin box;
+     * @return {@code true} if the tile's screen bounds lie entirely within the centered margin box;
      * {@code false} if the tile cannot be projected or lies outside that box
      */
     public boolean isTileCenteredOnScreen(LocalPoint tile, double marginPercentage) {
@@ -401,7 +552,7 @@ public class CameraService extends AbstractService {
      * margin tolerance of 10%.
      *
      * @param tile the local tile coordinate to test (may not be null)
-     * @return {@code true} if the tile’s screen bounds lie entirely within the centered
+     * @return {@code true} if the tile's screen bounds lie entirely within the centered
      * 10% margin box; {@code false} otherwise
      * @see #isTileCenteredOnScreen(LocalPoint, double)
      */

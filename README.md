@@ -8,7 +8,7 @@
 <h3 align="center">Kraken API</h3>
 
   <p align="center">
-   An extended RuneLite API for creating Kraken Plugins that support client interactions.
+   An extended RuneLite API for creating plugins that support client interactions.
     <br />
 </div>
 
@@ -32,13 +32,6 @@ For more documentation on the API and Kraken plugins please see our [official do
 - [Gradle](https://gradle.org/) (wrapper included, no need to install globally)
 - [Git](https://git-scm.com/)
 - [RuneLite](https://runelite.net) (for testing and running plugins)
-
-
-### Cloning the Repository
-```bash
-git clone https://github.com/cbartram/kraken-api.git
-cd kraken-api
-````
 
 ### Building
 
@@ -117,16 +110,13 @@ the example plugin loaded in the plugin panel within RuneLite's sidebar.
 
 ### Packets & Reflection
 
-When the API starts it will dynamically get the latest version of the Packet Utils jar file and load the plugin. This plugin
-enables the API to use network packets to communicate directly with OSRS servers for an alternate way of interacting with the game client.
-
-Most of the `Service` classes have two different methods for game interaction.
-There are standard interaction methods like `interact()` and there are reflection interaction methods which will always end with `reflect`.
-For example `wieldReflect()` will use reflection to wield the item instead of packets. 
+When the API starts it will dynamically parse necessary client methods to determine which methods are used to send packets. These methods are then
+invoked via reflection to actually send client packets to the OSRS servers. This enables the API to use network packets to communicate directly 
+with OSRS servers and facilitate automatic interactions with the game client.
 
 The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
-A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
-the functionality for client analysis and packet ops are sourced from the Packet Utils repository.
+A good portion of the code has been re-written to follow best practices (using logs, factory design pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
+the functionality for client analysis and packet ops are sourced from the Packet Utils repository (credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic).
 
 ### API Design & Methodology
 
@@ -211,7 +201,7 @@ file.
 This file maps specific fields, methods, values, and classes from the obfuscated game client to be used in order to send packets and provide much of the API's functionality correctly.
 The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
 A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
-the functionality for client analysis, obfuscated class names, and packet ops are sourced from the Packet Utils repository.
+the functionality for client analysis, obfuscated class names, and packet ops are sourced from the Packet Utils repository (credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic).
 
 - Check the [PRs](https://github.com/Ethan-Vann/PacketUtils/pulls) for the Packet Utils repository. 
 - Once the new `ObfuscatedNames` is updated copy the contents of the file into `core.packets.ObfuscatedNames` 
@@ -293,7 +283,7 @@ This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
 
 ## 🙏 Acknowledgments
 
-* **RuneLite** — The splash screen and much of the core codebase come from RuneLite.
+* **RuneLite** — For API's to work with and view in game data for Old School RuneScape
 * **Packet Utils** - [Plugin](https://github.com/Ethan-Vann/PacketUtils) from Ethan Vann providing access to complex packet sending functionality which was used to develop the `core.packet` package of the API
 * **Microbot** — For clever ideas on client and plugin interaction.
 

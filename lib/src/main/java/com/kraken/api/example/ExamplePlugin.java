@@ -241,7 +241,6 @@ public class ExamplePlugin extends Plugin {
     @Override
     protected void startUp() {
         context.register();
-        context.loadHooks();
         context.initializePackets();
 
         // Add overlays

@@ -5,8 +5,6 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.NPCPackets;
-import com.kraken.api.interaction.camera.CameraService;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,18 +15,11 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Slf4j
 @Singleton
 public class NpcService extends AbstractService {
-
-    @Inject
-    private CameraService cameraService;
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private UIService uiService;
@@ -337,75 +328,6 @@ public class NpcService extends AbstractService {
 
         if (scale == 0) return -1;
         return (double) ratio / (double) scale * 100.0;
-    }
-
-
-    /**
-     * Interacts with an NPC using a specified action.
-     *
-     * <p>This method performs interaction logic, including:</p>
-     * <ul>
-     *   <li>Checking if the NPC is reachable.</li>
-     *   <li>Handling cases where the bot repeatedly fails to reach the NPC.</li>
-     *   <li>Determining the correct {@link MenuAction} for the specified interaction.</li>
-     *   <li>Executing the interaction via the RuneLite menu system.</li>
-     * </ul>
-     *
-     * <p>If the NPC cannot be reached after multiple attempts, the bot will pause all scripts and notify the user.</p>
-     *
-     * @param npc    The {@link NPC} to interact with.
-     * @param action The action to perform on the NPC (e.g., "Talk-to", "Attack", "Trade").
-     * @return {@code true} if the interaction was successfully executed, {@code false} if the NPC was unreachable.
-     */
-    public boolean interactReflect(NPC npc, String action) {
-        if(!context.isHooksLoaded()) return false;
-        if (npc == null) return false;
-
-        try {
-            NPCComposition npcComposition = context.runOnClientThreadOptional(
-                    () -> context.getClient().getNpcDefinition(npc.getId())).orElse(null);
-
-            if (npcComposition == null || npcComposition.getActions() == null) {
-                log.error("Could not get NPC composition or actions for NPC: {}", npc.getName());
-                return false;
-            }
-
-            final int index;
-            String[] actions = npcComposition.getActions();
-
-            if (action == null || action.isBlank()) {
-                index = IntStream.range(0, actions.length)
-                        .filter(i -> actions[i] != null && !actions[i].isEmpty())
-                        .findFirst().orElse(-1);
-            } else {
-                final String finalAction = action;
-                index = IntStream.range(0, actions.length)
-                        .filter(i -> actions[i] != null && actions[i].equalsIgnoreCase(finalAction))
-                        .findFirst().orElse(-1);
-            }
-
-            final MenuAction menuAction = getMenuAction(index);
-            if (menuAction == null) {
-                if (index == -1 && !client.isWidgetSelected()) {
-                    log.warn("Action='{}' not found for NPC='{}'", action, npc.getName());
-                } else {
-                    log.error("Could not get menu action for Action='{}' on NPC='{}'", action, npc.getName());
-                }
-                return false;
-            }
-
-            action = actions[index];
-
-            if (!cameraService.isTileOnScreen(npc.getLocalLocation())) {
-                cameraService.turnTo(npc);
-            }
-
-            reflectionService.invokeMenuAction(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), action);
-            return true;
-        } catch (Exception ex) {
-            log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
-            return false;
-        }
     }
 
     /**
