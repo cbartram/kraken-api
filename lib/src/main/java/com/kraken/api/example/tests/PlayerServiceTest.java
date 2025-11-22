@@ -85,7 +85,7 @@ public class PlayerServiceTest extends BaseApiTest {
         try {
             boolean specEnabled = playerService.isSpecEnabled();
             log.info("Special attack enabled: {}", specEnabled);
-
+            playerService.toggleSpecialAttack(50, 220);
             // This test passes as long as the method doesn't throw an exception
             // The actual value can be either true or false
             return true;
