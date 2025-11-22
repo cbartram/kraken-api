@@ -379,13 +379,9 @@ public class BankService extends AbstractService {
         if (!inventoryService.hasItem(item.getId())) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
-
-        // TODO Verify working
-        if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0) {
-            Point pt = uiService.getClickbox(item);
-            mousePackets.queueClickPacket(pt.getX(), pt.getY());
-            widgetPackets.queueWidgetAction(item.getWidget(), "Deposit-1");
-        }
+        Point pt = uiService.getClickbox(item);
+        mousePackets.queueClickPacket(pt.getX(), pt.getY());
+        widgetPackets.queueWidgetAction(item.getBankInventoryWidget(), "Deposit-1");
         return true;
     }
 
@@ -435,7 +431,7 @@ public class BankService extends AbstractService {
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
-            widgetPackets.queueWidgetAction(item.getWidget(), "Deposit-All");
+            widgetPackets.queueWidgetAction(item.getBankInventoryWidget(), "Deposit-All");
         }
         return true;
     }

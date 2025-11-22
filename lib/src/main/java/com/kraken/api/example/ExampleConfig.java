@@ -13,7 +13,7 @@ public interface ExampleConfig extends Config {
             name = "Start Tests",
             keyName = "start",
             description = "Start the execution of the configured tests.",
-            position = 0
+            position = -999
     )
     default boolean start() {
         return false;
@@ -31,7 +31,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigSection(
             name = "General",
-            description = "General settings for testing",
+            description = "General settings for individual testing",
             position = 0
     )
     String general = "General";
@@ -51,13 +51,56 @@ public interface ExampleConfig extends Config {
             name = "Send Spell Packet",
             keyName = "magicSpellCast",
             description = "Test magic spell cast",
-            position = -2,
+            position = 0,
             section = general
     )
     default boolean magicSpellCast() {
         return false;
     }
 
+    @ConfigItem(
+            name = "Deposit One Item",
+            keyName = "depositOneItem",
+            description = "Test depositing one item into the bank from the inventory",
+            position = 1,
+            section = general
+    )
+    default String depositOneItem() {
+        return "";
+    }
+
+    @ConfigItem(
+            name = "Start Deposit One",
+            keyName = "depositOneCheck",
+            description = "Test depositing one item into the bank from the inventory",
+            position = 2,
+            section = general
+    )
+    default boolean depositOneCheck() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Deposit All Item",
+            keyName = "depositAllItem",
+            description = "Test depositing all of a single item into the bank from the inventory",
+            position = 3,
+            section = general
+    )
+    default String depositAllItem() {
+        return "";
+    }
+
+    @ConfigItem(
+            name = "Start Deposit All",
+            keyName = "depositAllCheck",
+            description = "Test depositing one item into the bank from the inventory",
+            position = 4,
+            section = general
+    )
+    default boolean depositAllCheck() {
+        return false;
+    }
 
     // ========== NPC TESTS SECTION ==========
     @ConfigSection(

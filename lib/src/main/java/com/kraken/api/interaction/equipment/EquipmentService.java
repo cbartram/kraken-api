@@ -96,7 +96,16 @@ public class EquipmentService extends AbstractService {
                     .findFirst()
                     .orElse(null);
 
-            list.add(new ContainerItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget));
+            Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+            Widget bankInventoryWidget = null;
+            if(bankInventory != null) {
+                bankInventoryWidget = Arrays.stream(bankInventory.getDynamicChildren())
+                        .filter(Objects::nonNull)
+                        .filter(x -> x.getItemId() != 6512 && x.getItemId() != -1)
+                        .findFirst().orElse(null);
+            }
+
+            list.add(new ContainerItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget, bankInventoryWidget));
         }
 
         if(event.getContainerId() == 93) {

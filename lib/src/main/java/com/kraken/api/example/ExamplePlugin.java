@@ -10,6 +10,7 @@ import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
+import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.movement.WalkService;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.spells.SpellService;
@@ -126,6 +127,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private SpellService spellService;
 
+    @Inject
+    private BankService bankService;
+
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
 
@@ -176,6 +180,17 @@ public class ExamplePlugin extends Plugin {
             if(event.getKey().equals("magicSpellCast") && config.magicSpellCast()) {
                 log.info("Teleporting to Varrock");
                 spellService.cast(Spells.VARROCK_TELEPORT);
+            }
+
+            if(event.getKey().equals("depositOneCheck") && config.depositOneCheck()) {
+                log.info("Depositing one: {}", config.depositOneItem());
+                bankService.depositOne(config.depositOneItem());
+
+            }
+
+            if(event.getKey().equals("depositAllCheck") && config.depositAllCheck()) {
+                log.info("Depositing all: {}", config.depositAllItem());
+                bankService.depositAll(config.depositAllItem());
             }
 
             if(event.getKey().equals("start")) {

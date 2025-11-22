@@ -17,6 +17,7 @@ import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
@@ -66,6 +67,20 @@ public class InventoryService extends AbstractService {
         }
     }
 
+    @Subscribe
+    public void onWidgetLoaded(WidgetLoaded event) {
+        // When the bank interface loads, the "Bank Inventory" widgets become available.
+        // We need to refresh the inventory so our ContainerItems can link to these new widgets.
+        if (event.getGroupId() == InterfaceID.BANKMAIN) {
+            context.runOnClientThread(() -> {
+                ItemContainer container = client.getItemContainer(InventoryID.INV);
+                if (container != null) {
+                    refresh(container);
+                }
+            });
+        }
+    }
+
     /**
      * Refreshes the internal inventory list with new/removed items based on the RuneLite event. This is designed
      * to be called within the @Subscribed method for item container changed.
@@ -81,34 +96,48 @@ public class InventoryService extends AbstractService {
     }
 
     /**
-     * Refreshes the inventory with a new item container.
+     * Refreshes the inventory with a new item container. This should never be called directly and it can cause
+     * bad state if the server rejects a change for an item container. RuneLite will deliver the item container
+     * change event to let us re-build the inventory correctly.
      * @param itemContainer The item container to refresh with.
      */
     private void refresh(ItemContainer itemContainer) {
         containerItems.clear();
-        Widget inven = client.getWidget(WidgetInfo.INVENTORY);
 
-        if(inven == null) {
+        Widget inventory = client.getWidget(WidgetInfo.INVENTORY);
+        // The inventory widget while the bank is open
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+
+        if (inventory == null) {
             log.info("Could not get inventory widget, refresh failed");
             return;
         }
 
-        Widget[] items = inven.getDynamicChildren();
+        Widget[] inventoryWidgets = inventory.getDynamicChildren();
+        Widget[] bankWidgets = (bankInventory != null) ? bankInventory.getDynamicChildren() : null;
 
         for (int i = 0; i < itemContainer.getItems().length; i++) {
             final Item item = itemContainer.getItems()[i];
-            if (item.getId() == -1) continue;
-            final ItemComposition itemComposition = context.runOnClientThreadOptional(() -> client.getItemDefinition(item.getId())).orElse(null);
 
-            // Also lookup the widget associated with this item.
-            Widget widget = Arrays.stream(items)
-                    .filter(Objects::nonNull)
-                    .filter(w -> w.getItemId() != 6512 && w.getItemId() != -1)
-                    .filter(w -> w.getItemId() == item.getId())
-                    .findFirst().orElse(null);
+            // Skip empty slots
+            if (item.getId() == -1 || item.getId() == 6512) continue;
 
-            if(itemComposition == null) continue;
-            containerItems.add(new ContainerItem(item, itemComposition, i, context, widget));
+            final ItemComposition itemComposition = context.runOnClientThreadOptional(() ->
+                    client.getItemDefinition(item.getId())
+            ).orElse(null);
+
+            if (itemComposition == null) continue;
+
+            Widget widget = null;
+            if (i < inventoryWidgets.length) {
+                widget = inventoryWidgets[i];
+            }
+
+            Widget bankInventoryWidget = null;
+            if (bankWidgets != null && i < bankWidgets.length) {
+                bankInventoryWidget = bankWidgets[i];
+            }
+            containerItems.add(new ContainerItem(item, itemComposition, i, context, widget, bankInventoryWidget));
         }
     }
 
