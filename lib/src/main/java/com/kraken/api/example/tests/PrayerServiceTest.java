@@ -16,9 +16,6 @@ public class PrayerServiceTest extends BaseApiTest {
         boolean testsPassed = true;
 
         try {
-            boolean prayerReflectTest = testPrayerReflect();
-            testsPassed &= prayerReflectTest;
-
             boolean prayerPacketTest = testPrayerPacket();
             testsPassed &= prayerPacketTest;
 
@@ -35,7 +32,7 @@ public class PrayerServiceTest extends BaseApiTest {
 
     private boolean testIsActive() {
         try {
-            prayer.toggle(Prayer.PROTECT_FROM_MELEE, true, true);
+            prayer.toggle(Prayer.PROTECT_FROM_MELEE, true);
             Thread.sleep(1000);
             return prayer.isActive(Prayer.PROTECT_FROM_MELEE);
         } catch (Exception e) {
@@ -44,18 +41,9 @@ public class PrayerServiceTest extends BaseApiTest {
         }
     }
 
-    private boolean testPrayerReflect() {
-        try {
-            return prayer.toggle(Prayer.PROTECT_FROM_MELEE, true, true);
-        } catch (Exception e) {
-            log.error("Error testing prayer reflect ", e);
-            return false;
-        }
-    }
-
     private boolean testPrayerPacket() {
         try {
-            return prayer.toggle(Prayer.PROTECT_ITEM, true, false);
+            return prayer.toggle(Prayer.PROTECT_ITEM, true);
         } catch (Exception e) {
             log.error("Error testing prayer via packet", e);
             return false;

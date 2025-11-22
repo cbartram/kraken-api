@@ -17,13 +17,11 @@ public class EquipmentServiceTest extends BaseApiTest {
         boolean testsPassed = true;
 
         int packet = Integer.parseInt(config.equipIdPacket());
-        int reflect = Integer.parseInt(config.equipIdPacketReflect());
 
         if(config.headSlotUnequip()) {
             testsPassed &= equipmentService.remove(EquipmentInventorySlot.HEAD);
         }
 
-        testsPassed &= equipmentService.wieldReflect(reflect);
         testsPassed &= equipmentService.wield(packet);
         return testsPassed;
     }

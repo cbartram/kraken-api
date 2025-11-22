@@ -7,13 +7,10 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.GameObjectPackets;
 import com.kraken.api.core.packet.entity.MousePackets;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.Point;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemSpawned;
@@ -21,7 +18,6 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.util.RSTimeUnit;
 
-import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,9 +29,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 public class GroundObjectService extends AbstractService {
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private ItemManager itemManager;
@@ -194,79 +187,6 @@ public class GroundObjectService extends AbstractService {
     public boolean canReach(GroundItem item) {
         return context.runOnClientThread(() -> tileService.isTileReachable(item.getLocation()));
     }
-
-    /**
-     * Performs the "Take" action on a ground item using reflection
-     * @param item The ground item to interact with
-     * @return true if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(GroundItem item) {
-        return interactReflect(item, "Take");
-    }
-
-    /**
-     * Interacts with a ground item by performing a specified action using reflection
-     *
-     * @param groundItem The ground item to interact with.
-     * @param action     The action to perform on the ground item. i.e "Take", "Examine", etc...
-     *
-     * @return true if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(GroundItem groundItem, String action) {
-        if(!context.isHooksLoaded()) return false;
-        if (groundItem == null) return false;
-        try {
-            int param0;
-            int param1;
-            int identifier;
-            String target;
-            MenuAction menuAction = MenuAction.CANCEL;
-            ItemComposition item;
-
-            item = context.runOnClientThreadOptional(() -> client.getItemDefinition(groundItem.getId())).orElse(null);
-            if (item == null) return false;
-            identifier = groundItem.getId();
-
-            LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), groundItem.getLocation());
-            if (localPoint == null) return false;
-
-            param0 = localPoint.getSceneX();
-            target = "<col=ff9040>" + groundItem.getName();
-            param1 = localPoint.getSceneY();
-
-            String[] groundActions = GroundItem.getGroundItemActions(groundItem.getItemComposition());
-
-            int index = -1;
-            for (int i = 0; i < groundActions.length; i++) {
-                String groundAction = groundActions[i];
-                if (groundAction == null || !groundAction.equalsIgnoreCase(action)) continue;
-                index = i;
-            }
-
-            if (client.isWidgetSelected()) {
-                menuAction = MenuAction.WIDGET_TARGET_ON_GROUND_ITEM;
-            } else if (index == 0) {
-                menuAction = MenuAction.GROUND_ITEM_FIRST_OPTION;
-            } else if (index == 1) {
-                menuAction = MenuAction.GROUND_ITEM_SECOND_OPTION;
-            } else if (index == 2) {
-                menuAction = MenuAction.GROUND_ITEM_THIRD_OPTION;
-            } else if (index == 3) {
-                menuAction = MenuAction.GROUND_ITEM_FOURTH_OPTION;
-            } else if (index == 4) {
-                menuAction = MenuAction.GROUND_ITEM_FIFTH_OPTION;
-            }
-
-            Polygon canvas = Perspective.getCanvasTilePoly(client, localPoint);
-            if (canvas != null) {
-                reflectionService.invokeMenuAction(param0, param1, menuAction.getId(), identifier, -1, action, target);
-            }
-        } catch (Exception ex) {
-            log.error("failed to interact with ground item: {}", groundItem.getName(), ex);
-        }
-        return true;
-    }
-
 
     /**
      * Interacts with an item on the ground given the items name using packets

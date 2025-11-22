@@ -4,8 +4,6 @@ package com.kraken.api.interaction.gameobject;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.GameObjectPackets;
 import com.kraken.api.core.packet.entity.MousePackets;
-import com.kraken.api.interaction.camera.CameraService;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.tile.TileService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.util.StringUtils;
@@ -30,12 +28,6 @@ import java.util.stream.Stream;
 @Slf4j
 @Singleton
 public class GameObjectService extends AbstractService {
-
-    @Inject
-    private CameraService cameraService;
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private TileService tileService;
@@ -99,18 +91,12 @@ public class GameObjectService extends AbstractService {
      * Extracts all {@link GameObject}s located on a given {@link Tile}.
      *
      * @see Tile#getGameObjects()
-     * @param tile the tile from which to extract game objects
-     * @return a {@link List} of {@link GameObject} instances on the tile (never null)
      */
     private static final Function<Tile, Collection<? extends GameObject>> GAMEOBJECT_EXTRACTOR =
             tile -> Arrays.asList(tile.getGameObjects());
 
     /**
      * Extracts all types of {@link TileObject} (decorative, ground, wall) from a given {@link Tile}.
-     *
-     * @param tile the tile from which to extract all tile objects
-     * @return a {@link List} containing the {@link DecorativeObject}, {@link GroundObject},
-     *         and {@link WallObject} (some entries may be null if that object is not present)
      */
     private static final Function<Tile, Collection<? extends TileObject>> TILEOBJECT_EXTRACTOR =
             tile -> Arrays.asList(
@@ -178,140 +164,6 @@ public class GameObjectService extends AbstractService {
             if(obj == null) return false;
             return interact(obj, action);
         });
-    }
-
-    /**
-     * Interacts with a game object located at the specified world point using the default action.
-     * @param worldPoint The world point of the game object to interact with.
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(WorldPoint worldPoint) {
-        return interactReflect(worldPoint, "");
-    }
-
-    /**
-     * Interacts with a game object located at the specified world point using the specified action.
-     * If the action is an empty string.
-     * @param worldPoint The world point of the game object to interact with.
-     * @param action The action to perform on the game object.
-     * @return True if the interaction was successful and false otherwise.
-     */
-    public boolean interactReflect(WorldPoint worldPoint, String action) {
-        TileObject gameObject = all(o -> o.getWorldLocation().equals(worldPoint)).stream().findFirst().orElse(null);
-        return interactReflect(gameObject, action);
-    }
-
-    /**
-     * Interacts with the specified game object using the default action.
-     * @param gameObject The game object to interact with.
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(GameObject gameObject) {
-        return interactReflect(gameObject, "");
-    }
-
-    /**
-     * Interacts with the specified tile object using the default action.
-     * @param tileObject The tile object to interact with.
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(TileObject tileObject) {
-        return interactReflect(tileObject, "");
-    }
-
-    /**
-     * Interacts with the first game object found with the specified ID using the default action.
-     * @param id The ID of the game object to interact with.
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(int id) {
-        TileObject object = all(o -> o.getId() == id).stream().findFirst().orElse(null);
-        return interactReflect(object);
-    }
-
-    /**
-     * Interacts with the first game object found with the specified ID using the specified action.
-     * @param object The tile object to interact with.
-     * @param action The action to perform on the game object. If empty, the default action "Walk" is used.
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(TileObject object, String action) {
-        if(!context.isHooksLoaded()) return false;
-        if (object == null) return false;
-        if (client.getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
-            log.info("Object to far from player. Cannot interact");
-            return false;
-        }
-
-        try {
-            int param0;
-            int param1;
-            MenuAction menuAction = MenuAction.WALK;
-
-            ObjectComposition objComp = convertToObjectComposition(object);
-            if (objComp == null) return false;
-
-            if (object instanceof GameObject) {
-                GameObject obj = (GameObject) object;
-                if (obj.sizeX() > 1) {
-                    param0 = obj.getLocalLocation().getSceneX() - obj.sizeX() / 2;
-                } else {
-                    param0 = obj.getLocalLocation().getSceneX();
-                }
-
-                if (obj.sizeY() > 1) {
-                    param1 = obj.getLocalLocation().getSceneY() - obj.sizeY() / 2;
-                } else {
-                    param1 = obj.getLocalLocation().getSceneY();
-                }
-            } else {
-                // Default objects like walls, groundobjects, decorationobjects etc...
-                param0 = object.getLocalLocation().getSceneX();
-                param1 = object.getLocalLocation().getSceneY();
-            }
-
-            int index = 0;
-            if (action != null) {
-                String[] actions;
-                if (objComp.getImpostorIds() != null && objComp.getImpostor() != null) {
-                    actions = objComp.getImpostor().getActions();
-                } else {
-                    actions = objComp.getActions();
-                }
-
-                for (int i = 0; i < actions.length; i++) {
-                    if (actions[i] == null) continue;
-                    if (action.equalsIgnoreCase(StringUtils.stripColTags(actions[i]))) {
-                        index = i;
-                        break;
-                    }
-                }
-            }
-
-            if (client.isWidgetSelected()) {
-                menuAction = MenuAction.WIDGET_TARGET_ON_GAME_OBJECT;
-            } else if (index == 0) {
-                menuAction = MenuAction.GAME_OBJECT_FIRST_OPTION;
-            } else if (index == 1) {
-                menuAction = MenuAction.GAME_OBJECT_SECOND_OPTION;
-            } else if (index == 2) {
-                menuAction = MenuAction.GAME_OBJECT_THIRD_OPTION;
-            } else if (index == 3) {
-                menuAction = MenuAction.GAME_OBJECT_FOURTH_OPTION;
-            } else if (index == 4) {
-                menuAction = MenuAction.GAME_OBJECT_FIFTH_OPTION;
-            }
-
-            if (!cameraService.isTileOnScreen(object.getLocalLocation())) {
-                cameraService.turnTo(object);
-            }
-
-            reflectionService.invokeMenuAction(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName());
-        } catch (Exception ex) {
-            log.error("Failed to interact with object: {}", ex.getMessage());
-        }
-
-        return true;
     }
 
     /**

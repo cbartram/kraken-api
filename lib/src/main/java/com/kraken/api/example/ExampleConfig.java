@@ -540,23 +540,12 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "equipId",
-            name = "Equip Id Packets",
+            name = "Equip Id",
             description = "The id of an item to equip using packets",
             section = equipment,
             position = 2
     )
     default String equipIdPacket() {
-        return "";
-    }
-
-    @ConfigItem(
-            keyName = "equipIdReflect",
-            name = "Equip Id Reflection",
-            description = "The id of an item to equip using reflection",
-            section = equipment,
-            position = 3
-    )
-    default String equipIdPacketReflect() {
         return "";
     }
 

@@ -6,12 +6,12 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.loader.HooksLoader;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
-import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.container.bank.BankService;
+import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
-import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
 import com.kraken.api.interaction.movement.ShortestPathService;
@@ -104,10 +104,7 @@ public class Context {
      * prayer flicking, movement, and other interactions with the RuneLite client can be performed correctly by the implementing script.
      */
     public void loadHooks() {
-        if (hooksLoaded) {
-            log.warn("Hooks already loaded, skipping.");
-            return;
-        }
+        if (hooksLoaded) return;
 
         try {
             loader.loadHooks();
@@ -132,10 +129,7 @@ public class Context {
      * method in the client before calling it with reflection.
      */
     public void initializePackets() {
-        if (packetsLoaded) {
-            log.warn("packet functionality already initialized, skipping.");
-            return;
-        }
+        if (packetsLoaded) return;
 
         try {
             PacketMethodLocator.initialize(client);

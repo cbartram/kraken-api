@@ -5,10 +5,8 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.MenuAction;
 import net.runelite.api.Point;
 import net.runelite.api.Prayer;
 import net.runelite.api.Skill;
@@ -18,9 +16,6 @@ import net.runelite.api.widgets.Widget;
 @Slf4j
 @Singleton
 public class PrayerService extends AbstractService {
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private UIService uiService;
@@ -36,7 +31,7 @@ public class PrayerService extends AbstractService {
      * @param prayer The prayer to turn on.
      */
     public void activatePrayer(Prayer prayer) {
-        toggle(prayer, true, false);
+        toggle(prayer, true);
     }
 
     /**
@@ -45,17 +40,7 @@ public class PrayerService extends AbstractService {
      * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
      */
     public boolean deactivatePrayer(Prayer prayer) {
-        return toggle(prayer, false, false);
-    }
-
-    /**
-     * Toggles a prayer on or off. This will use reflection based prayer toggles by default.
-     * @param prayer The Prayer to toggle
-     * @param activate True if the prayer should be turned on and false if it should be turned off
-     * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
-     */
-    public boolean toggle(Prayer prayer, boolean activate) {
-        return toggle(prayer, activate, false);
+        return toggle(prayer, false);
     }
 
     /**
@@ -65,9 +50,9 @@ public class PrayerService extends AbstractService {
      */
     public boolean toggle(Prayer prayer) {
         if(client.isPrayerActive(prayer)) {
-            return toggle(prayer, false, false);
+            return toggle(prayer, false);
         } else {
-            return toggle(prayer, true, false);
+            return toggle(prayer, true);
         }
     }
 
@@ -75,10 +60,9 @@ public class PrayerService extends AbstractService {
      * Toggles a prayer on or off.
      * @param prayer The Prayer to toggle
      * @param activate True if the prayer should be turned on and false if it should be turned off
-     * @param useReflect True if the prayer should be activated via reflection and false if it should fall back to mouse events.
      * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
      */
-    public boolean toggle(Prayer prayer, boolean activate, boolean useReflect) {
+    public boolean toggle(Prayer prayer, boolean activate) {
         if (prayer == null) {
             return false;
         }
@@ -101,16 +85,10 @@ public class PrayerService extends AbstractService {
             return false;
         }
 
-        // Use the appropriate invocation method based on configuration
-        if (useReflect) {
-            reflectionService.invokeMenuAction(-1, prayerExtended.getIndex(), MenuAction.CC_OP.getId(), 1, -1);
-        } else {
-            Widget widget = context.getWidget(prayerExtended.getIndex());
-            Point point = uiService.getClickbox(widget);
-            mousePackets.queueClickPacket(point.getX(), point.getY());
-            widgetPackets.queueWidgetActionPacket(prayerExtended.getIndex(), -1, -1, 1);
-        }
-
+        Widget widget = context.getWidget(prayerExtended.getIndex());
+        Point point = uiService.getClickbox(widget);
+        mousePackets.queueClickPacket(point.getX(), point.getY());
+        widgetPackets.queueWidgetActionPacket(prayerExtended.getIndex(), -1, -1, 1);
         return true;
     }
 
