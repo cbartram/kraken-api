@@ -10,8 +10,12 @@ import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
-import com.kraken.api.interaction.movement.WalkService;
+import com.kraken.api.interaction.container.bank.BankService;
+import com.kraken.api.interaction.movement.MovementService;
 import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.spells.SpellService;
+import com.kraken.api.interaction.spells.Spells;
+import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
@@ -91,7 +95,7 @@ public class ExamplePlugin extends Plugin {
     private EquipmentServiceTest equipmentServiceTest;
 
     @Inject
-    private WalkService walkService;
+    private MovementService movementService;
 
     @Inject
     private GroundObjectServiceTest groundObjectServiceTest;
@@ -119,6 +123,12 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private NpcService npcService;
+
+    @Inject
+    private SpellService spellService;
+
+    @Inject
+    private BankService bankService;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -153,17 +163,34 @@ public class ExamplePlugin extends Plugin {
             String k = event.getKey();
             if(config.enableMovementTests()) {
                 if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
-                    walkService.moveTo(targetTile);
+                    movementService.moveTo(targetTile);
                 }
             }
 
-            if(event.getKey().equals("prayerOn") && config.prayerOn()) {
-                mousePackets.queueClickPacket(0, 0);
+            if(event.getKey().equals("attackNpc") && config.prayerOn()) {
                 NPC npc = npcService.getAttackableNpcs().findFirst().orElse(null);
                 if(npc != null) {
+                    Point pt = UIService.getClickingPoint(npc.getConvexHull().getBounds(),  true);
                     log.info("Attacking NPC");
+                    mousePackets.queueClickPacket(pt.getX(), pt.getY());
                     npcPackets.queueNPCAction(npc, "Attack");
                 }
+            }
+
+            if(event.getKey().equals("magicSpellCast") && config.magicSpellCast()) {
+                log.info("Teleporting to Varrock");
+                spellService.cast(Spells.VARROCK_TELEPORT);
+            }
+
+            if(event.getKey().equals("depositOneCheck") && config.depositOneCheck()) {
+                log.info("Depositing one: {}", config.depositOneItem());
+                bankService.depositOne(config.depositOneItem());
+
+            }
+
+            if(event.getKey().equals("depositAllCheck") && config.depositAllCheck()) {
+                log.info("Depositing all: {}", config.depositAllItem());
+                bankService.depositAll(config.depositAllItem());
             }
 
             if(event.getKey().equals("start")) {
@@ -213,9 +240,7 @@ public class ExamplePlugin extends Plugin {
 
     @Override
     protected void startUp() {
-        log.info("Starting up Example Plugin...");
         context.register();
-        context.loadHooks();
         context.initializePackets();
 
         // Add overlays
@@ -227,7 +252,6 @@ public class ExamplePlugin extends Plugin {
 
     @Override
     protected void shutDown() {
-        log.info("Shutting down Example Plugin...");
         testResultManager.cancelAllTests();
 
         // Remove overlays
@@ -243,12 +267,10 @@ public class ExamplePlugin extends Plugin {
 
         switch (gameState) {
             case LOGGED_IN:
-                log.info("Logged in - initializing plugin...");
                 startUp();
                 break;
             case HOPPING:
             case LOGIN_SCREEN:
-                log.info("Logged out - shutting down plugin...");
                 shutDown();
                 break;
             default:

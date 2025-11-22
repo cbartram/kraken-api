@@ -3,18 +3,20 @@ package com.kraken.api.interaction.player;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.interaction.reflect.ReflectionService;
-import com.kraken.api.interaction.widget.WidgetService;
+import com.kraken.api.core.packet.entity.MousePackets;
+import com.kraken.api.core.packet.entity.WidgetPackets;
+import com.kraken.api.interaction.ui.UIService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
-import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
+import net.runelite.api.Point;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
 import java.util.Optional;
@@ -30,7 +32,13 @@ public class PlayerService extends AbstractService {
     private static final int VENOM_THRESHOLD = 1000000;
 
     @Inject
-    private ReflectionService reflectionService;
+    private UIService uiService;
+
+    @Inject
+    private MousePackets mousePackets;
+
+    @Inject
+    private WidgetPackets widgetPackets;
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
@@ -153,16 +161,6 @@ public class PlayerService extends AbstractService {
     }
 
     /**
-     * Sets the special attack state if current special attack energy is greater than or equal to the required special
-     * attack energy
-     *
-     * @param energyRequired int, 100 = 100%
-     */
-    public void toggleSpecialAttack(int energyRequired) {
-       toggleSpecialAttackReflect(energyRequired, 300);
-    }
-
-    /**
      * Calculates the player's current health as a percentage of their real (base) health.
      * If the player has 40 hp total and has 36 hp remaining this will return ~85.0 showing that roughly 85% of the
      * players health is remaining.
@@ -240,17 +238,32 @@ public class PlayerService extends AbstractService {
     }
 
     /**
+     * Sets the special attack state if current special attack energy is greater than or equal to the required special
+     * attack energy
+     *
+     * @param energyRequired int, 100 = 100%
+     */
+    public void toggleSpecialAttack(int energyRequired) {
+        toggleSpecialAttack(energyRequired, 300);
+    }
+
+    /**
      * Sets the special attack state if the current special attack energy is greater than or equal to the required special attack energy using reflection instead of mouse events.
      *
      * @param energyRequired int, 100 = 100%
      * @param delay int a set delay before the spec button is pressed. This can't happen instantaneously because the server needs to process
      *              the weapon equip before it can toggle on spec. Otherwise, the game would see you toggle on spec for nothing, then spec weapon gets equipped with spec disabled.
      */
-    public void toggleSpecialAttackReflect(int energyRequired, int delay) {
-        if(!context.isHooksLoaded()) return;
+    public void toggleSpecialAttack(int energyRequired, int delay) {
+        if(!context.isPacketsLoaded()) return;
         int currentSpecEnergy = client.getVarpValue(300) / 10;
         if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
-            executor.schedule(() -> reflectionService.invokeMenuAction(-1, 38862886, MenuAction.CC_OP.getId(), 1, -1), delay, TimeUnit.MILLISECONDS);
+            executor.schedule(() -> {
+                Widget w = context.runOnClientThread(() -> client.getWidget(10485796));
+                Point pt = uiService.getClickbox(w);
+                mousePackets.queueClickPacket(pt.getX(), pt.getY());
+                widgetPackets.queueWidgetAction(w, "Use"); // or Use Special Attack
+            }, delay, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -259,8 +272,13 @@ public class PlayerService extends AbstractService {
      * {activateRun} and {deactivateRun} if a specific state is required.
      */
     public void toggleRun() {
-        if(!context.isHooksLoaded()) return;
-        executor.schedule(() -> reflectionService.invokeMenuAction(-1, 10485787, MenuAction.CC_OP.getId(), 1, -1), 50, TimeUnit.MILLISECONDS);
+        if(!context.isPacketsLoaded()) return;
+        executor.schedule(() -> {
+            Widget w = context.runOnClientThread(() -> client.getWidget(10485788));
+            Point pt = uiService.getClickbox(w);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(w, "Toggle Run");
+        }, 50, TimeUnit.MILLISECONDS);
     }
 
     /**

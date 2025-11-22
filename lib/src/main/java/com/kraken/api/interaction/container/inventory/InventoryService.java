@@ -6,7 +6,6 @@ import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.SleepService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.InterfaceTab;
 import com.kraken.api.interaction.ui.TabService;
 import com.kraken.api.interaction.ui.UIService;
@@ -17,6 +16,7 @@ import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.kraken.api.util.StringUtils.stripColTags;
-
 @Slf4j
 @Singleton
 public class InventoryService extends AbstractService {
@@ -41,9 +39,6 @@ public class InventoryService extends AbstractService {
     
     @Inject
     private TabService tabService;
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private MousePackets mousePackets;
@@ -66,6 +61,20 @@ public class InventoryService extends AbstractService {
         }
     }
 
+    @Subscribe
+    public void onWidgetLoaded(WidgetLoaded event) {
+        // When the bank interface loads, the "Bank Inventory" widgets become available.
+        // We need to refresh the inventory so our ContainerItems can link to these new widgets.
+        if (event.getGroupId() == InterfaceID.BANKMAIN) {
+            context.runOnClientThread(() -> {
+                ItemContainer container = client.getItemContainer(InventoryID.INV);
+                if (container != null) {
+                    refresh(container);
+                }
+            });
+        }
+    }
+
     /**
      * Refreshes the internal inventory list with new/removed items based on the RuneLite event. This is designed
      * to be called within the @Subscribed method for item container changed.
@@ -81,28 +90,48 @@ public class InventoryService extends AbstractService {
     }
 
     /**
-     * Refreshes the inventory with a new item container.
+     * Refreshes the inventory with a new item container. This should never be called directly and it can cause
+     * bad state if the server rejects a change for an item container. RuneLite will deliver the item container
+     * change event to let us re-build the inventory correctly.
      * @param itemContainer The item container to refresh with.
      */
     private void refresh(ItemContainer itemContainer) {
         containerItems.clear();
-        Widget inven = client.getWidget(WidgetInfo.INVENTORY);
-        Widget[] items = inven.getDynamicChildren();
+
+        Widget inventory = client.getWidget(WidgetInfo.INVENTORY);
+        // The inventory widget while the bank is open
+        Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+
+        if (inventory == null) {
+            log.info("Could not get inventory widget, refresh failed");
+            return;
+        }
+
+        Widget[] inventoryWidgets = inventory.getDynamicChildren();
+        Widget[] bankWidgets = (bankInventory != null) ? bankInventory.getDynamicChildren() : null;
 
         for (int i = 0; i < itemContainer.getItems().length; i++) {
             final Item item = itemContainer.getItems()[i];
-            if (item.getId() == -1) continue;
-            final ItemComposition itemComposition = context.runOnClientThreadOptional(() -> client.getItemDefinition(item.getId())).orElse(null);
 
-            // Also lookup the widget associated with this item.
-            Widget widget = Arrays.stream(items)
-                    .filter(Objects::nonNull)
-                    .filter(w -> w.getItemId() != 6512 && w.getItemId() != -1)
-                    .filter(w -> w.getItemId() == item.getId())
-                    .findFirst().orElse(null);
+            // Skip empty slots
+            if (item.getId() == -1 || item.getId() == 6512) continue;
 
-            if(itemComposition == null) continue;
-            containerItems.add(new ContainerItem(item, itemComposition, i, context, widget));
+            final ItemComposition itemComposition = context.runOnClientThreadOptional(() ->
+                    client.getItemDefinition(item.getId())
+            ).orElse(null);
+
+            if (itemComposition == null) continue;
+
+            Widget widget = null;
+            if (i < inventoryWidgets.length) {
+                widget = inventoryWidgets[i];
+            }
+
+            Widget bankInventoryWidget = null;
+            if (bankWidgets != null && i < bankWidgets.length) {
+                bankInventoryWidget = bankWidgets[i];
+            }
+            containerItems.add(new ContainerItem(item, itemComposition, i, context, widget, bankInventoryWidget));
         }
     }
 
@@ -310,58 +339,6 @@ public class InventoryService extends AbstractService {
     public boolean use(ContainerItem item) {
         if (item == null) return false;
         return interact(item, "Use");
-    }
-
-
-    /**
-     * Interacts with an item in the inventory using reflection. If the item has an invalid slot value, it will find the slot based on the item ID.
-     * @param item   The item to interact with.
-     * @param action The action to perform on the item.
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(ContainerItem item, String action) {
-        return interactReflect(item, action, -1);
-    }
-
-    /**
-     * Interacts with an item in the inventory using reflection. If the item has an invalid slot value, it will find the slot based on the item ID.
-     * @param item   The item to interact with.
-     * @param action The action to perform on the item.
-     * @param providedIdentifier An optional identifier to provide for the interaction. Defaults to -1
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public boolean interactReflect(ContainerItem item, String action, int providedIdentifier) {
-        if(!context.isHooksLoaded()) return false;
-        int identifier;
-        if(item == null) return false;
-        Widget inventoryWidget = context.getClient().getWidget(InterfaceID.Inventory.ITEMS);
-        if (inventoryWidget == null) {
-            return true;
-        }
-
-        // Children of the inventory are the actual items in each of the 28 slots
-        Widget[] itemWidgets = inventoryWidget.getChildren();
-        if (itemWidgets == null) {
-            return true;
-        }
-
-        if (!action.isEmpty()) {
-            // First find the inventory widget which matches the passed item.
-            Widget itemWidget = Arrays.stream(itemWidgets).filter(i -> i != null && i.getIndex() == item.getSlot()).findFirst().orElseGet(null);
-
-            if(itemWidget == null) {
-                return false;
-            }
-
-            // Get the actions for that item i.e. "Drink", "Wield", "Wear", "Drop"
-            String[] actions = itemWidget.getActions() != null ? itemWidget.getActions() : item.getInventoryActions();
-
-            identifier = providedIdentifier == -1 ? indexOfIgnoreCase(stripColTags(actions), action) + 1 : providedIdentifier;
-
-
-            reflectionService.invokeMenuAction(itemWidget.getIndex(), InterfaceID.Inventory.ITEMS, MenuAction.CC_OP.getId(), identifier, itemWidget.getItemId());
-        }
-        return true;
     }
 
     /**

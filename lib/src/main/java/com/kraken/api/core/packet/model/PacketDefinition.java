@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class PacketDef {
+public class PacketDefinition {
     private final String name;
     private final String[] writeData;
     private final String[][] writeMethods;

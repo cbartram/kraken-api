@@ -1,6 +1,15 @@
 package com.kraken.api.core.packet;
 
 
+/**
+ * This class is a direct copy of the ObfuscatedNames class from the EthanVann PacketUtils class found here:
+ * https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/PacketUtils/ObfuscatedNames.java
+ * The copy was made so that this API could remain fundamentally compatible with the popular EthanVann PacketUtils plugin.
+ * <p>
+ * This class contains all the definitions which map arguments for sending specific packets and client level packet related classes
+ * to their obfuscated names. By utilizing this class we can use reflection to send packets through the game client by invoking the
+ * right obfuscated methods with arguments.
+ */
 public final class ObfuscatedNames {
 
     public static final String EVENT_MOUSE_CLICK_OBFUSCATEDNAME = "cv";

@@ -6,11 +6,13 @@ import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.container.inventory.ContainerItem;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
+import net.runelite.api.Point;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
@@ -24,9 +26,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 public class EquipmentService extends AbstractService {
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private UIService uiService;
@@ -85,13 +84,27 @@ public class EquipmentService extends AbstractService {
                 continue;
             }
 
-            Widget widget = Arrays.stream(client.getWidget(WidgetInfo.INVENTORY).getDynamicChildren())
+            Widget inventory = client.getWidget(WidgetInfo.INVENTORY);
+            if(inventory == null) {
+                return;
+            }
+
+            Widget widget = Arrays.stream(inventory.getDynamicChildren())
                     .filter(Objects::nonNull)
                     .filter(x -> x.getItemId() != 6512 && item.getId() == x.getId())
                     .findFirst()
                     .orElse(null);
 
-            list.add(new ContainerItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget));
+            Widget bankInventory = client.getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+            Widget bankInventoryWidget = null;
+            if(bankInventory != null) {
+                bankInventoryWidget = Arrays.stream(bankInventory.getDynamicChildren())
+                        .filter(Objects::nonNull)
+                        .filter(x -> x.getItemId() != 6512 && x.getItemId() != -1)
+                        .findFirst().orElse(null);
+            }
+
+            list.add(new ContainerItem(item, context.getClient().getItemDefinition(item.getId()), index, context, widget, bankInventoryWidget));
         }
 
         if(event.getContainerId() == 93) {
@@ -168,102 +181,6 @@ public class EquipmentService extends AbstractService {
      */
     public boolean wield(ContainerItem item) {
         return wield(item.getId());
-    }
-
-    /**
-     * Wields gear from the players inventory using reflection to make the menu invocations.
-     * @param item The ContainerItem to equip.
-     * @return True when the wield operation was successful and false otherwise
-     */
-    public boolean wieldReflect(ContainerItem item) {
-        return wieldReflect(item.getId());
-    }
-
-    /**
-     * Wields gear from the players inventory using reflection to make the menu invocations.
-     * @param name The name of the item to equip.
-     * @return True when the wield operation was successful and false otherwise
-     */
-    public boolean wieldReflect(String name) {
-        List<Integer> ids = new ArrayList<>();
-        for (ContainerItem item : inventory) {
-            if (name.equalsIgnoreCase(item.getName())) {
-                ids.add(item.getId());
-            }
-        }
-
-        if (ids.isEmpty()) {
-            return true;
-        }
-
-        int[] idsArray = ids.stream().mapToInt(i -> i).toArray();
-        return wieldReflect(idsArray);
-    }
-
-    /**
-     * Wields gear from the players inventory using reflection to make the menu invocations.
-     * @param id The id of the item to equip.
-     * @return True when the wield operation was successful and false otherwise
-     */
-    public boolean wieldReflect(int id) {
-        int[] ids = new int[]{id};
-        return wieldReflect(ids);
-    }
-
-    /**
-     * Wields gear from the players inventory using reflection to make the menu invocations.
-     * @param itemIds int[] item ids to equip.
-     * @return True when the wield operation was successful and false otherwise
-     */
-    public boolean wieldReflect(int[] itemIds) {
-        if (itemIds == null) {
-            return true;
-        }
-
-        Widget inventoryWidget = context.getClient().getWidget(InterfaceID.Inventory.ITEMS);
-        if (inventoryWidget == null) {
-            return true;
-        }
-
-        Widget[] itemWidgets = inventoryWidget.getChildren();
-        if (itemWidgets == null) {
-            return true;
-        }
-
-        for (Widget itemWidget : itemWidgets) {
-            int slot = itemWidget.getIndex();
-            String[] menuActions = itemWidget.getActions();
-            if (menuActions == null) {
-                continue;
-            }
-
-            List<String> menuEntries = Arrays.asList(menuActions);
-            boolean canWield = menuEntries.contains("Wield");
-            boolean canWear = menuEntries.contains("Wear");
-            boolean canEquip = menuEntries.contains("Equip");
-
-            // Dynamically gets the index of the Wear or Wield action for the invoke actions.
-            // You add 1 to the index of the actions because the returned index is always 1 less than the required action.
-            int index = 1;
-
-            if (canWield) {
-                index += menuEntries.lastIndexOf("Wield");
-            } else if (canWear) {
-                index += menuEntries.lastIndexOf("Wear");
-            } else if (canEquip) {
-                index += menuEntries.lastIndexOf("Equip");
-            } else {
-                continue;
-            }
-
-            for (int itemId : itemIds) {
-                if (itemWidget.getItemId() == itemId) {
-                    reflectionService.invokeMenuAction(slot, InterfaceID.Inventory.ITEMS, MenuAction.CC_OP.getId(), index, itemId);
-                }
-            }
-        }
-
-        return true;
     }
 
     /**

@@ -3,15 +3,14 @@ package com.kraken.api;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.kraken.api.core.loader.HooksLoader;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
-import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.container.bank.BankService;
+import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
-import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
 import com.kraken.api.interaction.movement.ShortestPathService;
@@ -54,10 +53,6 @@ public class Context {
     @Getter
     private boolean isRegistered = false;
 
-    // Reflection based hooks
-    @Getter
-    private boolean hooksLoaded = false;
-
     @Getter
     private boolean packetsLoaded = false;
 
@@ -85,57 +80,27 @@ public class Context {
     public Future<?> scheduledFuture;
     private final Injector injector;
     private final EventBus eventBus;
-    private final HooksLoader loader;
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
-                   final EventBus eventBus, final Injector injector, final HooksLoader loader) {
+                   final EventBus eventBus, final Injector injector) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
-        this.loader = loader;
-    }
-
-    /**
-     * Loads hooks containing key obfuscated RuneLite client methods for use in the API. This is called by the Script class
-     * to ensure that the hooks are loaded and set before any scripts are run. This ensures that reflection based operations like
-     * prayer flicking, movement, and other interactions with the RuneLite client can be performed correctly by the implementing script.
-     */
-    public void loadHooks() {
-        if (hooksLoaded) {
-            log.warn("Hooks already loaded, skipping.");
-            return;
-        }
-
-        try {
-            loader.loadHooks();
-            if(loader.getHooks() == null) {
-                log.error("Hooks failed to load, cannot proceed.");
-                return;
-            }
-            hooksLoaded = true;
-            loader.setHooks();
-            log.info("Hooks loaded and set successfully.");
-        } catch (Exception e) {
-            log.error("Failed to load hooks with exception: {}", e.getMessage());
-        }
     }
 
     /**
      * Initializes packet queueing functionality by either loading the client packet
      * sending method from the cached json file or running an analysis on the RuneLite injected client
      * to determine the packet sending method.
-     *
+     * <p>
      * This is required to be called before packets can actually be sent i.e. its necessary to know the packet
      * method in the client before calling it with reflection.
      */
     public void initializePackets() {
-        if (packetsLoaded) {
-            log.warn("packet functionality already initialized, skipping.");
-            return;
-        }
+        if (packetsLoaded) return;
 
         try {
             PacketMethodLocator.initialize(client);

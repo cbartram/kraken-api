@@ -33,6 +33,13 @@ public class ContainerItem {
     @Nullable
     private Widget widget;
 
+
+    // The widget of the item when the bank container is open. Actions will be different for this widget within this context
+    // as they relate to depositing the item into the bank. Whenever working with bank actions this widget should be used
+    // over widget (which is used when working within the inventory while the bank is not open).
+    @Nullable
+    private Widget bankInventoryWidget;
+
     private List<String> equipmentActions = new ArrayList<>();
     private String name;
     private String[] inventoryActions;
@@ -57,9 +64,10 @@ public class ContainerItem {
             ParamID.OC_ITEM_OP8
     };
 
-    public ContainerItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget) {
+    public ContainerItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget, Widget bankInventoryWidget) {
         this.id = item.getId();
         this.widget = widget;
+        this.bankInventoryWidget = bankInventoryWidget;
         this.quantity = item.getQuantity();
         this.slot = slot;
         this.name = itemComposition.getName();

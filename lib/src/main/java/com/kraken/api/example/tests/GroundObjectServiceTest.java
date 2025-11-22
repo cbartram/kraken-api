@@ -1,7 +1,6 @@
 package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
-import com.kraken.api.example.ExampleConfig;
 import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import lombok.extern.slf4j.Slf4j;
@@ -57,9 +56,8 @@ public class GroundObjectServiceTest extends BaseApiTest {
 
             log.info("Found {} ground items", allItems.size());
 
-            // Validate ground items
             int validItemCount = 0;
-            int itemsToCheck = Math.min(allItems.size(), 20); // Limit to first 20 items
+            int itemsToCheck = Math.min(allItems.size(), 20);
 
             for (int i = 0; i < itemsToCheck; i++) {
                 GroundItem item = allItems.get(i);
@@ -81,7 +79,6 @@ public class GroundObjectServiceTest extends BaseApiTest {
                 }
             }
 
-            // If we have items, at least some should be valid
             if (itemsToCheck > 0) {
                 return assertThat(validItemCount > 0,
                         "At least some ground items should be valid");
@@ -130,16 +127,11 @@ public class GroundObjectServiceTest extends BaseApiTest {
 
             if (item != null) {
                 log.info("Testing interaction with ground item: {}", targetItem);
-
-                // Test the interact method (this should not throw an exception)
-                // groundObjectService.interact(item);
-                groundObjectService.interactReflect(item);
-
+                groundObjectService.interact(item);
                 log.debug("Ground item interaction test completed successfully");
                 return true;
             } else {
                 log.info("No target ground item found for interaction test");
-                // No item to interact with is not a failure
                 return true;
             }
 
@@ -171,8 +163,6 @@ public class GroundObjectServiceTest extends BaseApiTest {
             }
 
             log.info("Found {} valuable items out of {} checked", valuableCount, itemsToCheck);
-
-            // This test always passes - it's just for detection
             return true;
 
         } catch (Exception e) {

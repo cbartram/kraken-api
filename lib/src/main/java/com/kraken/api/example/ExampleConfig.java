@@ -13,19 +13,9 @@ public interface ExampleConfig extends Config {
             name = "Start Tests",
             keyName = "start",
             description = "Start the execution of the configured tests.",
-            position = 0
+            position = -999
     )
     default boolean start() {
-        return false;
-    }
-
-    @ConfigItem(
-            name = "Test Packet Send",
-            keyName = "prayerOn",
-            description = "Test packet send",
-            position = -5
-    )
-    default boolean prayerOn() {
         return false;
     }
 
@@ -39,6 +29,78 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigSection(
+            name = "General",
+            description = "General settings for individual testing",
+            position = 0
+    )
+    String general = "General";
+
+    @ConfigItem(
+            name = "Send NPC Attack",
+            keyName = "attackNpc",
+            description = "Test NPC attack packet send.",
+            position = -1,
+            section = general
+    )
+    default boolean prayerOn() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Send Spell Packet",
+            keyName = "magicSpellCast",
+            description = "Test magic spell cast",
+            position = 0,
+            section = general
+    )
+    default boolean magicSpellCast() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Deposit One Item",
+            keyName = "depositOneItem",
+            description = "Test depositing one item into the bank from the inventory",
+            position = 1,
+            section = general
+    )
+    default String depositOneItem() {
+        return "";
+    }
+
+    @ConfigItem(
+            name = "Start Deposit One",
+            keyName = "depositOneCheck",
+            description = "Test depositing one item into the bank from the inventory",
+            position = 2,
+            section = general
+    )
+    default boolean depositOneCheck() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Deposit All Item",
+            keyName = "depositAllItem",
+            description = "Test depositing all of a single item into the bank from the inventory",
+            position = 3,
+            section = general
+    )
+    default String depositAllItem() {
+        return "";
+    }
+
+    @ConfigItem(
+            name = "Start Deposit All",
+            keyName = "depositAllCheck",
+            description = "Test depositing one item into the bank from the inventory",
+            position = 4,
+            section = general
+    )
+    default boolean depositAllCheck() {
+        return false;
+    }
 
     // ========== NPC TESTS SECTION ==========
     @ConfigSection(
@@ -478,23 +540,12 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "equipId",
-            name = "Equip Id Packets",
+            name = "Equip Id",
             description = "The id of an item to equip using packets",
             section = equipment,
             position = 2
     )
     default String equipIdPacket() {
-        return "";
-    }
-
-    @ConfigItem(
-            keyName = "equipIdReflect",
-            name = "Equip Id Reflection",
-            description = "The id of an item to equip using reflection",
-            section = equipment,
-            position = 3
-    )
-    default String equipIdPacketReflect() {
         return "";
     }
 
