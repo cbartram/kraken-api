@@ -1,6 +1,6 @@
 package com.kraken.api.core.packet;
 
-import com.kraken.api.core.packet.model.PacketDef;
+import com.kraken.api.core.packet.model.PacketDefinition;
 import com.kraken.api.core.packet.model.PacketMethods;
 import com.kraken.api.core.packet.model.PacketType;
 import lombok.SneakyThrows;
@@ -55,10 +55,10 @@ public class PacketClient {
      * Constructs and sends a packet to the game server.
      * This is the primary public method of this class.
      *
-     * @param def     The {@link PacketDef} enumeration defining the packet structure.
-     * @param objects The data (payload) for the packet, in the order defined by the PacketDef.
+     * @param def     The {@link PacketDefinition} enumeration defining the packet structure.
+     * @param objects The data (payload) for the packet, in the order defined by the PacketDefinition.
      */
-    public void sendPacket(PacketDef def, Object... objects) {
+    public void sendPacket(PacketDefinition def, Object... objects) {
         // 1. Get all necessary reflection components to build and send the packet.
         Object packetBufferNode = null;
         Method getPacketBufferNode = getGetPacketBufferNode();

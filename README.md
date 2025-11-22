@@ -124,6 +124,10 @@ Most of the `Service` classes have two different methods for game interaction.
 There are standard interaction methods like `interact()` and there are reflection interaction methods which will always end with `reflect`.
 For example `wieldReflect()` will use reflection to wield the item instead of packets. 
 
+The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
+A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
+the functionality for client analysis and packet ops are sourced from the Packet Utils repository.
+
 ### API Design & Methodology
 
 The Kraken API was designed from the ground up to leverage the software design pattern of dependency injection. This is the exact same 
@@ -205,6 +209,9 @@ is constrained to the time it takes their developers to run their update and map
 file.
 
 This file maps specific fields, methods, values, and classes from the obfuscated game client to be used in order to send packets and provide much of the API's functionality correctly.
+The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
+A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
+the functionality for client analysis, obfuscated class names, and packet ops are sourced from the Packet Utils repository.
 
 - Check the [PRs](https://github.com/Ethan-Vann/PacketUtils/pulls) for the Packet Utils repository. 
 - Once the new `ObfuscatedNames` is updated copy the contents of the file into `core.packets.ObfuscatedNames` 

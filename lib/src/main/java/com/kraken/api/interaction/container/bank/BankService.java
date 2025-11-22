@@ -10,11 +10,13 @@ import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.container.inventory.ContainerItem;
 import com.kraken.api.interaction.container.inventory.InventoryService;
-import com.kraken.api.interaction.reflect.ReflectionService;
 import com.kraken.api.interaction.ui.UIService;
 import com.kraken.api.interaction.widget.WidgetService;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.Item;
+import net.runelite.api.ItemComposition;
+import net.runelite.api.ItemContainer;
+import net.runelite.api.Point;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
@@ -49,9 +51,6 @@ public class BankService extends AbstractService {
 
     @Inject
     private InventoryService inventoryService;
-
-    @Inject
-    private ReflectionService reflectionService;
 
     @Inject
     private UIService uiService;
@@ -380,10 +379,12 @@ public class BankService extends AbstractService {
         if (!inventoryService.hasItem(item.getId())) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
+
+        // TODO Verify working
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0) {
-            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 2, item.getId(), item.getName(), "");
-        } else {
-            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 3, item.getId(), item.getName(), "");
+            Point pt = uiService.getClickbox(item);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item.getWidget(), "Deposit-1");
         }
         return true;
     }
@@ -432,9 +433,9 @@ public class BankService extends AbstractService {
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
         if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
-            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 2, item.getId(), item.getName(), "");
-        } else {
-            reflectionService.invokeMenuAction(item.getSlot(), container, MenuAction.CC_OP_LOW_PRIORITY.getId(), 3, item.getId(), item.getName(), "");
+            Point pt = uiService.getClickbox(item);
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item.getWidget(), "Deposit-All");
         }
         return true;
     }
@@ -501,7 +502,7 @@ public class BankService extends AbstractService {
         Widget widget = widgetService.getWidget(786476);
         if (widget == null) return false;
 
-        widgetService.interact(widget, "Deposit inventory");
+        widgetService.interact(widget, "Deposit Inventory");
         sleepService.sleep(500, 1500);
         return true;
     }

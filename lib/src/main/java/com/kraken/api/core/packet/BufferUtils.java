@@ -7,6 +7,9 @@ import java.lang.reflect.Field;
  * obfuscated buffer objects (e.g., PacketBuffer). This class provides a stable
  * API to get/set the buffer's underlying byte array and its current offset,
  * and to write data using the client's specific (and obfuscated) methods.
+ * <p>
+ * This class is a copy (with comments) of the BufferMethods from the EthanVann PacketUtils class found here:
+ * https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java
  */
 public class BufferUtils {
 
@@ -18,11 +21,10 @@ public class BufferUtils {
      */
     public static void setOffset(Object bufferInstance, int offset) {
         try {
-            // Find the field using its obfuscated name
             Field offsetField = bufferInstance.getClass().getField(ObfuscatedNames.bufferOffsetField);
-            offsetField.setAccessible(true); // Allow modification
-            offsetField.setInt(bufferInstance, offset); // Set the new value
-            offsetField.setAccessible(false); // Restore access control
+            offsetField.setAccessible(true);
+            offsetField.setInt(bufferInstance, offset);
+            offsetField.setAccessible(false);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -57,7 +59,7 @@ public class BufferUtils {
         try {
             Field arrayField = bufferInstance.getClass().getField(ObfuscatedNames.bufferArrayField);
             arrayField.setAccessible(true);
-            arrayField.set(bufferInstance, array); // Set the new array reference
+            arrayField.set(bufferInstance, array);
             arrayField.setAccessible(false);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
@@ -74,7 +76,7 @@ public class BufferUtils {
         try {
             Field arrayField = bufferInstance.getClass().getField(ObfuscatedNames.bufferArrayField);
             arrayField.setAccessible(true);
-            byte[] array = (byte[]) arrayField.get(bufferInstance); // Get the array reference
+            byte[] array = (byte[]) arrayField.get(bufferInstance);
             arrayField.setAccessible(false);
             return array;
         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -104,7 +106,6 @@ public class BufferUtils {
         setOffset(bufferInstance, index);
 
         // Calculate the *actual* byte array index using the obfuscated multiplier.
-        // This is a key part of the client's buffer obfuscation.
         index = index * Integer.parseInt(ObfuscatedNames.indexMultiplier) - 1;
 
         // Perform the write operation based on the first character of the description
@@ -145,12 +146,13 @@ public class BufferUtils {
         // Encode the string directly into the buffer's array
         int bytesWritten = encodeStringCp1252(val, 0, val.length(), arr, realIndex);
 
-        // Advance the *logical* offset based on bytes written
+        // Advance the logical offset based on bytes written
         offset += bytesWritten * offsetMultiplier;
+
         // Advance the offset one more time for the null terminator
         offset += offsetMultiplier;
 
-        // Calculate the *actual* index for the null terminator
+        // Calculate the actual index for the null terminator
         int nullTerminatorIndex = offset * indexMultiplier - 1;
 
         // Write the null terminator
@@ -175,7 +177,7 @@ public class BufferUtils {
         int indexMultiplier = Integer.parseInt(ObfuscatedNames.indexMultiplier);
         int offsetMultiplier = (int) Long.parseLong(ObfuscatedNames.offsetMultiplier);
 
-        // Advance offset and write the *leading* null byte
+        // Advance offset and write the leading null byte
         offset += offsetMultiplier;
         int leadingNullIndex = offset * indexMultiplier - 1;
         arr[leadingNullIndex] = 0;
@@ -184,10 +186,11 @@ public class BufferUtils {
         int stringWriteIndex = offset * indexMultiplier;
         // Write the string and get the number of bytes written
         int bytesWritten = encodeStringCp1252(val, 0, val.length(), arr, stringWriteIndex);
+
         // Advance the offset for the string content
         offset += bytesWritten * offsetMultiplier;
 
-        // Advance offset and write the *trailing* null byte
+        // Advance offset and write the trailing null byte
         offset += offsetMultiplier;
         int trailingNullIndex = offset * indexMultiplier - 1;
         arr[trailingNullIndex] = 0;
