@@ -28,6 +28,52 @@ public class Pathfinder extends AbstractService {
     private static final int[] DIR_Y = { 0, 0, -1, 1, -1, -1, 1, 1};
 
     /**
+     * Generates a sparse path (Waypoints only) from start to target.
+     * Reduces a dense tile-by-tile path into a list of "clicking points" where direction changes.
+     *
+     * @param start  WorldPoint the starting location
+     * @param target WorldPoint the ending location
+     * @return List of WorldPoints representing the turns/waypoints
+     */
+    public List<WorldPoint> findSparsePath(WorldPoint start, WorldPoint target) {
+        List<WorldPoint> densePath = findPath(start, target);
+
+        if (densePath.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<WorldPoint> sparsePath = new ArrayList<>();
+        WorldPoint prev = start;
+
+        // Iterate through the path up to the second-to-last point
+        for (int i = 0; i < densePath.size() - 1; i++) {
+            WorldPoint current = densePath.get(i);
+            WorldPoint next = densePath.get(i + 1);
+
+            // Calculate incoming direction (Previous -> Current)
+            int d1x = current.getX() - prev.getX();
+            int d1y = current.getY() - prev.getY();
+
+            // Calculate outgoing direction (Current -> Next)
+            int d2x = next.getX() - current.getX();
+            int d2y = next.getY() - current.getY();
+
+            // If the direction changes (vectors don't match), 'current' is a waypoint
+            if (d1x != d2x || d1y != d2y) {
+                sparsePath.add(current);
+            }
+
+            // Move our tracking point forward
+            prev = current;
+        }
+
+        // Always add the final target destination
+        sparsePath.add(densePath.get(densePath.size() - 1));
+
+        return sparsePath;
+    }
+
+    /**
      * Finds the shortest path from a given start point to a target point. This uses player movement behavior and BFS
      * to find the shortest path.
      * @param start WorldPoint the starting location (generally the players current position)

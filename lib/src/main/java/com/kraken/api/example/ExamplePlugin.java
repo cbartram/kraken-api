@@ -281,10 +281,8 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
-        WorldPoint playerLoc = client.getLocalPlayer().getWorldLocation();
-
         if (targetTile != null) {
-            this.currentPath = pathfinder.findPath(playerLoc, targetTile);
+            this.currentPath = pathfinder.findSparsePath(client.getLocalPlayer().getWorldLocation(), targetTile);
         }
     }
 
