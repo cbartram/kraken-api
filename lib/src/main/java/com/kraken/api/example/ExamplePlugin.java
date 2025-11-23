@@ -12,6 +12,7 @@ import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
 import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.interaction.movement.Pathfinder;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.spells.SpellService;
 import com.kraken.api.interaction.spells.Spells;
@@ -22,10 +23,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.MenuOpened;
-import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.*;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -129,6 +127,9 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private BankService bankService;
+
+    @Inject private Pathfinder pathfinder;
+    @Getter private List<WorldPoint> currentPath;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -275,6 +276,15 @@ public class ExamplePlugin extends Plugin {
                 break;
             default:
                 break;
+        }
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick event) {
+        WorldPoint playerLoc = client.getLocalPlayer().getWorldLocation();
+
+        if (targetTile != null) {
+            this.currentPath = pathfinder.findPath(playerLoc, targetTile);
         }
     }
 
