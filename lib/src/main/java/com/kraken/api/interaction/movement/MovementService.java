@@ -28,7 +28,6 @@ public class MovementService extends AbstractService {
     @Inject
     private MovementPackets movementPackets;
 
-
     /**
      * Moves the player to a specific world point. This takes into account when it is called
      * from within an instance and will convert the world point from an instance world point into a

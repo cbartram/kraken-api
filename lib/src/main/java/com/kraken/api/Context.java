@@ -13,7 +13,6 @@ import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
-import com.kraken.api.interaction.movement.ShortestPathService;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.prayer.PrayerService;
@@ -66,7 +65,6 @@ public class Context {
             InventoryService.class,
             MovementService.class,
             MinimapService.class,
-            ShortestPathService.class,
             PlayerService.class,
             NpcService.class,
             PrayerService.class,
