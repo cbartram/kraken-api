@@ -1,41 +1,35 @@
 package com.kraken.api.example.overlay;
 
 import com.google.inject.Inject;
-import com.kraken.api.example.ExampleConfig;
 import com.kraken.api.example.ExamplePlugin;
+import com.kraken.api.interaction.movement.Pathfinder;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.OverlayPriority;
 
 import java.awt.*;
+import java.util.List;
+
 
 public class SceneOverlay extends Overlay {
-
-    private final ExampleConfig config;
     private final ExamplePlugin plugin;
-
+    private final Pathfinder pathfinder;
 
     @Inject
-    public SceneOverlay(ExampleConfig config, ExamplePlugin plugin) {
-        this.config = config;
+    public SceneOverlay(ExamplePlugin plugin, Pathfinder pathfinder) {
         this.plugin = plugin;
+        this.pathfinder = pathfinder;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
+        setPriority(OverlayPriority.MED);
     }
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        Font font = new Font(Font.SANS_SERIF, Font.BOLD, config.fontSize());
-        graphics.setFont(font);
-
-        try {
-
-        } catch (Exception e) {
-            graphics.setColor(Color.RED);
-            graphics.drawString("Overlay Error: " + e.getMessage(), 10, 50);
-        }
-
-        return null;
+        List<WorldPoint> path = plugin.getCurrentPath();
+        return pathfinder.renderPath(path, graphics);
     }
 }
