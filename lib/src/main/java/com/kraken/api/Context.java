@@ -158,17 +158,6 @@ public class Context {
     }
 
     /**
-     * Run a method on the client thread, returning the result.
-     * @param method The method to call
-     */
-    @SneakyThrows
-    public void runOnSeperateThread(Callable<?> method) {
-        if (scheduledFuture != null && !scheduledFuture.isDone()) return;
-        scheduledFuture = scheduledExecutorService.submit(method);
-    }
-
-
-    /**
      * Returns a varbit value from the RuneLite client. This method is
      * thread safe and runs on the client thread to retrieve the value.
      * @param varbit The varbit value to retrieve.
@@ -222,6 +211,10 @@ public class Context {
         }
     }
 
+    /**
+     * Runs a method on the client thread without returning a result.
+     * @param method Runnable method to execute
+     */
     public void runOnClientThread(Runnable method) {
         if (client.isClientThread()) {
             method.run();
