@@ -1,11 +1,14 @@
 package com.kraken.api;
 
-import com.google.inject.*;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.InteractionManager;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.container.bank.BankInventoryQuery;
+import com.kraken.api.interaction.container.bank.BankQuery;
 import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.container.inventory.InventoryQuery;
 import com.kraken.api.interaction.container.inventory.InventoryService;
@@ -31,6 +34,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -78,6 +82,7 @@ public class Context {
 
     private final Injector injector;
     private final EventBus eventBus;
+    private final ItemManager itemManager;
 
     @Getter
     private final InteractionManager interactionManager;
@@ -85,13 +90,14 @@ public class Context {
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
                    final EventBus eventBus, final Injector injector,
-                   final InteractionManager interactionManager) {
+                   final InteractionManager interactionManager, final ItemManager itemManager) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
         this.interactionManager = interactionManager;
+        this.itemManager = itemManager;
     }
 
     /**
@@ -297,5 +303,15 @@ public class Context {
      */
     public BankInventoryQuery bankInventory() {
         return new BankInventoryQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for the Bank interface.
+     * Usage: ctx.bank().withId(1234).interact("Withdraw-X");
+     * @return BankQuery object used to chain together predicates to select specific items or groups of items within the players
+     * bank.
+     */
+    public BankQuery bank() {
+        return new BankQuery(this, itemManager);
     }
 }

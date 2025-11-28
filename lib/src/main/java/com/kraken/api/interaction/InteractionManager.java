@@ -6,6 +6,7 @@ import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
+import com.kraken.api.interaction.container.bank.BankItemWidget;
 import com.kraken.api.interaction.container.inventory.ContainerItem;
 import com.kraken.api.interaction.ui.UIService;
 import net.runelite.api.NPC;
@@ -104,6 +105,21 @@ public class InteractionManager {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(w, parsedAction);
         });
+    }
+
+    /**
+     * Interacts with a widget in the players bank using the specific action.
+     * @param item The bank item widget to interact with
+     * @param action The action to take i.e. Withdraw-1, Withdraw-X, Examine
+     */
+    public void interact(BankItemWidget item, String action) {
+        if(!ctx.isPacketsLoaded()) return;
+        Point pt = uiService.getClickbox(item);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, action);
+        }
     }
 
 }
