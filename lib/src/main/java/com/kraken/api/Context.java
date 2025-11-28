@@ -12,6 +12,7 @@ import com.kraken.api.interaction.container.bank.BankQuery;
 import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.container.inventory.InventoryQuery;
 import com.kraken.api.interaction.container.inventory.InventoryService;
+import com.kraken.api.interaction.equipment.EquipmentQuery;
 import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
@@ -313,5 +314,17 @@ public class Context {
      */
     public BankQuery bank() {
         return new BankQuery(this, itemManager);
+    }
+
+    /**
+     * Creates a new query builder for the equipment interface.
+     * Usage: ctx.equipment().inSlot(EquipmentInventorySlot.HEAD).interact("Remove");
+     * ctx.equipment().withId(1234).interact("Wield");
+     *
+     * @return EquipmentQuery object used to chain together predicates to select specific items or groups of items within the players
+     * equipment or inventory interface. Only items with the action "wield" or "wear" will be interactable using this query from the inventory.
+     */
+    public EquipmentQuery equipment() {
+        return new EquipmentQuery(this);
     }
 }

@@ -122,4 +122,19 @@ public class InteractionManager {
         }
     }
 
+    /**
+     * Interacts with a widget using the specific action.
+     * @param item The widget to interact with
+     * @param action The action to take i.e. Wield, Use or Examine
+     */
+    public void interact(Widget item, String action) {
+        if(!ctx.isPacketsLoaded()) return;
+        Point pt = uiService.getClickbox(item);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetAction(item, action);
+        }
+    }
+
 }

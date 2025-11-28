@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
+@Deprecated
 public class InventoryService extends AbstractService {
     private final List<ContainerItem> containerItems = new ArrayList<>();
 

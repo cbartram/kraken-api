@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
+@Deprecated
 public class BankService extends AbstractService {
     private static final int WITHDRAW_QUANTITY = 3960;
     private static final int WITHDRAW_AS_VARBIT = 3958;

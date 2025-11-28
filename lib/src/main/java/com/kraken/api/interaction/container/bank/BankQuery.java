@@ -44,47 +44,47 @@ public class BankQuery extends AbstractQuery<BankEntity, BankQuery> {
 
     @Override
     protected Supplier<Stream<BankEntity>> source() {
-        List<BankItemWidget> bankItems = new ArrayList<>();
-
-        // TODO This is async so I wonder if whoever calls this supplier may not get any data if bankItems is empty and returns immediately...
-        ctx.runOnClientThread(() -> {
-            if (lastUpdateTick < ctx.getClient().getTickCount()) {
-                int i = 0;
-                ItemContainer container = ctx.getClient().getItemContainer(InventoryID.BANK);
-                if(container == null) {
-                    return Collections.emptyList();
-                }
-
-                for (Item item : container.getItems()) {
-                    try {
-                        if (item == null) {
-                            i++;
-                            continue;
-                        }
-
-                        if (itemDefs.get(item.getId()).getPlaceholderTemplateId() == 14401) {
-                            i++;
-                            continue;
-                        }
-
-                        ItemComposition comp = itemManager.getItemComposition(item.getId());
-                        if(comp.getName().equalsIgnoreCase("Bank filler")) {
-                            i++;
-                            continue;
-                        }
-
-                        itemDefs.put(item.getId(), comp);
-                        bankItems.add(new BankItemWidget(itemDefs.get(item.getId()).getName(), item.getId(), item.getQuantity(), i, ctx));
-                    } catch (NullPointerException | ExecutionException ex) {
-                        log.error("exception thrown while attempting to get items from bank:", ex);
+        return () -> {
+            List<BankItemWidget> bankItems = ctx.runOnClientThread(() -> {
+                if (lastUpdateTick < ctx.getClient().getTickCount()) {
+                    List<BankItemWidget> items = new ArrayList<>();
+                    int i = 0;
+                    ItemContainer container = ctx.getClient().getItemContainer(InventoryID.BANK);
+                    if(container == null) {
+                        return Collections.emptyList();
                     }
-                    i++;
-                }
-                lastUpdateTick = ctx.getClient().getTickCount();
-            }
-            return bankItems;
-        });
 
-        return () -> bankItems.stream().map(i -> new BankEntity(ctx, i));
+                    for (Item item : container.getItems()) {
+                        try {
+                            if (item == null) {
+                                i++;
+                                continue;
+                            }
+
+                            ItemComposition comp = itemDefs.get(item.getId());
+                            if (comp.getPlaceholderTemplateId() == 14401) {
+                                i++;
+                                continue;
+                            }
+
+                            if(comp.getName().equalsIgnoreCase("Bank filler")) {
+                                i++;
+                                continue;
+                            }
+
+                            items.add(new BankItemWidget(comp.getName(), item.getId(), item.getQuantity(), i, ctx));
+                        } catch (NullPointerException | ExecutionException ex) {
+                            log.error("exception thrown while attempting to get items from bank:", ex);
+                        }
+                        i++;
+                    }
+                    lastUpdateTick = ctx.getClient().getTickCount();
+                    return items;
+                }
+                return Collections.emptyList();
+            });
+
+            return bankItems.stream().map(i -> new BankEntity(ctx, i));
+        };
     }
 }
