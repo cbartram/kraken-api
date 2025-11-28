@@ -1,133 +1,75 @@
 package com.kraken.api.interaction.widget;
 
+import com.kraken.api.Context;
+import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.util.Text;
-import net.runelite.client.util.WildcardMatcher;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-public class WidgetQuery {
+public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery> {
 
-    List<Widget> widgets;
-
-    public WidgetQuery(HashSet<Widget> widgets) {
-        this.widgets = new ArrayList<>(widgets);
+    public WidgetQuery(Context ctx) {
+        super(ctx);
     }
 
-    public List<Widget> result() {
-        return widgets;
-    }
+    @Override
+    protected Supplier<Stream<WidgetEntity>> source() {
+        return () -> {
+            HashSet<Widget> widgets = new HashSet<>();
+            ArrayList<Widget> buffer = new ArrayList<>();
+            Widget[] currentQueue = ctx.getClient().getWidgetRoots();
+            while(currentQueue.length != 0) {
+                for (Widget widget : currentQueue) {
+                    if (widget == null) {
+                        continue;
+                    }
 
-    public WidgetQuery filter(Predicate<? super Widget> predicate) {
-        widgets = widgets.stream().filter(predicate).collect(Collectors.toList());
-        return this;
-    }
+                    widgets.add(widget);
+                    if (widget.getDynamicChildren() != null) {
+                        for (Widget dynamicChild : widget.getDynamicChildren()) {
+                            if (dynamicChild == null) {
+                                continue;
+                            }
+                            buffer.add(dynamicChild);
+                            widgets.add(dynamicChild);
+                        }
+                    }
 
-    public WidgetQuery withAction(String action) {
-        widgets = widgets.stream().filter(x->{
-            String[] actions = x.getActions();
-            if(actions == null) return false;
-            for (String s : actions) {
-                if(s == null) continue;
-                if(Text.removeTags(s).equalsIgnoreCase(action)) return true;
+                    if (widget.getNestedChildren() != null) {
+                        for (Widget nestedChild : widget.getNestedChildren()) {
+                            if (nestedChild == null) {
+                                continue;
+                            }
+                            buffer.add(nestedChild);
+                            widgets.add(nestedChild);
+                        }
+                    }
+
+                    Widget[] staticChildren;
+                    try {
+                        staticChildren = widget.getStaticChildren();
+                    } catch (NullPointerException e) {
+                        continue;
+                    }
+
+                    if (staticChildren != null) {
+                        for (Widget staticChild : staticChildren) {
+                            if (staticChild == null) {
+                                continue;
+                            }
+                            buffer.add(staticChild);
+                            widgets.add(staticChild);
+                        }
+                    }
+                }
+                currentQueue = buffer.toArray(new Widget[]{});
+                buffer.clear();
             }
-            return false;
-        }).collect(Collectors.toList());
-        return this;
-    }
 
-    public boolean empty() {
-        return widgets.isEmpty();
-    }
-
-    public WidgetQuery hiddenState(boolean hidden) {
-        widgets = widgets.stream()
-                .filter(widget -> widget.isHidden() == hidden)
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery withId(int id) {
-        widgets = widgets.stream()
-                .filter(widget -> widget.getId() == id)
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery withItemId(int itemId) {
-        widgets = widgets.stream()
-                .filter(widget -> widget.getItemId() == itemId)
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public Optional<Widget> first() {
-        return widgets.stream().findFirst();
-    }
-
-    public WidgetQuery nonPlaceHolder() {
-        return quantityGreaterThan(0);
-    }
-
-    public WidgetQuery itemIdInList(List<Integer> ids) {
-        widgets = widgets.stream()
-                .filter(item -> ids.contains(item.getItemId()))
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery quantityGreaterThan(int quanity) {
-        widgets = widgets.stream()
-                .filter(item -> item.getItemQuantity() > quanity)
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery nameContains(String name) {
-        widgets = widgets.stream()
-                .filter(item -> item.getName() != null && item.getName().contains(name))
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery withName(String name) {
-        widgets = widgets.stream()
-                .filter(item -> item.getName() != null && Text.removeTags(item.getName()).equals(name))
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery withText(String text) {
-        widgets = widgets.stream()
-                .filter(item -> item.getText() != null && item.getText().equals(text))
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery withTextContains(String text) {
-        widgets = widgets.stream()
-                .filter(item -> item.getText() != null && item.getText().contains(text))
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery withParentId(int parentId) {
-        widgets = widgets.stream()
-                .filter(item -> item.getParentId() == parentId)
-                .collect(Collectors.toList());
-        return this;
-    }
-
-    public WidgetQuery nameMatchesWildCardNoCase(String input) {
-        widgets = widgets.stream().
-                        filter(item -> item.getName() != null && WildcardMatcher.matches(input.toLowerCase(),
-                                Text.removeTags(item.getName().toLowerCase()))).
-                        collect(Collectors.toList());
-        return this;
+            return widgets.stream().map(w -> new WidgetEntity(ctx, w));
+        };
     }
 }

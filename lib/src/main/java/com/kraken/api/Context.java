@@ -28,6 +28,7 @@ import com.kraken.api.interaction.prayer.PrayerService;
 import com.kraken.api.interaction.spells.SpellService;
 import com.kraken.api.interaction.ui.TabService;
 import com.kraken.api.interaction.ui.UIService;
+import com.kraken.api.interaction.widget.WidgetQuery;
 import com.kraken.api.interaction.widget.WidgetService;
 import lombok.Getter;
 import lombok.Setter;
@@ -363,5 +364,13 @@ public class Context {
      */
     public GroundObjectQuery groundObjects() {
         return new GroundObjectQuery(this, itemManager);
+    }
+
+    /**
+     * Creates a new query builder for Widgets. Usage: ctx.widgets().withText("Log Out").interact();
+     * @return WidgetQuery used to chain together predicates to select specific widgets within the client.
+     */
+    public WidgetQuery widgets() {
+        return new WidgetQuery(this);
     }
 }

@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Singleton
+@Deprecated
 public class WidgetService extends AbstractService {
 
     @Inject
@@ -384,70 +385,5 @@ public class WidgetService extends AbstractService {
         }
 
         return false;
-    }
-
-    public WidgetQuery query() {
-        if(lastSearchIdleTicks == client.getKeyboardIdleTicks()) {
-            return new WidgetQuery(cachedWidgets);
-        }
-
-        HashSet<Widget> returnList = new HashSet<>();
-        Widget[] currentQueue;
-        ArrayList<Widget> buffer = new ArrayList<>();
-
-        currentQueue = client.getWidgetRoots();
-
-        while(currentQueue.length != 0) {
-            for (Widget widget : currentQueue) {
-                if (widget == null) {
-                    continue;
-                }
-
-                returnList.add(widget);
-
-                if (widget.getDynamicChildren() != null) {
-                    for (Widget dynamicChild : widget.getDynamicChildren()) {
-                        if (dynamicChild == null) {
-                            continue;
-                        }
-                        buffer.add(dynamicChild);
-                        returnList.add(dynamicChild);
-                    }
-                }
-
-                if (widget.getNestedChildren() != null) {
-                    for (Widget nestedChild : widget.getNestedChildren()) {
-                        if (nestedChild == null) {
-                            continue;
-                        }
-                        buffer.add(nestedChild);
-                        returnList.add(nestedChild);
-                    }
-                }
-
-                Widget[] staticChildren;
-                try {
-                    staticChildren = widget.getStaticChildren();
-                } catch (NullPointerException e) {
-                    continue;
-                }
-
-                if (staticChildren != null) {
-                    for (Widget staticChild : staticChildren) {
-                        if (staticChild == null) {
-                            continue;
-                        }
-                        buffer.add(staticChild);
-                        returnList.add(staticChild);
-                    }
-                }
-            }
-
-            currentQueue = buffer.toArray(new Widget[]{});
-            buffer.clear();
-        }
-        lastSearchIdleTicks = client.getKeyboardIdleTicks();
-        cachedWidgets = returnList;
-        return new WidgetQuery(cachedWidgets);
     }
 }
