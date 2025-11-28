@@ -22,6 +22,7 @@ import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
 import com.kraken.api.interaction.npc.NpcQuery;
 import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.interaction.player.PlayerQuery;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.prayer.PrayerService;
 import com.kraken.api.interaction.spells.SpellService;
@@ -280,6 +281,18 @@ public class Context {
      */
     public NpcQuery npcs() {
         return new NpcQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for Players. This will also include the local player as well which can be
+     * grabbed with {@code .local()}.
+     * Usage: ctx.players().withName("Zezima").first().interact("Follow");
+     * ctx.players().local().getName();
+     *
+     * @return PlayerQuery object used to chain together predicates to select specific Players's within the scene.
+     */
+    public PlayerQuery players() {
+        return new PlayerQuery(this);
     }
 
     /**

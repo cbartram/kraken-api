@@ -3,15 +3,13 @@ package com.kraken.api.interaction;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.core.packet.entity.GameObjectPackets;
-import com.kraken.api.core.packet.entity.MousePackets;
-import com.kraken.api.core.packet.entity.NPCPackets;
-import com.kraken.api.core.packet.entity.WidgetPackets;
+import com.kraken.api.core.packet.entity.*;
 import com.kraken.api.interaction.container.bank.BankItemWidget;
 import com.kraken.api.interaction.container.inventory.ContainerItem;
 import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.ui.UIService;
 import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.Point;
 import net.runelite.api.TileObject;
 import net.runelite.api.widgets.Widget;
@@ -21,13 +19,16 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Manages interactions across various game entities like NPC's, Widgets, GameObjects, TileObjects and more.
+ * Manages interactions across various game entities like NPC's, Players, Widgets, GameObjects, TileObjects and more.
  */
 @Singleton
 public class InteractionManager {
 
     @Inject
     private NPCPackets npcPackets;
+
+    @Inject
+    private PlayerPackets playerPackets;
 
     @Inject
     private MousePackets mousePackets;
@@ -56,6 +57,21 @@ public class InteractionManager {
         if (point != null) {
             mousePackets.queueClickPacket(point.getX(), point.getY());
             npcPackets.queueNPCAction(npc, action);
+        }
+    }
+
+    /**
+     * Interacts with a Player using the specified action i.e. "Attack", "Trade", or "Follow"
+     *
+     * @param player the Player to interact with
+     * @param action The action to take, "Attack", "Trade", or "Follow"
+     */
+    public void interact(Player player, String action) {
+        if(!ctx.isPacketsLoaded()) return;
+        Point point = uiService.getClickbox(player);
+        if (point != null) {
+            mousePackets.queueClickPacket(point.getX(), point.getY());
+            playerPackets.queuePlayerAction(player, action);
         }
     }
 
