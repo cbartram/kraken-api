@@ -16,7 +16,7 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
     @Override
     public boolean interact(String action) {
         if (raw == null) return false;
-        ctx.getInteractionManager().interact(raw, action);
+        ctx.getInteractionManager().interact(raw, false, action);
         return true;
     }
 }

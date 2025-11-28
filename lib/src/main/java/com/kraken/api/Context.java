@@ -5,6 +5,7 @@ import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.interaction.InteractionManager;
 import com.kraken.api.interaction.camera.CameraService;
+import com.kraken.api.interaction.container.bank.BankInventoryQuery;
 import com.kraken.api.interaction.container.bank.BankService;
 import com.kraken.api.interaction.container.inventory.InventoryQuery;
 import com.kraken.api.interaction.container.inventory.InventoryService;
@@ -282,5 +283,19 @@ public class Context {
      */
     public InventoryQuery inventory() {
         return new InventoryQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for a Bank Inventory. This should only be used when the bank is open in order to
+     * deposit items from the players inventory into the bank. A different parent widget is used for the players inventory
+     * while the bank is open compared to the normal players inventory. For querying the players inventory to eat food,
+     * interact with objects, or perform general actions without a bank use: {@code InventoryQuery}.
+     * Usage: ctx.bankInventory().withId(1234).count();
+     *
+     * @return BankInventoryQuery object used to chain together predicates to select specific items or groups of items within
+     * the players inventory while the bank interface is open.
+     */
+    public BankInventoryQuery bankInventory() {
+        return new BankInventoryQuery(this);
     }
 }

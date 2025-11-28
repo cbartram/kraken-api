@@ -11,6 +11,7 @@ import com.kraken.api.interaction.ui.UIService;
 import net.runelite.api.NPC;
 import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -56,9 +57,11 @@ public class InteractionManager {
      * the first available action is used.
      *
      * @param item The Inventory Item to interact with.
+     * @param bankInventory True if the bank interface is open and the function should use the Bank Inventory widget to search for items to interact
+     *                      with instead of the normal players inventory.
      * @param action The action to take. i.e. "Eat" or "Use"
      */
-    public void interact(ContainerItem item, String action) {
+    public void interact(ContainerItem item, boolean bankInventory, String action) {
         if(!ctx.isPacketsLoaded()) return;
 
         // Get first action is no specific action is passed
@@ -69,12 +72,25 @@ public class InteractionManager {
 
         ctx.runOnClientThread(() -> {
             if(item == null) return;
-            Widget w = item.getWidget();
+            Widget w;
+
+            if(bankInventory) {
+                w = item.getBankInventoryWidget();
+            } else {
+                w = item.getWidget();
+            }
 
             // This can happen if the user hasn't changed something in their inventory since logging in, since widgets
             // weren't loaded when refresh() was called.
             if(w == null) {
-                Widget inven = ctx.getClient().getWidget(149, 0);
+                Widget inven;
+
+                if(bankInventory) {
+                    inven = ctx.getClient().getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+                } else {
+                    inven = ctx.getClient().getWidget(149, 0);
+                }
+
                 if(inven == null) return;
                 Widget[] items = inven.getDynamicChildren();
                 w = Arrays.stream(items)
