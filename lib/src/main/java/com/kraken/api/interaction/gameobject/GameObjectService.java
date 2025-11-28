@@ -380,21 +380,6 @@ public class GameObjectService extends AbstractService {
     }
 
     /**
-     * Determines if a TileObject should be included based on its location relative to the Tile.
-     * @param obj The TileObject to check.
-     * @param tile The Tile containing the TileObject.
-     * @return True if the TileObject's location matches the Tile's location, false otherwise.
-     * @param <T> The type of TileObject (e.g., GameObject, WallObject, etc.)
-     */
-    private <T extends TileObject> boolean shouldIncludeObject(T obj, Tile tile) {
-        if (obj instanceof GameObject) {
-            GameObject gameObject = (GameObject) obj;
-            return gameObject.getSceneMinLocation().equals(tile.getSceneLocation());
-        }
-        return obj.getLocalLocation().equals(tile.getLocalLocation());
-    }
-
-    /**
      * Checks if the object location is within the specified distance from the anchor point.
      * @param anchor The anchor local point.
      * @param objLoc The object's local location.
@@ -544,8 +529,6 @@ public class GameObjectService extends AbstractService {
 
         return ids;
     }
-
-
 
     @Nullable
     private <T extends TileObject> ObjectComposition convertToObjectComposition(T object) {

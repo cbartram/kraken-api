@@ -1,18 +1,19 @@
 package com.kraken.api;
 
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Singleton;
+import com.google.inject.*;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
+import com.kraken.api.interaction.InteractionManager;
 import com.kraken.api.interaction.camera.CameraService;
 import com.kraken.api.interaction.container.bank.BankService;
+import com.kraken.api.interaction.container.inventory.InventoryQuery;
 import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.equipment.EquipmentService;
 import com.kraken.api.interaction.gameobject.GameObjectService;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
+import com.kraken.api.interaction.npc.NpcQuery;
 import com.kraken.api.interaction.npc.NpcService;
 import com.kraken.api.interaction.player.PlayerService;
 import com.kraken.api.interaction.prayer.PrayerService;
@@ -74,19 +75,22 @@ public class Context {
             WidgetService.class
     );
 
-    protected ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-    public Future<?> scheduledFuture;
     private final Injector injector;
     private final EventBus eventBus;
 
+    @Getter
+    private final InteractionManager interactionManager;
+
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
-                   final EventBus eventBus, final Injector injector) {
+                   final EventBus eventBus, final Injector injector,
+                   final InteractionManager interactionManager) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
+        this.interactionManager = interactionManager;
     }
 
     /**
@@ -256,5 +260,27 @@ public class Context {
             log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage(), e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Creates a new query builder for NPCs.
+     * Usage: ctx.npcs().withName("Goblin").first().interact("Attack");
+     *
+     * @return NpcQuery object used to chain together predicates to select specific NPC's within the scene.
+     */
+    public NpcQuery npcs() {
+        return new NpcQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for the standard Backpack Inventory. This is only for finding items in a players inventory and
+     * should not be used when the Bank is open to deposit items. Instead, use {@code BankInventoryQuery} for depositing items.
+     * Usage: ctx.inventory().withId(1234).count();
+     *
+     * @return InventoryQuery object used to chain together predicates to select specific items or groups of items within
+     * the players inventory.
+     */
+    public InventoryQuery inventory() {
+        return new InventoryQuery(this);
     }
 }
