@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
+@Deprecated
 public class EquipmentService extends AbstractService {
 
     @Inject

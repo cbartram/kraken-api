@@ -3,6 +3,7 @@ package com.kraken.api.interaction;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.core.packet.entity.GameObjectPackets;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
@@ -11,6 +12,7 @@ import com.kraken.api.interaction.container.inventory.ContainerItem;
 import com.kraken.api.interaction.ui.UIService;
 import net.runelite.api.NPC;
 import net.runelite.api.Point;
+import net.runelite.api.TileObject;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 
@@ -31,6 +33,9 @@ public class InteractionManager {
 
     @Inject
     private WidgetPackets widgetPackets;
+
+    @Inject
+    private GameObjectPackets gameObjectPackets;
 
     @Inject
     private UIService uiService;
@@ -134,6 +139,22 @@ public class InteractionManager {
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(item, action);
+        }
+    }
+
+    /**
+     * Interacts with a GameObject ({@code TileObject}) using the specified action i.e. "Chop", "Mine", or "Examine".
+     *
+     * @param object the {@code TileObject} to interact with
+     * @param action The action to take on the game object, i.e. "Chop", "Mine", or "Examine".
+     */
+    public void interact(TileObject object, String action) {
+        if(!ctx.isPacketsLoaded()) return;
+        Point pt = uiService.getClickbox(object);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            gameObjectPackets.queueObjectAction(object, false, action);
         }
     }
 

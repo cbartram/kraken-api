@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Singleton
+@Deprecated
 public class GameObjectService extends AbstractService {
 
     @Inject
