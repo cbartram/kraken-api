@@ -14,7 +14,9 @@ import com.kraken.api.interaction.container.inventory.InventoryQuery;
 import com.kraken.api.interaction.container.inventory.InventoryService;
 import com.kraken.api.interaction.equipment.EquipmentQuery;
 import com.kraken.api.interaction.equipment.EquipmentService;
+import com.kraken.api.interaction.gameobject.GameObjectQuery;
 import com.kraken.api.interaction.gameobject.GameObjectService;
+import com.kraken.api.interaction.groundobject.GroundObjectQuery;
 import com.kraken.api.interaction.groundobject.GroundObjectService;
 import com.kraken.api.interaction.movement.MinimapService;
 import com.kraken.api.interaction.movement.MovementService;
@@ -326,5 +328,27 @@ public class Context {
      */
     public EquipmentQuery equipment() {
         return new EquipmentQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for game objects. Game objects are objects in the game world like: Trees, ore, or fishing
+     * spots which exist on tiles, can be interacted with, but cannot be picked up by the player. Usage:
+     * ctx.gameObjects().withName("Oak Tree").nearest().interact("Chop");
+     *
+     * @return GameObjectQuery used to chain together predicates to select specific game objects within the scene.
+     */
+    public GameObjectQuery gameObjects() {
+        return new GameObjectQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for Ground Items. GroundItems are items that exist on a tile that the player can pick up
+     * and store in their inventory. Examples include: bones dropped from an NPC or loot dropped by another player on a tile.
+     * Usage: ctx.groundObjects().withName("Twisted Bow").nearest().interact("Take");
+     *
+     * @return GroundObjectQuery used to chain together predicates to select specific ground items within the scene.
+     */
+    public GroundObjectQuery groundObjects() {
+        return new GroundObjectQuery(this, itemManager);
     }
 }

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 // TODO This class has potential for more helpful methods which can loot entire stacks of items, loot by item value, etc.
 @Slf4j
 @Singleton
+@Deprecated
 public class GroundObjectService extends AbstractService {
 
     @Inject

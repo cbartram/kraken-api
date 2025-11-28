@@ -9,6 +9,7 @@ import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.interaction.container.bank.BankItemWidget;
 import com.kraken.api.interaction.container.inventory.ContainerItem;
+import com.kraken.api.interaction.groundobject.GroundItem;
 import com.kraken.api.interaction.ui.UIService;
 import net.runelite.api.NPC;
 import net.runelite.api.Point;
@@ -144,6 +145,7 @@ public class InteractionManager {
 
     /**
      * Interacts with a GameObject ({@code TileObject}) using the specified action i.e. "Chop", "Mine", or "Examine".
+     * GameObject's are objects that exist on a tile like walls, trees, ore, or fishing spots.
      *
      * @param object the {@code TileObject} to interact with
      * @param action The action to take on the game object, i.e. "Chop", "Mine", or "Examine".
@@ -155,6 +157,25 @@ public class InteractionManager {
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             gameObjectPackets.queueObjectAction(object, false, action);
+        }
+    }
+
+    /**
+     * Interacts with a ground item ({@code GroundItem}) using the specified action i.e. "Take" or "Examine". A
+     * Ground item is an actual item that is on the ground like coins dropped from a boss or logs a player has
+     * dropped on a tile. This differs from GameObjects like trees, ore, or fish which exist on a tile but are not
+     * "takeable" into the players inventory.
+     *
+     * @param item the {@code GroundItem} to interact with
+     * @param action The action to take on the game object, i.e. "Take" or "Examine"
+     */
+    public void interact(GroundItem item, String action) {
+        if(!ctx.isPacketsLoaded()) return;
+        Point pt = uiService.getClickbox(item.getTileObject());
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            gameObjectPackets.queueObjectAction(item.getTileObject(), false, action);
         }
     }
 
