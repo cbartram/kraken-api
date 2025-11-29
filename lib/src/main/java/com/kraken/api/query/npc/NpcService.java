@@ -2,7 +2,6 @@ package com.kraken.api.query.npc;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.service.ui.UIService;

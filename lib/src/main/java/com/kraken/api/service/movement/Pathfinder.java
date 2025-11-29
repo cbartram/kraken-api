@@ -1,6 +1,6 @@
 package com.kraken.api.service.movement;
 
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.CollisionData;
@@ -14,18 +14,21 @@ import javax.inject.Singleton;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.Queue;
 
 @Slf4j
 @Singleton
-public class Pathfinder extends AbstractService {
+public class Pathfinder {
     private static final int SCENE_SIZE = 104;
+    private static final int[] DIR_X = {-1, 1,  0, 0, -1, 1, -1, 1};
+    private static final int[] DIR_Y = { 0, 0, -1, 1, -1, -1, 1, 1};
+
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private Client client;
-
-    // Explicit traversal order: W, E, S, N, SW, SE, NW, NE
-    private static final int[] DIR_X = {-1, 1,  0, 0, -1, 1, -1, 1};
-    private static final int[] DIR_Y = { 0, 0, -1, 1, -1, -1, 1, 1};
 
     /**
      * Generates a sparse path (Waypoints only) from start to target.
@@ -81,7 +84,7 @@ public class Pathfinder extends AbstractService {
      * @return List of Points comprising the path
      */
     public List<WorldPoint> findPath(WorldPoint start, WorldPoint target) {
-        return context.runOnClientThread(() -> {
+        return ctx.runOnClientThread(() -> {
             if (start.equals(target)) return Collections.emptyList();
 
             // 1. Setup State

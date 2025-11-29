@@ -1,6 +1,6 @@
 package com.kraken.api.service.ui;
 
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import com.kraken.api.service.SleepService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
@@ -10,13 +10,16 @@ import javax.inject.Singleton;
 
 @Slf4j
 @Singleton
-public class TabService extends AbstractService {
+public class TabService {
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private SleepService sleepService;
 
     public InterfaceTab getCurrentTab() {
-        final int varcIntValue = client.getVarcIntValue(171); // Inventory tab varc int
+        final int varcIntValue = ctx.getClient().getVarcIntValue(171); // Inventory tab varc int
         switch (VarcIntValues.valueOf(varcIntValue)) {
             case TAB_COMBAT_OPTIONS:
                 return InterfaceTab.COMBAT;
@@ -57,11 +60,11 @@ public class TabService extends AbstractService {
     public boolean switchTo(InterfaceTab tab) {
         if (isCurrentTab(tab)) return true;
 
-        if (tab == InterfaceTab.NOTHING_SELECTED && context.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
+        if (tab == InterfaceTab.NOTHING_SELECTED && ctx.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
             return false;
 
         // 915 is a tab switch script
-        context.getClientThread().invokeLater(() -> client.runScript(915, tab.getIndex()));
+        ctx.getClientThread().invokeLater(() -> ctx.getClient().runScript(915, tab.getIndex()));
         return sleepService.sleepUntil(() -> isCurrentTab(tab));
     }
 

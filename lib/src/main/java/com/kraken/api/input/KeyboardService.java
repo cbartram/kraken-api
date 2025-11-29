@@ -1,7 +1,6 @@
 package com.kraken.api.input;
 
 
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.service.RandomService;
 import com.kraken.api.service.SleepService;
 import net.runelite.api.GameState;

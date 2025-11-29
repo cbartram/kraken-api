@@ -3,7 +3,6 @@ package com.kraken.api.query.container.bank;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.service.RandomService;
 import com.kraken.api.service.SleepService;
 import com.kraken.api.core.packet.entity.MousePackets;

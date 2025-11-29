@@ -4,7 +4,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.GameObjectPackets;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.service.tile.TileService;

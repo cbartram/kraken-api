@@ -2,7 +2,7 @@ package com.kraken.api.service.movement;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.MovementPackets;
 import com.kraken.api.service.tile.TileService;
@@ -14,7 +14,10 @@ import net.runelite.api.coords.WorldPoint;
 
 @Slf4j
 @Singleton
-public class MovementService extends AbstractService {
+public class MovementService {
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private TileService tileService;
@@ -36,10 +39,10 @@ public class MovementService extends AbstractService {
      */
     public void moveTo(WorldPoint point) {
         WorldPoint convertedPoint;
-        if (client.getTopLevelWorldView().isInstance()) {
+        if (ctx.getClient().getTopLevelWorldView().isInstance()) {
             // multiple conversions here: 1 which takes WP and creates instanced LP and
             // 2 which converts a LP to WP
-            convertedPoint = WorldPoint.fromLocal(client, tileService.fromWorldInstance(point));
+            convertedPoint = WorldPoint.fromLocal(ctx.getClient(), tileService.fromWorldInstance(point));
         } else {
             convertedPoint = point;
         }
@@ -56,13 +59,13 @@ public class MovementService extends AbstractService {
      */
     public void moveTo(LocalPoint point) {
         WorldPoint converted;
-        if(client.getTopLevelWorldView().isInstance()) {
+        if(ctx.getClient().getTopLevelWorldView().isInstance()) {
             // TODO May not work right
-            converted = WorldPoint.fromLocalInstance(client, point);
+            converted = WorldPoint.fromLocalInstance(ctx.getClient(), point);
             LocalPoint lp = tileService.fromWorldInstance(converted);
-            converted = WorldPoint.fromLocal(client, lp);
+            converted = WorldPoint.fromLocal(ctx.getClient(), lp);
         } else {
-            converted = WorldPoint.fromLocal(client, point);
+            converted = WorldPoint.fromLocal(ctx.getClient(), point);
         }
 
 

@@ -2,7 +2,6 @@ package com.kraken.api.query.equipment;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.query.container.inventory.ContainerItem;

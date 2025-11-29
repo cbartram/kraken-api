@@ -1,7 +1,6 @@
 package com.kraken.api.query.widget;
 
 
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.service.ui.UIService;

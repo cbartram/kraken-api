@@ -1,18 +1,23 @@
 package com.kraken.api.service;
 
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 
 @Slf4j
 @Singleton
-public class SleepService extends AbstractService {
-     ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
-     ScheduledFuture<?> scheduledFuture;
+public class SleepService {
+    
+    @Inject
+    private Context ctx;
+    
+     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
+     private ScheduledFuture<?> scheduledFuture;
 
     public  ScheduledFuture<?> awaitExecutionUntil(Runnable callback, BooleanSupplier awaitedCondition, int time) {
         scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -26,7 +31,7 @@ public class SleepService extends AbstractService {
     }
 
     public void sleep(int start) {
-        if (client.isClientThread()) return;
+        if (ctx.getClient().isClientThread()) return;
         try {
             Thread.sleep(start);
         } catch (InterruptedException ignored) {
@@ -62,7 +67,7 @@ public class SleepService extends AbstractService {
 
     @SneakyThrows
     public <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis, int sleepMillis) {
-        if (client.isClientThread()) return null;
+        if (ctx.getClient().isClientThread()) return null;
         boolean done;
         T methodResponse;
         final long endTime = System.currentTimeMillis()+timeoutMillis;
@@ -83,7 +88,7 @@ public class SleepService extends AbstractService {
     }
 
     public boolean sleepUntil(BooleanSupplier awaitedCondition, int time) {
-        if (client.isClientThread()) return false;
+        if (ctx.getClient().isClientThread()) return false;
         boolean done = false;
         long startTime = System.currentTimeMillis();
         try {
@@ -109,9 +114,9 @@ public class SleepService extends AbstractService {
      * @param ticks ticks
      */
     public void tick(int ticks) {
-        int tick = client.getTickCount() + ticks;
-        int start = client.getTickCount();
-        while(client.getTickCount() < tick && client.getTickCount() >= start) {
+        int tick = ctx.getClient().getTickCount() + ticks;
+        int start = ctx.getClient().getTickCount();
+        while(ctx.getClient().getTickCount() < tick && ctx.getClient().getTickCount() >= start) {
             if(Thread.currentThread().isInterrupted()) {
                 throw new RuntimeException();
             }
@@ -120,7 +125,7 @@ public class SleepService extends AbstractService {
     }
 
     public boolean sleepUntil(BooleanSupplier awaitedCondition, Runnable action, long timeoutMillis, int sleepMillis) {
-        if (client.isClientThread()) return false;
+        if (ctx.getClient().isClientThread()) return false;
         long startTime = System.nanoTime();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
         try {
@@ -138,7 +143,7 @@ public class SleepService extends AbstractService {
     }
 
     public boolean sleepUntilTrue(BooleanSupplier awaitedCondition) {
-        if (client.isClientThread()) return false;
+        if (ctx.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
         try {
             do {
@@ -154,7 +159,7 @@ public class SleepService extends AbstractService {
     }
 
     public boolean sleepUntilTrue(BooleanSupplier awaitedCondition, int time, int timeout) {
-        if (client.isClientThread()) return false;
+        if (ctx.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
         try {
             do {
@@ -170,7 +175,7 @@ public class SleepService extends AbstractService {
     }
 
     public boolean sleepUntilTrue(BooleanSupplier awaitedCondition, BooleanSupplier resetCondition, int time, int timeout) {
-        if (client.isClientThread()) return false;
+        if (ctx.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
         try {
             do {
@@ -193,12 +198,12 @@ public class SleepService extends AbstractService {
     }
 
     public void sleepUntilOnClientThread(BooleanSupplier awaitedCondition, int time) {
-        if (client.isClientThread()) return;
+        if (ctx.getClient().isClientThread()) return;
         boolean done;
         long startTime = System.currentTimeMillis();
         try {
             do {
-                done = context.runOnClientThreadOptional(awaitedCondition::getAsBoolean).orElse(false);
+                done = ctx.runOnClientThreadOptional(awaitedCondition::getAsBoolean).orElse(false);
             } while (!done && System.currentTimeMillis() - startTime < time);
         } catch (Exception e) {
             
@@ -206,7 +211,7 @@ public class SleepService extends AbstractService {
     }
 
     public boolean sleepUntilTick(int ticksToWait) {
-        int startTick = client.getTickCount();
-        return sleepUntil(() -> client.getTickCount() >= startTick + ticksToWait, ticksToWait * 600 + 2000);
+        int startTick = ctx.getClient().getTickCount();
+        return sleepUntil(() -> ctx.getClient().getTickCount() >= startTick + ticksToWait, ticksToWait * 600 + 2000);
     }
 }

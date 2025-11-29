@@ -2,7 +2,7 @@ package com.kraken.api.service.spell;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.query.container.inventory.ContainerItem;
@@ -22,7 +22,10 @@ import java.util.Map;
 
 @Slf4j
 @Singleton
-public class SpellService extends AbstractService {
+public class SpellService {
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private InventoryService inventoryService;
@@ -69,7 +72,7 @@ public class SpellService extends AbstractService {
      * @return True if the cast was successful and false otherwise
      */
     public boolean cast(Spells spell) {
-        if(!context.isPacketsLoaded()) return false;
+        if(!ctx.isPacketsLoaded()) return false;
         if(spell == null) {
             return false;
         }
@@ -79,8 +82,8 @@ public class SpellService extends AbstractService {
             return false;
         }
 
-        if (client.getBoostedSkillLevel(Skill.MAGIC) < spell.getRequiredLevel() || client.getRealSkillLevel(Skill.MAGIC) < spell.getRequiredLevel()) {
-            log.warn("Cannot cast spell {}. Required magic level: {}, current level: {}", spell.getName(), spell.getRequiredLevel(), client.getBoostedSkillLevel(Skill.MAGIC));
+        if (ctx.getClient().getBoostedSkillLevel(Skill.MAGIC) < spell.getRequiredLevel() || ctx.getClient().getRealSkillLevel(Skill.MAGIC) < spell.getRequiredLevel()) {
+            log.warn("Cannot cast spell {}. Required magic level: {}, current level: {}", spell.getName(), spell.getRequiredLevel(), ctx.getClient().getBoostedSkillLevel(Skill.MAGIC));
             return false;
         }
 
@@ -89,12 +92,12 @@ public class SpellService extends AbstractService {
             return false;
         }
 
-        if(SPELLS_REQUIRING_PRAYER.contains(spell.getWidgetId()) && client.getBoostedSkillLevel(Skill.PRAYER) < 6) {
-            log.warn("Cannot cast spell {}. Required prayer points: 6, current level: {}", spell.getName(), client.getBoostedSkillLevel(Skill.PRAYER));
+        if(SPELLS_REQUIRING_PRAYER.contains(spell.getWidgetId()) && ctx.getClient().getBoostedSkillLevel(Skill.PRAYER) < 6) {
+            log.warn("Cannot cast spell {}. Required prayer points: 6, current level: {}", spell.getName(), ctx.getClient().getBoostedSkillLevel(Skill.PRAYER));
             return false;
         }
 
-        Widget w = client.getWidget(spell.getWidgetId());
+        Widget w = ctx.getClient().getWidget(spell.getWidgetId());
         if(w == null) {
             log.info("Cannot cast spell {}. Missing widget: {}", spell.getName(), spell.getWidgetId());
             return false;
@@ -187,17 +190,17 @@ public class SpellService extends AbstractService {
     private Map<Integer, Integer> getRunePouchContents() {
         Map<Integer, Integer> pouchRunes = new HashMap<>();
 
-        final EnumComposition runepouchEnum = client.getEnum(EnumID.RUNEPOUCH_RUNE);
+        final EnumComposition runepouchEnum = ctx.getClient().getEnum(EnumID.RUNEPOUCH_RUNE);
 
         for (int i = 0; i < 6; i++) {
             @Varbit
             int amountVarbit = AMOUNT_VARBITS[i];
-            int amount = client.getVarbitValue(amountVarbit);
+            int amount = ctx.getClient().getVarbitValue(amountVarbit);
 
             if(amount > 0) {
                 @Varbit
                 int runeVarbit = RUNE_VARBITS[i];
-                int runeId = client.getVarbitValue(runeVarbit);
+                int runeId = ctx.getClient().getVarbitValue(runeVarbit);
 
                 if(runeId > 0) {
                     // Get the actual item ID for this rune type
@@ -217,6 +220,6 @@ public class SpellService extends AbstractService {
      * @return The currently active Spellbook
      */
     public Spellbook getCurrentSpellbook() {
-        return Spellbook.fromValue(context.getVarbitValue(VarbitID.SPELLBOOK));
+        return Spellbook.fromValue(ctx.getVarbitValue(VarbitID.SPELLBOOK));
     }
 }

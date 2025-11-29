@@ -1,7 +1,6 @@
 package com.kraken.api.query.gameobject;
 
 
-import com.kraken.api.core.AbstractService;
 import com.kraken.api.core.packet.entity.GameObjectPackets;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.service.tile.TileService;

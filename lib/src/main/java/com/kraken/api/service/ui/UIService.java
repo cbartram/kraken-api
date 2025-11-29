@@ -1,8 +1,8 @@
 package com.kraken.api.service.ui;
 
-import com.kraken.api.core.AbstractService;
-import com.kraken.api.service.RandomService;
+import com.kraken.api.Context;
 import com.kraken.api.query.container.inventory.ContainerItem;
+import com.kraken.api.service.RandomService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.Point;
@@ -10,6 +10,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -20,7 +21,10 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Slf4j
 @Singleton
-public class UIService extends AbstractService {
+public class UIService {
+
+    @Inject
+    private Context ctx;
 
     /**
      * Returns a default rectangle representing the entire game canvas with a slight random offset.
@@ -29,7 +33,7 @@ public class UIService extends AbstractService {
      */
     public Rectangle getDefaultRectangle() {
         int randomValue = ThreadLocalRandom.current().nextInt(3) - 1;
-        return new Rectangle(randomValue, randomValue, client.getCanvasWidth(), client.getCanvasHeight());
+        return new Rectangle(randomValue, randomValue, ctx.getClient().getCanvasWidth(), ctx.getClient().getCanvasHeight());
     }
 
     /**
@@ -44,8 +48,8 @@ public class UIService extends AbstractService {
             return getDefaultRectangle();
         }
 
-        Shape clickbox = context.runOnClientThreadOptional(() -> Perspective.getClickbox(client, client.getTopLevelWorldView(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
-                        Perspective.getTileHeight(client, lp, actor.getWorldLocation().getPlane())))
+        Shape clickbox = ctx.runOnClientThreadOptional(() -> Perspective.getClickbox(ctx.getClient(), ctx.getClient().getTopLevelWorldView(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
+                        Perspective.getTileHeight(ctx.getClient(), lp, actor.getWorldLocation().getPlane())))
                 .orElse(null);
 
         if (clickbox == null) return getDefaultRectangle();
@@ -60,7 +64,7 @@ public class UIService extends AbstractService {
      */
     public Rectangle getObjectClickbox(TileObject object) {
         if (object == null) return getDefaultRectangle();
-        Shape clickbox = context.runOnClientThreadOptional(object::getClickbox).orElse(null);
+        Shape clickbox = ctx.runOnClientThreadOptional(object::getClickbox).orElse(null);
         if (clickbox == null) return getDefaultRectangle();
         if (clickbox.getBounds() == null) return getDefaultRectangle();
 
@@ -80,7 +84,7 @@ public class UIService extends AbstractService {
         if (localPoint == null) return getDefaultRectangle();
 
         // Get the screen point of the tile center
-        Point screenPoint = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, ctx.getClient().getTopLevelWorldView().getPlane());
 
         if (screenPoint == null) return getDefaultRectangle();
 
@@ -100,10 +104,10 @@ public class UIService extends AbstractService {
     public Rectangle getWorldPointClickbox(WorldPoint worldPoint) {
         if (worldPoint == null) return getDefaultRectangle();
 
-        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+        LocalPoint localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
         if (localPoint == null) return getDefaultRectangle();
 
-        Point screenPoint = Perspective.localToCanvas(client, localPoint, worldPoint.getPlane());
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, worldPoint.getPlane());
         if (screenPoint == null) return getDefaultRectangle();
 
         // TODO Different resolutions may cause problems here
@@ -122,7 +126,7 @@ public class UIService extends AbstractService {
     public Rectangle getLocalPointClickbox(LocalPoint localPoint) {
         if (localPoint == null) return getDefaultRectangle();
 
-        Point screenPoint = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, ctx.getClient().getTopLevelWorldView().getPlane());
         if (screenPoint == null) return getDefaultRectangle();
 
         // Create a small clickable area around the point (20x20 pixels)
@@ -143,7 +147,7 @@ public class UIService extends AbstractService {
     public Rectangle getLocalPointClickbox(LocalPoint localPoint, int plane) {
         if (localPoint == null) return getDefaultRectangle();
 
-        Point screenPoint = Perspective.localToCanvas(client, localPoint, plane);
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, plane);
         if (screenPoint == null) return getDefaultRectangle();
 
         // Create a small clickable area around the point (20x20 pixels)
@@ -190,7 +194,7 @@ public class UIService extends AbstractService {
      * @return Center point or random point within the bounds of the inventory item.
      */
     public Point getClickbox(ContainerItem item, boolean randomize) {
-        Rectangle bounds = item.getBounds(context, client);
+        Rectangle bounds = item.getBounds(ctx, ctx.getClient());
         if(bounds == null) return getClickingPoint(getDefaultRectangle(), true);
         return getClickingPoint(bounds, randomize);
     }

@@ -2,7 +2,7 @@ package com.kraken.api.service.movement;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import com.kraken.api.query.widget.WidgetService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Perspective;
@@ -23,7 +23,10 @@ import java.util.List;
 
 @Slf4j
 @Singleton
-public class MinimapService extends AbstractService {
+public class MinimapService {
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private WidgetService widgetService;
@@ -52,9 +55,9 @@ public class MinimapService extends AbstractService {
             zoom = zoomDistance;
         }
 
-        context.runOnClientThread(() -> {
-            if (client.getMinimapZoom() != zoom) {
-                client.setMinimapZoom(zoom);
+        ctx.runOnClientThread(() -> {
+            if (ctx.getClient().getMinimapZoom() != zoom) {
+                ctx.getClient().setMinimapZoom(zoom);
             }
         });
 
@@ -69,7 +72,7 @@ public class MinimapService extends AbstractService {
             return false;
         }
 
-        context.getMouse().click(point);
+        ctx.getMouse().click(point);
         return true;
     }
 
@@ -94,14 +97,14 @@ public class MinimapService extends AbstractService {
     public Point worldToMinimap(WorldPoint worldPoint) {
         if (worldPoint == null) return null;
 
-        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+        LocalPoint localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
 
         if (localPoint == null) {
             log.error("Tried to walk worldpoint {} using the canvas but WP -> LP conversion failed.", worldPoint);
             return null;
         }
 
-        return context.runOnClientThreadOptional(() -> Perspective.localToMinimap(client, localPoint)).orElse(null);
+        return ctx.runOnClientThreadOptional(() -> Perspective.localToMinimap(ctx.getClient(), localPoint)).orElse(null);
     }
 
     /**
@@ -131,9 +134,9 @@ public class MinimapService extends AbstractService {
             return null;
         }
 
-        boolean isResized = client.isResized();
+        boolean isResized = ctx.getClient().isResized();
 
-        BufferedImage minimapSprite = context.runOnClientThreadOptional(() ->
+        BufferedImage minimapSprite = ctx.runOnClientThreadOptional(() ->
                 spriteManager.getSprite(isResized ? SpriteID.RESIZEABLE_MODE_MINIMAP_ALPHA_MASK : SpriteID.FIXED_MODE_MINIMAP_ALPHA_MASK, 0)).orElse(null);
 
         if (minimapSprite == null) {
@@ -150,9 +153,9 @@ public class MinimapService extends AbstractService {
      * @return The minimap draw widget, or {@code null} if not found.
      */
     public Widget getMinimapDrawWidget() {
-        if (client.isResized()) {
+        if (ctx.getClient().isResized()) {
             // Side panels
-            if (context.getVarbitValue(4607) == 1) {
+            if (ctx.getVarbitValue(4607) == 1) {
                 // ComponentID.RESIZABLE_VIEWPORT_BOTTOM_LINE_MINIMAP_DRAW_AREA
                 return widgetService.getWidget(10747934);
             }
@@ -172,7 +175,7 @@ public class MinimapService extends AbstractService {
      * @return A {@link Shape} representing the scaled minimap clip area, or {@code null} if the minimap widget is unavailable.
      */
     public Shape getMinimapClipArea() {
-        return getMinimapClipArea(client.isResized() ? 0.94 : 1.0);
+        return getMinimapClipArea(ctx.getClient().isResized() ? 0.94 : 1.0);
     }
 
     /**

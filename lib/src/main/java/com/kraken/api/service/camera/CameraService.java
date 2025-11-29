@@ -3,9 +3,9 @@ package com.kraken.api.service.camera;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
-import com.kraken.api.service.SleepService;
+import com.kraken.api.Context;
 import com.kraken.api.input.KeyboardService;
+import com.kraken.api.service.SleepService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -26,9 +26,12 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Singleton
-public class CameraService extends AbstractService {
+public class CameraService {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> trackingTask;
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private SleepService sleepService;
@@ -52,8 +55,8 @@ public class CameraService extends AbstractService {
      * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
      */
     public int angleToTile(Actor t) {
-        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - client.getLocalPlayer().getWorldLocation().getY(),
-                t.getWorldLocation().getX() - client.getLocalPlayer().getWorldLocation().getX()));
+        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - ctx.getClient().getLocalPlayer().getWorldLocation().getY(),
+                t.getWorldLocation().getX() - ctx.getClient().getLocalPlayer().getWorldLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
@@ -64,8 +67,8 @@ public class CameraService extends AbstractService {
      * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
      */
     public int angleToTile(TileObject t) {
-        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - client.getLocalPlayer().getWorldLocation().getY(),
-                t.getWorldLocation().getX() - client.getLocalPlayer().getWorldLocation().getX()));
+        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - ctx.getClient().getLocalPlayer().getWorldLocation().getY(),
+                t.getWorldLocation().getX() - ctx.getClient().getLocalPlayer().getWorldLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
@@ -76,8 +79,8 @@ public class CameraService extends AbstractService {
      * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
      */
     public int angleToTile(LocalPoint localPoint) {
-        int angle = (int) Math.toDegrees(Math.atan2(localPoint.getY() - client.getLocalPlayer().getLocalLocation().getY(),
-                localPoint.getX() - client.getLocalPlayer().getLocalLocation().getX()));
+        int angle = (int) Math.toDegrees(Math.atan2(localPoint.getY() - ctx.getClient().getLocalPlayer().getLocalLocation().getY(),
+                localPoint.getX() - ctx.getClient().getLocalPlayer().getLocalLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
@@ -88,8 +91,8 @@ public class CameraService extends AbstractService {
      * @return the angle in degrees (0-359), where 0 is east and increases counter-clockwise
      */
     public int angleToTile(WorldPoint worldPoint) {
-        int angle = (int) Math.toDegrees(Math.atan2(worldPoint.getY() - client.getLocalPlayer().getWorldLocation().getY(),
-                worldPoint.getX() - client.getLocalPlayer().getWorldLocation().getX()));
+        int angle = (int) Math.toDegrees(Math.atan2(worldPoint.getY() - ctx.getClient().getLocalPlayer().getWorldLocation().getY(),
+                worldPoint.getX() - ctx.getClient().getLocalPlayer().getWorldLocation().getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
@@ -233,7 +236,7 @@ public class CameraService extends AbstractService {
         }
 
         // Set the camera speed to 3 to make the camera move faster
-        client.setCameraSpeed(3f);
+        ctx.getClient().setCameraSpeed(3f);
 
         if (getAngleTo(targetDegrees) > maxAngle) {
             keyboardService.keyHold(KeyEvent.VK_LEFT);
@@ -245,7 +248,7 @@ public class CameraService extends AbstractService {
             keyboardService.keyRelease(KeyEvent.VK_RIGHT);
         }
 
-        client.setCameraSpeed((float) defaultCameraSpeed);
+        ctx.getClient().setCameraSpeed((float) defaultCameraSpeed);
     }
 
     /**
@@ -274,7 +277,7 @@ public class CameraService extends AbstractService {
      * @return the current camera pitch (128-383, where 128 is looking down and 383 is looking up)
      */
     public int getPitch() {
-        return client.getCameraPitch();
+        return ctx.getClient().getCameraPitch();
     }
 
     /**
@@ -288,7 +291,7 @@ public class CameraService extends AbstractService {
         int maxPitch = 383;
         // clamp pitch to avoid out of bounds
         pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
-        client.setCameraPitchTarget(pitch);
+        ctx.getClient().setCameraPitchTarget(pitch);
     }
 
     /**
@@ -299,7 +302,7 @@ public class CameraService extends AbstractService {
     public float cameraPitchPercentage() {
         int minPitch = 128;
         int maxPitch = 383;
-        int currentPitch = client.getCameraPitch();
+        int currentPitch = ctx.getClient().getCameraPitch();
 
         int adjustedPitch = currentPitch - minPitch;
         int adjustedMaxPitch = maxPitch - minPitch;
@@ -336,7 +339,7 @@ public class CameraService extends AbstractService {
         // the client uses fixed point radians 0 - 2^14
         // degrees = yaw * 360 / 2^14 = yaw / 45.5111...
         // This leaves it on a scale of 45 versus a scale of 360 so we multiply it by 8 to fix that.
-        return (int) Math.abs(client.getCameraYaw() / 45.51 * 8);
+        return (int) Math.abs(ctx.getClient().getCameraYaw() / 45.51 * 8);
     }
 
     /**
@@ -388,17 +391,17 @@ public class CameraService extends AbstractService {
      * @param id The npc id to track.
      */
     private void trackingJob(int id) {
-        if (!(client.getGameState() == GameState.LOGGED_IN)) {
+        if (!(ctx.getClient().getGameState() == GameState.LOGGED_IN)) {
             return;
         }
 
-        NPC npc = client.getTopLevelWorldView().npcs().stream().filter(Objects::nonNull).filter(n -> n.getId() == id).findFirst().orElse(null);
+        NPC npc = ctx.getClient().getTopLevelWorldView().npcs().stream().filter(Objects::nonNull).filter(n -> n.getId() == id).findFirst().orElse(null);
 
         if(npc == null) {
             return;
         }
 
-        client.setCameraYawTarget(calculateCameraYaw(angleToTile(npc)));
+        ctx.getClient().setCameraYawTarget(calculateCameraYaw(angleToTile(npc)));
     }
 
     /**
@@ -408,11 +411,11 @@ public class CameraService extends AbstractService {
      * @return true if the tile object is within the viewport bounds, false otherwise
      */
     public boolean isTileOnScreen(TileObject tileObject) {
-        int viewportHeight = client.getViewportHeight();
-        int viewportWidth = client.getViewportWidth();
+        int viewportHeight = ctx.getClient().getViewportHeight();
+        int viewportWidth = ctx.getClient().getViewportWidth();
 
 
-        Polygon poly = Perspective.getCanvasTilePoly(client, tileObject.getLocalLocation());
+        Polygon poly = Perspective.getCanvasTilePoly(ctx.getClient(), tileObject.getLocalLocation());
 
         if (poly == null) return false;
 
@@ -427,10 +430,10 @@ public class CameraService extends AbstractService {
      * @return true if the tile is within the viewport bounds and in front of the camera, false otherwise
      */
     public boolean isTileOnScreen(LocalPoint localPoint) {
-        int viewportHeight = client.getViewportHeight();
-        int viewportWidth = client.getViewportWidth();
+        int viewportHeight = ctx.getClient().getViewportHeight();
+        int viewportWidth = ctx.getClient().getViewportWidth();
 
-        Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
+        Polygon poly = Perspective.getCanvasTilePoly(ctx.getClient(), localPoint);
         if (poly == null) return false;
 
         // Check if any part of the polygon intersects with the screen bounds
@@ -438,7 +441,7 @@ public class CameraService extends AbstractService {
         if (!poly.intersects(viewportBounds)) return false;
 
         // Optionally, check if the tile is in front of the camera
-        net.runelite.api.Point canvasPoint = Perspective.localToCanvas(client, localPoint, client.getTopLevelWorldView().getPlane());
+        net.runelite.api.Point canvasPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, ctx.getClient().getTopLevelWorldView().getPlane());
         return canvasPoint != null;
     }
 
@@ -449,7 +452,7 @@ public class CameraService extends AbstractService {
      */
     public int getZoom() {
         // VarClientInt.CAMERA_ZOOM_RESIZABLE_VIEWPORT
-        return client.getVarcIntValue(74);
+        return ctx.getClient().getVarcIntValue(74);
     }
 
     /**
@@ -460,7 +463,7 @@ public class CameraService extends AbstractService {
      */
     public void setZoom(int zoom) {
         runeliteClientThread.invokeLater(() -> {
-            client.runScript(ScriptID.CAMERA_DO_ZOOM, zoom, zoom);
+            ctx.getClient().runScript(ScriptID.CAMERA_DO_ZOOM, zoom, zoom);
         });
     }
 
@@ -470,7 +473,7 @@ public class CameraService extends AbstractService {
      * @return the current yaw value (0-2047, where 0/2048=North, 512=West, 1024=South, 1536=East)
      */
     public int getYaw() {
-        return client.getCameraYaw();
+        return ctx.getClient().getCameraYaw();
     }
 
     /**
@@ -488,7 +491,7 @@ public class CameraService extends AbstractService {
      */
     public void setYaw(int yaw) {
         if ( yaw >= 0 && yaw < 2048 ) {
-            client.setCameraYawTarget(yaw);
+            ctx.getClient().setCameraYawTarget(yaw);
         }
     }
 
@@ -525,12 +528,12 @@ public class CameraService extends AbstractService {
      * {@code false} if the tile cannot be projected or lies outside that box
      */
     public boolean isTileCenteredOnScreen(LocalPoint tile, double marginPercentage) {
-        Polygon poly = Perspective.getCanvasTilePoly(client, tile);
+        Polygon poly = Perspective.getCanvasTilePoly(ctx.getClient(), tile);
         if (poly == null) return false;
 
         Rectangle tileBounds = poly.getBounds();
-        int viewportWidth = client.getViewportWidth();
-        int viewportHeight = client.getViewportHeight();
+        int viewportWidth = ctx.getClient().getViewportWidth();
+        int viewportHeight = ctx.getClient().getViewportHeight();
         int centerX = viewportWidth / 2;
         int centerY = viewportHeight / 2;
 

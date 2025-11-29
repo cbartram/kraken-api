@@ -2,7 +2,7 @@ package com.kraken.api.service.tile;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import com.kraken.api.query.player.PlayerService;
 import com.kraken.api.sim.MovementFlag;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +17,12 @@ import static net.runelite.api.Constants.CHUNK_SIZE;
 
 @Slf4j
 @Singleton
-public class TileService extends AbstractService {
+public class TileService {
 
     private static final int FLAG_DATA_SIZE = 104;
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private PlayerService playerService;
@@ -30,11 +33,11 @@ public class TileService extends AbstractService {
      * @return The object composition for a given tile object
      */
     public ObjectComposition getObjectComposition(TileObject tileObject) {
-        if(client.getObjectDefinition(tileObject.getId()).getImpostorIds() != null && client.getObjectDefinition(tileObject.getId()).getImpostor() != null) {
-            return context.runOnClientThread(() -> client.getObjectDefinition(tileObject.getId()).getImpostor());
+        if(ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostorIds() != null && ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor() != null) {
+            return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor());
         }
 
-        return context.runOnClientThread(() -> client.getObjectDefinition(tileObject.getId()));
+        return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()));
     }
 
     /**
@@ -65,17 +68,17 @@ public class TileService extends AbstractService {
             for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
                 WorldPoint point = kvp.getKey();
                 LocalPoint localPoint;
-                if (client.getTopLevelWorldView().isInstance()) {
-                    WorldPoint worldPoint = WorldPoint.toLocalInstance(client.getTopLevelWorldView(), point).stream().findFirst().orElse(null);
+                if (ctx.getClient().getTopLevelWorldView().isInstance()) {
+                    WorldPoint worldPoint = WorldPoint.toLocalInstance(ctx.getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
                     if (worldPoint == null) break;
-                    localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+                    localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
                 } else {
-                    localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
+                    localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), point);
                 }
 
-                CollisionData[] collisionMap = client.getTopLevelWorldView().getCollisionMaps();
+                CollisionData[] collisionMap = ctx.getClient().getTopLevelWorldView().getCollisionMaps();
                 if (collisionMap != null && localPoint != null) {
-                    CollisionData collisionData = collisionMap[client.getTopLevelWorldView().getPlane()];
+                    CollisionData collisionData = collisionMap[ctx.getClient().getTopLevelWorldView().getPlane()];
                     int[][] flags = collisionData.getFlags();
                     int data = flags[localPoint.getSceneX()][localPoint.getSceneY()];
 
@@ -140,13 +143,13 @@ public class TileService extends AbstractService {
 
         final int startX;
         final int startY;
-        if (client.getTopLevelWorldView().getScene().isInstance()) {
+        if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
             LocalPoint localPoint = playerService.getLocalLocation();
             startX = localPoint.getSceneX();
             startY = localPoint.getSceneY();
         } else {
-            startX = playerLoc.getX() - client.getTopLevelWorldView().getBaseX();
-            startY = playerLoc.getY() - client.getTopLevelWorldView().getBaseY();
+            startX = playerLoc.getX() - ctx.getClient().getTopLevelWorldView().getBaseX();
+            startY = playerLoc.getY() - ctx.getClient().getTopLevelWorldView().getBaseY();
         }
         final int startPoint = (startX << 16) | startY;
 
@@ -188,13 +191,13 @@ public class TileService extends AbstractService {
      */
     private boolean isVisited(WorldPoint worldPoint, boolean[][] visited) {
         int baseX, baseY, x, y;
-        if (client.getTopLevelWorldView().getScene().isInstance()) {
+        if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
             LocalPoint localPoint = playerService.getLocalLocation();
             x = localPoint.getSceneX();
             y = localPoint.getSceneY();
         } else {
-            baseX = client.getTopLevelWorldView().getBaseX();
-            baseY = client.getTopLevelWorldView().getBaseY();
+            baseX = ctx.getClient().getTopLevelWorldView().getBaseX();
+            baseY = ctx.getClient().getTopLevelWorldView().getBaseY();
             x = worldPoint.getX() - baseX;
             y = worldPoint.getY() - baseY;
         }
@@ -239,7 +242,7 @@ public class TileService extends AbstractService {
      * @return 2D array of collision flags
      */
     private int[][] getFlags() {
-        final WorldView wv = client.getTopLevelWorldView();
+        final WorldView wv = ctx.getClient().getTopLevelWorldView();
         if (wv == null) return null;
 
         final CollisionData[] collisionData = wv.getCollisionMaps();
@@ -281,17 +284,17 @@ public class TileService extends AbstractService {
      * @return The Tile at the specified coordinates, or null if the tile is invalid or not in the scene.
      */
     public Tile getTile(int x, int y) {
-        WorldPoint worldPoint = new WorldPoint(x, y, client.getTopLevelWorldView().getPlane());
+        WorldPoint worldPoint = new WorldPoint(x, y, ctx.getClient().getTopLevelWorldView().getPlane());
         LocalPoint localPoint;
 
-        if (client.getTopLevelWorldView().getScene().isInstance()) {
+        if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
             localPoint = fromWorldInstance(worldPoint);
         } else {
-            localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+            localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
         }
 
         if (localPoint == null) return null;
-        return client.getTopLevelWorldView().getScene().getTiles()[worldPoint.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
+        return ctx.getClient().getTopLevelWorldView().getScene().getTiles()[worldPoint.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
     }
 
     /**
@@ -300,11 +303,11 @@ public class TileService extends AbstractService {
      * @return A local point representing the same global world point
      */
     public LocalPoint fromWorldInstance(WorldPoint worldPoint) {
-        int[][][] instanceTemplateChunks = client.getTopLevelWorldView().getInstanceTemplateChunks();
+        int[][][] instanceTemplateChunks = ctx.getClient().getTopLevelWorldView().getInstanceTemplateChunks();
         // Extract the coordinates from the WorldPoint
         int worldX = worldPoint.getX();
         int worldY = worldPoint.getY();
-        int worldPlane = client.getTopLevelWorldView().getPlane();
+        int worldPlane = ctx.getClient().getTopLevelWorldView().getPlane();
 
         // Loop through all chunks to find which one contains the world point
         for (int chunkX = 0; chunkX < instanceTemplateChunks[worldPlane].length; chunkX++) {
@@ -328,7 +331,7 @@ public class TileService extends AbstractService {
                     int localY = (rotatedWorldPoint.getY() - templateChunkY) + (chunkY * CHUNK_SIZE);
 
                     // Return the corresponding LocalPoint
-                    return  LocalPoint.fromScene(localX, localY, client.getTopLevelWorldView());
+                    return  LocalPoint.fromScene(localX, localY, ctx.getClient().getTopLevelWorldView());
                 }
             }
         }
@@ -345,10 +348,10 @@ public class TileService extends AbstractService {
     public WorldPoint fromInstance(WorldPoint worldPoint) {
 
         //get local
-        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), worldPoint);
+        LocalPoint localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
 
         // if local point is null or not in an instanced region, return the world point as is
-        if(localPoint == null || !client.getTopLevelWorldView().isInstance())
+        if(localPoint == null || !ctx.getClient().getTopLevelWorldView().isInstance())
             return worldPoint;
 
         // get position in the scene
@@ -360,7 +363,7 @@ public class TileService extends AbstractService {
         int chunkY = sceneY / CHUNK_SIZE;
 
         // get the template chunk for the chunk
-        int[][][] instanceTemplateChunks = client.getTopLevelWorldView().getInstanceTemplateChunks();
+        int[][][] instanceTemplateChunks = ctx.getClient().getTopLevelWorldView().getInstanceTemplateChunks();
         int templateChunk = instanceTemplateChunks[worldPoint.getPlane()][chunkX][chunkY];
 
         int rotation = templateChunk >> 1 & 0x3;
@@ -383,13 +386,13 @@ public class TileService extends AbstractService {
      */
     public ArrayList<WorldPoint> toInstance(WorldPoint worldPoint) {
         // if not in an instanced region, return the world point as is
-        if (!client.getTopLevelWorldView().isInstance()) {
+        if (!ctx.getClient().getTopLevelWorldView().isInstance()) {
             return new ArrayList<>(Collections.singletonList(worldPoint));
         }
 
         // find instance chunks using the template point. there might be more than one.
         ArrayList<WorldPoint> worldPoints = new ArrayList<>();
-        int[][][] instanceTemplateChunks = client.getTopLevelWorldView().getInstanceTemplateChunks();
+        int[][][] instanceTemplateChunks = ctx.getClient().getTopLevelWorldView().getInstanceTemplateChunks();
         for (int z = 0; z < instanceTemplateChunks.length; z++) {
             for (int x = 0; x < instanceTemplateChunks[z].length; ++x) {
                 for (int y = 0; y < instanceTemplateChunks[z][x].length; ++y) {
@@ -402,8 +405,8 @@ public class TileService extends AbstractService {
                             && worldPoint.getY() >= templateChunkY && worldPoint.getY() < templateChunkY + CHUNK_SIZE
                             && plane == worldPoint.getPlane())
                     {
-                        WorldPoint p = new WorldPoint(client.getTopLevelWorldView().getBaseX() + x * CHUNK_SIZE + (worldPoint.getX() & (CHUNK_SIZE - 1)),
-                                client.getTopLevelWorldView().getBaseY() + y * CHUNK_SIZE + (worldPoint.getY() & (CHUNK_SIZE - 1)),
+                        WorldPoint p = new WorldPoint(ctx.getClient().getTopLevelWorldView().getBaseX() + x * CHUNK_SIZE + (worldPoint.getX() & (CHUNK_SIZE - 1)),
+                                ctx.getClient().getTopLevelWorldView().getBaseY() + y * CHUNK_SIZE + (worldPoint.getY() & (CHUNK_SIZE - 1)),
                                 z);
                         p = rotate(p, rotation);
                         worldPoints.add(p);

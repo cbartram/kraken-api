@@ -2,7 +2,7 @@ package com.kraken.api.service.prayer;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
+import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.service.ui.UIService;
@@ -15,7 +15,10 @@ import net.runelite.api.widgets.Widget;
 
 @Slf4j
 @Singleton
-public class PrayerService extends AbstractService {
+public class PrayerService {
+
+    @Inject
+    private Context ctx;
 
     @Inject
     private UIService uiService;
@@ -49,7 +52,7 @@ public class PrayerService extends AbstractService {
      * @return Boolean true if the prayer was activated/deactivated successfully and false otherwise.
      */
     public boolean toggle(Prayer prayer) {
-        if(client.isPrayerActive(prayer)) {
+        if(ctx.getClient().isPrayerActive(prayer)) {
             return toggle(prayer, false);
         } else {
             return toggle(prayer, true);
@@ -73,8 +76,8 @@ public class PrayerService extends AbstractService {
         }
 
         // Check if prayer points is at 0 or level requirement not met
-        if (client.getBoostedSkillLevel(Skill.PRAYER) <= 0 ||
-                client.getRealSkillLevel(Skill.PRAYER) < prayerExtended.getLevel()) {
+        if (ctx.getClient().getBoostedSkillLevel(Skill.PRAYER) <= 0 ||
+                ctx.getClient().getRealSkillLevel(Skill.PRAYER) < prayerExtended.getLevel()) {
             return false;
         }
 
@@ -85,7 +88,7 @@ public class PrayerService extends AbstractService {
             return false;
         }
 
-        Widget widget = context.getWidget(prayerExtended.getIndex());
+        Widget widget = ctx.getWidget(prayerExtended.getIndex());
         Point point = uiService.getClickbox(widget);
         mousePackets.queueClickPacket(point.getX(), point.getY());
         widgetPackets.queueWidgetActionPacket(prayerExtended.getIndex(), -1, -1, 1);
@@ -98,15 +101,15 @@ public class PrayerService extends AbstractService {
      * @return Boolean true if the prayer is active (on) and false otherwise.
      */
     public boolean isActive(Prayer prayer) {
-        boolean basicPrayerActive = context.runOnClientThreadOptional(() -> client.isPrayerActive(prayer)).orElse(false);
-        boolean inLMS = context.getVarbitValue(VarbitID.BR_INGAME) != 0;
+        boolean basicPrayerActive = ctx.runOnClientThreadOptional(() -> ctx.getClient().isPrayerActive(prayer)).orElse(false);
+        boolean inLMS = ctx.getVarbitValue(VarbitID.BR_INGAME) != 0;
 
         switch (prayer) {
             case DEADEYE:
-                boolean deadeye = context.getVarbitValue(VarbitID.PRAYER_DEADEYE_UNLOCKED) != 0;
+                boolean deadeye = ctx.getVarbitValue(VarbitID.PRAYER_DEADEYE_UNLOCKED) != 0;
                 return basicPrayerActive && (deadeye && !inLMS);
             case MYSTIC_VIGOUR:
-                boolean mysticVigour = context.getVarbitValue(VarbitID.PRAYER_MYSTIC_VIGOUR_UNLOCKED) != 0;
+                boolean mysticVigour = ctx.getVarbitValue(VarbitID.PRAYER_MYSTIC_VIGOUR_UNLOCKED) != 0;
                 return basicPrayerActive && (mysticVigour && !inLMS);
             default:
                 return basicPrayerActive;
@@ -201,7 +204,7 @@ public class PrayerService extends AbstractService {
      * @return True if the quick prayer is set and false otherwise
      */
     public boolean isQuickPrayerSet(InteractablePrayer prayer) {
-        int selectedQuickPrayersVarbit = context.getVarbitValue(4102);
+        int selectedQuickPrayersVarbit = ctx.getVarbitValue(4102);
         return (selectedQuickPrayersVarbit & (1 << prayer.getQuickPrayerIndex())) != 0;
     }
 
@@ -210,6 +213,6 @@ public class PrayerService extends AbstractService {
      * @return Returns true if the player is out of prayer and false if they still have prayer.
      */
     public boolean isOutOfPrayer() {
-        return client.getBoostedSkillLevel(Skill.PRAYER) <= 0;
+        return ctx.getClient().getBoostedSkillLevel(Skill.PRAYER) <= 0;
     }
 }

@@ -7,8 +7,7 @@ public interface Interactable {
      * @return true if the interaction packet was successfully queued/sent
      */
     boolean interact(String action);
-    
-    // You might also want these common methods
+
     String getName();
     boolean isNull();
 }
