@@ -1,8 +1,8 @@
 package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
-import com.kraken.api.interaction.groundobject.GroundItem;
-import com.kraken.api.interaction.groundobject.GroundObjectService;
+import com.kraken.api.query.groundobject.GroundItem;
+import com.kraken.api.query.groundobject.GroundObjectService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

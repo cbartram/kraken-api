@@ -1,6 +1,6 @@
 package com.kraken.api.example.tests;
 
-import com.kraken.api.interaction.gameobject.GameObjectService;
+import com.kraken.api.query.gameobject.GameObjectService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.TileObject;
 

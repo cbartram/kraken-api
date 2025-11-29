@@ -1,7 +1,7 @@
 package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
-import com.kraken.api.interaction.prayer.PrayerService;
+import com.kraken.api.service.prayer.PrayerService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Prayer;
 

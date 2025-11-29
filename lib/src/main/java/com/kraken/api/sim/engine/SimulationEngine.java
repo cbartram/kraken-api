@@ -2,9 +2,9 @@ package com.kraken.api.sim.engine;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.interaction.player.PlayerService;
-import com.kraken.api.interaction.tile.CollisionDumper;
-import com.kraken.api.interaction.tile.CollisionMap;
+import com.kraken.api.query.player.PlayerService;
+import com.kraken.api.sim.CollisionDumper;
+import com.kraken.api.sim.CollisionMap;
 import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.AttackStyle;
 import com.kraken.api.sim.model.GameState;

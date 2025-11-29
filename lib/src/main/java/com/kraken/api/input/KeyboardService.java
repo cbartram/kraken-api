@@ -2,14 +2,13 @@ package com.kraken.api.input;
 
 
 import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.RandomService;
-import com.kraken.api.core.SleepService;
+import com.kraken.api.service.RandomService;
+import com.kraken.api.service.SleepService;
 import net.runelite.api.GameState;
 
 import javax.inject.Inject;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.Random;
 
 import static java.awt.event.KeyEvent.CHAR_UNDEFINED;
 

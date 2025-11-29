@@ -2,8 +2,7 @@ package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
 import com.kraken.api.Context;
-import com.kraken.api.example.ExampleConfig;
-import com.kraken.api.interaction.npc.NpcService;
+import com.kraken.api.query.npc.NpcService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.NPC;
 

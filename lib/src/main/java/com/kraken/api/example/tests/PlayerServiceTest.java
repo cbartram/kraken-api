@@ -2,7 +2,7 @@ package com.kraken.api.example.tests;
 
 
 import com.google.inject.Inject;
-import com.kraken.api.interaction.player.PlayerService;
+import com.kraken.api.query.player.PlayerService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

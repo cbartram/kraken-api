@@ -2,7 +2,7 @@ package com.kraken.api.example.overlay;
 
 import com.google.inject.Inject;
 import com.kraken.api.example.ExamplePlugin;
-import com.kraken.api.interaction.movement.Pathfinder;
+import com.kraken.api.service.movement.Pathfinder;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;

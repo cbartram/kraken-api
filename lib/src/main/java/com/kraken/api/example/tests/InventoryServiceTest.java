@@ -1,8 +1,8 @@
 package com.kraken.api.example.tests;
 
 import com.google.inject.Inject;
-import com.kraken.api.interaction.container.inventory.ContainerItem;
-import com.kraken.api.interaction.container.inventory.InventoryService;
+import com.kraken.api.query.container.inventory.ContainerItem;
+import com.kraken.api.query.container.inventory.InventoryService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

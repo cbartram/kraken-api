@@ -1,6 +1,6 @@
 package com.kraken.api.example.tests;
 
-import com.kraken.api.interaction.equipment.EquipmentService;
+import com.kraken.api.query.equipment.EquipmentService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.EquipmentInventorySlot;
 
