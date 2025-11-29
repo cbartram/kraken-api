@@ -72,4 +72,32 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery> {
             return widgets.stream().map(w -> new WidgetEntity(ctx, w));
         };
     }
+
+    /**
+     * Filters for widgets which are currently visible on the canvas.
+     */
+    public WidgetQuery visible() {
+        return filter(w -> !w.raw().isHidden() && w.raw().getParent() != null && !w.raw().getParent().isHidden());
+    }
+
+    /**
+     * Finds widgets containing specific text (e.g., chat options, dialogs).
+     */
+    public WidgetQuery textContains(String text) {
+        return filter(w -> w.raw().getText() != null && w.raw().getText().contains(text));
+    }
+
+    /**
+     * Finds widgets by their Sprite ID (images).
+     */
+    public WidgetQuery withSprite(int spriteId) {
+        return filter(w -> w.raw().getSpriteId() == spriteId);
+    }
+
+    /**
+     * Finds widgets that have a specific listener (e.g., "Continue" buttons).
+     */
+    public WidgetQuery withListener() {
+        return filter(w -> w.raw().getOnOpListener() != null);
+    }
 }

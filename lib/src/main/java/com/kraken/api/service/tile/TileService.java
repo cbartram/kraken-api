@@ -3,7 +3,7 @@ package com.kraken.api.service.tile;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.query.player.PlayerService;
+import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.sim.MovementFlag;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -23,9 +23,6 @@ public class TileService {
 
     @Inject
     private Context ctx;
-
-    @Inject
-    private PlayerService playerService;
 
     /**
      * Returns the object composition for a given TileObject.
@@ -132,7 +129,8 @@ public class TileService {
     public boolean isTileReachable(WorldPoint targetPoint) {
         if (targetPoint == null) return false;
 
-        final WorldPoint playerLoc = playerService.getLocation();
+        LocalPlayerEntity player = ctx.players().local();
+        final WorldPoint playerLoc = player.raw().getWorldLocation();
         if (playerLoc == null) return false;
 
         if (targetPoint.getPlane() != playerLoc.getPlane()) return false;
@@ -144,7 +142,7 @@ public class TileService {
         final int startX;
         final int startY;
         if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPoint localPoint = playerService.getLocalLocation();
+            LocalPoint localPoint = player.raw().getLocalLocation();
             startX = localPoint.getSceneX();
             startY = localPoint.getSceneY();
         } else {
@@ -192,7 +190,8 @@ public class TileService {
     private boolean isVisited(WorldPoint worldPoint, boolean[][] visited) {
         int baseX, baseY, x, y;
         if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPoint localPoint = playerService.getLocalLocation();
+            LocalPlayerEntity player = ctx.players().local();
+            LocalPoint localPoint = player.raw().getLocalLocation();
             x = localPoint.getSceneX();
             y = localPoint.getSceneY();
         } else {

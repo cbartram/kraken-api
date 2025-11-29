@@ -5,7 +5,6 @@ import com.kraken.api.example.ExampleConfig;
 import com.kraken.api.example.TestResultManager;
 import com.kraken.api.query.container.inventory.ContainerItem;
 import com.kraken.api.query.container.inventory.InventoryService;
-import com.kraken.api.query.player.PlayerService;
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -22,16 +21,14 @@ public class InfoPanelOverlay extends OverlayPanel {
     private final Client client;
     private final ExampleConfig config;
     private final InventoryService inventoryService;
-    private final PlayerService playerService;
     private final TestResultManager testResultManager;
 
     @Inject
     public InfoPanelOverlay(Client client, ExampleConfig config,
-                            InventoryService inventoryService, PlayerService playerService, TestResultManager testResultManager) {
+                            InventoryService inventoryService, TestResultManager testResultManager) {
         this.client = client;
         this.config = config;
         this.inventoryService = inventoryService;
-        this.playerService = playerService;
         this.testResultManager = testResultManager;
         setPosition(OverlayPosition.TOP_RIGHT);
     }
@@ -54,11 +51,6 @@ public class InfoPanelOverlay extends OverlayPanel {
             // Add test results if manager is available
             if (!testResultManager.getAllTestResults().isEmpty()) {
                 addTestResults();
-            }
-
-            // Add player stats if enabled
-            if (config.showPlayerStats() && config.enablePlayerTests()) {
-                addPlayerStats();
             }
 
             // Add inventory info if enabled
@@ -188,61 +180,6 @@ public class InfoPanelOverlay extends OverlayPanel {
             case NOT_STARTED:
             default:
                 return Color.WHITE;
-        }
-    }
-
-    private void addPlayerStats() {
-        try {
-            // Health information
-            double healthPercent = playerService.getHealthPercentage();
-            Color healthColor = healthPercent < config.lowHealthThreshold() ? Color.RED :
-                    healthPercent < 50 ? Color.ORANGE : Color.GREEN;
-
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Health:")
-                    .right(String.format("%.1f%% (%d/%d)",
-                            healthPercent,
-                            playerService.getHealthRemaining(),
-                            playerService.getMaxHealth()))
-                    .rightColor(healthColor)
-                    .build());
-
-            // Special attack
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Special:")
-                    .right(playerService.isSpecEnabled() ? "Enabled" : "Disabled")
-                    .rightColor(playerService.isSpecEnabled() ? Color.GREEN : Color.RED)
-                    .build());
-
-            // Movement status
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Moving:")
-                    .right(playerService.isMoving() ? "Yes" : "No")
-                    .rightColor(playerService.isMoving() ? Color.GREEN : Color.WHITE)
-                    .build());
-
-            // Run status
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Run:")
-                    .right(playerService.isRunEnabled() ? "Enabled" : "Disabled")
-                    .rightColor(playerService.isRunEnabled() ? Color.GREEN : Color.RED)
-                    .build());
-
-            // Poisoned status
-            if (playerService.isPoisoned()) {
-                panelComponent.getChildren().add(LineComponent.builder()
-                        .left("Status:")
-                        .right("POISONED")
-                        .rightColor(Color.RED)
-                        .build());
-            }
-
-        } catch (Exception e) {
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Player Stats Error:")
-                    .right(e.getMessage())
-                    .rightColor(Color.RED)
-                    .build());
         }
     }
 

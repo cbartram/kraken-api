@@ -56,4 +56,40 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
             return inventoryEntities.stream();
         };
     }
+
+    /**
+     * Filters for items that match a specific name pattern.
+     * Usage: ctx.inventory().nameContains("potion").list();
+     */
+    public InventoryQuery nameContains(String partialName) {
+        return filter(item -> item.getName() != null && item.getName().toLowerCase().contains(partialName.toLowerCase()));
+    }
+
+    /**
+     * Filters for items that are noted (cert).
+     */
+    public InventoryQuery noted() {
+        return filter(item -> item.raw().isNoted());
+    }
+
+    /**
+     * Filters for un-noted items.
+     */
+    public InventoryQuery unnoted() {
+        return filter(item -> !item.raw().isNoted());
+    }
+
+    /**
+     * Filters for items that stack (runes, arrows, noted items).
+     */
+    public InventoryQuery stackable() {
+        return filter(item -> item.raw().isStackable());
+    }
+
+    /**
+     * Filters by item quantity.
+     */
+    public InventoryQuery quantityGreaterThan(int amount) {
+        return filter(item -> item.raw().getQuantity() > amount);
+    }
 }

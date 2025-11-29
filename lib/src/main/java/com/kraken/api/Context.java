@@ -6,7 +6,6 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
-import com.kraken.api.service.camera.CameraService;
 import com.kraken.api.query.container.bank.BankInventoryQuery;
 import com.kraken.api.query.container.bank.BankQuery;
 import com.kraken.api.query.container.bank.BankService;
@@ -18,18 +17,18 @@ import com.kraken.api.query.gameobject.GameObjectQuery;
 import com.kraken.api.query.gameobject.GameObjectService;
 import com.kraken.api.query.groundobject.GroundObjectQuery;
 import com.kraken.api.query.groundobject.GroundObjectService;
-import com.kraken.api.service.movement.MinimapService;
-import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.query.npc.NpcQuery;
 import com.kraken.api.query.npc.NpcService;
 import com.kraken.api.query.player.PlayerQuery;
-import com.kraken.api.query.player.PlayerService;
+import com.kraken.api.query.widget.WidgetQuery;
+import com.kraken.api.query.widget.WidgetService;
+import com.kraken.api.service.camera.CameraService;
+import com.kraken.api.service.movement.MinimapService;
+import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.ui.TabService;
 import com.kraken.api.service.ui.UIService;
-import com.kraken.api.query.widget.WidgetQuery;
-import com.kraken.api.query.widget.WidgetService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -47,24 +46,23 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 @Slf4j
+@Getter
 @Singleton
 public class Context {
 
-    @Getter
     private final Client client;
-
-    @Getter
     private final ClientThread clientThread;
 
-    @Getter
     @Setter
     private VirtualMouse mouse;
 
-    @Getter
+    private final Injector injector;
+    private final EventBus eventBus;
+    private final InteractionManager interactionManager;
+    private final ItemManager itemManager;
     private boolean isRegistered = false;
-
-    @Getter
     private boolean packetsLoaded = false;
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),
@@ -76,7 +74,6 @@ public class Context {
             InventoryService.class,
             MovementService.class,
             MinimapService.class,
-            PlayerService.class,
             NpcService.class,
             PrayerService.class,
             SpellService.class,
@@ -84,13 +81,6 @@ public class Context {
             TabService.class,
             WidgetService.class
     );
-
-    private final Injector injector;
-    private final EventBus eventBus;
-    private final ItemManager itemManager;
-
-    @Getter
-    private final InteractionManager interactionManager;
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
@@ -181,6 +171,16 @@ public class Context {
      */
     public int getVarbitValue(int varbit) {
         return runOnClientThread(() -> client.getVarbitValue(varbit));
+    }
+
+    /**
+     * Returns a var player value from the RuneLite client. This method is
+     * thread safe and runs on the client thread to retrieve the value.
+     * @param varp The varp value to retrieve.
+     * @return The varp value (either 0 for false/unset or 1 for true/set).
+     */
+    public int getVarpValue(int varp) {
+        return runOnClientThread(() -> client.getVarpValue(varp));
     }
 
     /**
@@ -293,7 +293,7 @@ public class Context {
      * @return PlayerQuery object used to chain together predicates to select specific Players's within the scene.
      */
     public PlayerQuery players() {
-        return new PlayerQuery(this);
+        return new PlayerQuery(this, executor);
     }
 
     /**

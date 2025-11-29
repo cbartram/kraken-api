@@ -12,11 +12,11 @@ public class GameObjectEntity extends AbstractEntity<TileObject> {
     }
 
     /**
-     * Returns the object composition for a given TileObject.
-     * @param tileObject The tile object to retrieve the composition for
-     * @return The object composition for a given tile object
+     * Returns the object composition for a given {@code TileObject}.
+     * @return The object composition for the wrapped {@code TileObject}.
      */
-    private ObjectComposition getObjectComposition(TileObject tileObject) {
+    public ObjectComposition getObjectComposition() {
+        TileObject tileObject = this.raw;
         if(ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostorIds() != null && ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor() != null) {
             return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor());
         }
@@ -26,7 +26,7 @@ public class GameObjectEntity extends AbstractEntity<TileObject> {
 
     @Override
     public String getName() {
-        ObjectComposition composition = getObjectComposition(this.raw);
+        ObjectComposition composition = getObjectComposition();
         if(composition != null) {
             return composition.getName();
         }

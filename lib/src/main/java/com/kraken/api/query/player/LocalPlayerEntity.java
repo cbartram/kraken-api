@@ -1,46 +1,28 @@
 package com.kraken.api.query.player;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.kraken.api.core.AbstractService;
-import com.kraken.api.core.packet.entity.MousePackets;
-import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.service.ui.UIService;
+import com.kraken.api.Context;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Actor;
 import net.runelite.api.Player;
-import net.runelite.api.Point;
 import net.runelite.api.Skill;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
-import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-@Slf4j
-@Singleton
-public class PlayerService extends AbstractService {
-
+public class LocalPlayerEntity extends PlayerEntity {
     private static final int VENOM_VALUE_CUTOFF = -38;
     private static final int VENOM_THRESHOLD = 1000000;
 
-    @Inject
-    private UIService uiService;
+    private final ScheduledExecutorService executor;
 
-    @Inject
-    private MousePackets mousePackets;
-
-    @Inject
-    private WidgetPackets widgetPackets;
-
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    public LocalPlayerEntity(Context ctx, Player raw, ScheduledExecutorService executor) {
+        super(ctx, raw);
+        this.executor = executor;
+    }
 
     private int antiVenomTime = -1;
     private int antiPoisonTime = -1;
@@ -89,8 +71,8 @@ public class PlayerService extends AbstractService {
      * @return {@code true} if the player is moving, {@code false} if they are idle.
      */
     public boolean isMoving() {
-        return context.runOnClientThreadOptional(() -> {
-            Player localPlayer = client.getLocalPlayer();
+        return ctx.runOnClientThreadOptional(() -> {
+            Player localPlayer = ctx.getClient().getLocalPlayer();
             if (localPlayer == null) {
                 return false;
             }
@@ -103,61 +85,7 @@ public class PlayerService extends AbstractService {
      * @return int the amount of special attack energy the player has remaining.
      */
     public int getSpecialAttackEnergy() {
-        return client.getVarpValue(300) / 10;
-    }
-
-    /**
-     * Gets the current player position safely
-     * @return The current players position as a world point
-     */
-    public WorldPoint getPlayerPosition() {
-        return context.runOnClientThread(() -> {
-            Player p = client.getLocalPlayer();
-            return p != null ? p.getWorldLocation() : null;
-        });
-    }
-
-    /**
-     * Wrapper method for returning the players current world location
-     * @return WorldPoint players location
-     */
-    public WorldPoint getLocation() {
-        return getPlayerPosition();
-    }
-
-    /**
-     * Returns the local location of the player
-     * @return LocalPoint the players local location.
-     */
-    public LocalPoint getLocalLocation() {
-        return LocalPoint.fromWorld(client.getTopLevelWorldView(), getLocation());
-    }
-
-    /**
-     * Checks if the player is currently interacting with another entity (NPC, player, or object).
-     *
-     * @return {@code true} if the player is interacting with another entity, {@code false} otherwise.
-     */
-    public boolean isInteracting() {
-        return Optional.of(client.getLocalPlayer().isInteracting()).orElse(false);
-    }
-
-    /**
-     * Returns the current local player.
-     * @return The current player object.
-     */
-    public Player getPlayer() {
-        return context.runOnClientThread(() -> client.getLocalPlayer());
-    }
-
-    /**
-     * Returns the Actor that the player is currently interacting with or null if the player
-     * is not interacting with anything.
-     * @return Actor the Actor being interacted with.
-     */
-    public Actor getInteracting() {
-        if(!isInteracting()) return null;
-        return context.runOnClientThread(() -> client.getLocalPlayer().getInteracting());
+        return ctx.getVarpValue(300) / 10;
     }
 
     /**
@@ -169,7 +97,7 @@ public class PlayerService extends AbstractService {
      *         150.0 if boosted, 80.0 if drained, or 100.0 if unchanged.
      */
     public double getHealthPercentage() {
-        return (double) (client.getBoostedSkillLevel(Skill.HITPOINTS) * 100) / client.getRealSkillLevel(Skill.HITPOINTS);
+        return (double) (ctx.getClient().getBoostedSkillLevel(Skill.HITPOINTS) * 100) / ctx.getClient().getRealSkillLevel(Skill.HITPOINTS);
     }
 
     /**
@@ -177,7 +105,7 @@ public class PlayerService extends AbstractService {
      * @return the remaining amount of hitpoints the player currently has.
      */
     public int getHealthRemaining() {
-        return client.getBoostedSkillLevel(Skill.HITPOINTS);
+        return ctx.getClient().getBoostedSkillLevel(Skill.HITPOINTS);
     }
 
     /**
@@ -185,7 +113,7 @@ public class PlayerService extends AbstractService {
      * @return The total amount of hitpoints the player has.
      */
     public int getMaxHealth() {
-        return client.getRealSkillLevel(Skill.HITPOINTS);
+        return ctx.getClient().getRealSkillLevel(Skill.HITPOINTS);
     }
 
     /**
@@ -193,7 +121,7 @@ public class PlayerService extends AbstractService {
      * @return True if spec is enabled and false otherwise
      */
     public boolean isSpecEnabled() {
-        return client.getVarpValue(301) == 1;
+        return ctx.getVarpValue(301) == 1;
     }
 
     /**
@@ -201,7 +129,7 @@ public class PlayerService extends AbstractService {
      * @return True if speci is disabled and false otherwise
      */
     public boolean isSpecDisabled() {
-        return client.getVarpValue(301) == 0;
+        return ctx.getVarpValue(301) == 0;
     }
 
     /**
@@ -255,14 +183,12 @@ public class PlayerService extends AbstractService {
      *              the weapon equip before it can toggle on spec. Otherwise, the game would see you toggle on spec for nothing, then spec weapon gets equipped with spec disabled.
      */
     public void toggleSpecialAttack(int energyRequired, int delay) {
-        if(!context.isPacketsLoaded()) return;
-        int currentSpecEnergy = client.getVarpValue(300) / 10;
+        if(!ctx.isPacketsLoaded()) return;
+        int currentSpecEnergy = ctx.getVarpValue(300) / 10;
         if (currentSpecEnergy >= energyRequired && !isSpecEnabled()) {
             executor.schedule(() -> {
-                Widget w = context.runOnClientThread(() -> client.getWidget(10485796));
-                Point pt = uiService.getClickbox(w);
-                mousePackets.queueClickPacket(pt.getX(), pt.getY());
-                widgetPackets.queueWidgetAction(w, "Use"); // or Use Special Attack
+                Widget w = ctx.runOnClientThread(() -> ctx.getClient().getWidget(10485796));
+                ctx.getInteractionManager().interact(w, "Use");
             }, delay, TimeUnit.MILLISECONDS);
         }
     }
@@ -272,12 +198,10 @@ public class PlayerService extends AbstractService {
      * {activateRun} and {deactivateRun} if a specific state is required.
      */
     public void toggleRun() {
-        if(!context.isPacketsLoaded()) return;
+        if(!ctx.isPacketsLoaded()) return;
         executor.schedule(() -> {
-            Widget w = context.runOnClientThread(() -> client.getWidget(10485788));
-            Point pt = uiService.getClickbox(w);
-            mousePackets.queueClickPacket(pt.getX(), pt.getY());
-            widgetPackets.queueWidgetAction(w, "Toggle Run");
+            Widget w = ctx.runOnClientThread(() -> ctx.getClient().getWidget(10485788));
+            ctx.getInteractionManager().interact(w, "Toggle Run");
         }, 50, TimeUnit.MILLISECONDS);
     }
 
@@ -301,7 +225,7 @@ public class PlayerService extends AbstractService {
      * @return boolean
      */
     public boolean isRunEnabled() {
-        return client.getVarpValue(173) == 1;
+        return ctx.getVarpValue(173) == 1;
     }
 
     /**
@@ -309,7 +233,7 @@ public class PlayerService extends AbstractService {
      * @return int
      */
     public int currentRunEnergy() {
-        return this.client.getEnergy() / 100;
+        return ctx.getClient().getEnergy() / 100;
     }
 
     /**
@@ -342,32 +266,28 @@ public class PlayerService extends AbstractService {
      * @return {@code true} if the player is within the specified area, {@code false} otherwise.
      */
     public boolean isInArea(WorldPoint worldPoint, int xRadius, int yRadius) {
-        // Null check for world point
         if (worldPoint == null) {
             return false;
         }
 
-        // Validate radius parameters (should be non-negative)
         if (xRadius < 0 || yRadius < 0) {
             return false;
         }
 
-        WorldPoint playerLocation = getPlayerPosition();
+        WorldPoint playerLocation = raw.getWorldLocation();
 
-        // Null check for player location
         if (playerLocation == null) {
             return false;
         }
 
-        // Ensure both points are on the same plane
         if (worldPoint.getPlane() != playerLocation.getPlane()) {
             return false;
         }
 
-        // Simple distance check - check if player is within the rectangular radius
         int deltaX = Math.abs(playerLocation.getX() - worldPoint.getX());
         int deltaY = Math.abs(playerLocation.getY() - worldPoint.getY());
 
         return deltaX <= xRadius && deltaY <= yRadius;
     }
+
 }

@@ -2,7 +2,7 @@ package com.kraken.api.sim.engine;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.query.player.PlayerService;
+import com.kraken.api.Context;
 import com.kraken.api.sim.CollisionDumper;
 import com.kraken.api.sim.CollisionMap;
 import com.kraken.api.sim.SimulationObserver;
@@ -19,6 +19,7 @@ import javax.swing.Timer;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.Queue;
 
 // TODO
 // 1. NPC's need to be able to try to found a way out if player moves under them
@@ -35,7 +36,7 @@ public class SimulationEngine {
     private CollisionDumper collisionDumper;
 
     @Inject
-    private PlayerService playerService;
+    private Context context;
 
     // Simulation running (different from player run enabled move 2 tiles instead of 1)
     @Getter
@@ -90,9 +91,9 @@ public class SimulationEngine {
         this.map = map;
         this.tick = tick;
         this.collisionData = map.getData();
-        this.player = new SimPlayer(playerPosition, 1,
-                playerService.isRunEnabled(), playerService.getSpecialAttackEnergy(),
-                AttackStyle.MELEE, playerPathIndex, playerCurrentPath);
+        boolean run = context.players().local().isRunEnabled();
+        int spec = context.players().local().getSpecialAttackEnergy();
+        this.player = new SimPlayer(playerPosition, 1, run, spec, AttackStyle.MELEE, playerPathIndex, playerCurrentPath);
         this.npcs = map.getNpcs();
         notifyObservers();
     }

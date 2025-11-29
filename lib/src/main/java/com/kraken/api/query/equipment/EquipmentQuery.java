@@ -2,6 +2,7 @@ package com.kraken.api.query.equipment;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
@@ -81,5 +82,21 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
 
             return equipmentEntities.stream();
         };
+    }
+
+    /**
+     * Returns the interactable equipment entity for a given equipment slot.
+     * @param slot The {@code EquipmentInventorySlot} to retrieve.
+     * @return EquipmentEntity
+     */
+    public EquipmentEntity inSlot(EquipmentInventorySlot slot) {
+        return ctx.runOnClientThread(() -> {
+            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(slot.getSlotIdx()));
+            if(widget == null) {
+                return null;
+            }
+
+            return new EquipmentEntity(ctx, widget);
+        });
     }
 }

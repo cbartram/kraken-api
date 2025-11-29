@@ -87,9 +87,6 @@ public class ExamplePlugin extends Plugin {
     private BankServiceTest bankServiceTest;
 
     @Inject
-    private PlayerServiceTest playerServiceTest;
-
-    @Inject
     private EquipmentServiceTest equipmentServiceTest;
 
     @Inject
@@ -209,10 +206,6 @@ public class ExamplePlugin extends Plugin {
 
                     if (config.enableInventoryTests()) {
                         testResultManager.startTest("InventoryServiceTest", inventoryServiceTest.executeTest());
-                    }
-
-                    if (config.enablePlayerTests()) {
-                        testResultManager.startTest("PlayerServiceTest", playerServiceTest.executeTest());
                     }
 
                     if (config.enableGroundItemTests()) {

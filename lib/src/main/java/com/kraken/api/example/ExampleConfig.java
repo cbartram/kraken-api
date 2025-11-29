@@ -250,69 +250,6 @@ public interface ExampleConfig extends Config {
         return "Swordfish";
     }
 
-    // ========== PLAYER TESTS SECTION ==========
-    @ConfigSection(
-            name = "Player Tests",
-            description = "Settings for Player tests.",
-            position = 3
-    )
-    String playerTests = "Player Tests";
-
-    @ConfigItem(
-            keyName = "enablePlayerTests",
-            name = "Enable Player Tests",
-            description = "Enable player service testing functionality",
-            section = playerTests,
-            position = 1
-    )
-    default boolean enablePlayerTests() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "showPlayerStats",
-            name = "Show Player Stats Overlay",
-            description = "Display player statistics overlay (health, spec, etc.)",
-            section = playerTests,
-            position = 2
-    )
-    default boolean showPlayerStats() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "playerStatsColor",
-            name = "Player Stats Color",
-            description = "Color for player statistics overlay",
-            section = playerTests,
-            position = 3
-    )
-    default Color playerStatsColor() {
-        return Color.YELLOW;
-    }
-
-    @ConfigItem(
-            keyName = "autoToggleRun",
-            name = "Auto Toggle Run",
-            description = "Automatically toggle run during player tests",
-            section = playerTests,
-            position = 4
-    )
-    default boolean autoToggleRun() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "lowHealthThreshold",
-            name = "Low Health Threshold",
-            description = "Health percentage threshold to highlight low health",
-            section = playerTests,
-            position = 5
-    )
-    default int lowHealthThreshold() {
-        return 30;
-    }
-
     // ========== GROUND ITEM TESTS SECTION ==========
     @ConfigSection(
             name = "Ground Item Tests",

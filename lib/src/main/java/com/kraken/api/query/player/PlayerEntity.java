@@ -14,9 +14,6 @@ public class PlayerEntity extends AbstractEntity<Player> {
         return raw.getName();
     }
 
-    // TODO Filters for local player and then ability to call toggle special and toggle run, venom info etc...
-    // i.e ctx.players().local().toggleRun() same with .toggleSpecial()
-
     @Override
     public boolean interact(String action) {
         if (raw == null) return false;

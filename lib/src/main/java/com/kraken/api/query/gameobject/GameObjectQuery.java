@@ -5,7 +5,9 @@ import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.GameObject;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
+import net.runelite.api.coords.WorldPoint;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -60,5 +62,24 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
 
             return tileObjectHashSet.stream().map(t -> new GameObjectEntity(ctx, t));
         };
+    }
+
+    /**
+     * Filters for objects that have a specific action available.
+     * Usage: ctx.objects().withAction("Mine").nearest().first();
+     */
+    public GameObjectQuery withAction(String action) {
+        return filter(obj -> {
+            String[] actions = obj.getObjectComposition().getActions();
+            if (actions == null) return false;
+            return Arrays.stream(actions).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
+        });
+    }
+
+    /**
+     * Filters by exact WorldPoint.
+     */
+    public GameObjectQuery at(WorldPoint point) {
+        return filter(obj -> obj.raw().getWorldLocation().equals(point));
     }
 }
