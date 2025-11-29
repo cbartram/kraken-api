@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.query.npc.NpcService;
 import com.kraken.api.sim.model.AttackStyle;
 import com.kraken.api.sim.model.SimNpc;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +35,6 @@ public class CollisionDumper {
     private Gson gson;
 
     @Inject
-    private NpcService npcService;
-
-    @Inject
     private Context context;
 
     /**
@@ -61,7 +57,7 @@ public class CollisionDumper {
         Client client = RuneLite.getInjector().getInstance(Client.class);
         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
         List<SimNpc> simNpcs = new ArrayList<>();
-        Map<WorldPoint, NPC> npcs = npcService.getNpcs()
+        Map<WorldPoint, NPC> npcs = context.npcs().toRuneLite()
                 .collect(Collectors.toMap(NPC::getWorldLocation, Function.identity()));
         final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
         tileDistances.put(playerLocation, 0);

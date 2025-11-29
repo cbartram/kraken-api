@@ -94,7 +94,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
 
     /**
      * Returns a random element from the filtered list.
-     * Excellent for anti-ban (e.g., picking a random cow to attack).
+     * Useful for anti-ban measures (e.g., picking a random cow to attack).
      */
     public T random() {
         List<T> all = list();
@@ -123,6 +123,10 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
         return (Q) this;
     }
 
+    /**
+     * Returns the stream of entities as a list of objects
+     * @return A list of objects that have been queried (e.g., NpcEntity, WidgetEntity)
+     */
     public List<T> list() {
         return ctx.runOnClientThread(() -> {
             Stream<T> stream = source().get();
@@ -138,6 +142,11 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
         });
     }
 
+    /**
+     * Returns the first type of object being queried (e.g., NpcEntity, WidgetEntity) from the stream.
+     * If the stream contains no objects then this will return null.
+     * @return T The type of object being queried (e.g., NpcEntity, WidgetEntity)
+     */
     public T first() {
         return ctx.runOnClientThread(() -> {
             Stream<T> stream = source().get();

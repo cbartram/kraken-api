@@ -5,7 +5,6 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import java.awt.Color;
 
 @ConfigGroup("testapi")
 public interface ExampleConfig extends Config {
@@ -100,110 +99,6 @@ public interface ExampleConfig extends Config {
     )
     default boolean depositAllCheck() {
         return false;
-    }
-
-    // ========== NPC TESTS SECTION ==========
-    @ConfigSection(
-            name = "NPC Tests",
-            description = "Settings for NPC tests.",
-            position = 1
-    )
-    String npcTests = "NPC Tests";
-
-    @ConfigItem(
-            keyName = "enableNpcTests",
-            name = "Enable NPC Tests",
-            description = "Enable NPC service testing functionality",
-            section = npcTests,
-            position = 1
-    )
-    default boolean enableNpcTests() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "targetNpcName",
-            name = "Target NPC Name",
-            description = "Name of the NPC to target for testing (e.g., 'Guard')",
-            section = npcTests,
-            position = 2
-    )
-    default String targetNpcName() {
-        return "Guard";
-    }
-
-    @ConfigItem(
-            keyName = "showNpcOverlay",
-            name = "Show NPC Overlay",
-            description = "Display NPC names and information overlay",
-            section = npcTests,
-            position = 3
-    )
-    default boolean showNpcOverlay() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "npcOverlayColor",
-            name = "NPC Overlay Color",
-            description = "Color for NPC name overlays",
-            section = npcTests,
-            position = 4
-    )
-    default Color npcOverlayColor() {
-        return Color.CYAN;
-    }
-
-    @ConfigItem(
-            keyName = "highlightAttackableNpcs",
-            name = "Highlight Attackable NPCs",
-            description = "Highlight NPCs that can be attacked",
-            section = npcTests,
-            position = 5
-    )
-    default boolean highlightAttackableNpcs() {
-        return true;
-    }
-
-    // =========== Game Object Tests SECTION ==========
-    @ConfigSection(
-            name = "Game Object Tests",
-            description = "Settings for Game Object tests.",
-            position = 5
-    )
-    String gameObjectTests = "Game Object Tests";
-
-    @ConfigItem(
-            keyName = "enableGameObjectTests",
-            name = "Enable Game Object Tests",
-            description = "Enable Game Object service testing functionality",
-            section = gameObjectTests,
-            position = 1
-    )
-    default boolean enableGameObjectTests() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "enableGameObjectOverlay",
-            name = "Enable Game Object Overlay",
-            description = "Enable Game Object service overlay",
-            section = gameObjectTests,
-            position = 2
-    )
-    default boolean enableGameObjectOverlay() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "gameObjectOverlayColor",
-            name = "Game Object Overlay Color",
-            description = "Color for game object overlays",
-            section = gameObjectTests,
-            position = 3
-    )
-    default Color gameObjectOverlayColor() {
-        return Color.GREEN;
     }
 
     // =========== Bank Tests SECTION ==========

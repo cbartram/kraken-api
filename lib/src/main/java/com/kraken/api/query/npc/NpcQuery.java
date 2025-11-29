@@ -5,10 +5,7 @@ import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.Actor;
 import net.runelite.api.NPC;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,8 +26,26 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     }
 
     /**
+     * Returns Attackable NPC within the scene.
+     * NPC's are considered attackable when:
+     * - They are not dead
+     * - Their menu options contain an "Attack" option
+     * <p>
+     * Combat level is not taken into consideration since there are many NPC's without a combat level that are attackable.
+     * i.e. Yama's void flares
+     * @return NpcQuery
+     */
+    public NpcQuery attackable() {
+        return filter(npc -> {
+            List<String> actions = Arrays.stream(npc.raw().getComposition().getActions()).map(String::toLowerCase).collect(Collectors.toList());
+            return actions.contains("attack") && !npc.raw().isDead();
+        });
+    }
+
+    /**
      * Filters for NPCs that are not interacting with anyone (null interaction).
      * This covers "not interacting with me" AND "not interacting with others".
+     * @return NpcQuery
      */
     public NpcQuery idle() {
         return filter(npc -> npc.raw().getInteracting() == null);
@@ -39,6 +54,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     /**
      * Sorts the results by distance to the local player.
      * Usage: ctx.npcs().withName("Goblin").nearest().first();
+     * @return NpcQuery
      */
     public NpcQuery nearest() {
         return sorted(Comparator.comparingInt(npc ->
@@ -48,6 +64,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Filters for NPCs within a specific distance.
+     * @return NpcQuery
      */
     public NpcQuery withinDistance(int distance) {
         return filter(npc ->
@@ -57,6 +74,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Filters NPCs by their ID.
+     * @return NpcQuery
      */
     public NpcQuery withId(int... ids) {
         Set<Integer> idSet = Arrays.stream(ids).boxed().collect(Collectors.toSet());
@@ -79,8 +97,9 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Filters for NPCs that are interacting with the local player (e.g., attacking me).
+     * @return NpcQuery
      */
-    public NpcQuery interactingWithMe() {
+    public NpcQuery interactingWithPlayer() {
         return filter(npc -> {
             Actor target = npc.raw().getInteracting();
             return target != null && target == ctx.getClient().getLocalPlayer();
@@ -88,7 +107,19 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     }
 
     /**
+     * Filters for NPCs that are interacting with other players (not the local player).
+     * @return NpcQuery
+     */
+    public NpcQuery interacting() {
+        return filter(npc -> {
+            Actor target = npc.raw().getInteracting();
+            return target != null && target != ctx.getClient().getLocalPlayer();
+        });
+    }
+
+    /**
      * Filters for NPCs that are alive (health > 0).
+     * @return NpcQuery
      */
     public NpcQuery alive() {
         return filter(npc -> !npc.raw().isDead());

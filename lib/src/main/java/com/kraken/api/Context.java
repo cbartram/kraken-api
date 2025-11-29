@@ -15,7 +15,6 @@ import com.kraken.api.query.groundobject.GroundObjectQuery;
 import com.kraken.api.query.inventory.InventoryQuery;
 import com.kraken.api.query.inventory.InventoryService;
 import com.kraken.api.query.npc.NpcQuery;
-import com.kraken.api.query.npc.NpcService;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.query.widget.WidgetService;
@@ -68,7 +67,6 @@ public class Context {
             InventoryService.class,
             MovementService.class,
             MinimapService.class,
-            NpcService.class,
             PrayerService.class,
             SpellService.class,
             UIService.class,

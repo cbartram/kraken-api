@@ -9,15 +9,15 @@ import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
-import com.kraken.api.example.tests.*;
+import com.kraken.api.example.tests.BankServiceTest;
+import com.kraken.api.example.tests.PrayerServiceTest;
+import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.query.bank.BankService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.movement.Pathfinder;
-import com.kraken.api.query.npc.NpcService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.spell.Spells;
 import com.kraken.api.service.ui.UIService;
-import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -75,9 +75,6 @@ public class ExamplePlugin extends Plugin {
     private TestResultManager testResultManager;
 
     @Inject
-    private NpcServiceTest npcServiceTest;
-
-    @Inject
     private BankServiceTest bankServiceTest;
 
     @Inject
@@ -103,9 +100,6 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private NPCPackets npcPackets;
-
-    @Inject
-    private NpcService npcService;
 
     @Inject
     private SpellService spellService;
@@ -154,7 +148,7 @@ public class ExamplePlugin extends Plugin {
             }
 
             if(event.getKey().equals("attackNpc") && config.prayerOn()) {
-                NPC npc = npcService.getAttackableNpcs().findFirst().orElse(null);
+                NPC npc = context.npcs().attackable().first().raw();
                 if(npc != null) {
                     Point pt = UIService.getClickingPoint(npc.getConvexHull().getBounds(),  true);
                     log.info("Attacking NPC");
@@ -182,11 +176,6 @@ public class ExamplePlugin extends Plugin {
             if(event.getKey().equals("start")) {
                 if (config.start()) {
                     log.info("Starting API tests...");
-
-                    // Run tests based on configuration
-                    if (config.enableNpcTests()) {
-                        testResultManager.startTest("NpcServiceTest", npcServiceTest.executeTest());
-                    }
 
                     if(config.enableBankTests()) {
                         testResultManager.startTest("BankServiceTest", bankServiceTest.executeTest());
