@@ -17,7 +17,6 @@ import com.kraken.api.query.inventory.InventoryService;
 import com.kraken.api.query.npc.NpcQuery;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
-import com.kraken.api.query.widget.WidgetService;
 import com.kraken.api.service.camera.CameraService;
 import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
@@ -70,8 +69,7 @@ public class Context {
             PrayerService.class,
             SpellService.class,
             UIService.class,
-            TabService.class,
-            WidgetService.class
+            TabService.class
     );
 
     @Inject

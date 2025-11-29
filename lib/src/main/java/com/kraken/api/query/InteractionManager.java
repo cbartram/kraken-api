@@ -160,6 +160,22 @@ public class InteractionManager {
     }
 
     /**
+     * Uses a source widget on a destination widget (i.e. High Alchemy)
+     * @param src The source widget to use on the destination widget
+     * @param dest The destination widget
+     */
+    public void interact(Widget src, Widget dest) {
+        if(!ctx.isPacketsLoaded()) return;
+
+        Point pt = uiService.getClickbox(src);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetOnWidget(src, dest);
+        }
+    }
+
+    /**
      * Interacts with a GameObject ({@code TileObject}) using the specified action i.e. "Chop", "Mine", or "Examine".
      * GameObject's are objects that exist on a tile like walls, trees, ore, or fishing spots.
      *

@@ -3,14 +3,14 @@ package com.kraken.api.query.bank;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.kraken.api.service.RandomService;
-import com.kraken.api.service.SleepService;
+import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.query.inventory.ContainerItem;
 import com.kraken.api.query.inventory.InventoryService;
+import com.kraken.api.service.RandomService;
+import com.kraken.api.service.SleepService;
 import com.kraken.api.service.ui.UIService;
-import com.kraken.api.query.widget.WidgetService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 @Deprecated
-public class BankService extends AbstractService {
+public class BankService {
     private static final int WITHDRAW_QUANTITY = 3960;
     private static final int WITHDRAW_AS_VARBIT = 3958;
     private static final int WITHDRAW_ITEM_MODE = 0;
@@ -43,8 +43,6 @@ public class BankService extends AbstractService {
     private static final String ITEM_MODE_ACTION = "Item";
     private static final String NOTE_MODE_ACTION = "Note";
 
-    @Inject
-    private WidgetService widgetService;
 
     @Inject
     private SleepService sleepService;
@@ -63,6 +61,9 @@ public class BankService extends AbstractService {
 
     @Inject
     private ItemManager itemManager;
+    
+    @Inject
+    private Context ctx;
 
     private static final int BANK_INVENTORY_ITEM_CONTAINER = 983043;
     private int lastUpdateTick = 0;
@@ -73,7 +74,7 @@ public class BankService extends AbstractService {
             .build(new CacheLoader<>() {
                     @Override
                     public ItemComposition load(Integer itemId) {
-                        return context.runOnClientThread(() -> itemManager.getItemComposition(itemId));
+                        return ctx.runOnClientThread(() -> itemManager.getItemComposition(itemId));
                     }
                 }
             );
@@ -86,10 +87,10 @@ public class BankService extends AbstractService {
      */
     public List<BankItemWidget> getItems() {
         List<BankItemWidget> bankItems = new ArrayList<>();
-        return context.runOnClientThread(() -> {
-            if (lastUpdateTick < client.getTickCount()) {
+        return ctx.runOnClientThread(() -> {
+            if (lastUpdateTick < ctx.getClient().getTickCount()) {
                 int i = 0;
-                ItemContainer container = client.getItemContainer(InventoryID.BANK);
+                ItemContainer container = ctx.getClient().getItemContainer(InventoryID.BANK);
                 if(container == null) {
                     return Collections.emptyList();
                 }
@@ -106,32 +107,24 @@ public class BankService extends AbstractService {
                             continue;
                         }
 
-                        ItemComposition comp = itemManager.getItemComposition(item.getId());
+                        ItemComposition comp = ctx.getItemManager().getItemComposition(item.getId());
                         if(comp.getName().equalsIgnoreCase("Bank filler")) {
                             i++;
                             continue;
                         }
 
                         itemDefs.put(item.getId(), comp);
-                        bankItems.add(new BankItemWidget(itemDefs.get(item.getId()).getName(), item.getId(), item.getQuantity(), i, context));
+                        bankItems.add(new BankItemWidget(itemDefs.get(item.getId()).getName(), item.getId(), item.getQuantity(), i, ctx));
                     } catch (NullPointerException | ExecutionException ex) {
                         log.error("exception thrown while attempting to get items from bank:", ex);
                     }
                     i++;
                 }
-                lastUpdateTick = client.getTickCount();
+                lastUpdateTick = ctx.getClient().getTickCount();
             }
             return bankItems;
         });
     }
-
-    /**
-     * Container describes from what interface the action happens
-     * eg: withdraw means the container will be the bank container
-     * eg: deposit means that the container will be the inventory container
-     * and so on...
-     */
-    private static int container = -1;
 
     /**
      * Checks whether the bank interface is open.
@@ -139,7 +132,8 @@ public class BankService extends AbstractService {
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
     public boolean isOpen() {
-        return widgetService.hasWidgetText("Rearrange mode", 12, 18, false);
+        Widget bank = ctx.widgets().withText("Rearrange mode").first().raw();
+        return bank != null && !bank.isHidden();
     }
 
     /**
@@ -149,9 +143,9 @@ public class BankService extends AbstractService {
      * @return True if the withdrawal mode was set correctly and false otherwise.
      */
     public boolean setWithdrawMode(int withdrawMode) {
-        int withdrawAsVarbitValue = context.getVarbitValue(WITHDRAW_AS_VARBIT);
-        Widget itemWidget = widgetService.getWidget(WITHDRAW_ITEM_MODE_WIDGET);
-        Widget noteWidget = widgetService.getWidget(WITHDRAW_NOTE_MODE_WIDGET);
+        int withdrawAsVarbitValue = ctx.getVarbitValue(WITHDRAW_AS_VARBIT);
+        Widget itemWidget = ctx.getClient().getWidget(WITHDRAW_ITEM_MODE_WIDGET);
+        Widget noteWidget = ctx.getClient().getWidget(WITHDRAW_NOTE_MODE_WIDGET);
         if (Arrays.stream(itemWidget.getActions()).noneMatch((s) -> Objects.equals(s, ITEM_MODE_ACTION)) || Arrays.stream(noteWidget.getActions()).noneMatch((s) -> Objects.equals(s, NOTE_MODE_ACTION))) {
             return false;
         }
@@ -182,25 +176,25 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdrawX(Widget item, int amount) {
-        if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> {
-            setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
-            if (context.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+        if(!ctx.isPacketsLoaded()) return false;
+        return ctx.runOnClientThread(() -> {
+            setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
+            if (ctx.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
                 Point pt = uiService.getClickbox(item);
                 mousePackets.queueClickPacket(pt.getX(), pt.getY());
                 widgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
                 return Optional.of(true);
             }
 
-            setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+            setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(item, "Withdraw-X");
 
-            client.setVarcStrValue(359, Integer.toString(amount));
-            client.setVarcIntValue(5, 7);
-            client.runScript(681);
-            client.setVarbit(WITHDRAW_QUANTITY, amount);
+            ctx.getClient().setVarcStrValue(359, Integer.toString(amount));
+            ctx.getClient().setVarcIntValue(5, 7);
+            ctx.getClient().runScript(681);
+            ctx.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -213,10 +207,10 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdrawX(Widget item, int amount, boolean noted) {
-        if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> {
+        if(!ctx.isPacketsLoaded()) return false;
+        return ctx.runOnClientThread(() -> {
             setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
-            if (context.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
+            if (ctx.getVarbitValue(WITHDRAW_QUANTITY) == amount) {
                 Point pt = uiService.getClickbox(item);
                 mousePackets.queueClickPacket(pt.getX(), pt.getY());
                 widgetPackets.queueWidgetActionPacket(5, item.getId(), item.getItemId(), item.getIndex());
@@ -228,10 +222,10 @@ public class BankService extends AbstractService {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(item, "Withdraw-X");
 
-            client.setVarcStrValue(359, Integer.toString(amount));
-            client.setVarcIntValue(5, 7);
-            client.runScript(681);
-            client.setVarbit(WITHDRAW_QUANTITY, amount);
+            ctx.getClient().setVarcStrValue(359, Integer.toString(amount));
+            ctx.getClient().setVarcIntValue(5, 7);
+            ctx.getClient().runScript(681);
+            ctx.getClient().setVarbit(WITHDRAW_QUANTITY, amount);
             return Optional.of(true);
         }).orElse(false);
     }
@@ -242,7 +236,7 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdrawOne(String name) {
-        if(!context.isPacketsLoaded()) return false;
+        if(!ctx.isPacketsLoaded()) return false;
         return withdraw(name, "Withdraw-1");
     }
 
@@ -252,7 +246,7 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdrawFive(String name) {
-        if(!context.isPacketsLoaded()) return false;
+        if(!ctx.isPacketsLoaded()) return false;
         return withdraw(name, "Withdraw-5");
     }
 
@@ -262,7 +256,7 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdrawTen(String name) {
-        if(!context.isPacketsLoaded()) return false;
+        if(!ctx.isPacketsLoaded()) return false;
         return withdraw(name, "Withdraw-10");
     }
 
@@ -273,9 +267,9 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdraw(String name, String... actions) {
-        if(!context.isPacketsLoaded() || !isOpen()) return false;
+        if(!ctx.isPacketsLoaded() || !isOpen()) return false;
         BankItemWidget item = getItems().stream().filter(i -> i.getName().equals(name)).findFirst().orElse(null);
-        setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+        setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -290,9 +284,9 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdraw(int id, String... actions) {
-        if(!context.isPacketsLoaded() || !isOpen()) return false;
+        if(!ctx.isPacketsLoaded() || !isOpen()) return false;
         BankItemWidget item = getItems().stream().filter(i -> i.getId() == id).findFirst().orElse(null);
-        setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+        setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -307,13 +301,13 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdraw(Widget item, String... actions) {
-        if(!context.isPacketsLoaded()) return false;
-        return context.runOnClientThread(() -> {
+        if(!ctx.isPacketsLoaded()) return false;
+        return ctx.runOnClientThread(() -> {
             if (item == null) {
                 return Optional.of(false);
             }
 
-            setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+            setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(item, actions);
@@ -329,10 +323,10 @@ public class BankService extends AbstractService {
      * @return true if the withdrawal was successful, false otherwise
      */
     public boolean withdraw(String name, boolean noted, String... actions) {
-        if(!context.isPacketsLoaded() || !isOpen()) return false;
+        if(!ctx.isPacketsLoaded() || !isOpen()) return false;
         setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
         BankItemWidget item = getItems().stream().filter(i -> i.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
-        setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+        setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -348,10 +342,10 @@ public class BankService extends AbstractService {
      * @return True if the withdraw was successful and false otherwise
      */
     public boolean withdraw(int id, boolean noted, String... actions) {
-        if(!context.isPacketsLoaded()) return false;
+        if(!ctx.isPacketsLoaded()) return false;
         setWithdrawMode(noted ? WITHDRAW_NOTES_MODE : WITHDRAW_ITEM_MODE);
         BankItemWidget item = getItems().stream().filter(i -> i.getId() == id).findFirst().orElse(null);
-        setWithdrawMode(context.getVarbitValue(WITHDRAW_AS_VARBIT));
+        setWithdrawMode(ctx.getVarbitValue(WITHDRAW_AS_VARBIT));
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -364,7 +358,7 @@ public class BankService extends AbstractService {
      */
     public void close() {
         if (isOpen()) {
-            client.runScript(29);
+            ctx.getClient().runScript(29);
         }
     }
 
@@ -377,7 +371,6 @@ public class BankService extends AbstractService {
         if (item == null) return false;
         if (!isOpen()) return false;
         if (!inventoryService.hasItem(item.getId())) return false;
-        container = BANK_INVENTORY_ITEM_CONTAINER;
 
         Point pt = uiService.getClickbox(item);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -426,9 +419,8 @@ public class BankService extends AbstractService {
         if (item == null) return false;
         if (!isOpen()) return false;
         if (!inventoryService.hasItem(item)) return false;
-        container = BANK_INVENTORY_ITEM_CONTAINER;
 
-        if (context.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
+        if (ctx.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(item.getBankInventoryWidget(), "Deposit-All");
@@ -495,10 +487,10 @@ public class BankService extends AbstractService {
         if (inventoryService.isEmpty()) return true;
         if (!isOpen()) return false;
 
-        Widget widget = widgetService.getWidget(786476);
+        Widget widget = ctx.getClient().getWidget(786476);
         if (widget == null) return false;
 
-        widgetService.interact(widget, "Deposit Inventory");
+        ctx.widgets().withId(786476).first().interact("Deposit Inventory");
         sleepService.sleep(500, 1500);
         return true;
     }

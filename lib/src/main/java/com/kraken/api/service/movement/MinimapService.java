@@ -3,7 +3,6 @@ package com.kraken.api.service.movement;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.query.widget.WidgetService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
@@ -27,9 +26,6 @@ public class MinimapService {
 
     @Inject
     private Context ctx;
-
-    @Inject
-    private WidgetService widgetService;
 
     @Inject
     private SpriteManager spriteManager;
@@ -157,14 +153,14 @@ public class MinimapService {
             // Side panels
             if (ctx.getVarbitValue(4607) == 1) {
                 // ComponentID.RESIZABLE_VIEWPORT_BOTTOM_LINE_MINIMAP_DRAW_AREA
-                return widgetService.getWidget(10747934);
+                return ctx.getClient().getWidget(10747934);
             }
             // ComponentID.RESIZABLE_VIEWPORT_MINIMAP_DRAW_AREA
-            return widgetService.getWidget(10551326);
+            return ctx.getClient().getWidget(10551326);
         }
 
         // ComponentID.FIXED_VIEWPORT_MINIMAP_DRAW_AREA
-        return widgetService.getWidget(35913749);
+        return ctx.getClient().getWidget(35913749);
     }
 
     /**
