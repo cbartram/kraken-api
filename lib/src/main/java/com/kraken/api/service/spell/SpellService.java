@@ -5,8 +5,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.query.container.inventory.ContainerItem;
-import com.kraken.api.query.container.inventory.InventoryService;
+import com.kraken.api.query.inventory.ContainerItem;
 import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -19,6 +18,7 @@ import net.runelite.client.game.ItemManager;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
@@ -26,9 +26,6 @@ public class SpellService {
 
     @Inject
     private Context ctx;
-
-    @Inject
-    private InventoryService inventoryService;
 
     @Inject
     private ItemManager itemManager;
@@ -116,10 +113,10 @@ public class SpellService {
      * @return true if the player has all required runes, false otherwise.
      */
     public boolean hasRequiredRunes(Spells spell) {
-        boolean hasRunePouch = inventoryService.all().stream().anyMatch(item -> item.getId() == ItemID.DIVINE_RUNE_POUCH
-                || item.getId() == ItemID.BH_RUNE_POUCH
-                || item.getId() == ItemID.BH_RUNE_POUCH_TROUVER
-                || item.getId() == ItemID.DIVINE_RUNE_POUCH_TROUVER);
+        boolean hasRunePouch = ctx.inventory().stream().anyMatch(item -> item.raw().getId() == ItemID.DIVINE_RUNE_POUCH
+                || item.raw().getId() == ItemID.BH_RUNE_POUCH
+                || item.raw().getId() == ItemID.BH_RUNE_POUCH_TROUVER
+                || item.raw().getId() == ItemID.DIVINE_RUNE_POUCH_TROUVER);
 
         // Get combined runes from inventory and rune pouch
         Map<Integer, Integer> availableRunes = getCombinedRuneInventory(hasRunePouch);
@@ -149,7 +146,7 @@ public class SpellService {
         Map<Integer, Integer> combinedRunes = new HashMap<>();
 
         // Add runes from inventory
-        for(ContainerItem item : inventoryService.all()) {
+        for(ContainerItem item : ctx.inventory().toRuneLite().collect(Collectors.toList())) {
             Runes rune = Runes.byItemId(item.getId());
             if(rune != null) {
                 // If the rune is a combo rune add all base runes to the combined runes because it functions as any of the base runes.

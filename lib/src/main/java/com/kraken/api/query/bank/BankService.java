@@ -1,4 +1,4 @@
-package com.kraken.api.query.container.bank;
+package com.kraken.api.query.bank;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -7,8 +7,8 @@ import com.kraken.api.service.RandomService;
 import com.kraken.api.service.SleepService;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.query.container.inventory.ContainerItem;
-import com.kraken.api.query.container.inventory.InventoryService;
+import com.kraken.api.query.inventory.ContainerItem;
+import com.kraken.api.query.inventory.InventoryService;
 import com.kraken.api.service.ui.UIService;
 import com.kraken.api.query.widget.WidgetService;
 import lombok.extern.slf4j.Slf4j;

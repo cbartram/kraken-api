@@ -3,7 +3,7 @@ package com.kraken.api.example.tests;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.service.SleepService;
-import com.kraken.api.query.container.bank.BankService;
+import com.kraken.api.query.bank.BankService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

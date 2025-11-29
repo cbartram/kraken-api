@@ -3,6 +3,7 @@ package com.kraken.api.query.npc;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.Actor;
+import net.runelite.api.NPC;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -12,7 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery> {
+public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     public NpcQuery(Context ctx) {
         super(ctx);

@@ -3,8 +3,6 @@ package com.kraken.api.example.overlay;
 import com.google.inject.Inject;
 import com.kraken.api.example.ExampleConfig;
 import com.kraken.api.example.TestResultManager;
-import com.kraken.api.query.container.inventory.ContainerItem;
-import com.kraken.api.query.container.inventory.InventoryService;
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -12,23 +10,18 @@ import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class InfoPanelOverlay extends OverlayPanel {
 
     private final Client client;
     private final ExampleConfig config;
-    private final InventoryService inventoryService;
     private final TestResultManager testResultManager;
 
     @Inject
-    public InfoPanelOverlay(Client client, ExampleConfig config,
-                            InventoryService inventoryService, TestResultManager testResultManager) {
+    public InfoPanelOverlay(Client client, ExampleConfig config, TestResultManager testResultManager) {
         this.client = client;
         this.config = config;
-        this.inventoryService = inventoryService;
         this.testResultManager = testResultManager;
         setPosition(OverlayPosition.TOP_RIGHT);
     }
@@ -51,11 +44,6 @@ public class InfoPanelOverlay extends OverlayPanel {
             // Add test results if manager is available
             if (!testResultManager.getAllTestResults().isEmpty()) {
                 addTestResults();
-            }
-
-            // Add inventory info if enabled
-            if (config.showInventoryOverlay() && config.enableInventoryTests()) {
-                addInventoryInfo();
             }
 
             // Add debug info if enabled
@@ -180,81 +168,6 @@ public class InfoPanelOverlay extends OverlayPanel {
             case NOT_STARTED:
             default:
                 return Color.WHITE;
-        }
-    }
-
-    private void addInventoryInfo() {
-        try {
-            // Food count
-            List<ContainerItem> foodItems = new ArrayList<>(inventoryService.getFood());
-
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Food Items:")
-                    .right(String.valueOf(foodItems.size()))
-                    .rightColor(config.foodOverlayColor())
-                    .build());
-
-            // Has food check
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Has Food:")
-                    .right(inventoryService.hasFood() ? "Yes" : "No")
-                    .rightColor(inventoryService.hasFood() ? Color.GREEN : Color.RED)
-                    .build());
-
-            // Total items count
-            List<ContainerItem> allItems = new ArrayList<>(inventoryService.all());
-
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Total Items:")
-                    .right(String.valueOf(allItems.size()))
-                    .rightColor(config.inventoryOverlayColor())
-                    .build());
-
-            // Check for test item
-            ContainerItem testItem = inventoryService.get(config.testItemName());
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left(config.testItemName() + ":")
-                    .right(testItem != null ? "Found (x" + testItem.getQuantity() + ")" : "Not Found")
-                    .rightColor(testItem != null ? Color.GREEN : Color.RED)
-                    .build());
-
-            // Show first few items if debug is enabled
-            if (config.showDebugInfo() && !allItems.isEmpty()) {
-                panelComponent.getChildren().add(LineComponent.builder()
-                        .left("--- Inventory ---")
-                        .build());
-
-                int count = 0;
-                for (ContainerItem item : allItems) {
-                    if (count >= 5) break; // Limit to first 5 items
-
-                    Color itemColor = config.inventoryOverlayColor();
-
-                    // Highlight food items
-                    if (config.highlightFood()) {
-                        for (ContainerItem foodItem : foodItems) {
-                            if (foodItem.getName().equals(item.getName())) {
-                                itemColor = config.foodOverlayColor();
-                                break;
-                            }
-                        }
-                    }
-
-                    panelComponent.getChildren().add(LineComponent.builder()
-                            .left("  " + item.getName())
-                            .right("x" + item.getQuantity())
-                            .rightColor(itemColor)
-                            .build());
-                    count++;
-                }
-            }
-
-        } catch (Exception e) {
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Inventory Error:")
-                    .right(e.getMessage())
-                    .rightColor(Color.RED)
-                    .build());
         }
     }
 

@@ -1,4 +1,4 @@
-package com.kraken.api.query.container.inventory;
+package com.kraken.api.query.inventory;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

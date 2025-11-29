@@ -1,4 +1,4 @@
-package com.kraken.api.query.container.bank;
+package com.kraken.api.query.bank;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -10,7 +10,6 @@ import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.gameval.InventoryID;
-import net.runelite.client.game.ItemManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,22 +20,20 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Slf4j
-public class BankQuery extends AbstractQuery<BankEntity, BankQuery> {
+public class BankQuery extends AbstractQuery<BankEntity, BankQuery, BankItemWidget> {
 
     private int lastUpdateTick = -1;
     private final LoadingCache<Integer, ItemComposition> itemDefs;
-    private final ItemManager itemManager;
 
-    public BankQuery(Context ctx, ItemManager itemManager) {
+    public BankQuery(Context ctx) {
         super(ctx);
-        this.itemManager = itemManager;
         this.itemDefs = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(20, TimeUnit.MINUTES)
             .build(new CacheLoader<>() {
                        @Override
                        public ItemComposition load(Integer itemId) {
-                           return ctx.runOnClientThread(() -> itemManager.getItemComposition(itemId));
+                           return ctx.runOnClientThread(() -> ctx.getItemManager().getItemComposition(itemId));
                        }
                    }
             );

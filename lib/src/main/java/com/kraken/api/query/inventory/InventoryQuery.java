@@ -1,4 +1,4 @@
-package com.kraken.api.query.container.inventory;
+package com.kraken.api.query.inventory;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuery> {
+public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuery, ContainerItem> {
 
     public InventoryQuery(Context ctx) {
         super(ctx);
@@ -55,6 +55,54 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
 
             return inventoryEntities.stream();
         };
+    }
+
+    /**
+     * Returns true if the inventory is empty and false otherwise.
+     * @return true if the inventory is empty and false otherwise.
+     */
+    public boolean isEmpty() {
+        return source().get().findAny().isEmpty();
+    }
+
+    /**
+     * Returns true if the inventory is full and false otherwise.
+     * @return True if the inventory is full and false otherwise.
+     */
+    public boolean isFull() {
+        return source().get().count() >= 28;
+    }
+
+    /**
+     * Returns the count of items in the inventory
+     * @return The count of items in the players inventory
+     */
+    public long count() {
+        return source().get().count();
+    }
+
+    /**
+     * Returns the free space in a users inventory.
+     * @return The amount of free space available in the players inventory
+     */
+    public int freeSpace() {
+        return Math.toIntExact(28 - source().get().count());
+    }
+
+    /**
+     * Returns a list of Inventory Items which can be consumed for health.
+     * @return List of Inventory items which are food.
+     */
+    public InventoryQuery food() {
+        return filter(i -> i.raw().isFood());
+    }
+
+    /**
+     * Returns true when the player has edible hard food in their inventory and false otherwise.
+     * @return boolean
+     */
+    public boolean hasFood() {
+        return filter(i -> i.raw().isFood()).count() > 0;
     }
 
     /**

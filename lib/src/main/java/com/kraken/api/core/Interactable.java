@@ -1,6 +1,6 @@
 package com.kraken.api.core;
 
-public interface Interactable {
+public interface Interactable<T> {
     /**
      * Interacts with the entity using the given action verb.
      * @param action The menu action to trigger (e.g., "Attack", "Talk-to", "Take")
@@ -8,6 +8,7 @@ public interface Interactable {
      */
     boolean interact(String action);
 
+    T raw();
     String getName();
     boolean isNull();
 }

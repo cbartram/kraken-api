@@ -1,11 +1,10 @@
-package com.kraken.api.query.container.bank;
+package com.kraken.api.query.bank;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
-import com.kraken.api.query.container.inventory.ContainerItem;
 
-public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
-    public BankInventoryEntity(Context ctx, ContainerItem raw) {
+public class BankEntity extends AbstractEntity<BankItemWidget> {
+    public BankEntity(Context ctx, BankItemWidget raw) {
         super(ctx, raw);
     }
 
@@ -17,7 +16,7 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
     @Override
     public boolean interact(String action) {
         if (raw == null) return false;
-        ctx.getInteractionManager().interact(raw, true, action);
+        ctx.getInteractionManager().interact(raw, action);
         return true;
     }
 }

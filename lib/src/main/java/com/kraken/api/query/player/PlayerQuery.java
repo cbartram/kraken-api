@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery> {
+public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player> {
 
     private final ScheduledExecutorService executor;
 

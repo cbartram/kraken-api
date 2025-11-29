@@ -4,7 +4,7 @@ import com.kraken.api.Context;
 import java.util.Objects;
 
 // R = Raw RuneLite type (NPC, TileObject, Widget)
-public abstract class AbstractEntity<R> implements Interactable {
+public abstract class AbstractEntity<R> implements Interactable<R> {
 
     protected final Context ctx;
     protected final R raw;

@@ -10,7 +10,7 @@ import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
 import com.kraken.api.example.tests.*;
-import com.kraken.api.query.container.bank.BankService;
+import com.kraken.api.query.bank.BankService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.movement.Pathfinder;
 import com.kraken.api.query.npc.NpcService;
@@ -78,22 +78,10 @@ public class ExamplePlugin extends Plugin {
     private NpcServiceTest npcServiceTest;
 
     @Inject
-    private GameObjectServiceTest gameObjectServiceTest;
-
-    @Inject
-    private InventoryServiceTest inventoryServiceTest;
-
-    @Inject
     private BankServiceTest bankServiceTest;
 
     @Inject
-    private EquipmentServiceTest equipmentServiceTest;
-
-    @Inject
     private MovementService movementService;
-
-    @Inject
-    private GroundObjectServiceTest groundObjectServiceTest;
 
     @Inject
     private PrayerServiceTest prayerServiceTest;
@@ -200,28 +188,12 @@ public class ExamplePlugin extends Plugin {
                         testResultManager.startTest("NpcServiceTest", npcServiceTest.executeTest());
                     }
 
-                    if(config.enableGameObjectTests()) {
-                        testResultManager.startTest("GameObjectServiceTest", gameObjectServiceTest.executeTest());
-                    }
-
-                    if (config.enableInventoryTests()) {
-                        testResultManager.startTest("InventoryServiceTest", inventoryServiceTest.executeTest());
-                    }
-
-                    if (config.enableGroundItemTests()) {
-                        testResultManager.startTest("GroundItemServiceTest", groundObjectServiceTest.executeTest());
-                    }
-
                     if(config.enableBankTests()) {
                         testResultManager.startTest("BankServiceTest", bankServiceTest.executeTest());
                     }
 
                     if(config.enablePrayerTests()) {
                         testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
-                    }
-
-                    if(config.enableEquipmentTests()) {
-                        testResultManager.startTest("EquipmentServiceTest", equipmentServiceTest.executeTest());
                     }
                 } else {
                     log.info("Stopping API tests...");

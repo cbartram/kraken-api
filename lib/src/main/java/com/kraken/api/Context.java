@@ -6,17 +6,14 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
-import com.kraken.api.query.container.bank.BankInventoryQuery;
-import com.kraken.api.query.container.bank.BankQuery;
-import com.kraken.api.query.container.bank.BankService;
-import com.kraken.api.query.container.inventory.InventoryQuery;
-import com.kraken.api.query.container.inventory.InventoryService;
+import com.kraken.api.query.bank.BankInventoryQuery;
+import com.kraken.api.query.bank.BankQuery;
+import com.kraken.api.query.bank.BankService;
 import com.kraken.api.query.equipment.EquipmentQuery;
-import com.kraken.api.query.equipment.EquipmentService;
 import com.kraken.api.query.gameobject.GameObjectQuery;
-import com.kraken.api.query.gameobject.GameObjectService;
 import com.kraken.api.query.groundobject.GroundObjectQuery;
-import com.kraken.api.query.groundobject.GroundObjectService;
+import com.kraken.api.query.inventory.InventoryQuery;
+import com.kraken.api.query.inventory.InventoryService;
 import com.kraken.api.query.npc.NpcQuery;
 import com.kraken.api.query.npc.NpcService;
 import com.kraken.api.query.player.PlayerQuery;
@@ -27,6 +24,7 @@ import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
+import com.kraken.api.service.tile.TileService;
 import com.kraken.api.service.ui.TabService;
 import com.kraken.api.service.ui.UIService;
 import lombok.Getter;
@@ -50,27 +48,23 @@ import java.util.concurrent.*;
 @Singleton
 public class Context {
 
-    private final Client client;
-    private final ClientThread clientThread;
-
     @Setter
     private VirtualMouse mouse;
-
+    private final Client client;
+    private final ClientThread clientThread;
     private final Injector injector;
     private final EventBus eventBus;
     private final InteractionManager interactionManager;
     private final ItemManager itemManager;
+    private final TileService tileService;
     private boolean isRegistered = false;
     private boolean packetsLoaded = false;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),
-            EquipmentService.class,
             BankService.class,
             CameraService.class,
-            GameObjectService.class,
-            GroundObjectService.class,
             InventoryService.class,
             MovementService.class,
             MinimapService.class,
@@ -85,7 +79,7 @@ public class Context {
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
                    final EventBus eventBus, final Injector injector,
-                   final InteractionManager interactionManager, final ItemManager itemManager) {
+                   final InteractionManager interactionManager, final ItemManager itemManager, final TileService tileService) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
@@ -93,6 +87,7 @@ public class Context {
         this.eventBus = eventBus;
         this.interactionManager = interactionManager;
         this.itemManager = itemManager;
+        this.tileService = tileService;
     }
 
     /**
@@ -329,7 +324,7 @@ public class Context {
      * bank.
      */
     public BankQuery bank() {
-        return new BankQuery(this, itemManager);
+        return new BankQuery(this);
     }
 
     /**
@@ -363,7 +358,7 @@ public class Context {
      * @return GroundObjectQuery used to chain together predicates to select specific ground items within the scene.
      */
     public GroundObjectQuery groundObjects() {
-        return new GroundObjectQuery(this, itemManager);
+        return new GroundObjectQuery(this);
     }
 
     /**

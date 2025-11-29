@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery> {
+public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget> {
 
     public WidgetQuery(Context ctx) {
         super(ctx);

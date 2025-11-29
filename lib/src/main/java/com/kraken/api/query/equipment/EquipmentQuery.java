@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuery> {
+public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuery, Widget> {
 
     private final HashMap<Integer, Integer> equipmentSlotWidgetMapping = new HashMap<>();
 
@@ -36,6 +36,11 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
         equipmentSlotWidgetMapping.put(13, 25);
     }
 
+    // TODO Handle this differently we have 2 streams:
+    // - Equipment widgets in the equipment interface
+    // - Wearable/wieldable items in the inventory
+    // users should be able to specify which source they are looking at (or merge 2 streams for both sources)
+    // to be acted on
     @Override
     protected Supplier<Stream<EquipmentEntity>> source() {
         return () -> {
@@ -82,6 +87,44 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
 
             return equipmentEntities.stream();
         };
+    }
+
+    /**
+     * Checks if the player is wearing an item by id.
+     * @param id The id of the item to check.
+     * @return True if the player is wearing the item, false otherwise.
+     */
+    public boolean isWearing(int id) {
+        List<EquipmentEntity> entities = new ArrayList<>();
+        for(int i = 0; i < 13; i++) {
+            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(i));
+            // 13 slots in your equipment to wear, if no widget found then no gear in that slot
+            if (widget == null) continue;
+            entities.add(new EquipmentEntity(ctx, widget));
+        }
+
+        return entities
+                .stream()
+                .anyMatch(i -> id == i.raw().getId());
+    }
+
+    /**
+     * Checks if the player is wearing an item by name.
+     * @param name The name of the item to check.
+     * @return True if the player is wearing the item, false otherwise.
+     */
+    public boolean isWearing(String name) {
+        List<EquipmentEntity> entities = new ArrayList<>();
+        for(int i = 0; i < 13; i++) {
+            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(i));
+            // 13 slots in your equipment to wear, if no widget found then no gear in that slot
+            if (widget == null) continue;
+            entities.add(new EquipmentEntity(ctx, widget));
+        }
+
+        return entities
+                .stream()
+                .anyMatch(i -> name.equalsIgnoreCase(i.getName()));
     }
 
     /**

@@ -3,9 +3,11 @@ package com.kraken.api.query.groundobject;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.Perspective;
 import net.runelite.api.Tile;
 import net.runelite.api.TileItem;
-import net.runelite.client.game.ItemManager;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.util.RSTimeUnit;
 
 import java.time.Duration;
@@ -14,14 +16,11 @@ import java.util.HashSet;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundObjectQuery> {
-
+public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundObjectQuery, GroundItem> {
     private static final int COINS = 617;
-    private final ItemManager itemManager;
 
-    public GroundObjectQuery(Context ctx, ItemManager itemManager) {
+    public GroundObjectQuery(Context ctx) {
         super(ctx);
-        this.itemManager = itemManager;
     }
 
     /**
@@ -35,7 +34,7 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
     private GroundItem buildGroundItem(final Tile tile, final TileItem item) {
         int tickCount = ctx.runOnClientThreadOptional(() -> ctx.getClient().getTickCount()).orElse(0);
         final int itemId = item.getId();
-        final ItemComposition itemComposition = itemManager.getItemComposition(itemId);
+        final ItemComposition itemComposition = ctx.getItemManager().getItemComposition(itemId);
         final int realItemId = itemComposition.getNote() != -1 ? itemComposition.getLinkedNoteId() : itemId;
         final int alchPrice = itemComposition.getHaPrice();
         final int despawnTime = item.getDespawnTime() - tickCount;
@@ -71,7 +70,7 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
             groundItem.setHaPrice(1);
             groundItem.setGePrice(1);
         } else {
-            groundItem.setGePrice(itemManager.getItemPrice(realItemId));
+            groundItem.setGePrice(ctx.getItemManager().getItemPrice(realItemId));
         }
 
         return groundItem;
@@ -105,6 +104,66 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
 
             return groundItems.stream().map(groundItem -> new GroundObjectEntity(ctx, groundItem));
         };
+    }
+
+    /**
+     * Filters for only objects whose location is within the specified distance from the anchor point.
+     * @param anchor The anchor local point.
+     * @param distance The maximum distance from the anchor point (in local units).
+     * @return True if the object is within the specified distance from the anchor point, false otherwise.
+     */
+    public GroundObjectQuery within(LocalPoint anchor, int distance) {
+        return filter(obj -> {
+            LocalPoint pt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), obj.raw().getLocation());
+            if(pt == null) return false;
+
+            int dx = Math.abs(anchor.getX() - pt.getX());
+            int dy = Math.abs(anchor.getY() - pt.getY());
+
+            if (distance == 0) {
+                return (dx == Perspective.LOCAL_TILE_SIZE && dy == 0) || (dy == Perspective.LOCAL_TILE_SIZE && dx == 0);
+            } else {
+                return pt.distanceTo(anchor) <= distance;
+            }
+        });
+    }
+
+    /**
+     * Filters for only objects whose location is within the specified distance from the players current local point.
+     * @param distance The maximum distance from the anchor point (in local units).
+     * @return True if the object is within the specified distance from the anchor point, false otherwise.
+     */
+    public GroundObjectQuery within(int distance) {
+        LocalPoint anchor = ctx.players().local().raw().getLocalLocation();
+        return filter(obj -> {
+            LocalPoint pt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), obj.raw().getLocation());
+            if(pt == null) return false;
+
+            int dx = Math.abs(anchor.getX() - pt.getX());
+            int dy = Math.abs(anchor.getY() - pt.getY());
+
+            if (distance == 0) {
+                return (dx == Perspective.LOCAL_TILE_SIZE && dy == 0) || (dy == Perspective.LOCAL_TILE_SIZE && dx == 0);
+            } else {
+                return pt.distanceTo(anchor) <= distance;
+            }
+        });
+    }
+
+    /**
+     * Filters by exact WorldPoint.
+     */
+    public GroundObjectQuery at(WorldPoint point) {
+        return filter(obj -> obj.raw().getLocation().equals(point));
+    }
+
+    /**
+     * Filters for only ground items which are reachable from the players current tile.
+     * @return GroundObjectQuery
+     */
+    public GroundObjectQuery reachable() {
+        return filter(groundItem ->
+                ctx.runOnClientThread(() -> ctx.getTileService().isTileReachable(groundItem.raw().getLocation())));
     }
 }
 
