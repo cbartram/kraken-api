@@ -8,7 +8,7 @@ import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
 import com.kraken.api.query.bank.BankInventoryQuery;
 import com.kraken.api.query.bank.BankQuery;
-import com.kraken.api.query.bank.BankService;
+import com.kraken.api.service.bank.BankService;
 import com.kraken.api.query.equipment.EquipmentQuery;
 import com.kraken.api.query.gameobject.GameObjectQuery;
 import com.kraken.api.query.groundobject.GroundObjectQuery;
@@ -55,6 +55,7 @@ public class Context {
     private final InteractionManager interactionManager;
     private final ItemManager itemManager;
     private final TileService tileService;
+    private final BankService bankService;
     private boolean isRegistered = false;
     private boolean packetsLoaded = false;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
@@ -75,11 +76,13 @@ public class Context {
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
                    final EventBus eventBus, final Injector injector,
-                   final InteractionManager interactionManager, final ItemManager itemManager, final TileService tileService) {
+                   final InteractionManager interactionManager, final ItemManager itemManager,
+                   final TileService tileService, final BankService bankService) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
+        this.bankService = bankService;
         this.eventBus = eventBus;
         this.interactionManager = interactionManager;
         this.itemManager = itemManager;

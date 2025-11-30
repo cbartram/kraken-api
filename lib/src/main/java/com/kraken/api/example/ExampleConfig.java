@@ -57,69 +57,6 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
-    @ConfigItem(
-            name = "Deposit One Item",
-            keyName = "depositOneItem",
-            description = "Test depositing one item into the bank from the inventory",
-            position = 1,
-            section = general
-    )
-    default String depositOneItem() {
-        return "";
-    }
-
-    @ConfigItem(
-            name = "Start Deposit One",
-            keyName = "depositOneCheck",
-            description = "Test depositing one item into the bank from the inventory",
-            position = 2,
-            section = general
-    )
-    default boolean depositOneCheck() {
-        return false;
-    }
-
-    @ConfigItem(
-            name = "Deposit All Item",
-            keyName = "depositAllItem",
-            description = "Test depositing all of a single item into the bank from the inventory",
-            position = 3,
-            section = general
-    )
-    default String depositAllItem() {
-        return "";
-    }
-
-    @ConfigItem(
-            name = "Start Deposit All",
-            keyName = "depositAllCheck",
-            description = "Test depositing one item into the bank from the inventory",
-            position = 4,
-            section = general
-    )
-    default boolean depositAllCheck() {
-        return false;
-    }
-
-    // =========== Bank Tests SECTION ==========
-    @ConfigSection(
-            name = "Bank Tests",
-            description = "Settings for Bank tests.",
-            position = 6
-    )
-    String BankTests = "Bank Tests";
-
-    @ConfigItem(
-            keyName = "enableBankTests",
-            name = "Enable Bank Tests",
-            description = "Enable Bank service testing functionality",
-            section = BankTests,
-            position = 1
-    )
-    default boolean enableBankTests() {
-        return true;
-    }
-
     // =========== Movement Tests ================
     @ConfigSection(
             name = "Movement Tests",

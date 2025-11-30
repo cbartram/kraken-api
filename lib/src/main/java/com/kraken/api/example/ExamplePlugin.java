@@ -9,10 +9,9 @@ import com.kraken.api.core.packet.entity.NPCPackets;
 import com.kraken.api.example.overlay.InfoPanelOverlay;
 import com.kraken.api.example.overlay.SceneOverlay;
 import com.kraken.api.example.overlay.TestApiOverlay;
-import com.kraken.api.example.tests.BankServiceTest;
 import com.kraken.api.example.tests.PrayerServiceTest;
 import com.kraken.api.overlay.MouseOverlay;
-import com.kraken.api.query.bank.BankService;
+import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.movement.Pathfinder;
 import com.kraken.api.service.spell.SpellService;
@@ -73,9 +72,6 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private TestResultManager testResultManager;
-
-    @Inject
-    private BankServiceTest bankServiceTest;
 
     @Inject
     private MovementService movementService;
@@ -162,24 +158,9 @@ public class ExamplePlugin extends Plugin {
                 spellService.cast(Spells.VARROCK_TELEPORT);
             }
 
-            if(event.getKey().equals("depositOneCheck") && config.depositOneCheck()) {
-                log.info("Depositing one: {}", config.depositOneItem());
-                bankService.depositOne(config.depositOneItem());
-
-            }
-
-            if(event.getKey().equals("depositAllCheck") && config.depositAllCheck()) {
-                log.info("Depositing all: {}", config.depositAllItem());
-                bankService.depositAll(config.depositAllItem());
-            }
-
             if(event.getKey().equals("start")) {
                 if (config.start()) {
                     log.info("Starting API tests...");
-
-                    if(config.enableBankTests()) {
-                        testResultManager.startTest("BankServiceTest", bankServiceTest.executeTest());
-                    }
 
                     if(config.enablePrayerTests()) {
                         testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
