@@ -59,6 +59,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableBankInventoryQuery",
+            name = "Start Bank Inventory Query",
+            description = "Enable Bank inventory Query Tests",
+            section = tests,
+            position = 4
+    )
+    default boolean enableBankInventoryQuery() {
+        return true;
+    }
+
 
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(

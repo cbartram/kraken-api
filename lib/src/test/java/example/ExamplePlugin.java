@@ -10,6 +10,7 @@ import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
+import example.tests.query.BankInventoryTest;
 import example.tests.query.BankTest;
 import example.tests.query.InventoryTest;
 import example.tests.service.PrayerServiceTest;
@@ -77,6 +78,9 @@ public class ExamplePlugin extends Plugin {
     private InventoryTest inventoryQueryTest;
 
     @Inject
+    private BankInventoryTest bankInventoryQueryTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -127,6 +131,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("BankQuery", bankQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableInventoryQuery") && config.enableInventoryQuery()) {
                 testResultManager.startTest("InventoryQuery", inventoryQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableBankInventoryQuery") && config.enableBankInventoryQuery()) {
+                testResultManager.startTest("BankInventoryTest", bankInventoryQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {
