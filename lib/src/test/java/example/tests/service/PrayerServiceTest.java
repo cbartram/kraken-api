@@ -1,7 +1,9 @@
-package com.kraken.api.example.tests;
+package example.tests.service;
 
 import com.google.inject.Inject;
+import com.kraken.api.Context;
 import com.kraken.api.service.prayer.PrayerService;
+import example.tests.BaseApiTest;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Prayer;
 
@@ -12,7 +14,7 @@ public class PrayerServiceTest extends BaseApiTest {
     private PrayerService prayer;
 
     @Override
-    protected boolean runTest() {
+    protected boolean runTest(Context ctx) {
         boolean testsPassed = true;
 
         try {

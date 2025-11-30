@@ -1,7 +1,8 @@
-package com.kraken.api.example.tests;
+package example.tests;
 
 import com.google.inject.Inject;
-import com.kraken.api.example.ExampleConfig;
+import com.kraken.api.Context;
+import example.ExampleConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
@@ -12,6 +13,9 @@ public abstract class BaseApiTest {
     @Inject
     protected ExampleConfig config;
 
+    @Inject
+    private Context ctx;
+
     /**
      * Executes the test in a separate thread and returns a CompletableFuture with the result
      * @return CompletableFuture - true if test passed, false if failed
@@ -20,7 +24,7 @@ public abstract class BaseApiTest {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 log.info("Starting {} test...", getTestName());
-                boolean result = runTest();
+                boolean result = runTest(ctx);
                 log.info("{} test completed with result: {}", getTestName(), result ? "PASSED" : "FAILED");
                 return result;
             } catch (Exception e) {
@@ -34,7 +38,7 @@ public abstract class BaseApiTest {
      * The actual test implementation - should be overridden by concrete test classes
      * @return true if test passed, false if failed
      */
-    protected abstract boolean runTest();
+    protected abstract boolean runTest(Context ctx) throws Exception;
 
     /**
      * Returns the name of this test for logging purposes

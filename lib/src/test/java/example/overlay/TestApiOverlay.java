@@ -1,9 +1,9 @@
-package com.kraken.api.example.overlay;
+package example.overlay;
 
 import com.google.inject.Inject;
-import com.kraken.api.example.ExampleConfig;
-import com.kraken.api.example.ExamplePlugin;
 import com.kraken.api.service.tile.TileService;
+import example.ExampleConfig;
+import example.ExamplePlugin;
 import net.runelite.api.Client;
 import net.runelite.api.Perspective;
 import net.runelite.api.coords.LocalPoint;
@@ -39,19 +39,7 @@ public class TestApiOverlay extends Overlay {
             return null;
         }
 
-        Font font = new Font(Font.SANS_SERIF, Font.BOLD, config.fontSize());
-        graphics.setFont(font);
-
-        try {
-            if(config.enableMovementOverlay() && config.enableMovementTests()) {
-                renderTargetTile(graphics);
-            }
-
-        } catch (Exception e) {
-            // Catch any exceptions to prevent overlay crashes
-            graphics.setColor(Color.RED);
-            graphics.drawString("Overlay Error: " + e.getMessage(), 10, 50);
-        }
+        renderTargetTile(graphics);
 
         return null;
     }

@@ -1,8 +1,8 @@
-package com.kraken.api.example.overlay;
+package example.overlay;
 
 import com.google.inject.Inject;
-import com.kraken.api.example.ExamplePlugin;
 import com.kraken.api.service.movement.Pathfinder;
+import example.ExamplePlugin;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;

@@ -84,4 +84,13 @@ public class BankQuery extends AbstractQuery<BankEntity, BankQuery, BankItemWidg
             return bankItems.stream().map(i -> new BankEntity(ctx, i));
         };
     }
+
+    /**
+     * Filters for items in the bank which have a specified item id.
+     * @param id The item id to filter for
+     * @return BankQuery
+     */
+    public BankQuery withId(int id) {
+        return filter(item -> item.raw().getItemId() == id);
+    }
 }

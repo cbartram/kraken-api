@@ -32,7 +32,7 @@ public class NPCPackets {
     private Provider<PacketClient> packetClientProvider;
 
     @Inject
-    private Context context;
+    private Provider<Context> ctxProvider;
 
     /**
      * Queues the low-level packet to perform a generic action click on an NPC.
@@ -66,7 +66,7 @@ public class NPCPackets {
             return;
         }
 
-        NPCComposition comp = context.runOnClientThreadOptional(npc::getComposition).orElse(null);
+        NPCComposition comp = ctxProvider.get().runOnClientThreadOptional(npc::getComposition).orElse(null);
         if (comp == null || comp.getActions() == null) {
             return;
         }

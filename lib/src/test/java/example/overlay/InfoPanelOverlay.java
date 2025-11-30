@@ -1,8 +1,8 @@
-package com.kraken.api.example.overlay;
+package example.overlay;
 
 import com.google.inject.Inject;
-import com.kraken.api.example.ExampleConfig;
-import com.kraken.api.example.TestResultManager;
+import example.ExampleConfig;
+import example.TestResultManager;
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;

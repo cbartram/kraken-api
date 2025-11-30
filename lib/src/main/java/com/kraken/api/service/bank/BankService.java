@@ -1,5 +1,6 @@
 package com.kraken.api.service.bank;
 
+import com.google.inject.Provider;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
@@ -37,7 +38,7 @@ public class BankService {
     private WidgetPackets widgetPackets;
     
     @Inject
-    private Context ctx;
+    private Provider<Context> ctxProvider;
 
     /**
      * Checks whether the bank interface is open.
@@ -45,7 +46,7 @@ public class BankService {
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
     public boolean isOpen() {
-        Widget bank = ctx.widgets().withText("Rearrange mode").first().raw();
+        Widget bank = ctxProvider.get().widgets().withText("Rearrange mode").first().raw();
         return bank != null && !bank.isHidden();
     }
 
@@ -58,11 +59,11 @@ public class BankService {
      */
     public boolean setWithdrawMode(boolean noted) {
         int targetMode = noted ? 1 : 0;
-        int currentMode = ctx.getVarbitValue(WITHDRAW_AS_VARBIT);
+        int currentMode = ctxProvider.get().getVarbitValue(WITHDRAW_AS_VARBIT);
 
         if (currentMode == targetMode) return true;
 
-        Widget toggleWidget = ctx.getClient().getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
+        Widget toggleWidget = ctxProvider.get().getClient().getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
 
         if (toggleWidget != null) {
             String action = noted ? "Note" : "Item";
@@ -88,7 +89,7 @@ public class BankService {
      */
     public void close() {
         if (isOpen()) {
-            ctx.getClient().runScript(29);
+            ctxProvider.get().getClient().runScript(29);
         }
     }
 
@@ -114,13 +115,13 @@ public class BankService {
      * @return
      */
     private boolean depositAllInternal(int widgetId, String action) {
-        if(ctx.inventory().isEmpty()) return true;
+        if(ctxProvider.get().inventory().isEmpty()) return true;
         if (!isOpen()) return false;
 
-        Widget widget = ctx.getClient().getWidget(widgetId); // Deposit All
+        Widget widget = ctxProvider.get().getClient().getWidget(widgetId); // Deposit All
         if (widget == null) return false;
 
-        ctx.widgets().withId(widgetId).first().interact(action);
+        ctxProvider.get().widgets().withId(widgetId).first().interact(action);
         return true;
     }
 }

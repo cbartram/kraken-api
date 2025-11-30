@@ -1,6 +1,7 @@
 package com.kraken.api.service.tile;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.query.player.LocalPlayerEntity;
@@ -22,7 +23,7 @@ public class TileService {
     private static final int FLAG_DATA_SIZE = 104;
 
     @Inject
-    private Context ctx;
+    private Provider<Context> ctxProvider;
 
     /**
      * Returns the object composition for a given TileObject.
@@ -30,11 +31,11 @@ public class TileService {
      * @return The object composition for a given tile object
      */
     public ObjectComposition getObjectComposition(TileObject tileObject) {
-        if(ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostorIds() != null && ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor() != null) {
-            return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor());
+        if(ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()).getImpostorIds() != null && ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()).getImpostor() != null) {
+            return ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()).getImpostor());
         }
 
-        return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()));
+        return ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()));
     }
 
     /**
@@ -65,17 +66,17 @@ public class TileService {
             for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
                 WorldPoint point = kvp.getKey();
                 LocalPoint localPoint;
-                if (ctx.getClient().getTopLevelWorldView().isInstance()) {
-                    WorldPoint worldPoint = WorldPoint.toLocalInstance(ctx.getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
+                if (ctxProvider.get().getClient().getTopLevelWorldView().isInstance()) {
+                    WorldPoint worldPoint = WorldPoint.toLocalInstance(ctxProvider.get().getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
                     if (worldPoint == null) break;
-                    localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
+                    localPoint = LocalPoint.fromWorld(ctxProvider.get().getClient().getTopLevelWorldView(), worldPoint);
                 } else {
-                    localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), point);
+                    localPoint = LocalPoint.fromWorld(ctxProvider.get().getClient().getTopLevelWorldView(), point);
                 }
 
-                CollisionData[] collisionMap = ctx.getClient().getTopLevelWorldView().getCollisionMaps();
+                CollisionData[] collisionMap = ctxProvider.get().getClient().getTopLevelWorldView().getCollisionMaps();
                 if (collisionMap != null && localPoint != null) {
-                    CollisionData collisionData = collisionMap[ctx.getClient().getTopLevelWorldView().getPlane()];
+                    CollisionData collisionData = collisionMap[ctxProvider.get().getClient().getTopLevelWorldView().getPlane()];
                     int[][] flags = collisionData.getFlags();
                     int data = flags[localPoint.getSceneX()][localPoint.getSceneY()];
 
@@ -129,7 +130,7 @@ public class TileService {
     public boolean isTileReachable(WorldPoint targetPoint) {
         if (targetPoint == null) return false;
 
-        LocalPlayerEntity player = ctx.players().local();
+        LocalPlayerEntity player = ctxProvider.get().players().local();
         final WorldPoint playerLoc = player.raw().getWorldLocation();
         if (playerLoc == null) return false;
 
@@ -141,13 +142,13 @@ public class TileService {
 
         final int startX;
         final int startY;
-        if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
+        if (ctxProvider.get().getClient().getTopLevelWorldView().getScene().isInstance()) {
             LocalPoint localPoint = player.raw().getLocalLocation();
             startX = localPoint.getSceneX();
             startY = localPoint.getSceneY();
         } else {
-            startX = playerLoc.getX() - ctx.getClient().getTopLevelWorldView().getBaseX();
-            startY = playerLoc.getY() - ctx.getClient().getTopLevelWorldView().getBaseY();
+            startX = playerLoc.getX() - ctxProvider.get().getClient().getTopLevelWorldView().getBaseX();
+            startY = playerLoc.getY() - ctxProvider.get().getClient().getTopLevelWorldView().getBaseY();
         }
         final int startPoint = (startX << 16) | startY;
 
@@ -189,14 +190,14 @@ public class TileService {
      */
     private boolean isVisited(WorldPoint worldPoint, boolean[][] visited) {
         int baseX, baseY, x, y;
-        if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPlayerEntity player = ctx.players().local();
+        if (ctxProvider.get().getClient().getTopLevelWorldView().getScene().isInstance()) {
+            LocalPlayerEntity player = ctxProvider.get().players().local();
             LocalPoint localPoint = player.raw().getLocalLocation();
             x = localPoint.getSceneX();
             y = localPoint.getSceneY();
         } else {
-            baseX = ctx.getClient().getTopLevelWorldView().getBaseX();
-            baseY = ctx.getClient().getTopLevelWorldView().getBaseY();
+            baseX = ctxProvider.get().getClient().getTopLevelWorldView().getBaseX();
+            baseY = ctxProvider.get().getClient().getTopLevelWorldView().getBaseY();
             x = worldPoint.getX() - baseX;
             y = worldPoint.getY() - baseY;
         }
@@ -241,7 +242,7 @@ public class TileService {
      * @return 2D array of collision flags
      */
     private int[][] getFlags() {
-        final WorldView wv = ctx.getClient().getTopLevelWorldView();
+        final WorldView wv = ctxProvider.get().getClient().getTopLevelWorldView();
         if (wv == null) return null;
 
         final CollisionData[] collisionData = wv.getCollisionMaps();
@@ -283,17 +284,17 @@ public class TileService {
      * @return The Tile at the specified coordinates, or null if the tile is invalid or not in the scene.
      */
     public Tile getTile(int x, int y) {
-        WorldPoint worldPoint = new WorldPoint(x, y, ctx.getClient().getTopLevelWorldView().getPlane());
+        WorldPoint worldPoint = new WorldPoint(x, y, ctxProvider.get().getClient().getTopLevelWorldView().getPlane());
         LocalPoint localPoint;
 
-        if (ctx.getClient().getTopLevelWorldView().getScene().isInstance()) {
+        if (ctxProvider.get().getClient().getTopLevelWorldView().getScene().isInstance()) {
             localPoint = fromWorldInstance(worldPoint);
         } else {
-            localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
+            localPoint = LocalPoint.fromWorld(ctxProvider.get().getClient().getTopLevelWorldView(), worldPoint);
         }
 
         if (localPoint == null) return null;
-        return ctx.getClient().getTopLevelWorldView().getScene().getTiles()[worldPoint.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
+        return ctxProvider.get().getClient().getTopLevelWorldView().getScene().getTiles()[worldPoint.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
     }
 
     /**
@@ -302,11 +303,11 @@ public class TileService {
      * @return A local point representing the same global world point
      */
     public LocalPoint fromWorldInstance(WorldPoint worldPoint) {
-        int[][][] instanceTemplateChunks = ctx.getClient().getTopLevelWorldView().getInstanceTemplateChunks();
+        int[][][] instanceTemplateChunks = ctxProvider.get().getClient().getTopLevelWorldView().getInstanceTemplateChunks();
         // Extract the coordinates from the WorldPoint
         int worldX = worldPoint.getX();
         int worldY = worldPoint.getY();
-        int worldPlane = ctx.getClient().getTopLevelWorldView().getPlane();
+        int worldPlane = ctxProvider.get().getClient().getTopLevelWorldView().getPlane();
 
         // Loop through all chunks to find which one contains the world point
         for (int chunkX = 0; chunkX < instanceTemplateChunks[worldPlane].length; chunkX++) {
@@ -330,7 +331,7 @@ public class TileService {
                     int localY = (rotatedWorldPoint.getY() - templateChunkY) + (chunkY * CHUNK_SIZE);
 
                     // Return the corresponding LocalPoint
-                    return  LocalPoint.fromScene(localX, localY, ctx.getClient().getTopLevelWorldView());
+                    return  LocalPoint.fromScene(localX, localY, ctxProvider.get().getClient().getTopLevelWorldView());
                 }
             }
         }
@@ -347,10 +348,10 @@ public class TileService {
     public WorldPoint fromInstance(WorldPoint worldPoint) {
 
         //get local
-        LocalPoint localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
+        LocalPoint localPoint = LocalPoint.fromWorld(ctxProvider.get().getClient().getTopLevelWorldView(), worldPoint);
 
         // if local point is null or not in an instanced region, return the world point as is
-        if(localPoint == null || !ctx.getClient().getTopLevelWorldView().isInstance())
+        if(localPoint == null || !ctxProvider.get().getClient().getTopLevelWorldView().isInstance())
             return worldPoint;
 
         // get position in the scene
@@ -362,7 +363,7 @@ public class TileService {
         int chunkY = sceneY / CHUNK_SIZE;
 
         // get the template chunk for the chunk
-        int[][][] instanceTemplateChunks = ctx.getClient().getTopLevelWorldView().getInstanceTemplateChunks();
+        int[][][] instanceTemplateChunks = ctxProvider.get().getClient().getTopLevelWorldView().getInstanceTemplateChunks();
         int templateChunk = instanceTemplateChunks[worldPoint.getPlane()][chunkX][chunkY];
 
         int rotation = templateChunk >> 1 & 0x3;
@@ -385,13 +386,13 @@ public class TileService {
      */
     public ArrayList<WorldPoint> toInstance(WorldPoint worldPoint) {
         // if not in an instanced region, return the world point as is
-        if (!ctx.getClient().getTopLevelWorldView().isInstance()) {
+        if (!ctxProvider.get().getClient().getTopLevelWorldView().isInstance()) {
             return new ArrayList<>(Collections.singletonList(worldPoint));
         }
 
         // find instance chunks using the template point. there might be more than one.
         ArrayList<WorldPoint> worldPoints = new ArrayList<>();
-        int[][][] instanceTemplateChunks = ctx.getClient().getTopLevelWorldView().getInstanceTemplateChunks();
+        int[][][] instanceTemplateChunks = ctxProvider.get().getClient().getTopLevelWorldView().getInstanceTemplateChunks();
         for (int z = 0; z < instanceTemplateChunks.length; z++) {
             for (int x = 0; x < instanceTemplateChunks[z].length; ++x) {
                 for (int y = 0; y < instanceTemplateChunks[z][x].length; ++y) {
@@ -404,8 +405,8 @@ public class TileService {
                             && worldPoint.getY() >= templateChunkY && worldPoint.getY() < templateChunkY + CHUNK_SIZE
                             && plane == worldPoint.getPlane())
                     {
-                        WorldPoint p = new WorldPoint(ctx.getClient().getTopLevelWorldView().getBaseX() + x * CHUNK_SIZE + (worldPoint.getX() & (CHUNK_SIZE - 1)),
-                                ctx.getClient().getTopLevelWorldView().getBaseY() + y * CHUNK_SIZE + (worldPoint.getY() & (CHUNK_SIZE - 1)),
+                        WorldPoint p = new WorldPoint(ctxProvider.get().getClient().getTopLevelWorldView().getBaseX() + x * CHUNK_SIZE + (worldPoint.getX() & (CHUNK_SIZE - 1)),
+                                ctxProvider.get().getClient().getTopLevelWorldView().getBaseY() + y * CHUNK_SIZE + (worldPoint.getY() & (CHUNK_SIZE - 1)),
                                 z);
                         p = rotate(p, rotation);
                         worldPoints.add(p);

@@ -1,12 +1,13 @@
 package com.kraken.api.query;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.*;
+import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.query.container.bank.BankItemWidget;
 import com.kraken.api.query.groundobject.GroundItem;
-import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.service.ui.UIService;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
@@ -43,7 +44,7 @@ public class InteractionManager {
     private UIService uiService;
 
     @Inject
-    private Context ctx;
+    private Provider<Context> ctxProvider;
 
     /**
      * Interacts with an NPC using the specified action i.e. "Attack", "Talk-To", or "Examine".
@@ -52,7 +53,7 @@ public class InteractionManager {
      * @param action The action to take, "Attack", "Talk-To", or "Examine".
      */
     public void interact(NPC npc, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
         Point point = uiService.getClickbox(npc);
         if (point != null) {
             mousePackets.queueClickPacket(point.getX(), point.getY());
@@ -67,7 +68,7 @@ public class InteractionManager {
      * @param action The action to take, "Attack", "Trade", or "Follow"
      */
     public void interact(Player player, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
         Point point = uiService.getClickbox(player);
         if (point != null) {
             mousePackets.queueClickPacket(point.getX(), point.getY());
@@ -85,7 +86,7 @@ public class InteractionManager {
      * @param action The action to take. i.e. "Eat" or "Use"
      */
     public void interact(ContainerItem item, boolean bankInventory, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
 
         // Get first action is no specific action is passed
         String parsedAction = (action == null || action.trim().isEmpty())
@@ -93,7 +94,7 @@ public class InteractionManager {
                 .findFirst().orElse(null)
                 : action;
 
-        ctx.runOnClientThread(() -> {
+        ctxProvider.get().runOnClientThread(() -> {
             if(item == null) return;
             Widget w;
 
@@ -109,9 +110,9 @@ public class InteractionManager {
                 Widget inven;
 
                 if(bankInventory) {
-                    inven = ctx.getClient().getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+                    inven = ctxProvider.get().getClient().getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
                 } else {
-                    inven = ctx.getClient().getWidget(149, 0);
+                    inven = ctxProvider.get().getClient().getWidget(149, 0);
                 }
 
                 if(inven == null) return;
@@ -135,7 +136,7 @@ public class InteractionManager {
      * @param action The action to take i.e. Withdraw-1, Withdraw-X, Examine
      */
     public void interact(BankItemWidget item, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
         Point pt = uiService.getClickbox(item);
 
         if(pt != null) {
@@ -150,7 +151,7 @@ public class InteractionManager {
      * @param action The action to take i.e. Wield, Use or Examine
      */
     public void interact(Widget item, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
         Point pt = uiService.getClickbox(item);
 
         if(pt != null) {
@@ -165,7 +166,7 @@ public class InteractionManager {
      * @param dest The destination widget
      */
     public void interact(Widget src, Widget dest) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
 
         Point pt = uiService.getClickbox(src);
 
@@ -183,7 +184,7 @@ public class InteractionManager {
      * @param action The action to take on the game object, i.e. "Chop", "Mine", or "Examine".
      */
     public void interact(TileObject object, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
         Point pt = uiService.getClickbox(object);
 
         if(pt != null) {
@@ -202,7 +203,7 @@ public class InteractionManager {
      * @param action The action to take on the game object, i.e. "Take" or "Examine"
      */
     public void interact(GroundItem item, String action) {
-        if(!ctx.isPacketsLoaded()) return;
+        if(!ctxProvider.get().isPacketsLoaded()) return;
         Point pt = uiService.getClickbox(item.getTileObject());
 
         if(pt != null) {

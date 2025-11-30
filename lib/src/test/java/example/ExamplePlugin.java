@@ -1,23 +1,17 @@
-package com.kraken.api.example;
+package example;
 
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.core.packet.entity.MousePackets;
-import com.kraken.api.core.packet.entity.NPCPackets;
-import com.kraken.api.example.overlay.InfoPanelOverlay;
-import com.kraken.api.example.overlay.SceneOverlay;
-import com.kraken.api.example.overlay.TestApiOverlay;
-import com.kraken.api.example.tests.PrayerServiceTest;
 import com.kraken.api.overlay.MouseOverlay;
-import com.kraken.api.service.bank.BankService;
-import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.movement.Pathfinder;
-import com.kraken.api.service.spell.SpellService;
-import com.kraken.api.service.spell.Spells;
-import com.kraken.api.service.ui.UIService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
+import example.overlay.InfoPanelOverlay;
+import example.overlay.SceneOverlay;
+import example.overlay.TestApiOverlay;
+import example.tests.query.BankTest;
+import example.tests.service.PrayerServiceTest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -41,7 +35,7 @@ import java.util.List;
 @Slf4j
 @Singleton
 @PluginDescriptor(
-        name = "Test Plugin",
+        name = "API Test",
         enabledByDefault = false,
         description = "A comprehensive example plugin used to test the API with enhanced overlays and configuration.",
         tags = {"example", "automation", "kraken", "testing"}
@@ -74,10 +68,10 @@ public class ExamplePlugin extends Plugin {
     private TestResultManager testResultManager;
 
     @Inject
-    private MovementService movementService;
+    private PrayerServiceTest prayerServiceTest;
 
     @Inject
-    private PrayerServiceTest prayerServiceTest;
+    private BankTest bankQueryTest;
 
     @Inject
     private SimulationVisualizer visualizer;
@@ -90,18 +84,6 @@ public class ExamplePlugin extends Plugin {
 
     @Getter
     private WorldPoint targetTile;
-
-    @Inject
-    private MousePackets mousePackets;
-
-    @Inject
-    private NPCPackets npcPackets;
-
-    @Inject
-    private SpellService spellService;
-
-    @Inject
-    private BankService bankService;
 
     @Inject private Pathfinder pathfinder;
     @Getter private List<WorldPoint> currentPath;
@@ -126,7 +108,6 @@ public class ExamplePlugin extends Plugin {
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
         if (event.getGroup().equals("testapi")) {
-
             if(event.getKey().equals("simVisualizer")) {
                 // Init will dump collision data and load the game state. This should only be called
                 // if game state is logged in
@@ -136,35 +117,16 @@ public class ExamplePlugin extends Plugin {
                 }
             }
 
-            String k = event.getKey();
-            if(config.enableMovementTests()) {
-                if(k.equals("fromWorldInstance") && config.fromWorldInstance()) {
-                    movementService.moveTo(targetTile);
-                }
-            }
-
-            if(event.getKey().equals("attackNpc") && config.prayerOn()) {
-                NPC npc = context.npcs().attackable().first().raw();
-                if(npc != null) {
-                    Point pt = UIService.getClickingPoint(npc.getConvexHull().getBounds(),  true);
-                    log.info("Attacking NPC");
-                    mousePackets.queueClickPacket(pt.getX(), pt.getY());
-                    npcPackets.queueNPCAction(npc, "Attack");
-                }
-            }
-
-            if(event.getKey().equals("magicSpellCast") && config.magicSpellCast()) {
-                log.info("Teleporting to Varrock");
-                spellService.cast(Spells.VARROCK_TELEPORT);
-            }
-
             if(event.getKey().equals("start")) {
                 if (config.start()) {
-                    log.info("Starting API tests...");
-
                     if(config.enablePrayerTests()) {
                         testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
                     }
+
+                    if(config.enableBankQuery()) {
+                        testResultManager.startTest("BankQuery", bankQueryTest.executeTest());
+                    }
+
                 } else {
                     log.info("Stopping API tests...");
                     testResultManager.cancelAllTests();
