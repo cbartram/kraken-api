@@ -28,10 +28,6 @@ public class InfoPanelOverlay extends OverlayPanel {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if (!config.start()) {
-            return null;
-        }
-
         try {
             panelComponent.getChildren().clear();
 

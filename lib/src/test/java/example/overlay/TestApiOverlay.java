@@ -35,12 +35,7 @@ public class TestApiOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if (!config.start()) {
-            return null;
-        }
-
         renderTargetTile(graphics);
-
         return null;
     }
 

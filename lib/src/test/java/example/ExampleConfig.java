@@ -28,7 +28,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enablePrayer",
-            name = "Enable Prayer Service",
+            name = "Start Prayer Service",
             description = "Enable Prayer tests",
             section = tests,
             position = 1
@@ -39,7 +39,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableBankQuery",
-            name = "Enable Bank Query",
+            name = "Start Bank Query",
             description = "Enable Bank Query Tests",
             section = tests,
             position = 2
@@ -50,7 +50,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableInventoryQuery",
-            name = "Enable Inventory Query",
+            name = "Start Inventory Query",
             description = "Enable Inventory Query Tests",
             section = tests,
             position = 3
