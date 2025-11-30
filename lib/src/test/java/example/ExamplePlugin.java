@@ -11,6 +11,7 @@ import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
 import example.tests.query.BankTest;
+import example.tests.query.InventoryTest;
 import example.tests.service.PrayerServiceTest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +74,9 @@ public class ExamplePlugin extends Plugin {
     private BankTest bankQueryTest;
 
     @Inject
+    private InventoryTest inventoryQueryTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -116,21 +120,18 @@ public class ExamplePlugin extends Plugin {
                 }
             }
 
-            if(event.getKey().equals("start")) {
-                if (config.start()) {
-                    if(config.enablePrayerTests()) {
-                        testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
-                    }
+            String key = event.getKey();
+            if(key.equalsIgnoreCase("enablePrayer") && config.enablePrayerTests()) {
+                testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableBankQuery") && config.enableBankQuery()) {
+                testResultManager.startTest("BankQuery", bankQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableInventoryQuery") && config.enableInventoryQuery()) {
+                testResultManager.startTest("InventoryQuery", inventoryQueryTest.executeTest());
+            }
 
-                    if(config.enableBankQuery()) {
-                        testResultManager.startTest("BankQuery", bankQueryTest.executeTest());
-                    }
-
-                } else {
-                    log.info("Stopping API tests...");
-                    testResultManager.cancelAllTests();
-                    testResultManager.getAllTestResults().clear();
-                }
+            if(event.getKey().equals("clearTests") && config.clearTests()) {
+                testResultManager.cancelAllTests();
+                testResultManager.getAllTestResults().clear();
             }
         }
     }

@@ -9,12 +9,12 @@ import net.runelite.client.config.ConfigSection;
 @ConfigGroup("testapi")
 public interface ExampleConfig extends Config {
     @ConfigItem(
-            name = "Start Tests",
-            keyName = "start",
-            description = "Start the execution of the configured tests.",
+            name = "Clear Tests",
+            keyName = "clearTests",
+            description = "clear the execution of the configured tests.",
             position = -999
     )
-    default boolean start() {
+    default boolean clearTests() {
         return false;
     }
 
@@ -47,6 +47,18 @@ public interface ExampleConfig extends Config {
     default boolean enableBankQuery() {
         return true;
     }
+
+    @ConfigItem(
+            keyName = "enableInventoryQuery",
+            name = "Enable Inventory Query",
+            description = "Enable Inventory Query Tests",
+            section = tests,
+            position = 3
+    )
+    default boolean enableInventoryQuery() {
+        return true;
+    }
+
 
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
