@@ -4,6 +4,7 @@ import com.google.inject.Provider;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
+import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
@@ -46,8 +47,9 @@ public class BankService {
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
     public boolean isOpen() {
-        Widget bank = ctxProvider.get().widgets().withText("Rearrange mode").first().raw();
-        return bank != null && !bank.isHidden();
+        WidgetEntity bank = ctxProvider.get().widgets().withText("Rearrange mode").first();
+        if(bank == null) return false;
+        return ctxProvider.get().runOnClientThread(() -> !bank.raw().isHidden());
     }
 
     /**
@@ -67,9 +69,8 @@ public class BankService {
 
         if (toggleWidget != null) {
             String action = noted ? "Note" : "Item";
-
-            boolean hasAction = Arrays.stream(toggleWidget.getActions())
-                    .anyMatch(s -> Objects.equals(s, action));
+            boolean hasAction = Arrays.asList(Objects.requireNonNull(toggleWidget.getActions()))
+                    .contains(action);
 
             if (!hasAction) return false;
 
@@ -87,10 +88,12 @@ public class BankService {
     /**
      * Closes the bank interface if it is open.
      */
-    public void close() {
+    public boolean close() {
         if (isOpen()) {
-            ctxProvider.get().getClient().runScript(29);
+            ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().runScript(29));
+            return true;
         }
+        return false;
     }
 
     /**
@@ -115,14 +118,16 @@ public class BankService {
      * @return
      */
     private boolean depositAllInternal(int widgetId, String action) {
-        if(ctxProvider.get().inventory().isEmpty()) return true;
-        if (!isOpen()) return false;
+        return ctxProvider.get().runOnClientThread(() -> {
+            if(ctxProvider.get().inventory().isEmpty()) return true;
+            if (!isOpen()) return false;
 
-        Widget widget = ctxProvider.get().getClient().getWidget(widgetId); // Deposit All
-        if (widget == null) return false;
+            Widget widget = ctxProvider.get().getClient().getWidget(widgetId); // Deposit All
+            if (widget == null) return false;
 
-        ctxProvider.get().widgets().withId(widgetId).first().interact(action);
-        return true;
+            ctxProvider.get().widgets().withId(widgetId).first().interact(action);
+            return true;
+        });
     }
 }
 

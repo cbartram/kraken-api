@@ -201,8 +201,7 @@ public class Context {
 
         clientThread.invoke(() -> {
             try {
-                T result = method.call();
-                future.complete(result);
+                future.complete(method.call());
             } catch (Exception e) {
                 future.completeExceptionally(e);
             }

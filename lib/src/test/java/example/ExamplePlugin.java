@@ -36,7 +36,6 @@ import java.util.List;
 @Singleton
 @PluginDescriptor(
         name = "API Test",
-        enabledByDefault = false,
         description = "A comprehensive example plugin used to test the API with enhanced overlays and configuration.",
         tags = {"example", "automation", "kraken", "testing"}
 )

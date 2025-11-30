@@ -65,7 +65,18 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
      * @return Stream of entities
      */
     public Stream<T> stream() {
-        return ctx.runOnClientThread(() -> source().get());
+        return ctx.runOnClientThread(() -> {
+            Stream<T> stream = source().get();
+            for (Predicate<T> filter : filters) {
+                stream = stream.filter(filter);
+            }
+
+            if (comparator != null) {
+                stream = stream.sorted(comparator);
+            }
+
+            return stream;
+        });
     }
 
     /**
@@ -88,7 +99,6 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     @SuppressWarnings("unchecked")
     public Q except(Predicate<T> predicate) {
         if (predicate != null) {
-            // Predicate.negate() flips true to false and vice versa
             filters.add(predicate.negate());
         }
         return (Q) this;

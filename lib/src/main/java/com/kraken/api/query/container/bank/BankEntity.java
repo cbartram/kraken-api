@@ -2,9 +2,11 @@ package com.kraken.api.query.container.bank;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Point;
+import net.runelite.api.gameval.VarbitID;
 
-import java.util.Optional;
-
+@Slf4j
 public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     private static final int WITHDRAW_QUANTITY_VARBIT = 3960;
@@ -62,8 +64,10 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
      * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdrawAllNoted() {
-        ctx.getBankService().setWithdrawMode(true);
-        return interact("Withdraw-All");
+        return ctx.runOnClientThread(() -> {
+            ctx.getBankService().setWithdrawMode(true);
+            return interact("Withdraw-All");
+        });
     }
 
     /**
@@ -89,20 +93,33 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
         if (amount == 5) return setModeAndInteract(noted, "Withdraw-5");
         if (amount == 10) return setModeAndInteract(noted, "Withdraw-10");
 
-        // 2. Handle Withdraw-X Logic
         return ctx.runOnClientThread(() -> {
-            if (!ctx.getBankService().setWithdrawMode(noted)) return Optional.of(false);
+            if (!ctx.getBankService().setWithdrawMode(noted)) return false;
 
+            // If user is trying to withdraw 500 and the X value is already set to 500 then just queue the packet
+            // for that menu option "Withdraw-500" instead of setting Withdraw-X and then setting 500 again.
+            int quantitySet = ctx.getVarbitValue(VarbitID.BANK_REQUESTEDQUANTITY);
+            if(quantitySet == amount) {
+                Point pt = ctx.getInteractionManager().getUiService().getClickbox(raw);
+                if(pt != null) {
+                    ctx.getInteractionManager().getMousePackets().queueClickPacket(pt.getX(), pt.getY());
+                    ctx.getInteractionManager().getWidgetPackets().queueWidgetAction(raw, "Withdraw-" + amount);
+                    ctx.getInteractionManager().getWidgetPackets().queueResumeCount(amount);
+                }
+                return true;
+            }
+
+            // Need to queue an additional resume count action here to set the amount in the chatbox
             interact("Withdraw-X");
+            ctx.getInteractionManager().getWidgetPackets().queueResumeCount(amount);
 
             ctx.getClient().setVarcStrValue(359, Integer.toString(amount)); // VarClientStr.INPUT_TEXT
             ctx.getClient().setVarcIntValue(5, 7); // VarClientInt.INPUT_TYPE, 7 = Bank Withdraw X Input
             ctx.getClient().runScript(681);
             // Update the client's memory of what "X" is
-            ctx.getClient().setVarbit(WITHDRAW_QUANTITY_VARBIT, amount);
-
-            return Optional.of(true);
-        }).orElse(false);
+            ctx.getClient().setVarbit(VarbitID.BANK_REQUESTEDQUANTITY, amount);
+            return true;
+        });
     }
 
     /**
@@ -111,7 +128,8 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
      */
     private boolean setModeAndInteract(boolean noted, String action) {
         return ctx.runOnClientThread(() -> {
-            ctx.getBankService().setWithdrawMode(noted);
+            boolean withdrawModeSet = ctx.getBankService().setWithdrawMode(noted);
+            if(!withdrawModeSet) return false;
             return interact(action);
         });
     }

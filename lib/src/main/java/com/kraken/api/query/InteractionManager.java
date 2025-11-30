@@ -9,6 +9,7 @@ import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.query.container.bank.BankItemWidget;
 import com.kraken.api.query.groundobject.GroundItem;
 import com.kraken.api.service.ui.UIService;
+import lombok.Getter;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
@@ -22,6 +23,7 @@ import java.util.Objects;
 /**
  * Manages interactions across various game entities like NPC's, Players, Widgets, GameObjects, TileObjects and more.
  */
+@Getter
 @Singleton
 public class InteractionManager {
 
