@@ -1,7 +1,8 @@
-package com.kraken.api.query.inventory;
+package com.kraken.api.query.container.inventory;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
+import com.kraken.api.query.container.ContainerItem;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;

@@ -1,4 +1,4 @@
-package com.kraken.api.query.bank;
+package com.kraken.api.query.container.bank;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;

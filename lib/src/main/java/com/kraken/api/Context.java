@@ -6,17 +6,16 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
-import com.kraken.api.query.bank.BankInventoryQuery;
-import com.kraken.api.query.bank.BankQuery;
-import com.kraken.api.service.bank.BankService;
+import com.kraken.api.query.container.bank.BankInventoryQuery;
+import com.kraken.api.query.container.bank.BankQuery;
 import com.kraken.api.query.equipment.EquipmentQuery;
 import com.kraken.api.query.gameobject.GameObjectQuery;
 import com.kraken.api.query.groundobject.GroundObjectQuery;
-import com.kraken.api.query.inventory.InventoryQuery;
-import com.kraken.api.query.inventory.InventoryService;
+import com.kraken.api.query.container.inventory.InventoryQuery;
 import com.kraken.api.query.npc.NpcQuery;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
+import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.camera.CameraService;
 import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
@@ -64,7 +63,6 @@ public class Context {
             this.getClass(),
             BankService.class,
             CameraService.class,
-            InventoryService.class,
             MovementService.class,
             MinimapService.class,
             PrayerService.class,

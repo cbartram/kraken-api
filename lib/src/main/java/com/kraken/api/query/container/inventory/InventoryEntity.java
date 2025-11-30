@@ -1,7 +1,8 @@
-package com.kraken.api.query.inventory;
+package com.kraken.api.query.container.inventory;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import com.kraken.api.query.container.ContainerItem;
 
 import java.util.Arrays;
 
@@ -31,4 +32,24 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
         return Arrays.stream(raw.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
     }
 
+    /**
+     * Uses one inventory item on another.
+     * @param other The other inventory item to be used on.
+     * @return True if the combination action was successful and false otherwise
+     */
+    public boolean combineWith(ContainerItem other) {
+        if(raw.getWidget() != null && other.getWidget() != null){
+            ctx.getInteractionManager().interact(raw.getWidget(), other.getWidget());
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Drops the item from the inventory.
+     * @return True if the item was successfully dropped, false otherwise.
+     */
+    public boolean drop() {
+        return interact("Drop");
+    }
 }

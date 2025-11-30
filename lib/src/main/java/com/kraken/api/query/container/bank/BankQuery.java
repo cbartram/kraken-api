@@ -1,4 +1,4 @@
-package com.kraken.api.query.bank;
+package com.kraken.api.query.container.bank;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

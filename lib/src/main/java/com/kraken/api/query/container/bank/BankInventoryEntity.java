@@ -1,8 +1,8 @@
-package com.kraken.api.query.bank;
+package com.kraken.api.query.container.bank;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
-import com.kraken.api.query.inventory.ContainerItem;
+import com.kraken.api.query.container.ContainerItem;
 
 
 public class BankInventoryEntity extends AbstractEntity<ContainerItem> {

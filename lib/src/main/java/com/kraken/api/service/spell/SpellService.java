@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.query.inventory.ContainerItem;
+import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;

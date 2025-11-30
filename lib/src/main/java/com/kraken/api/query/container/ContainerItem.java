@@ -1,4 +1,4 @@
-package com.kraken.api.query.inventory;
+package com.kraken.api.query.container;
 
 import com.kraken.api.Context;
 import lombok.AllArgsConstructor;
