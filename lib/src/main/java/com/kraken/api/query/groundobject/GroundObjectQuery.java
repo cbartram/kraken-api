@@ -152,6 +152,8 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
 
     /**
      * Filters by exact WorldPoint.
+     * @param point The world point at which to find ground objects on
+     * @return GroundObjectQuery
      */
     public GroundObjectQuery at(WorldPoint point) {
         return filter(obj -> obj.raw().getLocation().equals(point));

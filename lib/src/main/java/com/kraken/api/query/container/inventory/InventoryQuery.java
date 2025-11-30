@@ -116,6 +116,7 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
 
     /**
      * Filters for items that are noted (cert).
+     * @return InventoryQuery
      */
     public InventoryQuery noted() {
         return filter(item -> item.raw().isNoted());
@@ -123,6 +124,7 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
 
     /**
      * Filters for un-noted items.
+     * @return InventoryQuery
      */
     public InventoryQuery unnoted() {
         return filter(item -> !item.raw().isNoted());
@@ -130,13 +132,17 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
 
     /**
      * Filters for items that stack (runes, arrows, noted items).
+     * @return InventoryQuery
      */
     public InventoryQuery stackable() {
         return filter(item -> item.raw().isStackable());
     }
 
     /**
-     * Filters by item quantity.
+     * Filters by item quantity. This filter is strictly greater than i.e {@code ctx.inventory().nameContains("karambwanji").quantityGreaterThan(500);}
+     * will only return a {@code ContainerItem} when 501 Karambwanji's are present.
+     * @param amount The amount of the stack to filter for.
+     * @return InventoryQuery
      */
     public InventoryQuery quantityGreaterThan(int amount) {
         return filter(item -> item.raw().getQuantity() > amount);

@@ -27,6 +27,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Withdraws 1 of this item.
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdrawOne() {
         return interact("Withdraw-1");
@@ -34,6 +35,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Withdraws 5 of this item.
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdrawFive() {
         return interact("Withdraw-5");
@@ -41,6 +43,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Withdraws 10 of this item.
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdrawTen() {
         return interact("Withdraw-10");
@@ -48,6 +51,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Withdraws All of this item.
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdrawAll() {
         return interact("Withdraw-All");
@@ -55,6 +59,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Withdraws All of this item, ensuring it comes out as Notes.
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdrawAllNoted() {
         ctx.getBankService().setWithdrawMode(true);
@@ -64,6 +69,8 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
     /**
      * Withdraws a specific amount. Handles "Withdraw-X" logic including scripts.
      * Defaults to un-noted (Item) mode.
+     * @param amount The amount of the item to withdraw
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdraw(int amount) {
         return withdraw(amount, false);
@@ -71,6 +78,9 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Withdraws a specific amount with explicit Note mode selection.
+     * @param amount The amount of the item to withdraw: 1, 5, or 10. Any other value will withdraw X of that value
+     * @param noted True if the items should be withdrawn as notes and false if they should be withdrawn as items
+     * @return true if the withdrawal was successful and false otherwise
      */
     public boolean withdraw(int amount, boolean noted) {
         if (!ctx.isPacketsLoaded()) return false;
@@ -97,6 +107,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     /**
      * Sets the bank withdrawal mode and then interacts. Helper method for withdrawing 1, 5, or 10 items.
+     * @return true if the withdrawal was successful and false otherwise
      */
     private boolean setModeAndInteract(boolean noted, String action) {
         return ctx.runOnClientThread(() -> {

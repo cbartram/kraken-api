@@ -1,6 +1,7 @@
 package com.kraken.api.input;
 
 
+import com.kraken.api.Context;
 import com.kraken.api.service.RandomService;
 import com.kraken.api.service.SleepService;
 import net.runelite.api.GameState;
@@ -11,7 +12,10 @@ import java.awt.event.KeyEvent;
 
 import static java.awt.event.KeyEvent.CHAR_UNDEFINED;
 
-public class KeyboardService extends AbstractService {
+public class KeyboardService {
+
+    @Inject
+    private Context ctx;
     
     @Inject
     private SleepService sleepService;
@@ -23,7 +27,7 @@ public class KeyboardService extends AbstractService {
      * @param action the code to run while the canvas is focusable
      */
     private void withFocusCanvas(Runnable action) {
-        Canvas canvas = client.getCanvas();
+        Canvas canvas = ctx.getClient().getCanvas();
         boolean originalFocus = canvas.isFocusable();
         if (!originalFocus) canvas.setFocusable(true);
 
@@ -44,14 +48,14 @@ public class KeyboardService extends AbstractService {
      */
     private void dispatchKeyEvent(int id, int keyCode, char keyChar, int delay) {
         KeyEvent event = new KeyEvent(
-                client.getCanvas(),
+                ctx.getClient().getCanvas(),
                 id,
                 System.currentTimeMillis() + delay,
                 0,
                 keyCode,
                 keyChar
         );
-        client.getCanvas().dispatchEvent(event);
+        ctx.getClient().getCanvas().dispatchEvent(event);
     }
 
     /**
@@ -141,7 +145,7 @@ public class KeyboardService extends AbstractService {
      * If the player is not logged in, this uses KEY_TYPED to avoid auto-login triggers.
      */
     public void enter() {
-        if (!(client.getGameState() == GameState.LOGGED_IN)) {
+        if (!(ctx.getClient().getGameState() == GameState.LOGGED_IN)) {
             dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, '\n', 0);
             return;
         }

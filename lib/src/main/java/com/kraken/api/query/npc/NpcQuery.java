@@ -64,6 +64,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Filters for NPCs within a specific distance.
+     * @param distance The distance within which to search for NPC's.
      * @return NpcQuery
      */
     public NpcQuery withinDistance(int distance) {
@@ -74,6 +75,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Filters NPCs by their ID.
+     * @param ids The ids of NPC's to filter for
      * @return NpcQuery
      */
     public NpcQuery withId(int... ids) {
@@ -83,6 +85,8 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Filters NPCs by Name (Case insensitive).
+     * @param names The names of NPC's with which to filter for
+     * @return NpcQuery
      */
     public NpcQuery withName(String... names) {
         return filter(npc -> {
@@ -118,7 +122,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     }
 
     /**
-     * Filters for NPCs that are alive (health > 0).
+     * Filters for NPCs that are alive (health greater than 0).
      * @return NpcQuery
      */
     public NpcQuery alive() {

@@ -76,6 +76,9 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
     /**
      * Filters for a widget with the exact packed ID.
      * Useful if you know the full ID (e.g., WidgetInfo.INVENTORY.getId()).
+     * @param packedId The packed widget id to search for. Packed ID's encapsulate both the group and child id into a single
+     *                 integer value.
+     * @return WidgetQuery
      */
     public WidgetQuery withId(int packedId) {
         return filter(w -> w.raw().getId() == packedId);
@@ -84,6 +87,8 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
     /**
      * Filters for widgets belonging to a specific Interface Group.
      * Example: 149 is the Inventory group.
+     * @param groupId The group id of the widget to search for
+     * @return WidgetQuery
      */
     public WidgetQuery inGroup(int groupId) {
         return filter(w -> {
@@ -95,6 +100,8 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
     /**
      * Filters for a specific child component ID within a group.
      * Note: This checks the lower bits of the packed ID.
+     * @param childId The child widget id to search for
+     * @return WidgetQuery
      */
     public WidgetQuery withChildId(int childId) {
         return filter(w -> {
@@ -107,6 +114,8 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      * Filters by the widget's index in its parent's array.
      * Crucial for dynamic lists (chatbox messages, bank slots) where
      * every item has the same ID but a different index.
+     * @param index The index in the widgets parent array to search for
+     * @return WidgetQuery
      */
     public WidgetQuery withIndex(int index) {
         return filter(w -> w.raw().getIndex() == index);

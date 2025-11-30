@@ -82,6 +82,8 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     /**
      * Filters out elements that match the given predicate.
      * Effectively: filter(!predicate)
+     * @param predicate The predicate to apply
+     * @return Q All entities except for the ones which match the given predicate
      */
     @SuppressWarnings("unchecked")
     public Q except(Predicate<T> predicate) {
@@ -95,6 +97,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     /**
      * Returns a random element from the filtered list.
      * Useful for anti-ban measures (e.g., picking a random cow to attack).
+     * @return T A random entity from the stream
      */
     public T random() {
         List<T> all = list();
@@ -106,6 +109,8 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
      * Filters the stream to only include elements that are distinct based on a property.
      * Usage: ctx.npcs().distinct(NpcEntity::getName).list();
      * (Returns one of each type of NPC nearby)
+     * @param keyExtractor The function to use to determine uniqueness keys between entities
+     * @return Q The distinct entities
      */
     public Q distinct(Function<T, Object> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
@@ -115,7 +120,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     /**
      * Applies a comparator to the stream for sorting elements within the stream.
      * @param comparator Comparator to add
-     * @return Q
+     * @return Q A sorted stream of entities
      */
     @SuppressWarnings("unchecked")
     public Q sorted(Comparator<T> comparator) {

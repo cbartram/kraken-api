@@ -69,6 +69,8 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
     /**
      * Filters for objects that have a specific action available.
      * Usage: ctx.objects().withAction("Mine").nearest().first();
+     * @param action The action to check for i.e "Mine", "Chop", "Examine".
+     * @return GameObjectQuery
      */
     public GameObjectQuery withAction(String action) {
         return filter(obj -> {
@@ -127,6 +129,8 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
 
     /**
      * Filters by exact WorldPoint.
+     * @param point The world point to filter for entities on
+     * @return GameObjectQuery
      */
     public GameObjectQuery at(WorldPoint point) {
         return filter(obj -> obj.raw().getWorldLocation().equals(point));

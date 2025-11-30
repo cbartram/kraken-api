@@ -17,6 +17,9 @@ public class WidgetEntity extends AbstractEntity<Widget> {
 
     /**
      * Checks if the widget text, name, or actions match the input.
+     * @param search The search string to match
+     * @param exact True if only exact matches of the search string should be accepted
+     * @return true if there is a match within the search string for a specific widget and false otherwise
      */
     public boolean matches(String search, boolean exact) {
         if (raw == null) return false;
