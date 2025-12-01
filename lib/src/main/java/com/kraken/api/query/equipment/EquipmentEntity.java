@@ -5,13 +5,16 @@ import com.kraken.api.core.AbstractEntity;
 import net.runelite.api.widgets.Widget;
 
 public class EquipmentEntity extends AbstractEntity<Widget> {
-    public EquipmentEntity(Context ctx, Widget raw) {
+    private final String name;
+
+    public EquipmentEntity(Context ctx, String name, Widget raw) {
         super(ctx, raw);
+        this.name = name;
     }
 
     @Override
     public String getName() {
-        return raw.getName();
+        return this.name;
     }
 
     @Override

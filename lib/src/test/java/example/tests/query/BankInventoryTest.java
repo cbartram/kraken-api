@@ -60,6 +60,6 @@ public class BankInventoryTest extends BaseApiTest {
 
     @Override
     protected String getTestName() {
-        return "Bank Inventory Test";
+        return "Bank Inventory";
     }
 }

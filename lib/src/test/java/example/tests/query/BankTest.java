@@ -47,6 +47,6 @@ public class BankTest extends BaseApiTest {
 
     @Override
     protected String getTestName() {
-        return "Bank Query";
+        return "Bank";
     }
 }

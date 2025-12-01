@@ -193,6 +193,11 @@ public class Context {
      */
     @SneakyThrows
     public <T> T runOnClientThread(Callable<T> method) {
+        if(method == null) {
+            log.error("callable method is null");
+            return null;
+        }
+
         if (client.isClientThread()) {
             return method.call();
         }
@@ -201,7 +206,8 @@ public class Context {
 
         clientThread.invoke(() -> {
             try {
-                future.complete(method.call());
+                T result = method.call();
+                future.complete(result);
             } catch (Exception e) {
                 future.completeExceptionally(e);
             }
@@ -210,10 +216,10 @@ public class Context {
         try {
             return future.get(2000, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            log.error("Failed to run method on client thread: timeout after 2 seconds: {}", e.getMessage());
+            log.error("Failed to run method on client thread: timeout after 2 seconds: {}", e.getMessage(), e);
             return null;
         } catch (ExecutionException e) {
-            log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage());
+            log.error("Failed to run method on client thread: {}, message: {}", e.getCause(), e.getMessage(), e);
             return null;
         }
     }

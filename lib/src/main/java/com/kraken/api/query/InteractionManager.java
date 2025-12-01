@@ -20,7 +20,6 @@ import net.runelite.api.widgets.WidgetInfo;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Manages interactions across various game entities like NPC's, Players, Widgets, GameObjects, TileObjects and more.
@@ -157,12 +156,6 @@ public class InteractionManager {
      */
     public void interact(Widget item, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-
-        if(!Arrays.stream(Objects.requireNonNull(item.getActions())).map(String::toLowerCase).collect(Collectors.toList()).contains(action.toLowerCase())) {
-            log.error("Action {} is not a valid action for item id: {}, valid: {}", action, item.getItemId(), item.getActions());
-            return;
-        }
-
         Point pt = uiService.getClickbox(item);
 
         if(pt != null) {

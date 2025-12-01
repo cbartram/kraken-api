@@ -87,6 +87,7 @@ public class BankService {
 
     /**
      * Closes the bank interface if it is open.
+     * @return True if the bank interface was closed successfully and false otherwise
      */
     public boolean close() {
         if (isOpen()) {

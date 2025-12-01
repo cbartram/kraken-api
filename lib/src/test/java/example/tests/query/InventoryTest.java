@@ -46,7 +46,7 @@ public class InventoryTest extends BaseApiTest {
 
     @Override
     protected String getTestName() {
-        return "Inventory Query";
+        return "Inventory";
     }
 }
 

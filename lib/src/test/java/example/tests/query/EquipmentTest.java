@@ -7,9 +7,6 @@ import com.kraken.api.util.RandomUtils;
 import example.tests.BaseApiTest;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.widgets.Widget;
-
-import java.util.stream.Collectors;
 
 @Slf4j
 public class EquipmentTest extends BaseApiTest {
@@ -40,18 +37,16 @@ public class EquipmentTest extends BaseApiTest {
             ctx.bank().withName("Rune full helm").first().withdraw(1);
             Thread.sleep(RandomUtils.randomIntBetween(400, 900));
             bankService.close();
-            Thread.sleep(RandomUtils.randomIntBetween(400, 900));
+            Thread.sleep(RandomUtils.randomIntBetween(1200, 1600));
 
-            // TODO NPE here
-            for(String name : ctx.equipment().inInventory().toRuneLite().map(Widget::getName).collect(Collectors.toList())) {
-                log.info("Equipment name: {}", name);
-            }
-
+            Thread.sleep(RandomUtils.randomIntBetween(1200, 1600));
+            log.info("Body: {}", ctx.equipment().inInterface().inSlot(EquipmentInventorySlot.BODY).getName());
             testsPassed &= ctx.equipment().inInterface().inSlot(EquipmentInventorySlot.BODY).isNull();
-            testsPassed &= ctx.equipment().inInventory().nameContains("scimitar").first().wield();
-            testsPassed &= ctx.equipment().inInventory().nameContains("Plate").first().wear();
+            testsPassed &= ctx.equipment().inInventory().nameContains("scimi").first().wield();
+            testsPassed &= ctx.equipment().inInventory().nameContains("plate").first().wear();
             testsPassed &= ctx.equipment().inInventory().withId(1163).first().wear();
             Thread.sleep(RandomUtils.randomIntBetween(1200, 1500));
+            testsPassed &= ctx.equipment().isWearing("Rune Platebody");
             testsPassed &= ctx.equipment().inInterface().inSlot(EquipmentInventorySlot.HEAD).remove();
             testsPassed &= !ctx.equipment().inInterface().inSlot(EquipmentInventorySlot.BODY).isNull();
         } catch (Exception e) {
@@ -63,6 +58,6 @@ public class EquipmentTest extends BaseApiTest {
 
     @Override
     protected String getTestName() {
-        return "Bank Inventory Test";
+        return "Equipment";
     }
 }

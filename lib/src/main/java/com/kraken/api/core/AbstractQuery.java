@@ -56,7 +56,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
      * @return Entities whose name contains the prefix
      */
     public Q nameContains(String name) {
-        return filter(t -> t.getName().contains(name));
+        return filter(t -> t.getName().toLowerCase().contains(name.toLowerCase()));
     }
 
     /**
@@ -145,6 +145,11 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     public List<T> list() {
         return ctx.runOnClientThread(() -> {
             Stream<T> stream = source().get();
+
+            if(stream == null) {
+                return Collections.emptyList();
+            }
+
             for (Predicate<T> filter : filters) {
                 stream = stream.filter(filter);
             }
