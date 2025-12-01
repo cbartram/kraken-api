@@ -15,7 +15,6 @@ import net.runelite.client.ui.overlay.*;
 import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -90,65 +89,49 @@ public class SceneOverlay extends Overlay {
     }
 
     private void renderGroundItems(Graphics2D graphics) {
-        // Group items by tile location
-        Map<WorldPoint, List<GroundObjectEntity>> itemsByTile = ctx.groundItems()
-                .within(config.groundObjectRange())
-                .stream()
-                .collect(Collectors.groupingBy(entity -> entity.raw().getLocation()));
+        for(GroundObjectEntity entity : ctx.groundItems().within(config.groundObjectRange()).stream().collect(Collectors.toList())) {
+            String name = entity.getName();
+            int qty = entity.raw().getQuantity();
+            int gePrice = entity.raw().getGePrice() * qty;
+            int haPrice = entity.raw().getHaPrice() * qty;
 
-        for(Map.Entry<WorldPoint, List<GroundObjectEntity>> entry : itemsByTile.entrySet()) {
-            WorldPoint tile = entry.getKey();
-            List<GroundObjectEntity> items = entry.getValue();
+            boolean isReachable = ctx.getTileService().isTileReachable(entity.raw().getLocation());
 
-            LocalPoint pt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), tile);
+            // Format: Name (Qty) | GE: 100 | HA: 50
+            StringBuilder sb = new StringBuilder();
+            sb.append(name);
+            if (qty > 1) {
+                sb.append("(").append(qty).append(")");
+            }
+            sb.append(" | GE: ").append(formatValue(gePrice));
+            sb.append(" | HA: ").append(formatValue(haPrice));
+
+            // 4. Color Coding
+            // Pink for expensive (> 10k), White for normal, Red if unreachable
+            Color textColor = Color.WHITE;
+            if (!isReachable) {
+                textColor = Color.RED;
+            } else if (gePrice > 10000) {
+                textColor = new Color(217, 5, 250);
+            }
+
+            LocalPoint pt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), entity.raw().getLocation());
             if (pt == null) {
                 continue;
             }
 
-            int offsetIndex = 0;
-            for(GroundObjectEntity entity : items) {
-                String name = entity.getName();
-                int qty = entity.raw().getQuantity();
-                int gePrice = entity.raw().getGePrice() * qty;
-                int haPrice = entity.raw().getHaPrice() * qty;
+            // 5. Render
+            // We use getCanvasTextLocation. We offset Z slightly so it floats above the item.
+            net.runelite.api.Point textLocation = Perspective.getCanvasTextLocation(
+                    ctx.getClient(),
+                    graphics,
+                    pt,
+                    sb.toString(),
+                    20 // Z-offset (height)
+            );
 
-                boolean isReachable = ctx.getTileService().isTileReachable(entity.raw().getLocation());
-
-                // Format: Name (Qty) | GE: 100 | HA: 50
-                StringBuilder sb = new StringBuilder();
-                sb.append(name);
-                if (qty > 1) {
-                    sb.append("(").append(qty).append(")");
-                }
-                sb.append(" | GE: ").append(formatValue(gePrice));
-                sb.append(" | HA: ").append(formatValue(haPrice));
-
-                // Color Coding
-                Color textColor = Color.WHITE;
-                if (!isReachable) {
-                    textColor = Color.RED;
-                } else if (gePrice > 10000) {
-                    textColor = new Color(217, 5, 250);
-                }
-
-                // Get base text location
-                net.runelite.api.Point textLocation = Perspective.getCanvasTextLocation(
-                        ctx.getClient(),
-                        graphics,
-                        pt,
-                        sb.toString(),
-                        20 // Z-offset (height)
-                );
-
-                if (textLocation != null) {
-                    // Offset each item vertically by 15 pixels per item
-                    net.runelite.api.Point offsetLocation = new net.runelite.api.Point(
-                            textLocation.getX(),
-                            textLocation.getY() + (offsetIndex * 15)
-                    );
-                    OverlayUtil.renderTextLocation(graphics, offsetLocation, sb.toString(), textColor);
-                    offsetIndex++;
-                }
+            if (textLocation != null) {
+                OverlayUtil.renderTextLocation(graphics, textLocation, sb.toString(), textColor);
             }
         }
     }

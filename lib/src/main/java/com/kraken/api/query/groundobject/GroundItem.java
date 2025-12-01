@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.TileItem;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 
@@ -30,6 +31,7 @@ public class GroundItem {
     private int id;
     private String key;
     private ItemComposition itemComposition;
+    private TileItem tileItem;
     private TileObject tileObject;
     private int itemId;
     private String name;

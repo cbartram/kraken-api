@@ -113,6 +113,7 @@ public class TileService {
      * Checks if a GameObject is reachable.
      * This considers the object's size and checks if the player can reach
      * any tile touching the object's boundary (the "Interactable Halo").
+     * @param obj The game object to determine reachability for
      * @return true if the game object is reachable and false otherwise
      */
     public boolean isObjectReachable(GameObject obj) {

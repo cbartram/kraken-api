@@ -45,6 +45,9 @@ public class InteractionManager {
     private GameObjectPackets gameObjectPackets;
 
     @Inject
+    private GroundItemPackets groundItemPackets;
+
+    @Inject
     private UIService uiService;
 
     @Inject
@@ -204,15 +207,14 @@ public class InteractionManager {
      * "takeable" into the players inventory.
      *
      * @param item the {@code GroundItem} to interact with
-     * @param action The action to take on the game object, i.e. "Take" or "Examine"
      */
-    public void interact(GroundItem item, String action) {
+    public void interact(GroundItem item) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
         Point pt = uiService.getClickbox(item.getTileObject());
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
-            gameObjectPackets.queueObjectAction(item.getTileObject(), false, action);
+            groundItemPackets.queueGroundItemAction(item.getTileItem(), item.getLocation(), false);
         }
     }
 
