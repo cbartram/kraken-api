@@ -82,20 +82,42 @@ public interface ExampleConfig extends Config {
     }
 
 
+    @ConfigItem(
+            keyName = "enableGameObjectQuery",
+            name = "Start Game Object Query",
+            description = "Enable game object query tests",
+            section = tests,
+            position = 6
+    )
+    default boolean enableGameObjectQuery() {
+        return true;
+    }
+
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(
             name = "Overlay Settings",
-            description = "General overlay configuration.",
+            description = "General overlay configuration for tests, debugging, and sim visualization",
             position = 99
     )
     String overlaySettings = "Overlay Settings";
+
+    @ConfigItem(
+            keyName = "showGameObjects",
+            name = "Show Game Objects",
+            description = "Display game objects in the scene.",
+            section = overlaySettings,
+            position = 1
+    )
+    default boolean showGameObjects() {
+        return false;
+    }
 
     @ConfigItem(
             keyName = "fontSize",
             name = "Font Size",
             description = "Font size for overlay text",
             section = overlaySettings,
-            position = 2
+            position = 8
     )
     default int fontSize() {
         return 12;
@@ -106,7 +128,7 @@ public interface ExampleConfig extends Config {
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
             section = overlaySettings,
-            position = 3
+            position = 9
     )
     default boolean showDebugInfo() {
         return false;
@@ -116,7 +138,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 4,
+            position = 10,
             section = overlaySettings
     )
     default boolean showVisualizer() {

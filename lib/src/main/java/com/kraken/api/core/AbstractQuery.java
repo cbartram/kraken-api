@@ -91,6 +91,27 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     }
 
     /**
+     * Returns a count of objects in the stream
+     * @return long count of objects.
+     */
+    public long count() {
+        return (Long) ctx.runOnClientThread(() -> {
+            Stream<T> stream = source().get();
+
+            if(stream == null) {
+                return Collections.emptyList();
+            }
+
+            // Apply filters but do not waste time sorting for a basic count op
+            for (Predicate<T> filter : filters) {
+                stream = stream.filter(filter);
+            }
+
+            return stream.count();
+        });
+    }
+
+    /**
      * Filters out elements that match the given predicate.
      * Effectively: filter(!predicate)
      * @param predicate The predicate to apply

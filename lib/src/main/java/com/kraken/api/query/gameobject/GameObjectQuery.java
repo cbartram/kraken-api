@@ -2,15 +2,14 @@ package com.kraken.api.query.gameobject;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
-import net.runelite.api.GameObject;
-import net.runelite.api.Perspective;
-import net.runelite.api.Tile;
-import net.runelite.api.TileObject;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -23,46 +22,48 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
     @Override
     protected Supplier<Stream<GameObjectEntity>> source() {
         return () -> {
-            HashSet<TileObject> tileObjectHashSet = new HashSet<>();
-            for (Tile[] tiles : ctx.getClient().getTopLevelWorldView().getScene().getTiles()[ctx.getClient().getTopLevelWorldView().getPlane()]) {
-                if (tiles == null) {
-                    continue;
-                }
-                for (Tile tile : tiles) {
-                    if (tile == null) {
-                        continue;
+            List<TileObject> tileObjects = new ArrayList<>();
+
+            Scene scene = ctx.getClient().getTopLevelWorldView().getScene();
+            Tile[][][] tiles = scene.getTiles();
+            int plane = ctx.getClient().getTopLevelWorldView().getPlane();
+
+            for (int x = 0; x < Constants.SCENE_SIZE; x++) {
+                for (int y = 0; y < Constants.SCENE_SIZE; y++) {
+                    Tile tile = tiles[plane][x][y];
+                    if (tile == null) continue;
+
+                    // 1. Game Objects (Interactables, Scenery)
+                    GameObject[] gameObjects = tile.getGameObjects();
+                    if (gameObjects != null) {
+                        for (GameObject gameObject : gameObjects) {
+                            if (gameObject != null && gameObject.getId() != -1) {
+                                tileObjects.add(gameObject);
+                            }
+                        }
                     }
-                    for (GameObject gameObject : tile.getGameObjects()) {
-                        if (gameObject == null) {
-                            continue;
-                        }
-                        if (gameObject.getId() == -1) {
-                            continue;
-                        }
-                        tileObjectHashSet.add(gameObject);
+
+                    // 2. Ground Objects (Floor decorations, items are separate)
+                    GroundObject groundObject = tile.getGroundObject();
+                    if (groundObject != null && groundObject.getId() != -1) {
+                        tileObjects.add(groundObject);
                     }
-                    if (tile.getGroundObject() != null) {
-                        if (tile.getGroundObject().getId() == -1) {
-                            continue;
-                        }
-                        tileObjectHashSet.add(tile.getGroundObject());
+
+                    // 3. Wall Objects
+                    WallObject wallObject = tile.getWallObject();
+                    if (wallObject != null && wallObject.getId() != -1) {
+                        tileObjects.add(wallObject);
                     }
-                    if (tile.getWallObject() != null) {
-                        if (tile.getWallObject().getId() == -1) {
-                            continue;
-                        }
-                        tileObjectHashSet.add(tile.getWallObject());
-                    }
-                    if (tile.getDecorativeObject() != null) {
-                        if (tile.getDecorativeObject().getId() == -1) {
-                            continue;
-                        }
-                        tileObjectHashSet.add(tile.getDecorativeObject());
+
+                    // 4. Decorative Objects
+                    DecorativeObject decorativeObject = tile.getDecorativeObject();
+                    if (decorativeObject != null && decorativeObject.getId() != -1) {
+                        tileObjects.add(decorativeObject);
                     }
                 }
             }
 
-            return tileObjectHashSet.stream().map(t -> new GameObjectEntity(ctx, t));
+            return tileObjects.stream().map(t -> new GameObjectEntity(ctx, t));
         };
     }
 
@@ -74,6 +75,7 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
      */
     public GameObjectQuery withAction(String action) {
         return filter(obj -> {
+            if (obj.getObjectComposition() == null) return false;
             String[] actions = obj.getObjectComposition().getActions();
             if (actions == null) return false;
             return Arrays.stream(actions).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
@@ -85,8 +87,16 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
      * @return GroundObjectQuery
      */
     public GameObjectQuery reachable() {
-        return filter(gameObject ->
-                ctx.runOnClientThread(() -> ctx.getTileService().isTileReachable(gameObject.raw().getWorldLocation())));
+        return filter(gameObject -> ctx.getTileService().isTileReachable(gameObject.raw().getWorldLocation()));
+    }
+
+    /**
+     * Sorts the stream of game objects to order them by manhattan distance to the local player.
+     * @return GameObjectQuery
+     */
+    public GameObjectQuery nearest() {
+        final WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getWorldLocation().distanceTo(playerLoc)));
     }
 
     /**
@@ -96,16 +106,8 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
      * @return True if the object is within the specified distance from the anchor point, false otherwise.
      */
     public GameObjectQuery within(LocalPoint anchor, int distance) {
-        return filter(obj -> {
-            int dx = Math.abs(anchor.getX() - obj.raw().getLocalLocation().getX());
-            int dy = Math.abs(anchor.getY() - obj.raw().getLocalLocation().getY());
-
-            if (distance == 0) {
-                return (dx == Perspective.LOCAL_TILE_SIZE && dy == 0) || (dy == Perspective.LOCAL_TILE_SIZE && dx == 0);
-            } else {
-                return obj.raw().getLocalLocation().distanceTo(anchor) <= distance;
-            }
-        });
+        int range = distance * Perspective.LOCAL_TILE_SIZE;
+        return filter(obj -> obj.raw().getLocalLocation().distanceTo(anchor) <= range);
     }
 
     /**
@@ -115,16 +117,9 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
      */
     public GameObjectQuery within(int distance) {
         LocalPoint anchor = ctx.players().local().raw().getLocalLocation();
-        return filter(obj -> {
-            int dx = Math.abs(anchor.getX() - obj.raw().getLocalLocation().getX());
-            int dy = Math.abs(anchor.getY() - obj.raw().getLocalLocation().getY());
+        int range = distance * Perspective.LOCAL_TILE_SIZE;
 
-            if (distance == 0) {
-                return (dx == Perspective.LOCAL_TILE_SIZE && dy == 0) || (dy == Perspective.LOCAL_TILE_SIZE && dx == 0);
-            } else {
-                return obj.raw().getLocalLocation().distanceTo(anchor) <= distance;
-            }
-        });
+        return filter(obj -> obj.raw().getLocalLocation().distanceTo(anchor) <= range);
     }
 
     /**

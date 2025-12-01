@@ -10,10 +10,7 @@ import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
-import example.tests.query.BankInventoryTest;
-import example.tests.query.BankTest;
-import example.tests.query.EquipmentTest;
-import example.tests.query.InventoryTest;
+import example.tests.query.*;
 import example.tests.service.PrayerServiceTest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +82,9 @@ public class ExamplePlugin extends Plugin {
     private BankInventoryTest bankInventoryQueryTest;
 
     @Inject
+    private GameObjectTest gameObjectQueryTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -139,6 +139,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("BankInventoryTest", bankInventoryQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableEquipmentQuery") && config.enableEquipmentQuery()) {
                 testResultManager.startTest("EquipmentQuery", equipmentQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableGameObjectQuery") && config.enableGameObjectQuery()) {
+                testResultManager.startTest("GameObjectQuery", gameObjectQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {

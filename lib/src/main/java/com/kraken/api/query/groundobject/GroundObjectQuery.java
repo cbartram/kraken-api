@@ -129,6 +129,18 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
     }
 
     /**
+     * Sorts the stream of ground objects to order them by manhattan distance to the local player.
+     * @return GroundObjectQuery
+     */
+    public GroundObjectQuery nearest() {
+        return sorted((objectOne, objectTwo) -> {
+            int distanceOne = objectOne.raw().getLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
+            int distanceTwo = objectTwo.raw().getLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
+            return Integer.compare(distanceOne, distanceTwo);
+        });
+    }
+
+    /**
      * Filters for only objects whose location is within the specified distance from the players current local point.
      * @param distance The maximum distance from the anchor point (in local units).
      * @return True if the object is within the specified distance from the anchor point, false otherwise.
