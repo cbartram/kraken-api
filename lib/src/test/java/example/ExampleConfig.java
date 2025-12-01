@@ -70,6 +70,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableEquipmentQuery",
+            name = "Start Equipment Query",
+            description = "Enable Equipment Query Tests",
+            section = tests,
+            position = 5
+    )
+    default boolean enableEquipmentQuery() {
+        return true;
+    }
+
 
     // ========== GENERAL OVERLAY SETTINGS ==========
     @ConfigSection(

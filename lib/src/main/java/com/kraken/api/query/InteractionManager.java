@@ -10,6 +10,7 @@ import com.kraken.api.query.container.bank.BankItemWidget;
 import com.kraken.api.query.groundobject.GroundItem;
 import com.kraken.api.service.ui.UIService;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
@@ -19,10 +20,12 @@ import net.runelite.api.widgets.WidgetInfo;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Manages interactions across various game entities like NPC's, Players, Widgets, GameObjects, TileObjects and more.
  */
+@Slf4j
 @Getter
 @Singleton
 public class InteractionManager {
@@ -154,6 +157,12 @@ public class InteractionManager {
      */
     public void interact(Widget item, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
+
+        if(!Arrays.stream(Objects.requireNonNull(item.getActions())).map(String::toLowerCase).collect(Collectors.toList()).contains(action.toLowerCase())) {
+            log.error("Action {} is not a valid action for item id: {}, valid: {}", action, item.getItemId(), item.getActions());
+            return;
+        }
+
         Point pt = uiService.getClickbox(item);
 
         if(pt != null) {

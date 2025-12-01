@@ -45,7 +45,6 @@ public class BankInventoryTest extends BaseApiTest {
             // Execute
             for(ContainerItem i : ctx.bankInventory().toRuneLite().collect(Collectors.toList())) {
                testsPassed &= map.containsKey(i.getName());
-               log.info("Map contains: {} -> {}", i.getName(), map.containsKey(i.getName()));
             }
 
             ctx.bankInventory().withName("Swordfish").first().depositFive();

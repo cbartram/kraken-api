@@ -21,6 +21,14 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
 
     private final HashMap<Integer, Integer> equipmentSlotWidgetMapping = new HashMap<>();
 
+    private enum EquipmentSource {
+        INVENTORY_ONLY,
+        INTERFACE_ONLY,
+        BOTH
+    }
+
+    private EquipmentSource dataSource = EquipmentSource.BOTH;
+
     public EquipmentQuery(Context ctx) {
         super(ctx);
         equipmentSlotWidgetMapping.put(0, 15);
@@ -36,95 +44,129 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
         equipmentSlotWidgetMapping.put(13, 25);
     }
 
-    // TODO Handle this differently we have 2 streams:
-    // - Equipment widgets in the equipment interface
-    // - Wearable/wieldable items in the inventory
-    // users should be able to specify which source they are looking at (or merge 2 streams for both sources)
-    // to be acted on
+
+    /**
+     * Configures the query to only look for wearable/wieldable items currently
+     * inside the player's inventory.
+     * @return EquipmentQuery
+     */
+    public EquipmentQuery inInventory() {
+        this.dataSource = EquipmentSource.INVENTORY_ONLY;
+        return this;
+    }
+
+    /**
+     * Configures the query to only look for items currently equipped
+     * on the player (read from the Equipment interface widgets).
+     * @return EquipmentQuery
+     */
+    public EquipmentQuery inInterface() {
+        this.dataSource = EquipmentSource.INTERFACE_ONLY;
+        return this;
+    }
+
+    /**
+     * Configures the query to look at both equipped items and wearable items
+     * in the inventory.
+     */
+    public EquipmentQuery all() {
+        this.dataSource = EquipmentSource.BOTH;
+        return this;
+    }
+
     @Override
     protected Supplier<Stream<EquipmentEntity>> source() {
         return () -> {
-            List<EquipmentEntity> equipmentEntities = ctx.runOnClientThread(() -> {
-                ctx.getClient().runScript(6009, 9764864, 28, 1, -1);
+            List<EquipmentEntity> entities = new ArrayList<>();
+            if (dataSource == EquipmentSource.INVENTORY_ONLY || dataSource == EquipmentSource.BOTH) {
+                entities.addAll(collectInventoryItems());
+            }
 
-                ItemContainer container = ctx.getClient().getItemContainer(InventoryID.INV);
-                if(container == null) return Collections.emptyList();
+            if (dataSource == EquipmentSource.INTERFACE_ONLY || dataSource == EquipmentSource.BOTH) {
+                entities.addAll(collectEquippedItems());
+            }
 
-                Widget inventory = ctx.getClient().getWidget(149, 0);
-                if(inventory == null) return Collections.emptyList();
-
-                Widget[] inventoryWidgets = inventory.getDynamicChildren();
-
-                List<EquipmentEntity> entities = new ArrayList<>();
-                for (int i = 0; i < container.getItems().length; i++) {
-                    final Item item = container.getItems()[i];
-                    if (item.getId() == -1 || item.getId() == 6512) continue;
-
-                    final ItemComposition itemComposition = ctx.getClient().getItemDefinition(item.getId());
-
-                    List<String> actions = List.of(itemComposition.getInventoryActions());
-                    if(!actions.contains("wield") && !actions.contains("wear")) continue;
-
-                    Widget widget = null;
-                    if (i < inventoryWidgets.length) {
-                        widget = inventoryWidgets[i];
-                    }
-
-                    entities.add(new EquipmentEntity(ctx, widget));
-                }
-
-                // We also need to populate the widgets from the actual equipment interface as they can also be interacted
-                // with to "remove" equipment.
-                for(int i = 0; i < 13; i++) {
-                    Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(i));
-                    // 13 slots in your equipment to wear, if no widget found then no gear in that slot
-                    if (widget == null) continue;
-                    entities.add(new EquipmentEntity(ctx, widget));
-                }
-
-                return entities;
-            });
-
-            return equipmentEntities.stream();
+            return entities.stream();
         };
+    }
+
+    private List<EquipmentEntity> collectInventoryItems() {
+        ctx.getClient().runScript(6009, 9764864, 28, 1, -1);
+
+        ItemContainer container = ctx.getClient().getItemContainer(InventoryID.INV);
+        if (container == null) return Collections.emptyList();
+
+        Widget inventory = ctx.getClient().getWidget(149, 0);
+        if (inventory == null) return Collections.emptyList();
+
+        Widget[] inventoryWidgets = inventory.getDynamicChildren();
+        List<EquipmentEntity> entities = new ArrayList<>();
+
+        for (int i = 0; i < container.getItems().length; i++) {
+            final Item item = container.getItems()[i];
+            if (item.getId() == -1 || item.getId() == 6512) continue;
+
+            final ItemComposition itemComposition = ctx.getClient().getItemDefinition(item.getId());
+
+            List<String> actions = List.of(itemComposition.getInventoryActions());
+            if (!actions.contains("wield") && !actions.contains("wear")) continue;
+
+            Widget widget = null;
+            if (i < inventoryWidgets.length) {
+                widget = inventoryWidgets[i];
+            }
+
+            entities.add(new EquipmentEntity(ctx, widget));
+        }
+        return entities;
+    }
+
+    private List<EquipmentEntity> collectEquippedItems() {
+        List<EquipmentEntity> entities = new ArrayList<>();
+        for (int i = 0; i < 13; i++) {
+            if (!equipmentSlotWidgetMapping.containsKey(i)) continue;
+
+            int widgetChildId = equipmentSlotWidgetMapping.get(i);
+            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), widgetChildId);
+
+            // 13 slots in your equipment to wear, if no widget found then no gear in that slot
+            if (widget == null) continue;
+            if (widget.getItemId() == -1) continue;
+
+            entities.add(new EquipmentEntity(ctx, widget));
+        }
+        return entities;
+    }
+
+
+    /**
+     * Filters for equipment with a specific item id.
+     * @param id Item id to filter for
+     * @return EquipmentQuery
+     */
+    public EquipmentQuery withId(int id) {
+        return filter(i -> i.raw().getItemId() == id);
     }
 
     /**
      * Checks if the player is wearing an item by id.
-     * @param id The id of the item to check.
-     * @return True if the player is wearing the item, false otherwise.
+     * Note: This strictly checks the equipment slots, ignoring the "inInventory" setting.
      */
     public boolean isWearing(int id) {
-        List<EquipmentEntity> entities = new ArrayList<>();
-        for(int i = 0; i < 13; i++) {
-            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(i));
-            // 13 slots in your equipment to wear, if no widget found then no gear in that slot
-            if (widget == null) continue;
-            entities.add(new EquipmentEntity(ctx, widget));
-        }
-
-        return entities
-                .stream()
-                .anyMatch(i -> id == i.raw().getId());
+        // We use the helper directly here to avoid overhead of creating a new query
+        return ctx.runOnClientThread(() ->
+                collectEquippedItems().stream().anyMatch(i -> i.raw().getItemId() == id)
+        );
     }
 
     /**
      * Checks if the player is wearing an item by name.
-     * @param name The name of the item to check.
-     * @return True if the player is wearing the item, false otherwise.
+     * Note: This strictly checks the equipment slots, ignoring the "inInventory" setting.
      */
     public boolean isWearing(String name) {
-        List<EquipmentEntity> entities = new ArrayList<>();
-        for(int i = 0; i < 13; i++) {
-            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(i));
-            // 13 slots in your equipment to wear, if no widget found then no gear in that slot
-            if (widget == null) continue;
-            entities.add(new EquipmentEntity(ctx, widget));
-        }
-
-        return entities
-                .stream()
-                .anyMatch(i -> name.equalsIgnoreCase(i.getName()));
+        return ctx.runOnClientThread(() ->
+                collectEquippedItems().stream().anyMatch(i -> name.equalsIgnoreCase(i.getName()))
+        );
     }
 
     /**
@@ -134,8 +176,10 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
      */
     public EquipmentEntity inSlot(EquipmentInventorySlot slot) {
         return ctx.runOnClientThread(() -> {
+            if (!equipmentSlotWidgetMapping.containsKey(slot.getSlotIdx())) return null;
+
             Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(slot.getSlotIdx()));
-            if(widget == null) {
+            if (widget == null) {
                 return null;
             }
 

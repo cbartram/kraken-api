@@ -12,6 +12,7 @@ import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
 import example.tests.query.BankInventoryTest;
 import example.tests.query.BankTest;
+import example.tests.query.EquipmentTest;
 import example.tests.query.InventoryTest;
 import example.tests.service.PrayerServiceTest;
 import lombok.Getter;
@@ -75,6 +76,9 @@ public class ExamplePlugin extends Plugin {
     private BankTest bankQueryTest;
 
     @Inject
+    private EquipmentTest equipmentQueryTest;
+
+    @Inject
     private InventoryTest inventoryQueryTest;
 
     @Inject
@@ -133,6 +137,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("InventoryQuery", inventoryQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableBankInventoryQuery") && config.enableBankInventoryQuery()) {
                 testResultManager.startTest("BankInventoryTest", bankInventoryQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableEquipmentQuery") && config.enableEquipmentQuery()) {
+                testResultManager.startTest("EquipmentQuery", equipmentQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {

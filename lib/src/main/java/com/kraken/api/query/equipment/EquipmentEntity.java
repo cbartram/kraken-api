@@ -20,4 +20,28 @@ public class EquipmentEntity extends AbstractEntity<Widget> {
         ctx.getInteractionManager().interact(raw, action);
         return true;
     }
+
+    /**
+     * Wears an equippable item
+     * @return true if the item was equipped and false otherwise
+     */
+    public boolean wear() {
+        return interact("wear");
+    }
+
+    /**
+     * Wields a weapon.
+     * @return True if the weapon was equipped and false otherwise
+     */
+    public boolean wield() {
+        return interact("wield");
+    }
+
+    /**
+     * Removes an equipped weapon or piece of armour.
+     * @return True if the removal was successful and false otherwise.
+     */
+    public boolean remove() {
+        return interact("remove");
+    }
 }
