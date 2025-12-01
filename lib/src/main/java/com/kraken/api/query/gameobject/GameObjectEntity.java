@@ -4,7 +4,6 @@ import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
 import net.runelite.api.GameObject;
 import net.runelite.api.ObjectComposition;
-import net.runelite.api.TileObject;
 
 public class GameObjectEntity extends AbstractEntity<GameObject> {
 
@@ -17,12 +16,12 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
      * @return The object composition for the wrapped {@code TileObject}.
      */
     public ObjectComposition getObjectComposition() {
-        TileObject tileObject = this.raw;
-        if(ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostorIds() != null && ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor() != null) {
-            return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()).getImpostor());
+        ObjectComposition def = ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(this.raw.getId()));
+        if(def.getImpostorIds() != null && def.getImpostor() != null) {
+            return ctx.runOnClientThread(def::getImpostor);
         }
 
-        return ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(tileObject.getId()));
+        return def;
     }
 
     @Override

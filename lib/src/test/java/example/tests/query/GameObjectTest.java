@@ -39,7 +39,6 @@ public class GameObjectTest extends BaseApiTest {
                     .withName("Bank booth")
                     .reachable()
                     .nearest()
-                    .first()
                     .isNull();
 
             if (!isReachable) {
@@ -57,7 +56,7 @@ public class GameObjectTest extends BaseApiTest {
 
             // 5. Specific Location: Check a specific coordinate (Optional, but good for precision)
             // We get the location of the nearest booth, and query .at() that location to ensure it returns the booth.
-            var nearestBooth = ctx.gameObjects().withName("Bank booth").nearest().first();
+            var nearestBooth = ctx.gameObjects().withName("Bank booth").nearest();
             if (!nearestBooth.isNull()) {
                 WorldPoint boothLoc = nearestBooth.raw().getWorldLocation();
                 boolean retrievedByLoc = !ctx.gameObjects().at(boothLoc).withName("Bank booth").first().isNull();

@@ -12,43 +12,70 @@ import java.util.stream.Stream;
 
 public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQuery, GameObject> {
 
+    // A blacklist of actions for game objects (these are actions that are generally on NPC's).
+    HashSet<String> ACTION_BLACKLIST = new HashSet<>();
+
     public GameObjectQuery(Context ctx) {
         super(ctx);
+        ACTION_BLACKLIST.add("examine");
+        ACTION_BLACKLIST.add("attack");
+        ACTION_BLACKLIST.add("pickpocket");
+        ACTION_BLACKLIST.add("talk-to");
     }
 
     @Override
     protected Supplier<Stream<GameObjectEntity>> source() {
         return () -> {
-            List<GameObject> tileObjects = new ArrayList<>();
-            WorldPoint playerLoc = ctx.getClient().getLocalPlayer().getWorldLocation();
+            List<GameObjectEntity> gameObjects = new ArrayList<>();
+            for (Tile[] tiles : ctx.getClient().getTopLevelWorldView().getScene().getTiles()[ctx.getClient().getTopLevelWorldView().getPlane()]) {
+                if (tiles == null) {
+                    continue;
+                }
 
-            Scene scene = ctx.getClient().getTopLevelWorldView().getScene();
-            Tile[][][] tiles = scene.getTiles();
-            int plane = ctx.getClient().getTopLevelWorldView().getPlane();
-
-            for (int x = 0; x < Constants.SCENE_SIZE; x++) {
-                for (int y = 0; y < Constants.SCENE_SIZE; y++) {
-                    Tile tile = tiles[plane][x][y];
-                    if (tile == null) continue;
-
-                    // Ignore game objects that are on the player tile
-                    if(tile.getWorldLocation().getX() == playerLoc.getX() && tile.getWorldLocation().getY() == playerLoc.getY()) {
+                for (Tile tile : tiles) {
+                    if (tile == null) {
                         continue;
                     }
 
-                    GameObject[] gameObjects = tile.getGameObjects();
-                    if (gameObjects != null) {
-                        for (GameObject gameObject : gameObjects) {
-                            if (gameObject != null && gameObject.getId() != -1) {
-                                tileObjects.add(gameObject);
-                            }
-                        }
+                    for (GameObject gameObject : tile.getGameObjects()) {
+                        if (gameObject == null) continue;
+                        if (gameObject.getId() == -1) continue;
+                        gameObjects.add(new GameObjectEntity(ctx, gameObject));
                     }
                 }
             }
 
-            return tileObjects.stream().map(t -> new GameObjectEntity(ctx, t));
+            return gameObjects.stream();
         };
+    }
+
+    /**
+     * Filters the stream of game objects for objects with a specific name
+     * @param name The name of the object to filter for
+     * @return GameObjectQuery
+     */
+    @Override
+    public GameObjectQuery withName(String name) {
+        return filter(t -> {
+            ObjectComposition comp = t.getObjectComposition();
+            if(comp == null) return false;
+            return comp.getName() != null && comp.getName().equalsIgnoreCase(name);
+        });
+    }
+
+    /**
+     * Filters the stream of game objects for objects which match a specific substring of a name. For example:
+     * {@code ctx.gameObjects().nameContains("Oak")} will find Oak tree game objects in the scene.
+     * @param name The name to match against
+     * @return GameObjectQuery
+     */
+    @Override
+    public GameObjectQuery nameContains(String name) {
+        return filter(t -> {
+            ObjectComposition comp = t.getObjectComposition();
+            if(comp == null) return false;
+            return comp.getName() != null && comp.getName().toLowerCase().contains(name.toLowerCase());
+        });
     }
 
     /**
@@ -62,8 +89,8 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
             if(rawActions == null || rawActions.length == 0) return false;
             return Arrays.stream(rawActions)
                     .filter(Objects::nonNull)
-                    .filter(s -> !s.isEmpty())
-                    .anyMatch(s -> !s.equalsIgnoreCase("examine"));
+                    .map(String::toLowerCase)
+                    .anyMatch(s -> !ACTION_BLACKLIST.contains(s));
         });
     }
 
@@ -78,8 +105,34 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
             if (obj.getObjectComposition() == null) return false;
             String[] actions = obj.getObjectComposition().getActions();
             if (actions == null) return false;
-            return Arrays.stream(actions).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
+            return Arrays.stream(actions).filter(Objects::nonNull).anyMatch(a -> a.equalsIgnoreCase(action));
         });
+    }
+
+    /**
+     * Finds game objects within a specified area. The min WorldPoint should be the southwest tile of the area
+     * and the max WorldPoint should be the northeast tile of the area.
+     * @param min The southwest minimum world point of the area to check
+     * @param max The northeast maximum world point of the area to check
+     * @return GameObjectQuery
+     */
+    public GameObjectQuery withinArea(WorldPoint min, WorldPoint max) {
+        int x1 = min.getX();
+        int x2 = max.getX();
+        int y1 = min.getY();
+        int y2 = max.getY();
+
+         return filter(obj -> {
+             WorldPoint pt = obj.raw().getWorldLocation();
+             int x3 = pt.getX();
+             int y3 = pt.getY();
+
+             if (x3 > Math.max(x1, x2) || x3 < Math.min(x1, x2)) {
+                 return false;
+             }
+
+             return y3 <= Math.max(y1, y2) && y3 >= Math.min(y1, y2);
+         });
     }
 
     /**
@@ -94,9 +147,9 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
      * Sorts the stream of game objects to order them by manhattan distance to the local player.
      * @return GameObjectQuery
      */
-    public GameObjectQuery nearest() {
+    public GameObjectEntity nearest() {
         final WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
-        return sorted(Comparator.comparingInt(obj -> obj.raw().getWorldLocation().distanceTo(playerLoc)));
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getWorldLocation().distanceTo(playerLoc))).first();
     }
 
     /**
