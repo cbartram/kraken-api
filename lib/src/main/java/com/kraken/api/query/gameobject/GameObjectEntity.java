@@ -2,12 +2,13 @@ package com.kraken.api.query.gameobject;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import net.runelite.api.GameObject;
 import net.runelite.api.ObjectComposition;
 import net.runelite.api.TileObject;
 
-public class GameObjectEntity extends AbstractEntity<TileObject> {
+public class GameObjectEntity extends AbstractEntity<GameObject> {
 
-    public GameObjectEntity(Context ctx, TileObject raw) {
+    public GameObjectEntity(Context ctx, GameObject raw) {
         super(ctx, raw);
     }
 
@@ -26,6 +27,7 @@ public class GameObjectEntity extends AbstractEntity<TileObject> {
 
     @Override
     public String getName() {
+        // TODO Sometimes this returns some really weird things for NPC's that are being considered game objects?
         ObjectComposition composition = getObjectComposition();
         if(composition != null) {
             return composition.getName();

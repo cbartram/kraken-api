@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.runelite.api.Constants.CHUNK_SIZE;
+import static net.runelite.api.Perspective.SCENE_SIZE;
 
 @Slf4j
 @Singleton
@@ -46,7 +47,7 @@ public class TileService {
      * from the starting tile. The method accounts for movement flags that block
      * movement in specific directions (east, west, north, south) and removes
      * unreachable tiles based on collision data.
-     *
+     * <p>
      * The method iterates over a range of distances, progressively updating
      * reachable tiles and adding them to the tileDistances map. It checks if a
      * tile can be reached by verifying its collision flags and whether it’s blocked
@@ -106,6 +107,128 @@ public class TileService {
 
         return tileDistances;
     }
+
+    /**
+     * Checks if a GameObject is reachable.
+     * This considers the object's size and checks if the player can reach
+     * any tile touching the object's boundary (the "Interactable Halo").
+     * @return true if the game object is reachable and false otherwise
+     */
+    public boolean isObjectReachable(GameObject obj) {
+        if (obj == null) return false;
+
+        // 1. Get the boundary of the object in Scene Coordinates
+        // We use Scene Coordinates (0-103) because that matches the CollisionData flags.
+        LocalPoint lp = obj.getLocalLocation(); // Center of object
+        if (lp == null) return false;
+
+        Client client = ctxProvider.get().getClient();
+        int sceneX = lp.getSceneX();
+        int sceneY = lp.getSceneY();
+
+        // Object composition gives us width/height (for 1x1, 2x2 objects etc)
+        ObjectComposition comp = getObjectComposition(obj);
+        int sizeX = 1;
+        int sizeY = 1;
+
+        if (comp != null) {
+            // Adjust for rotation if necessary (swaps width/height)
+            if (obj.getOrientation() == 1 || obj.getOrientation() == 3) {
+                sizeX = comp.getSizeY();
+                sizeY = comp.getSizeX();
+            } else {
+                sizeX = comp.getSizeX();
+                sizeY = comp.getSizeY();
+            }
+        }
+
+        // Calculate the bottom-left corner of the object in Scene coords
+        // LocalPoint is center, so we shift back to corner
+        int minX = sceneX - (sizeX - 1) / 2;
+        int minY = sceneY - (sizeY - 1) / 2;
+        int maxX = minX + sizeX - 1;
+        int maxY = minY + sizeY - 1;
+
+        // 2. Run the BFS to find all reachable tiles from player
+        boolean[][] visited = getReachableTilesMatrix();
+        if (visited == null) return false;
+
+        // 3. Check if any tile occupying the object OR adjacent to the object is reachable
+        // We search from minX-1 to maxX+1 to cover the "halo" around the object.
+        for (int x = minX - 1; x <= maxX + 1; x++) {
+            for (int y = minY - 1; y <= maxY + 1; y++) {
+                if (x >= 0 && y >= 0 && x < SCENE_SIZE && y < SCENE_SIZE) {
+                    if (visited[x][y]) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Standard BFS to map all reachable tiles from the current player position.
+     * @return A 104x104 boolean array where true = walkable from player.
+     */
+    private boolean[][] getReachableTilesMatrix() {
+        Client client = ctxProvider.get().getClient();
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer == null) return null;
+
+        WorldView wv = client.getTopLevelWorldView();
+        if (wv == null) return null;
+
+        LocalPoint playerLp = localPlayer.getLocalLocation();
+        if (playerLp == null) return null;
+
+        int startX = playerLp.getSceneX();
+        int startY = playerLp.getSceneY();
+        int plane = wv.getPlane();
+
+        CollisionData[] collisionData = wv.getCollisionMaps();
+        if (collisionData == null) return null;
+        int[][] flags = collisionData[plane].getFlags();
+
+        boolean[][] visited = new boolean[SCENE_SIZE][SCENE_SIZE];
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+
+        // Start BFS
+        int startPoint = (startX << 16) | startY;
+        queue.add(startPoint);
+        visited[startX][startY] = true;
+
+        while (!queue.isEmpty()) {
+            int point = queue.poll();
+            int x = point >> 16;
+            int y = point & 0xFFFF;
+
+            // Check 4 cardinal directions
+            checkNeighbour(queue, visited, flags, x, y, -1, 0, CollisionDataFlag.BLOCK_MOVEMENT_WEST);
+            checkNeighbour(queue, visited, flags, x, y, 1, 0, CollisionDataFlag.BLOCK_MOVEMENT_EAST);
+            checkNeighbour(queue, visited, flags, x, y, 0, -1, CollisionDataFlag.BLOCK_MOVEMENT_SOUTH);
+            checkNeighbour(queue, visited, flags, x, y, 0, 1, CollisionDataFlag.BLOCK_MOVEMENT_NORTH);
+        }
+
+        return visited;
+    }
+
+    private void checkNeighbour(ArrayDeque<Integer> queue, boolean[][] visited, int[][] flags, int x, int y, int dx, int dy, int blockFlag) {
+        int nx = x + dx;
+        int ny = y + dy;
+
+        if (nx >= 0 && nx < SCENE_SIZE && ny >= 0 && ny < SCENE_SIZE) {
+            if (!visited[nx][ny]) {
+                // Check if we can leave current tile (blockFlag) AND enter next tile (BLOCK_MOVEMENT_FULL)
+                // Note: We check CollisionDataFlag.BLOCK_MOVEMENT_FULL on the *destination* to ensure we don't walk into walls
+                if ((flags[x][y] & blockFlag) == 0 && (flags[nx][ny] & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0) {
+                    visited[nx][ny] = true;
+                    queue.add((nx << 16) | ny);
+                }
+            }
+        }
+    }
     
     
     /**
@@ -115,7 +238,7 @@ public class TileService {
      * neighboring tiles while checking for movement blocks in the four cardinal
      * directions (north, south, east, west). It ensures the target tile is within
      * the same plane as the player and that movement between tiles is not blocked.
-     *
+     * <p>
      * The method initializes a queue to explore the world grid, marking visited
      * tiles to avoid revisiting. It checks the flags for collision data to determine
      * whether movement is allowed in each direction, and only adds neighboring tiles
@@ -178,7 +301,7 @@ public class TileService {
      * to the base coordinates, considering whether the client is in an instanced region
      * or not. The method then checks if the calculated coordinates are within bounds
      * and if the tile has been marked as visited in the provided visited array.
-     *
+     * <p>
      * The method ensures that the given WorldPoint corresponds to a valid tile on
      * the game map by verifying if its coordinates fall within the bounds of the
      * world grid, and if so, it checks whether that tile has already been visited
@@ -213,7 +336,7 @@ public class TileService {
      * in the specified direction (dx, dy) is possible. The method ensures the neighboring
      * tile is within bounds, hasn't been visited, and doesn't have movement restrictions
      * (such as full-block movement or movement in the specified direction).
-     *
+     * <p>
      * The method performs a bitwise check on the tile’s flags to determine if movement
      * in the given direction is allowed and ensures that the neighboring tile is not
      * already visited before adding it to the queue.
@@ -255,7 +378,7 @@ public class TileService {
      * This method checks if the given coordinates (x, y) are within the valid bounds
      * of the game world grid. It ensures that the coordinates are non-negative and
      * within the range of the grid dimensions (0 to 103 for both x and y).
-     *
+     * <p>
      * The method is used to prevent out-of-bounds errors when accessing world tiles
      * by ensuring that the coordinates provided for the tile are within the valid
      * range before performing further operations.
@@ -275,7 +398,7 @@ public class TileService {
      * the scene using the `isInScene` method. If the WorldPoint is valid and within the scene,
      * it converts the WorldPoint to a LocalPoint, then retrieves and returns the corresponding
      * Tile from the game scene.
-     *
+     * <p>
      * If the WorldPoint is out of bounds or the LocalPoint is null, the method returns null
      * to indicate that no valid tile is found at the given coordinates.
      *

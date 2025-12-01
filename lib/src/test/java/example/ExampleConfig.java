@@ -1,10 +1,7 @@
 
 package example;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.*;
 
 @ConfigGroup("testapi")
 public interface ExampleConfig extends Config {
@@ -110,6 +107,18 @@ public interface ExampleConfig extends Config {
     )
     default boolean showGameObjects() {
         return false;
+    }
+
+    @Range(min = 1, max = 25)
+    @ConfigItem(
+            keyName = "gameObjectRange",
+            name = "Game Object Range",
+            description = "The range at which game objects are highlighted.",
+            section = overlaySettings,
+            position = 2
+    )
+    default int gameObjectRange() {
+        return 3;
     }
 
     @ConfigItem(

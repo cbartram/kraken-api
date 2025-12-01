@@ -6,14 +6,11 @@ import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQuery, TileObject> {
+public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQuery, GameObject> {
 
     public GameObjectQuery(Context ctx) {
         super(ctx);
@@ -22,7 +19,8 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
     @Override
     protected Supplier<Stream<GameObjectEntity>> source() {
         return () -> {
-            List<TileObject> tileObjects = new ArrayList<>();
+            List<GameObject> tileObjects = new ArrayList<>();
+            WorldPoint playerLoc = ctx.getClient().getLocalPlayer().getWorldLocation();
 
             Scene scene = ctx.getClient().getTopLevelWorldView().getScene();
             Tile[][][] tiles = scene.getTiles();
@@ -33,7 +31,11 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
                     Tile tile = tiles[plane][x][y];
                     if (tile == null) continue;
 
-                    // 1. Game Objects (Interactables, Scenery)
+                    // Ignore game objects that are on the player tile
+                    if(tile.getWorldLocation().getX() == playerLoc.getX() && tile.getWorldLocation().getY() == playerLoc.getY()) {
+                        continue;
+                    }
+
                     GameObject[] gameObjects = tile.getGameObjects();
                     if (gameObjects != null) {
                         for (GameObject gameObject : gameObjects) {
@@ -42,29 +44,27 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
                             }
                         }
                     }
-
-                    // 2. Ground Objects (Floor decorations, items are separate)
-                    GroundObject groundObject = tile.getGroundObject();
-                    if (groundObject != null && groundObject.getId() != -1) {
-                        tileObjects.add(groundObject);
-                    }
-
-                    // 3. Wall Objects
-                    WallObject wallObject = tile.getWallObject();
-                    if (wallObject != null && wallObject.getId() != -1) {
-                        tileObjects.add(wallObject);
-                    }
-
-                    // 4. Decorative Objects
-                    DecorativeObject decorativeObject = tile.getDecorativeObject();
-                    if (decorativeObject != null && decorativeObject.getId() != -1) {
-                        tileObjects.add(decorativeObject);
-                    }
                 }
             }
 
             return tileObjects.stream().map(t -> new GameObjectEntity(ctx, t));
         };
+    }
+
+    /**
+     * Filters game objects to only contain objects which can be interacted with (non Examine) actions. i.e.
+     * Trees, Ore, Doors, Stairs etc...
+     * @return GameObjectQuery
+     */
+    public GameObjectQuery interactable() {
+        return filter(gameObject ->  {
+            String[] rawActions = gameObject.getObjectComposition().getActions();
+            if(rawActions == null || rawActions.length == 0) return false;
+            return Arrays.stream(rawActions)
+                    .filter(Objects::nonNull)
+                    .filter(s -> !s.isEmpty())
+                    .anyMatch(s -> !s.equalsIgnoreCase("examine"));
+        });
     }
 
     /**
@@ -87,7 +87,7 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
      * @return GroundObjectQuery
      */
     public GameObjectQuery reachable() {
-        return filter(gameObject -> ctx.getTileService().isTileReachable(gameObject.raw().getWorldLocation()));
+        return filter(gameObject -> gameObject.raw() != null && ctx.getTileService().isObjectReachable(gameObject.raw()));
     }
 
     /**

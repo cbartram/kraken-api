@@ -37,7 +37,7 @@ public class GameObjectTest extends BaseApiTest {
             // (Assuming player is standing in the bank)
             boolean isReachable = !ctx.gameObjects()
                     .withName("Bank booth")
-//                    .reachable() MAY NPE
+                    .reachable()
                     .nearest()
                     .first()
                     .isNull();
