@@ -66,6 +66,8 @@ public class GameObjectTest extends BaseApiTest {
                 }
             }
 
+            ctx.gameObjects().nameContains("Oak").nearest().interact("Chop down");
+
         } catch (Exception e) {
             log.error("Failed to run game object test", e);
             return false;

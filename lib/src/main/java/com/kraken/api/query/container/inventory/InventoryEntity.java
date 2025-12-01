@@ -23,6 +23,11 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
         return true;
     }
 
+    @Override
+    public int getId() {
+        return raw.getId();
+    }
+
     /**
      * Returns true if the inventory item has the specified action. i.e "Swordfish" will have the action "Eat", "Drop", and "Examine" but not "Drink"
      * @param action The action to check for

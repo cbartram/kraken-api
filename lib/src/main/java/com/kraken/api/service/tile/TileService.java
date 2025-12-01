@@ -32,11 +32,12 @@ public class TileService {
      * @return The object composition for a given tile object
      */
     public ObjectComposition getObjectComposition(TileObject tileObject) {
-        if(ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()).getImpostorIds() != null && ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()).getImpostor() != null) {
-            return ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()).getImpostor());
+        ObjectComposition def = ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()));
+        if(def.getImpostorIds() != null && def.getImpostor() != null) {
+            return ctxProvider.get().runOnClientThread(def::getImpostor);
         }
 
-        return ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().getObjectDefinition(tileObject.getId()));
+        return def;
     }
 
     /**

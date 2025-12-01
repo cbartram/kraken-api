@@ -16,6 +16,11 @@ public class NpcEntity extends AbstractEntity<NPC> {
         return raw.getName();
     }
 
+    @Override
+    public int getId() {
+        return raw.getId();
+    }
+
     /**
      * Gets the health percentage of the NPC.
      * @return Health percentage (0-100), or -1 if unknown

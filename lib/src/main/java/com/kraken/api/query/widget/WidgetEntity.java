@@ -15,6 +15,12 @@ public class WidgetEntity extends AbstractEntity<Widget> {
         return raw.getName();
     }
 
+
+    @Override
+    public int getId() {
+        return raw.getItemId();
+    }
+
     /**
      * Checks if the widget text, name, or actions match the input.
      * @param search The search string to match

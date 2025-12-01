@@ -51,12 +51,21 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     }
 
     /**
+     * Filters the stream of game entities for ones where the ID matches a provided id
+     * @param id Int the item ID to match against.
+     * @return Q entities whose item id matches the provided ID.
+     */
+    public Q withId(int id) {
+        return filter(t -> t.getId() == id);
+    }
+
+    /**
      * Filters for entities whose name contains the substring or a portion of the name parameter.
      * @param name The name to match against
      * @return Entities whose name contains the prefix
      */
     public Q nameContains(String name) {
-        return filter(t -> t.getName().toLowerCase().contains(name.toLowerCase()));
+        return filter(t -> t.getName() != null && t.getName().toLowerCase().contains(name.toLowerCase()));
     }
 
     /**

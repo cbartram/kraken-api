@@ -16,6 +16,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static net.runelite.api.TileItem.OWNERSHIP_GROUP;
+import static net.runelite.api.TileItem.OWNERSHIP_SELF;
+
 
 @Data
 @Getter
@@ -52,7 +55,8 @@ public class GroundItem {
     }
 
     /**
-     * Returns the Grand Exchange price of the item multiplied by the quantity on the ground.
+     * Returns the Grand Exchange price of the item multiplied by the quantity on the ground. To retrieve only
+     * the GE price of a single item use {@code getGePrice()}
      * @return The Grand Exchange price of the item multiplied by the quantity on the ground
      */
     public int getGrandExchangePrice() {
@@ -77,5 +81,13 @@ public class GroundItem {
             }
         }
         return new String[]{};
+    }
+
+    /**
+     * True if the ground item belongs to the local player and false otherwise.
+     * @return Boolean
+     */
+    public boolean isOwnedByLocalPlayer() {
+        return ownership == OWNERSHIP_SELF || ownership == OWNERSHIP_GROUP;
     }
 }

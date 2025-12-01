@@ -3,15 +3,14 @@ package com.kraken.api.query.groundobject;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.ItemComposition;
-import net.runelite.api.Perspective;
 import net.runelite.api.Tile;
 import net.runelite.api.TileItem;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.util.RSTimeUnit;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -112,54 +111,56 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
      * @param distance The maximum distance from the anchor point (in local units).
      * @return True if the object is within the specified distance from the anchor point, false otherwise.
      */
-    public GroundObjectQuery within(LocalPoint anchor, int distance) {
-        return filter(obj -> {
-            LocalPoint pt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), obj.raw().getLocation());
-            if(pt == null) return false;
+    public GroundObjectQuery within(WorldPoint anchor, int distance) {
+        return filter(obj -> obj.raw().getLocation().distanceTo(anchor) <= distance);
+    }
 
-            int dx = Math.abs(anchor.getX() - pt.getX());
-            int dy = Math.abs(anchor.getY() - pt.getY());
+    /**
+     * Filters for ground items where the Grand Exchange price is above a specific threshold. Stacks of items are NOT
+     * considered with this method. Use {@code stackValueAbove()} to consider stacks of items.
+     * @param value The value threshold for the items.
+     * @return GroundObjectQuery
+     */
+    public GroundObjectQuery valueAbove(int value) {
+        return filter(obj -> obj.raw().getGePrice() > value);
+    }
 
-            if (distance == 0) {
-                return (dx == Perspective.LOCAL_TILE_SIZE && dy == 0) || (dy == Perspective.LOCAL_TILE_SIZE && dx == 0);
-            } else {
-                return pt.distanceTo(anchor) <= distance;
-            }
-        });
+    /**
+     * Filters for ground items where the Grand Exchange price is above a specific threshold. Stacks of items are taken
+     * into consideration when using this method.
+     * @param value The value threshold for the items.
+     * @return GroundObjectQuery
+     */
+    public GroundObjectQuery stackValueAbove(int value) {
+        return filter(obj -> obj.raw().getGrandExchangePrice() > value);
+    }
+
+    /**
+     * Filters for ground items where the high alchemy price is above a specific threshold.
+     * @param value The value threshold for the ground items
+     * @return GroundObjectQuery
+     */
+    public GroundObjectQuery highAlchemyPriceAbove(int value) {
+        return filter(obj -> obj.raw().getHaPrice() > value);
     }
 
     /**
      * Sorts the stream of ground objects to order them by manhattan distance to the local player.
      * @return GroundObjectQuery
      */
-    public GroundObjectQuery nearest() {
-        return sorted((objectOne, objectTwo) -> {
-            int distanceOne = objectOne.raw().getLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
-            int distanceTwo = objectTwo.raw().getLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
-            return Integer.compare(distanceOne, distanceTwo);
-        });
+    public GroundObjectEntity nearest() {
+        WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getLocation().distanceTo(playerLoc))).first();
     }
 
     /**
      * Filters for only objects whose location is within the specified distance from the players current local point.
-     * @param distance The maximum distance from the anchor point (in local units).
+     * @param distance The maximum distance from the anchor point (in world units).
      * @return True if the object is within the specified distance from the anchor point, false otherwise.
      */
     public GroundObjectQuery within(int distance) {
-        LocalPoint anchor = ctx.players().local().raw().getLocalLocation();
-        return filter(obj -> {
-            LocalPoint pt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), obj.raw().getLocation());
-            if(pt == null) return false;
-
-            int dx = Math.abs(anchor.getX() - pt.getX());
-            int dy = Math.abs(anchor.getY() - pt.getY());
-
-            if (distance == 0) {
-                return (dx == Perspective.LOCAL_TILE_SIZE && dy == 0) || (dy == Perspective.LOCAL_TILE_SIZE && dx == 0);
-            } else {
-                return pt.distanceTo(anchor) <= distance;
-            }
-        });
+        WorldPoint anchor = ctx.players().local().raw().getWorldLocation();
+        return filter(obj -> obj.raw().getLocation().distanceTo(anchor) <= distance);
     }
 
     /**
@@ -176,8 +177,7 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
      * @return GroundObjectQuery
      */
     public GroundObjectQuery reachable() {
-        return filter(groundItem ->
-                ctx.runOnClientThread(() -> ctx.getTileService().isTileReachable(groundItem.raw().getLocation())));
+        return filter(groundItem -> ctx.getTileService().isTileReachable(groundItem.raw().getLocation()));
     }
 }
 

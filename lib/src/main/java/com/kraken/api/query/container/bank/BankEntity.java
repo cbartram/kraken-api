@@ -9,8 +9,6 @@ import net.runelite.api.gameval.VarbitID;
 @Slf4j
 public class BankEntity extends AbstractEntity<BankItemWidget> {
 
-    private static final int WITHDRAW_QUANTITY_VARBIT = 3960;
-
     public BankEntity(Context ctx, BankItemWidget raw) {
         super(ctx, raw);
     }
@@ -25,6 +23,11 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
+    }
+
+    @Override
+    public int getId() {
+        return raw.getItemId();
     }
 
     /**

@@ -59,6 +59,15 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
     }
 
     /**
+     * Filters for inventory items with a specific action like: "Drop", "Eat", or "Examine".
+     * @param action The action to filter for
+     * @return InventoryQuery
+     */
+    public InventoryQuery withAction(String action) {
+        return filter(i -> i.hasAction(action.toLowerCase()));
+    }
+
+    /**
      * Returns true if the inventory is empty and false otherwise.
      * @return true if the inventory is empty and false otherwise.
      */
@@ -106,13 +115,6 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
         return filter(i -> i.raw().isFood()).count() > 0;
     }
 
-    /**
-     * Filters for items that match a specific name pattern.
-     * Usage: ctx.inventory().nameContains("potion").list();
-     */
-    public InventoryQuery nameContains(String partialName) {
-        return filter(item -> item.getName() != null && item.getName().toLowerCase().contains(partialName.toLowerCase()));
-    }
 
     /**
      * Filters for items that are noted (cert).

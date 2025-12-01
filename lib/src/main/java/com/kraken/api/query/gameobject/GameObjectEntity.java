@@ -11,6 +11,11 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
         super(ctx, raw);
     }
 
+    @Override
+    public int getId() {
+        return raw.getId();
+    }
+
     /**
      * Returns the object composition for a given {@code TileObject}.
      * @return The object composition for the wrapped {@code TileObject}.

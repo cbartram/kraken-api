@@ -85,6 +85,9 @@ public class ExamplePlugin extends Plugin {
     private GameObjectTest gameObjectQueryTest;
 
     @Inject
+    private GroundObjectTest groundObjectQueryTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -141,6 +144,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("EquipmentQuery", equipmentQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableGameObjectQuery") && config.enableGameObjectQuery()) {
                 testResultManager.startTest("GameObjectQuery", gameObjectQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableGroundObjectQuery") && config.enableGroundObjectQuery()) {
+                testResultManager.startTest("GroundObjectQuery", groundObjectQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {

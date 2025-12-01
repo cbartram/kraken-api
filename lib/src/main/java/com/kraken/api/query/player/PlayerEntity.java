@@ -10,6 +10,11 @@ public class PlayerEntity extends AbstractEntity<Player> {
     }
 
     @Override
+    public int getId() {
+        return raw.getId();
+    }
+
+    @Override
     public String getName() {
         return raw.getName();
     }

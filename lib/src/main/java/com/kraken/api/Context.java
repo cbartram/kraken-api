@@ -359,7 +359,7 @@ public class Context {
      *
      * @return GroundObjectQuery used to chain together predicates to select specific ground items within the scene.
      */
-    public GroundObjectQuery groundObjects() {
+    public GroundObjectQuery groundItems() {
         return new GroundObjectQuery(this);
     }
 

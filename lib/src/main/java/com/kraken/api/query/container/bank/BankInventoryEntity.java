@@ -22,6 +22,11 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
         return true;
     }
 
+    @Override
+    public int getId() {
+        return raw.getId();
+    }
+
     /**
      * Deposits one of the given item from the players inventory into the bank.
      * @return true if the deposit was successful and false otherwise.

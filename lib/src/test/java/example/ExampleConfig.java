@@ -90,7 +90,21 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+
+    @ConfigItem(
+            keyName = "enableGroundObjectQuery",
+            name = "Start Ground Object Query",
+            description = "Enable Ground object query tests",
+            section = tests,
+            position = 6
+    )
+    default boolean enableGroundObjectQuery() {
+        return true;
+    }
+
+    // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
+    // ==============================================
     @ConfigSection(
             name = "Overlay Settings",
             description = "General overlay configuration for tests, debugging, and sim visualization",
@@ -118,6 +132,29 @@ public interface ExampleConfig extends Config {
             position = 2
     )
     default int gameObjectRange() {
+        return 3;
+    }
+
+    @ConfigItem(
+            keyName = "showGroundObjects",
+            name = "Show Ground Objects",
+            description = "Display Ground objects in the scene.",
+            section = overlaySettings,
+            position = 4
+    )
+    default boolean showGroundObjects() {
+        return false;
+    }
+
+    @Range(min = 1, max = 25)
+    @ConfigItem(
+            keyName = "groundObjectRange",
+            name = "Ground Object Range",
+            description = "The range at which ground objects are highlighted.",
+            section = overlaySettings,
+            position = 5
+    )
+    default int groundObjectRange() {
         return 3;
     }
 

@@ -20,4 +20,9 @@ public class GroundObjectEntity extends AbstractEntity<GroundItem> {
         ctx.getInteractionManager().interact(raw, action);
         return true;
     }
+
+    @Override
+    public int getId() {
+        return raw.getItemId();
+    }
 }

@@ -24,6 +24,11 @@ public class EquipmentEntity extends AbstractEntity<Widget> {
         return true;
     }
 
+    @Override
+    public int getId() {
+        return raw.getItemId();
+    }
+
     /**
      * Wears an equippable item
      * @return true if the item was equipped and false otherwise
