@@ -68,4 +68,12 @@ public class NpcEntity extends AbstractEntity<NPC> {
         ctx.getInteractionManager().interact(raw, action);
         return true;
     }
+
+    /**
+     * Attacks an NPC. This is a shallow wrapper around the interact() method.
+     * @return True if the attack interaction was successful and false otherwise
+     */
+    public boolean attack() {
+        return interact("attack");
+    }
 }

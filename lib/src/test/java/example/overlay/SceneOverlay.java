@@ -4,9 +4,12 @@ import com.google.inject.Inject;
 import com.kraken.api.Context;
 import com.kraken.api.query.gameobject.GameObjectEntity;
 import com.kraken.api.query.groundobject.GroundObjectEntity;
+import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.service.movement.Pathfinder;
 import example.ExampleConfig;
 import example.ExamplePlugin;
+import net.runelite.api.Actor;
+import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -49,6 +52,10 @@ public class SceneOverlay extends Overlay {
             renderGroundItems(graphics);
         }
 
+        if(config.showNpcs()) {
+            renderNpcs(graphics);
+        }
+
         return null;
     }
 
@@ -84,6 +91,71 @@ public class SceneOverlay extends Overlay {
                 if (entity.raw().getClickbox() != null) {
                     OverlayUtil.renderPolygon(graphics, entity.raw().getClickbox(), textColor);
                 }
+            }
+        }
+    }
+
+    /**
+     * Renders all nearby NPCs with color coding based on their state.
+     */
+    private void renderNpcs(Graphics2D graphics) {
+        // Use your API to get all valid NPCs within 15 tiles
+        List<NpcEntity> nearbyNpcs = ctx.npcs().within(config.npcRange()).stream().collect(Collectors.toList());
+
+        for (NpcEntity npcWrapper : nearbyNpcs) {
+            NPC npc = npcWrapper.raw();
+
+            Color color = Color.WHITE;
+            String status = "Idle";
+
+            boolean isReachable = ctx.getTileService().isTileReachable(npc.getWorldLocation());
+            boolean isDead = npc.isDead();
+            Actor interacting = npc.getInteracting();
+
+            List<String> actions = Arrays.stream(npc.getComposition().getActions())
+                    .filter(java.util.Objects::nonNull)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toList());
+            boolean isAttackable = actions.contains("attack") && !isDead;
+
+            if (interacting == ctx.getClient().getLocalPlayer()) {
+                color = Color.RED;
+                status = "Aggro";
+            } else if (!isReachable) {
+                color = Color.GRAY; // Unreachable
+                status = "Unreachable";
+            } else if (interacting != null) {
+                color = Color.YELLOW; // Busy interacting with someone else
+                status = "Busy";
+            } else if (isAttackable) {
+                color = Color.GREEN; // Ready to fight
+                status = "Attackable";
+            } else {
+                color = Color.CYAN; // Default/Idle
+            }
+
+            Shape clickbox = npc.getConvexHull();
+            if (clickbox != null) {
+                graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 100));
+                graphics.fill(clickbox);
+                graphics.setColor(color);
+                graphics.draw(clickbox);
+            }
+
+            // Format: Name (Lvl: 10) | [Attack, Talk] | Status
+            String actionString = actions.isEmpty() ? "[]" : actions.toString();
+            String text = String.format("%s (Lvl: %d) | %s",
+                    npc.getName(),
+                    npc.getCombatLevel(),
+                    status);
+
+            net.runelite.api.Point textLoc = npc.getCanvasTextLocation(graphics, text, npc.getLogicalHeight() + 40);
+            if (textLoc != null) {
+                OverlayUtil.renderTextLocation(graphics, textLoc, text, color);
+
+                // Draw secondary line for actions if needed
+                net.runelite.api.Point actionLoc = new net.runelite.api.Point(textLoc.getX(), textLoc.getY() + 15);
+                OverlayUtil.renderTextLocation(graphics, actionLoc, actionString, Color.LIGHT_GRAY);
             }
         }
     }

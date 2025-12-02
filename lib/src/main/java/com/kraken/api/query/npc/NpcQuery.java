@@ -4,6 +4,8 @@ import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.Actor;
 import net.runelite.api.NPC;
+import net.runelite.api.NPCComposition;
+import net.runelite.api.coords.WorldPoint;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -20,9 +22,17 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     protected Supplier<Stream<NpcEntity>> source() {
         return () -> ctx.getClient().getTopLevelWorldView().npcs().stream()
                 .filter(Objects::nonNull)
-                .filter(x -> x.getName() != null)
-                .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(ctx.getClient().getLocalPlayer().getLocalLocation())))
+                .filter(n -> n.getName() != null && n.getId() != -1)
                 .map(rawNpc -> new NpcEntity(ctx, rawNpc));
+    }
+
+    /**
+     * Returns a stream of NPC's at a given world point.
+     * @param location The world point to return
+     * @return NpcQuery
+     */
+    public NpcQuery at(WorldPoint location) {
+        return filter(n -> n.raw().getWorldLocation().equals(location));
     }
 
     /**
@@ -37,9 +47,26 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
      */
     public NpcQuery attackable() {
         return filter(npc -> {
-            List<String> actions = Arrays.stream(npc.raw().getComposition().getActions()).map(String::toLowerCase).collect(Collectors.toList());
+            NPCComposition composition = npc.raw().getComposition();
+            if(composition == null) return false;
+            if(composition.getActions() == null || composition.getActions().length == 0) return false;
+
+            List<String> actions = Arrays.stream(composition.getActions())
+                    .filter(Objects::nonNull)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toList());
+
             return actions.contains("attack") && !npc.raw().isDead();
         });
+    }
+
+    /**
+     * Filters for only NPC's which are reachable from the players current tile. The player must be able to
+     * reach the NPC's true southwest tile in order for this to include the NPC in the resulting stream.
+     * @return NpcQuery
+     */
+    public NpcQuery reachable() {
+        return filter(npc -> npc.raw() != null && ctx.getTileService().isTileReachable(npc.raw().getWorldLocation()));
     }
 
     /**
@@ -63,39 +90,51 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     }
 
     /**
+     * Sorts the results by distance to the specified point.
+     * Usage: ctx.npcs().withName("Goblin").nearestTo(new WorldPoint(2056, 8143, 0)).first();
+     * @param location The World point to use as a distance anchor.
+     * @return NpcQuery
+     */
+    public NpcQuery nearestTo(WorldPoint location) {
+        return sorted(Comparator.comparingInt(npc ->
+                npc.raw().getWorldLocation().distanceTo(location)
+        ));
+    }
+
+    /**
      * Filters for NPCs within a specific distance.
      * @param distance The distance within which to search for NPC's.
      * @return NpcQuery
      */
-    public NpcQuery withinDistance(int distance) {
+    public NpcQuery within(int distance) {
         return filter(npc ->
                 npc.raw().getWorldLocation().distanceTo(ctx.getClient().getLocalPlayer().getWorldLocation()) <= distance
         );
     }
 
     /**
-     * Filters NPCs by their ID.
-     * @param ids The ids of NPC's to filter for
+     * Filters for NPC's within a specified area. The min WorldPoint should be the southwest tile of the area
+     * and the max WorldPoint should be the northeast tile of the area.
+     * @param min The southwest minimum world point of the area to check
+     * @param max The northeast maximum world point of the area to check
      * @return NpcQuery
      */
-    public NpcQuery withId(int... ids) {
-        Set<Integer> idSet = Arrays.stream(ids).boxed().collect(Collectors.toSet());
-        return filter(npc -> idSet.contains(npc.raw().getId()));
-    }
+    public NpcQuery withinArea(WorldPoint min, WorldPoint max) {
+        int x1 = min.getX();
+        int x2 = max.getX();
+        int y1 = min.getY();
+        int y2 = max.getY();
 
-    /**
-     * Filters NPCs by Name (Case insensitive).
-     * @param names The names of NPC's with which to filter for
-     * @return NpcQuery
-     */
-    public NpcQuery withName(String... names) {
         return filter(npc -> {
-            String npcName = npc.getName();
-            if (npcName == null) return false;
-            for (String n : names) {
-                if (n.equalsIgnoreCase(npcName)) return true;
+            WorldPoint pt = npc.raw().getWorldLocation();
+            int x3 = pt.getX();
+            int y3 = pt.getY();
+
+            if (x3 > Math.max(x1, x2) || x3 < Math.min(x1, x2)) {
+                return false;
             }
-            return false;
+
+            return y3 <= Math.max(y1, y2) && y3 >= Math.min(y1, y2);
         });
     }
 
@@ -118,6 +157,18 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
         return filter(npc -> {
             Actor target = npc.raw().getInteracting();
             return target != null && target != ctx.getClient().getLocalPlayer();
+        });
+    }
+
+    /**
+     * Filters the stream for NPCs which are interacting with a specified {@code Actor}
+     * @param actor The actor to check NPC interactions against
+     * @return NpcQuery
+     */
+    public NpcQuery interactingWith(Actor actor) {
+        return filter(npc -> {
+            Actor target = npc.raw().getInteracting();
+            return target != null && target == actor;
         });
     }
 
