@@ -28,7 +28,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
 
     /**
      * Returns a stream of NPC's at a given world point.
-     * @param location The world point to return
+     * @param location The world point to check
      * @return NpcQuery
      */
     public NpcQuery at(WorldPoint location) {

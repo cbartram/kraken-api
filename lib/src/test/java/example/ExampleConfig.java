@@ -112,6 +112,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enablePlayerQuery",
+            name = "Start Player Tests",
+            description = "Enable Player object query tests",
+            section = tests,
+            position = 7
+    )
+    default boolean enablePlayerQuery() {
+        return true;
+    }
+
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
     // ==============================================
@@ -168,7 +179,6 @@ public interface ExampleConfig extends Config {
         return 3;
     }
 
-
     @ConfigItem(
             keyName = "showNpcObjects",
             name = "Show Npc Objects",
@@ -189,6 +199,29 @@ public interface ExampleConfig extends Config {
             position = 7
     )
     default int npcRange() {
+        return 3;
+    }
+
+    @ConfigItem(
+            keyName = "showPlayerObjects",
+            name = "Show Players",
+            description = "Display Player's within the scene.",
+            section = overlaySettings,
+            position = 8
+    )
+    default boolean showPlayers() {
+        return false;
+    }
+
+    @Range(min = 1, max = 25)
+    @ConfigItem(
+            keyName = "playerRange",
+            name = "Player Range",
+            description = "The range at which Players are highlighted.",
+            section = overlaySettings,
+            position = 9
+    )
+    default int playerRange() {
         return 3;
     }
 

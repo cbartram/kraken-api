@@ -91,6 +91,9 @@ public class ExamplePlugin extends Plugin {
     private GroundObjectTest groundObjectQueryTest;
 
     @Inject
+    private PlayerTest playerQueryTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -151,6 +154,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("GroundObjectQuery", groundObjectQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableNpcQuery") && config.enableNpcQuery()) {
                 testResultManager.startTest("NpcQuery", npcQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enablePlayerQuery") && config.enablePlayerQuery()) {
+                testResultManager.startTest("PlayerQuery", playerQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {

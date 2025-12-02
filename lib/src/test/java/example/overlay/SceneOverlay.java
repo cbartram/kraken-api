@@ -5,6 +5,7 @@ import com.kraken.api.Context;
 import com.kraken.api.query.gameobject.GameObjectEntity;
 import com.kraken.api.query.groundobject.GroundObjectEntity;
 import com.kraken.api.query.npc.NpcEntity;
+import com.kraken.api.query.player.PlayerEntity;
 import com.kraken.api.service.movement.Pathfinder;
 import example.ExampleConfig;
 import example.ExamplePlugin;
@@ -56,7 +57,98 @@ public class SceneOverlay extends Overlay {
             renderNpcs(graphics);
         }
 
+        if(config.showPlayers()) {
+            renderOtherPlayers(graphics);
+            renderLocalPlayer(graphics);
+        }
+
+        if(config.showDebugInfo()) {
+            renderApiDebug(graphics);
+        }
+
         return null;
+    }
+
+    private void renderLocalPlayer(Graphics2D graphics) {
+        var localEntity = ctx.players().local();
+        if (localEntity != null && !localEntity.isNull()) {
+            // Draw Blue box around self
+            renderPlayerPolygon(graphics, localEntity, Color.BLUE, "Me");
+        }
+    }
+
+    private void renderOtherPlayers(Graphics2D graphics) {
+        List<PlayerEntity> players = ctx.players().stream().collect(Collectors.toList());
+
+        for (PlayerEntity p : players) {
+            Color color = Color.WHITE;
+            String status = "Idle";
+
+            Actor interacting = p.raw().getInteracting();
+
+            if (interacting != null) {
+                if (interacting == ctx.getClient().getLocalPlayer()) {
+                    color = Color.RED; // Interacting with ME (Warning)
+                    status = "Targeting Me";
+                } else {
+                    color = Color.YELLOW; // Interacting with someone else
+                    status = "Busy";
+                }
+            }
+
+            String text = String.format("%s (Lvl: %d) | %s",
+                    p.getName(),
+                    p.raw().getCombatLevel(),
+                    status
+            );
+
+            renderPlayerPolygon(graphics, p, color, text);
+        }
+    }
+
+    private void renderApiDebug(Graphics2D graphics) {
+        // Debug 1: visualize the result of .nearest()
+        // This draws a line from local player to the result of ctx.players().nearest()
+        PlayerEntity nearest = ctx.players().nearest();
+
+        if (nearest != null && !nearest.isNull()) {
+            LocalPoint start = ctx.getClient().getLocalPlayer().getLocalLocation();
+            LocalPoint end = nearest.raw().getLocalLocation();
+
+            if (start != null && end != null) {
+                net.runelite.api.Point p1 = Perspective.localToCanvas(ctx.getClient(), start, ctx.getClient().getTopLevelWorldView().getPlane());
+                net.runelite.api.Point p2 = Perspective.localToCanvas(ctx.getClient(), end, ctx.getClient().getTopLevelWorldView().getPlane());
+
+                if (p1 != null && p2 != null) {
+                    graphics.setColor(Color.CYAN);
+                    graphics.drawLine(p1.getX(), p1.getY(), p2.getX(), p2.getY());
+                    OverlayUtil.renderTextLocation(graphics, new net.runelite.api.Point((p1.getX()+p2.getX())/2, (p1.getY()+p2.getY())/2), "Nearest", Color.CYAN);
+                }
+            }
+        }
+
+        // Debug 2: Count players interacting with me
+        long targetingMe = ctx.players().interactingWith(ctx.getClient().getLocalPlayer()).stream().count();
+        if (targetingMe > 0) {
+            OverlayUtil.renderTextLocation(graphics, new net.runelite.api.Point(30, 30), "WARNING: " + targetingMe + " players targeting you!", Color.RED);
+        }
+    }
+
+    private void renderPlayerPolygon(Graphics2D graphics, PlayerEntity entity, Color color, String label) {
+        if (entity == null || entity.raw() == null) return;
+
+        Shape poly = entity.raw().getConvexHull();
+        if (poly != null) {
+            graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 100));
+            graphics.fill(poly);
+            graphics.setColor(color);
+            graphics.draw(poly);
+        }
+
+        net.runelite.api.Point textLoc = entity.raw().getCanvasTextLocation(graphics, label, entity.raw().getLogicalHeight() + 40);
+        if (textLoc != null) {
+            OverlayUtil.renderTextLocation(graphics, textLoc, label, color);
+        }
     }
 
     private void renderGameObjects(Graphics2D graphics) {
