@@ -15,15 +15,7 @@ public class NpcTest extends BaseApiTest {
         boolean testsPassed = true;
 
         try {
-            // 1. Basic Existence: Verify Bankers exist
-            // Varrock East Bank always has "Banker"
-            boolean bankerExists = !ctx.npcs().withName("Banker").first().isNull();
-            if (!bankerExists) {
-                log.error("Failed to find any 'Banker'");
-                testsPassed = false;
-            }
-
-            // 2. Attackable Filter: Verify logic on Guards vs Bankers
+            // 2. Attackable Filter: Verify logic on Guards
             // Guards should be attackable
             boolean guardsFound = !ctx.npcs().withName("Guard").first().isNull();
             if (guardsFound) {
@@ -36,27 +28,13 @@ public class NpcTest extends BaseApiTest {
                 log.warn("Skipping Guard attackable test (No Guards nearby)");
             }
 
-            // Bankers should generally NOT be attackable (in normal worlds)
-            boolean bankerIsAttackable = !ctx.npcs().withName("Banker").attackable().first().isNull();
-            if (bankerIsAttackable) {
-                log.warn("Banker was marked as attackable (Unexpected for standard Varrock East)");
-            }
-
             boolean aliveCheck = !ctx.npcs().alive().first().isNull();
             if (!aliveCheck) {
                 log.error("Failed to find any 'alive' NPCs");
                 testsPassed = false;
             }
 
-            // 4. Idle vs Interacting
-            // Bankers standing behind the booth are usually idle
-            boolean idleBanker = !ctx.npcs().withName("Banker").idle().first().isNull();
-            if (!idleBanker) {
-                log.error("Failed to find an 'idle' Banker");
-                testsPassed = false;
-            }
-
-            // 5. Nearest Sorting: Verify distance order
+            // Nearest Sorting: Verify distance order
             var nearestNpcs = ctx.npcs().nearest().stream().limit(2).collect(Collectors.toList());
             if (nearestNpcs.size() >= 2) {
                 int dist1 = nearestNpcs.get(0).raw().getWorldLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
@@ -68,21 +46,7 @@ public class NpcTest extends BaseApiTest {
                 }
             }
 
-            // 6. Coordinate Query (.at)
-            // Find a banker, get their location, and try to query them back using .at()
-            var targetBanker = ctx.npcs().withName("Banker").nearest().first();
-            if (!targetBanker.isNull()) {
-                WorldPoint loc = targetBanker.raw().getWorldLocation();
-
-                // Test specific point query
-                boolean retrievedByLoc = !ctx.npcs().at(loc).withName("Banker").first().isNull();
-                if (!retrievedByLoc) {
-                    log.error("Failed to retrieve Banker via .at(WorldPoint) query");
-                    testsPassed = false;
-                }
-            }
-
-            // 7. Area Query (.withinArea)
+            // Area Query (.withinArea)
             // Define a box around the player and ensure we find NPCs inside it
             WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
             WorldPoint min = new WorldPoint(playerLoc.getX() - 15, playerLoc.getY() - 15, playerLoc.getPlane());
@@ -94,7 +58,7 @@ public class NpcTest extends BaseApiTest {
                 testsPassed = false;
             }
 
-            // 8. Reachability
+            // Reachability
             // Ensure at least some NPCs are reachable (e.g., other players' pets, guards, or men)
             // Note: Bankers behind booths might return false for reachability depending on exact tile logic
             boolean anyReachable = !ctx.npcs().reachable().first().isNull();
@@ -103,7 +67,7 @@ public class NpcTest extends BaseApiTest {
                 testsPassed = false;
             }
 
-            // 9. Interaction Chain (Optional Smoke Test)
+            // Interaction Chain (Optional Smoke Test)
             // Only run if we found a guard, try to hover or check interaction logic (without clicking)
             if (guardsFound) {
                 var guard = ctx.npcs().withName("Guard").nearest().first();

@@ -22,7 +22,7 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
     protected Supplier<Stream<NpcEntity>> source() {
         return () -> ctx.getClient().getTopLevelWorldView().npcs().stream()
                 .filter(Objects::nonNull)
-                .filter(n -> n.getName() != null && n.getId() != -1)
+                .filter(n -> ctx.runOnClientThread(() -> n.getName() != null && n.getId() != -1))
                 .map(rawNpc -> new NpcEntity(ctx, rawNpc));
     }
 
