@@ -6,6 +6,7 @@ import com.kraken.api.query.gameobject.GameObjectEntity;
 import com.kraken.api.query.groundobject.GroundObjectEntity;
 import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.query.player.PlayerEntity;
+import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.movement.Pathfinder;
 import example.ExampleConfig;
 import example.ExamplePlugin;
@@ -14,6 +15,7 @@ import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.*;
 
 import java.awt.*;
@@ -64,6 +66,7 @@ public class SceneOverlay extends Overlay {
 
         if(config.showDebugInfo()) {
             renderApiDebug(graphics);
+            renderWidgetDebug(graphics);
         }
 
         return null;
@@ -103,6 +106,69 @@ public class SceneOverlay extends Overlay {
             );
 
             renderPlayerPolygon(graphics, p, color, text);
+        }
+    }
+
+    private void renderWidgetDebug(Graphics2D graphics) {
+        // 1. Get current mouse position
+        net.runelite.api.Point mouse = ctx.getClient().getMouseCanvasPosition();
+
+        // 2. Find the top-most visible widget under the mouse
+        // We filter for visible widgets, then check bounds manually or use API utils if available.
+        // Since we want to test the Query API, let's use it to narrow down candidates,
+        // though strictly 'widgets under point' is complex due to layering.
+        // A simple approach for debugging is iterating visible widgets.
+        WidgetEntity hovered = ctx.widgets().visible().stream()
+                .filter(w -> {
+                    Rectangle bounds = w.raw().getBounds();
+                    return bounds != null && bounds.contains(mouse.getX(), mouse.getY());
+                })
+                // Sort by area size (smallest first) usually gives the specific button
+                // rather than the container, or use depth logic if available.
+                .min((w1, w2) -> {
+                    Rectangle r1 = w1.raw().getBounds();
+                    Rectangle r2 = w2.raw().getBounds();
+                    return Double.compare(r1.getWidth() * r1.getHeight(), r2.getWidth() * r2.getHeight());
+                })
+                .orElse(null);
+
+
+        if(hovered == null) {
+            return;
+        }
+
+        Widget w = hovered.raw();
+        Rectangle bounds = w.getBounds();
+
+        // Highlight
+        graphics.setColor(Color.MAGENTA);
+        graphics.draw(bounds);
+
+        // Info Panel
+        int x = bounds.x + bounds.width + 5;
+        int y = bounds.y;
+
+        // Ensure info panel stays on screen
+        if (x + 150 > ctx.getClient().getCanvasWidth()) {
+            x = bounds.x - 155;
+        }
+
+        String[] info = new String[] {
+                "ID: " + w.getId() + " (" + (w.getId() >> 16) + ":" + (w.getId() & 0xFFFF) + ")",
+                "Index: " + w.getIndex(),
+                "Text: " + w.getText(),
+                "Name: " + w.getName(),
+                "Actions: " + (w.getActions() != null ? String.join(", ", w.getActions()) : "null"),
+                "Sprite: " + w.getSpriteId()
+        };
+
+        // Draw background for text
+        graphics.setColor(new Color(0, 0, 0, 180));
+        graphics.fillRect(x, y, 200, info.length * 15 + 5);
+
+        graphics.setColor(Color.WHITE);
+        for (int i = 0; i < info.length; i++) {
+            graphics.drawString(info[i], x + 5, y + 15 + (i * 15));
         }
     }
 

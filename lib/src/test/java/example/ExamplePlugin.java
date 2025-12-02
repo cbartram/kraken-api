@@ -94,6 +94,9 @@ public class ExamplePlugin extends Plugin {
     private PlayerTest playerQueryTest;
 
     @Inject
+    private WidgetTest widgetQueryTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -156,6 +159,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("NpcQuery", npcQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enablePlayerQuery") && config.enablePlayerQuery()) {
                 testResultManager.startTest("PlayerQuery", playerQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableWidgetQuery") && config.enableWidgetQuery()) {
+                testResultManager.startTest("WidgetQuery", widgetQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {

@@ -117,9 +117,20 @@ public interface ExampleConfig extends Config {
             name = "Start Player Tests",
             description = "Enable Player object query tests",
             section = tests,
-            position = 7
+            position = 8
     )
     default boolean enablePlayerQuery() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "enableWidgetQuery",
+            name = "Start Widget Tests",
+            description = "Enable Widget object query tests",
+            section = tests,
+            position = 9
+    )
+    default boolean enableWidgetQuery() {
         return true;
     }
 

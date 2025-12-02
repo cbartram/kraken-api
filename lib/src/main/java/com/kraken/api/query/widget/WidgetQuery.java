@@ -3,9 +3,12 @@ package com.kraken.api.query.widget;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.util.Text;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -144,6 +147,23 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      */
     public WidgetQuery withListener() {
         return filter(w -> w.raw().getOnOpListener() != null);
+    }
+
+    /**
+     * Filters for widgets with a specific action.
+     * @param action The action string to filter widgets for
+     * @return WidgetQuery
+     */
+    public WidgetQuery withAction(String action) {
+        return filter(Objects::nonNull)
+            .filter(widget -> {
+                String[] actions = widget.raw().getActions();
+                return actions != null &&
+                        Arrays.stream(actions)
+                                .filter(Objects::nonNull)
+                                .map(Text::removeTags)
+                                .anyMatch(s -> s.equalsIgnoreCase(action));
+            });
     }
 
     /**
