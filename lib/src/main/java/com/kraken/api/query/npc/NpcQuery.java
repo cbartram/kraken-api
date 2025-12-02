@@ -83,10 +83,10 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
      * Usage: ctx.npcs().withName("Goblin").nearest().first();
      * @return NpcQuery
      */
-    public NpcQuery nearest() {
+    public NpcEntity nearest() {
         return sorted(Comparator.comparingInt(npc ->
                 npc.raw().getLocalLocation().distanceTo(ctx.getClient().getLocalPlayer().getLocalLocation())
-        ));
+        )).first();
     }
 
     /**
