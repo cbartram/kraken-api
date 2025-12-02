@@ -25,7 +25,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enablePrayer",
-            name = "Start Prayer Service",
+            name = "Start Prayer Service Tests",
             description = "Enable Prayer tests",
             section = tests,
             position = 1
@@ -36,7 +36,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableBankQuery",
-            name = "Start Bank Query",
+            name = "Start Bank Tests",
             description = "Enable Bank Query Tests",
             section = tests,
             position = 2
@@ -47,7 +47,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableInventoryQuery",
-            name = "Start Inventory Query",
+            name = "Start Inventory Tests",
             description = "Enable Inventory Query Tests",
             section = tests,
             position = 3
@@ -58,7 +58,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableBankInventoryQuery",
-            name = "Start Bank Inventory Query",
+            name = "Start Bank Inventory Tests",
             description = "Enable Bank inventory Query Tests",
             section = tests,
             position = 4
@@ -69,7 +69,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableEquipmentQuery",
-            name = "Start Equipment Query",
+            name = "Start Equipment Tests",
             description = "Enable Equipment Query Tests",
             section = tests,
             position = 5
@@ -81,7 +81,7 @@ public interface ExampleConfig extends Config {
 
     @ConfigItem(
             keyName = "enableGameObjectQuery",
-            name = "Start Game Object Query",
+            name = "Start Game Object Tests",
             description = "Enable game object query tests",
             section = tests,
             position = 6
@@ -90,15 +90,25 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
-
     @ConfigItem(
             keyName = "enableGroundObjectQuery",
-            name = "Start Ground Object Query",
+            name = "Start Ground Object Tests",
             description = "Enable Ground object query tests",
             section = tests,
             position = 6
     )
     default boolean enableGroundObjectQuery() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "enableNpcQuery",
+            name = "Start Npc Tests",
+            description = "Enable Npc object query tests",
+            section = tests,
+            position = 7
+    )
+    default boolean enableNpcQuery() {
         return true;
     }
 
@@ -158,12 +168,36 @@ public interface ExampleConfig extends Config {
         return 3;
     }
 
+
+    @ConfigItem(
+            keyName = "showNpcObjects",
+            name = "Show Npc Objects",
+            description = "Display Npc's within the scene.",
+            section = overlaySettings,
+            position = 6
+    )
+    default boolean showNpcs() {
+        return false;
+    }
+
+    @Range(min = 1, max = 25)
+    @ConfigItem(
+            keyName = "npcRange",
+            name = "Npc Range",
+            description = "The range at which Npcs are highlighted.",
+            section = overlaySettings,
+            position = 7
+    )
+    default int npcRange() {
+        return 3;
+    }
+
     @ConfigItem(
             keyName = "fontSize",
             name = "Font Size",
             description = "Font size for overlay text",
             section = overlaySettings,
-            position = 8
+            position = 12
     )
     default int fontSize() {
         return 12;
@@ -174,7 +208,7 @@ public interface ExampleConfig extends Config {
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
             section = overlaySettings,
-            position = 9
+            position = 13
     )
     default boolean showDebugInfo() {
         return false;
@@ -184,7 +218,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 10,
+            position = 14,
             section = overlaySettings
     )
     default boolean showVisualizer() {

@@ -85,6 +85,9 @@ public class ExamplePlugin extends Plugin {
     private GameObjectTest gameObjectQueryTest;
 
     @Inject
+    private NpcTest npcQueryTest;
+
+    @Inject
     private GroundObjectTest groundObjectQueryTest;
 
     @Inject
@@ -146,6 +149,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("GameObjectQuery", gameObjectQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableGroundObjectQuery") && config.enableGroundObjectQuery()) {
                 testResultManager.startTest("GroundObjectQuery", groundObjectQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableNpcQuery") && config.enableNpcQuery()) {
+                testResultManager.startTest("NpcQuery", npcQueryTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {
