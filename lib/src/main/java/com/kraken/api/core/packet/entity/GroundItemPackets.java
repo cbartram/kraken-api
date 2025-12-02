@@ -4,7 +4,6 @@ package com.kraken.api.core.packet.entity;
 import com.kraken.api.core.packet.PacketClient;
 import com.kraken.api.core.packet.model.PacketDefFactory;
 import lombok.SneakyThrows;
-import net.runelite.api.Client;
 import net.runelite.api.TileItem;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
@@ -28,9 +27,6 @@ public class GroundItemPackets {
     @Inject
     private PacketDefFactory packetDefFactory;
 
-    @Inject
-    private Client client;
-
     /**
      * Queues the low-level packet to perform a generic action click on a ground item.
      * <p>
@@ -45,7 +41,7 @@ public class GroundItemPackets {
      * @param ctrlDown If true, indicates the control key was held down.
      */
     @SneakyThrows
-    public void queueTileItemAction(int actionFieldNo, int objectId, int worldPointX, int worldPointY, boolean ctrlDown) {
+    public void queueGroundItemAction(int actionFieldNo, int objectId, int worldPointX, int worldPointY, boolean ctrlDown) {
         int ctrl = ctrlDown ? 1 : 0;
         packetClientProvider.get().sendPacket(packetDefFactory.getOpObj(actionFieldNo), objectId, worldPointX, worldPointY, ctrl);
     }
@@ -64,7 +60,7 @@ public class GroundItemPackets {
      * @param sourceWidgetId The ID of the parent widget containing the item (e.g., inventory widget ID).
      * @param ctrlDown If true, indicates the control key was held down.
      */
-    public void queueWidgetOnTileItem(int objectId, int worldPointX, int worldPointY, int sourceSlot, int sourceItemId, int sourceWidgetId, boolean ctrlDown) {
+    public void queueWidgetOnGroundItem(int objectId, int worldPointX, int worldPointY, int sourceSlot, int sourceItemId, int sourceWidgetId, boolean ctrlDown) {
         int ctrl = ctrlDown ? 1 : 0;
         packetClientProvider.get().sendPacket(packetDefFactory.getOpObjT(), objectId, worldPointX, worldPointY, sourceSlot, sourceItemId,
                 sourceWidgetId, ctrl);
@@ -80,8 +76,8 @@ public class GroundItemPackets {
      * @param location The {@link WorldPoint} location of the item on the map.
      * @param ctrlDown If true, indicates the control key was held down.
      */
-    public void queueTileItemAction(TileItem item, WorldPoint location, boolean ctrlDown) {
-        queueTileItemAction(3, item.getId(), location.getX(), location.getY(), ctrlDown);
+    public void queueGroundItemAction(TileItem item, WorldPoint location, boolean ctrlDown) {
+        queueGroundItemAction(3, item.getId(), location.getX(), location.getY(), ctrlDown);
     }
 
     /**
@@ -95,7 +91,7 @@ public class GroundItemPackets {
      * @param w The source {@link Widget} containing the item or action to be used on the ground item.
      * @param ctrlDown If true, indicates the control key was held down.
      */
-    public void queueWidgetOnTileItem(TileItem item, WorldPoint location, Widget w, boolean ctrlDown) {
-        queueWidgetOnTileItem(item.getId(), location.getX(), location.getY(), w.getIndex(), w.getItemId(), w.getId(), ctrlDown);
+    public void queueWidgetOnGroundItem(TileItem item, WorldPoint location, Widget w, boolean ctrlDown) {
+        queueWidgetOnGroundItem(item.getId(), location.getX(), location.getY(), w.getIndex(), w.getItemId(), w.getId(), ctrlDown);
     }
 }

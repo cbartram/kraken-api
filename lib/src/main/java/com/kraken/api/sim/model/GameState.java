@@ -1,6 +1,5 @@
 package com.kraken.api.sim.model;
 
-import com.kraken.api.interaction.tile.CollisionMap;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

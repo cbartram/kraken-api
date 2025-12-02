@@ -1,4 +1,4 @@
-import com.kraken.api.example.ExamplePlugin;
+import example.ExamplePlugin;
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 

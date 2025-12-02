@@ -2,7 +2,7 @@ package com.kraken.api.sim.ui;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.kraken.api.interaction.tile.MovementFlag;
+import com.kraken.api.sim.MovementFlag;
 import com.kraken.api.sim.SimulationObserver;
 import com.kraken.api.sim.model.SimNpc;
 import com.kraken.api.sim.engine.SimulationEngine;

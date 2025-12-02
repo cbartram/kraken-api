@@ -1,7 +1,7 @@
 package com.kraken.api.input;
 
 import com.google.inject.Singleton;
-import com.kraken.api.core.RandomService;
+import com.kraken.api.service.RandomService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;

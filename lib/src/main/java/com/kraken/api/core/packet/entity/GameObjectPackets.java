@@ -2,7 +2,7 @@ package com.kraken.api.core.packet.entity;
 
 import com.kraken.api.core.packet.PacketClient;
 import com.kraken.api.core.packet.model.PacketDefFactory;
-import com.kraken.api.interaction.tile.TileService;
+import com.kraken.api.service.tile.TileService;
 import lombok.SneakyThrows;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
