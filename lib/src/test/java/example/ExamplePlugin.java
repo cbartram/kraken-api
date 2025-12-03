@@ -11,7 +11,9 @@ import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
 import example.tests.query.*;
+import example.tests.service.MovementServiceTest;
 import example.tests.service.PrayerServiceTest;
+import example.tests.service.SpellServiceTest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -97,6 +99,12 @@ public class ExamplePlugin extends Plugin {
     private WidgetTest widgetQueryTest;
 
     @Inject
+    private SpellServiceTest spellServiceTest;
+
+    @Inject
+    private MovementServiceTest movementServiceTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -161,6 +169,10 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("PlayerQuery", playerQueryTest.executeTest());
             } else if(key.equalsIgnoreCase("enableWidgetQuery") && config.enableWidgetQuery()) {
                 testResultManager.startTest("WidgetQuery", widgetQueryTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableMovement") && config.enableMovementTests()) {
+                testResultManager.startTest("MovementService", movementServiceTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableSpell") && config.enableSpellTests()) {
+                testResultManager.startTest("SpellService", spellServiceTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {

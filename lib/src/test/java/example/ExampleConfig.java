@@ -144,6 +144,28 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableMovement",
+            name = "Start Movement Service Tests",
+            description = "Enable movement service tests",
+            section = serviceTests,
+            position = 2
+    )
+    default boolean enableMovementTests() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "enableSpell",
+            name = "Start Spell Service Tests",
+            description = "Enable spell service tests",
+            section = serviceTests,
+            position = 3
+    )
+    default boolean enableSpellTests() {
+        return true;
+    }
+
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
     // ==============================================
