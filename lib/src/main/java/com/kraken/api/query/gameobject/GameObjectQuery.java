@@ -38,9 +38,10 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
                     }
 
                     for (GameObject gameObject : tile.getGameObjects()) {
-                        if (gameObject == null) continue;
-                        if (gameObject.getId() == -1) continue;
-                        gameObjects.add(new GameObjectEntity(ctx, gameObject));
+                        if (gameObject == null || gameObject.getId() == -1) continue;
+                        if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
+                            gameObjects.add(new GameObjectEntity(ctx, gameObject));
+                        }
                     }
                 }
             }

@@ -25,7 +25,7 @@ public class PrayerServiceTest extends BaseApiTest {
             testsPassed &= testIsActive;
 
         } catch (Exception e) {
-            log.error("Exception during player service test", e);
+            log.error("Exception during prayer service test", e);
             return false;
         }
 
