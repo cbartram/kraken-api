@@ -58,6 +58,25 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
         };
     }
 
+     /**
+     * Returns true when the inventory contains a specific item, found by its item id.
+     * @param id The id of the item to search for
+     * @return True if the inventory has the item and false otherwise
+     */
+    public boolean hasItem(int id) {
+        return filter(i -> i.getId() == id).count() > 0;
+    }
+
+    /**
+     * Returns true when the inventory contains a specific item, found by its name.
+     * This is case-insensitive but does require the entire item name.
+     * @param name The name of the item to search for
+     * @return True if the inventory has the item and false otherwise
+     */
+    public boolean hasItem(String name) {
+        return filter(i -> i.getName().equalsIgnoreCase(name)).count() > 0;
+    }
+
     /**
      * Filters for inventory items with a specific action like: "Drop", "Eat", or "Examine".
      * @param action The action to filter for
