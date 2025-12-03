@@ -2,6 +2,7 @@ package com.kraken.api.query.equipment;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
+import com.kraken.api.query.container.ContainerItem;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Item;
@@ -9,7 +10,6 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 
 
 @Slf4j
-public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuery, Widget> {
+public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuery, ContainerItem> {
 
     private final HashMap<Integer, Integer> equipmentSlotWidgetMapping = new HashMap<>();
     private final HashMap<Integer, Integer> intMapping = new HashMap<>();
@@ -120,27 +120,22 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
         Widget[] inventoryWidgets = inventory.getDynamicChildren();
         List<EquipmentEntity> entities = new ArrayList<>();
 
-        for (int i = 0; i < container.getItems().length; i++) {
-            final Item item = container.getItems()[i];
+        Item[] items = container.getItems();
+        for (int i = 0; i < items.length; i++) {
+            final Item item = items[i];
             if (item.getId() == -1 || item.getId() == 6512) continue;
 
-            final ItemComposition itemComposition = ctx.getClient().getItemDefinition(item.getId());
-            if (itemComposition == null) continue;
-            if(itemComposition.getInventoryActions() == null) continue;
+            final ItemComposition def = ctx.getClient().getItemDefinition(item.getId());
+            if (def == null || def.getInventoryActions() == null) continue;
 
-            List<String> actions = Arrays.stream(itemComposition.getInventoryActions())
+            List<String> actions = Arrays.stream(def.getInventoryActions())
                     .filter(Objects::nonNull)
                     .map(String::toLowerCase)
                     .collect(Collectors.toList());
 
-
             if(actions.contains("wield") || actions.contains("wear")) {
-                Widget widget = null;
-                if (i < inventoryWidgets.length) {
-                    widget = inventoryWidgets[i];
-                }
-
-                entities.add(new EquipmentEntity(ctx, itemComposition.getName(), widget));
+                Widget w = (i < inventoryWidgets.length) ? inventoryWidgets[i] : null;
+                entities.add(new EquipmentEntity(ctx, def.getName(), new ContainerItem(item, def, i, ctx, w, ContainerItem.ItemOrigin.INVENTORY)));
             }
         }
         return entities;
@@ -156,10 +151,9 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
         }
 
         List<EquipmentEntity> entities = new ArrayList<>();
-        ItemContainer equipment = ctx.getClient().getItemContainer(94);
+        ItemContainer equipment = ctx.getClient().getItemContainer(94); // 94 = Equipment
         if (equipment == null) return Collections.emptyList();
 
-        // 94 = Equipment container id
         int i = -1;
         for (Item item : equipment.getItems()) {
             i++;
@@ -173,10 +167,11 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
                 continue;
             }
 
-            final ItemComposition itemComposition = ctx.getClient().getItemDefinition(w.getItemId());
+            final ItemComposition def = ctx.getClient().getItemDefinition(w.getItemId());
 
-            log.info("Items in equipment: {}, {}, {}", w, w.getItemId(), itemComposition.getName());
-            entities.add(new EquipmentEntity(ctx, itemComposition.getName(), w));
+            // Create ContainerItem with EQUIPMENT origin
+            // Pass slotIndex so we know which equipment slot this is
+            entities.add(new EquipmentEntity(ctx, def.getName(), new ContainerItem(item, def, i, ctx, w, ContainerItem.ItemOrigin.EQUIPMENT)));
         }
         return entities;
     }
@@ -188,7 +183,7 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
      * @return EquipmentQuery
      */
     public EquipmentQuery withId(int id) {
-        return filter(i -> i.raw().getItemId() == id);
+        return filter(i -> i.raw().getId() == id);
     }
 
     /**
@@ -199,7 +194,7 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
      */
     public boolean isWearing(int id) {
         return ctx.runOnClientThread(() ->
-                collectEquippedItems().stream().anyMatch(i -> i.raw().getItemId() == id)
+                collectEquippedItems().stream().anyMatch(i -> i.raw().getId() == id)
         );
     }
 
@@ -221,16 +216,10 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
      * @return EquipmentEntity
      */
     public EquipmentEntity inSlot(EquipmentInventorySlot slot) {
-        return ctx.runOnClientThread(() -> {
-            if (!equipmentSlotWidgetMapping.containsKey(slot.getSlotIdx())) return null;
-
-            Widget widget = ctx.getClient().getWidget(WidgetInfo.EQUIPMENT.getGroupId(), equipmentSlotWidgetMapping.get(slot.getSlotIdx()));
-            if (widget == null) {
-                return null;
-            }
-
-            final ItemComposition itemComposition = ctx.getClient().getItemDefinition(widget.getItemId());
-            return new EquipmentEntity(ctx, itemComposition.getName(), widget);
-        });
+        return ctx.runOnClientThread(() -> collectEquippedItems()
+                .stream()
+                .filter(i -> i.raw().getSlot() == slot.getSlotIdx())
+                .findFirst()
+                .orElse(new EquipmentEntity(ctx, "", null)));
     }
 }

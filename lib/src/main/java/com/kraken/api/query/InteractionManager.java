@@ -16,10 +16,6 @@ import net.runelite.api.Player;
 import net.runelite.api.Point;
 import net.runelite.api.TileObject;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
-
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Manages interactions across various game entities like NPC's, Players, Widgets, GameObjects, TileObjects and more.
@@ -84,56 +80,27 @@ public class InteractionManager {
     }
 
     /**
-     * Interacts with an item with the specified ID in the inventory using the specified actions. If no action is specified
-     * the first available action is used.
-     *
-     * @param item The Inventory Item to interact with.
-     * @param bankInventory True if the bank interface is open and the function should use the Bank Inventory widget to search for items to interact
-     *                      with instead of the normal players inventory.
-     * @param action The action to take. i.e. "Eat" or "Use"
+     * Interacts with an item with the specified ID in an item container (inventory, inventory while banking, equipment, etc...)
+     * using the specified action.
+     * <p>
+     * @param item The Container Item to interact with. A container item is an item stored in a container like an inventory, a inventory while banking
+     *             or the equipment interface.
+     * @param action The action to take. i.e. "Eat", "Remove", "Wield", "Wear", or "Use"
      */
-    public void interact(ContainerItem item, boolean bankInventory, String action) {
+    public void interact(ContainerItem item, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-
-        // Get first action is no specific action is passed
-        String parsedAction = (action == null || action.trim().isEmpty())
-                ? Arrays.stream(item.getInventoryActions())
-                .findFirst().orElse(null)
-                : action;
-
         ctxProvider.get().runOnClientThread(() -> {
             if(item == null) return;
-            Widget w;
 
-            if(bankInventory) {
-                w = item.getBankInventoryWidget();
-            } else {
-                w = item.getWidget();
-            }
-
-            // This can happen if the user hasn't changed something in their inventory since logging in, since widgets
-            // weren't loaded when refresh() was called.
-            if(w == null) {
-                Widget inven;
-
-                if(bankInventory) {
-                    inven = ctxProvider.get().getClient().getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
-                } else {
-                    inven = ctxProvider.get().getClient().getWidget(149, 0);
-                }
-
-                if(inven == null) return;
-                Widget[] items = inven.getDynamicChildren();
-                w = Arrays.stream(items)
-                        .filter(Objects::nonNull)
-                        .filter(wid -> wid.getItemId() != 6512 && wid.getItemId() != -1)
-                        .filter(wid -> wid.getItemId() == item.getId())
-                        .findFirst().orElse(null);
+            Widget w = item.getWidget();
+            if (w == null) {
+                log.error("Failed to resolve widget for item interaction: {}", item.getName());
+                return;
             }
 
             Point pt = uiService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
-            widgetPackets.queueWidgetAction(w, parsedAction);
+            widgetPackets.queueWidgetAction(w, action);
         });
     }
 

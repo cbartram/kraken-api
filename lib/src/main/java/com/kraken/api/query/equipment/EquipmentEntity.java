@@ -2,12 +2,12 @@ package com.kraken.api.query.equipment;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
-import net.runelite.api.widgets.Widget;
+import com.kraken.api.query.container.ContainerItem;
 
-public class EquipmentEntity extends AbstractEntity<Widget> {
+public class EquipmentEntity extends AbstractEntity<ContainerItem> {
     private final String name;
 
-    public EquipmentEntity(Context ctx, String name, Widget raw) {
+    public EquipmentEntity(Context ctx, String name, ContainerItem raw) {
         super(ctx, raw);
         this.name = name;
     }
@@ -26,7 +26,7 @@ public class EquipmentEntity extends AbstractEntity<Widget> {
 
     @Override
     public int getId() {
-        return raw.getItemId();
+        return raw.getId();
     }
 
     /**

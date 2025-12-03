@@ -9,10 +9,9 @@ import net.runelite.api.ItemContainer;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuery, ContainerItem> {
@@ -56,6 +55,76 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
 
             return inventoryEntities.stream();
         };
+    }
+
+     /**
+     * Returns true when the inventory contains a specific item, found by its item id.
+     * @param id The id of the item to search for
+     * @return True if the inventory has the item and false otherwise
+     */
+    public boolean hasItem(int id) {
+        return filter(i -> i.getId() == id).count() > 0;
+    }
+
+    /**
+     * Returns true when the inventory contains a specific item, found by its name.
+     * This is case-insensitive but does require the entire item name.
+     * @param name The name of the item to search for
+     * @return True if the inventory has the item and false otherwise
+     */
+    public boolean hasItem(String name) {
+        return filter(i -> i.getName().equalsIgnoreCase(name)).count() > 0;
+    }
+
+    /**
+     * Returns true ONLY if the inventory contains ALL of the specified item IDs.
+     * @param ids Variable argument of item IDs to search for.
+     * @return True if every single ID in the arguments exists in the inventory.
+     */
+    public boolean hasItems(int... ids) {
+        if (ids == null || ids.length == 0) return true;
+
+        // Collect all valid IDs currently in the inventory into a Set
+        // We use a Set for O(1) lookups and to handle duplicates automatically
+        Set<Integer> inventoryIds = stream()
+                .map(InventoryEntity::getId)
+                .collect(Collectors.toSet());
+
+        for (int id : ids) {
+            if (!inventoryIds.contains(id)) {
+                return false; // Return false immediately if ANY required item is missing
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns true ONLY if the inventory contains ALL of the specified item names.
+     * This is case-insensitive.
+     * @param names Variable argument of item names to search for.
+     * @return True if every single name in the arguments exists in the inventory.
+     */
+    public boolean hasItems(String... names) {
+        if (names == null || names.length == 0) return true;
+
+        Set<String> inventoryNames = stream()
+                .map(InventoryEntity::getName)
+                .filter(Objects::nonNull)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        for (String name : names) {
+            if (name == null) continue;
+
+            // If the inventory set does not contain the required name, fail immediately
+            if (!inventoryNames.contains(name.toLowerCase())) {
+                System.out.println("Inventory names does not contain: " + name + " names: " + inventoryNames);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

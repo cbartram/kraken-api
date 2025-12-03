@@ -5,7 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.Client;
+import net.runelite.api.Item;
+import net.runelite.api.ItemComposition;
+import net.runelite.api.ParamID;
 import net.runelite.api.widgets.Widget;
 
 import javax.annotation.Nullable;
@@ -13,9 +16,6 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 /**
  * Represents an item stored in an item container (either the inventory or Bank).
@@ -25,6 +25,16 @@ import java.util.function.Predicate;
 @AllArgsConstructor
 public class ContainerItem {
 
+    // Define where this item was found, no need for bank here
+    // since it uses BankItemWidget not ContainerItem
+    public enum ItemOrigin {
+        INVENTORY,
+        BANK_INVENTORY,
+        EQUIPMENT
+    }
+
+    private final ItemOrigin origin;
+
     @Setter
     private int quantity;
     private int id;
@@ -32,13 +42,6 @@ public class ContainerItem {
 
     @Nullable
     private Widget widget;
-
-
-    // The widget of the item when the bank container is open. Actions will be different for this widget within this context
-    // as they relate to depositing the item into the bank. Whenever working with bank actions this widget should be used
-    // over widget (which is used when working within the inventory while the bank is not open).
-    @Nullable
-    private Widget bankInventoryWidget;
 
     private List<String> equipmentActions = new ArrayList<>();
     private String name;
@@ -64,10 +67,10 @@ public class ContainerItem {
             ParamID.OC_ITEM_OP8
     };
 
-    public ContainerItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget, Widget bankInventoryWidget) {
+    public ContainerItem(Item item, ItemComposition itemComposition, int slot, Context context, Widget widget, ItemOrigin origin) {
         this.id = item.getId();
         this.widget = widget;
-        this.bankInventoryWidget = bankInventoryWidget;
+        this.origin = origin;
         this.quantity = item.getQuantity();
         this.slot = slot;
         this.name = itemComposition.getName();
@@ -89,27 +92,6 @@ public class ContainerItem {
             addEquipmentActions(itemComposition);
             return true;
         });
-    }
-
-    /**
-     * Private constructor for creating ItemModel from cached data.
-     * ItemComposition will be loaded lazily when needed.
-     */
-    private ContainerItem(int id, int quantity, int slot, Context context) {
-        this.id = id;
-        this.quantity = quantity;
-        this.slot = slot;
-        this.context = context;
-
-
-        // Initialize with defaults - will be loaded lazily
-        this.name = null;
-        this.isStackable = false;
-        this.isNoted = false;
-        this.isTradeable = false;
-        this.inventoryActions = new String[0];
-        this.itemComposition = null;
-        this.equipmentActions = new ArrayList<>();
     }
 
     /**
@@ -344,22 +326,5 @@ public class ContainerItem {
 
         sb.append("}");
         return sb.toString();
-    }
-
-    private static <T> Predicate<ContainerItem> matches(T[] values, BiPredicate<ContainerItem, T> biPredicate) {
-        return item -> Arrays.stream(values).filter(Objects::nonNull).anyMatch(value -> biPredicate.test(item, value));
-    }
-
-    public static Predicate<ContainerItem> matches(boolean exact, String... names) {
-        return matches(names, exact ? (item, name) -> item.getName().equalsIgnoreCase(name) :
-                (item, name) -> item.getName().toLowerCase().contains(name.toLowerCase()));
-    }
-
-    public static Predicate<ContainerItem> matches(int... ids) {
-        return item -> Arrays.stream(ids).anyMatch(id -> item.getId() == id);
-    }
-
-    public static Predicate<ContainerItem> matches(EquipmentInventorySlot... slots) {
-        return matches(slots, (item, slot) -> item.getSlot() == slot.getSlotIdx());
     }
 }

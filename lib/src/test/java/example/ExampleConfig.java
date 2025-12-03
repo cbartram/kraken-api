@@ -17,22 +17,11 @@ public interface ExampleConfig extends Config {
 
     // =========== Tests Section ================
     @ConfigSection(
-            name = "Tests",
-            description = "Settings for enabling specific API tests.",
+            name = "Query Tests",
+            description = "Settings for enabling specific API query tests.",
             position = 2
     )
-    String tests = "Tests";
-
-    @ConfigItem(
-            keyName = "enablePrayer",
-            name = "Start Prayer Service Tests",
-            description = "Enable Prayer tests",
-            section = tests,
-            position = 1
-    )
-    default boolean enablePrayerTests() {
-        return true;
-    }
+    String tests = "Query Tests";
 
     @ConfigItem(
             keyName = "enableBankQuery",
@@ -131,6 +120,27 @@ public interface ExampleConfig extends Config {
             position = 9
     )
     default boolean enableWidgetQuery() {
+        return true;
+    }
+
+    // ==============================================
+    // ========== SERVICE TEST SETTINGS ==========
+    // ==============================================
+    @ConfigSection(
+            name = "Service Tests",
+            description = "Options for configuring service class tests",
+            position = 3
+    )
+    String serviceTests = "Service Tests";
+
+    @ConfigItem(
+            keyName = "enablePrayer",
+            name = "Start Prayer Service Tests",
+            description = "Enable Prayer tests",
+            section = serviceTests,
+            position = 1
+    )
+    default boolean enablePrayerTests() {
         return true;
     }
 
