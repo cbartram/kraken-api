@@ -18,7 +18,7 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
     @Override
     public boolean interact(String action) {
         if (raw == null) return false;
-        ctx.getInteractionManager().interact(raw, true, action);
+        ctx.getInteractionManager().interact(raw, action);
         return true;
     }
 
@@ -61,16 +61,16 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
         if(!ctx.getBankService().isOpen()) return false;
         switch(amount) {
             case 1:
-                ctx.getInteractionManager().interact(raw, true, "Deposit-1");
+                ctx.getInteractionManager().interact(raw, "Deposit-1");
                 return true;
             case 5:
-                ctx.getInteractionManager().interact(raw, true, "Deposit-5");
+                ctx.getInteractionManager().interact(raw, "Deposit-5");
                 return true;
             case 10:
-                ctx.getInteractionManager().interact(raw, true, "Deposit-10");
+                ctx.getInteractionManager().interact(raw, "Deposit-10");
                 return true;
             default:
-                ctx.getInteractionManager().interact(raw, true, "Deposit-All");
+                ctx.getInteractionManager().interact(raw, "Deposit-All");
                 return true;
         }
     }

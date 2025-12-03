@@ -5,8 +5,6 @@ import example.tests.BaseApiTest;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 
-import java.util.stream.Collectors;
-
 @Slf4j
 public class NpcTest extends BaseApiTest {
 
@@ -34,18 +32,6 @@ public class NpcTest extends BaseApiTest {
                 testsPassed = false;
             }
 
-            // Nearest Sorting: Verify distance order
-            var nearestNpcs = ctx.npcs().nearest().stream().limit(2).collect(Collectors.toList());
-            if (nearestNpcs.size() >= 2) {
-                int dist1 = nearestNpcs.get(0).raw().getWorldLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
-                int dist2 = nearestNpcs.get(1).raw().getWorldLocation().distanceTo(ctx.players().local().raw().getWorldLocation());
-
-                if (dist1 > dist2) {
-                    log.error("nearest() sort failed: 1st NPC dist (" + dist1 + ") > 2nd NPC dist (" + dist2 + ")");
-                    testsPassed = false;
-                }
-            }
-
             // Area Query (.withinArea)
             // Define a box around the player and ensure we find NPCs inside it
             WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
@@ -70,7 +56,7 @@ public class NpcTest extends BaseApiTest {
             // Interaction Chain (Optional Smoke Test)
             // Only run if we found a guard, try to hover or check interaction logic (without clicking)
             if (guardsFound) {
-                var guard = ctx.npcs().withName("Guard").nearest().first();
+                var guard = ctx.npcs().withName("Guard").nearest();
                 if (guard.isNull()) {
                     log.error("Guard found previously but failed to retrieve in Interaction test");
                     testsPassed = false;

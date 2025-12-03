@@ -76,6 +76,11 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     public Stream<T> stream() {
         return ctx.runOnClientThread(() -> {
             Stream<T> stream = source().get();
+
+            if(stream == null) {
+                return Stream.empty();
+            }
+
             for (Predicate<T> filter : filters) {
                 stream = stream.filter(filter);
             }
@@ -190,6 +195,24 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
 
             return stream.collect(Collectors.toList());
         });
+    }
+
+    /**
+     * An alias for {@code list()}.
+     * @return The stream of entities as a list of objects.
+     */
+    public List<T> result() {
+        return list();
+    }
+
+    /**
+     * Collects the stream of entities into a map keyed by the id of the element in the map. Generally this will
+     * be the item id for objects like {@code ContainerItem}, {@code EquipmentEntity}, and {@code GroundObjectEntity} but
+     * can take on other ids for things like Game objects, NPC's and widgets.
+     * @return Map of entities keyed by their id.
+     */
+    public Map<Integer, T> map() {
+        return stream().collect(Collectors.toMap(T::getId, Function.identity()));
     }
 
     /**

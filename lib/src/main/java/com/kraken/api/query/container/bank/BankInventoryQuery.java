@@ -8,7 +8,6 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,8 @@ public class BankInventoryQuery extends AbstractQuery<BankInventoryEntity, BankI
         ItemContainer container = ctx.getClient().getItemContainer(InventoryID.INV);
         if(container == null) return () -> emptyStream;
 
-        Widget bankInventory = ctx.getClient().getWidget(WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER);
+        // WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER
+        Widget bankInventory = ctx.getClient().getWidget(0x000f_0003);
         if(bankInventory == null) return () -> emptyStream;
 
         Widget[] inventoryWidgets = bankInventory.getDynamicChildren();
@@ -49,7 +49,7 @@ public class BankInventoryQuery extends AbstractQuery<BankInventoryEntity, BankI
                 widget = inventoryWidgets[i];
             }
 
-            bankInventoryEntities.add(new BankInventoryEntity(ctx, new ContainerItem(item, itemComposition, i, ctx, null, widget)));
+            bankInventoryEntities.add(new BankInventoryEntity(ctx, new ContainerItem(item, itemComposition, i, ctx, widget, ContainerItem.ItemOrigin.BANK_INVENTORY)));
         }
 
         return bankInventoryEntities::stream;
