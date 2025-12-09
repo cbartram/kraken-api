@@ -140,9 +140,11 @@ public class InteractionManager {
         if(!ctxProvider.get().isPacketsLoaded()) return;
 
         Point pt = uiService.getClickbox(src);
+        Point destPoint = uiService.getClickbox(dest);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            mousePackets.queueClickPacket(destPoint.getX(), destPoint.getY());
             widgetPackets.queueWidgetOnWidget(src, dest);
         }
     }
@@ -156,9 +158,11 @@ public class InteractionManager {
         if(!ctxProvider.get().isPacketsLoaded()) return;
 
         Point pt = uiService.getClickbox(src);
+        Point npcPoint = uiService.getClickbox(npc);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            mousePackets.queueClickPacket(npcPoint.getX(), npcPoint.getY());
             npcPackets.queueWidgetOnNPC(npc, src);
         }
     }
@@ -172,9 +176,11 @@ public class InteractionManager {
         if(!ctxProvider.get().isPacketsLoaded()) return;
 
         Point pt = uiService.getClickbox(src);
+        Point gameObjectPoint = uiService.getClickbox(gameObject);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            mousePackets.queueClickPacket(gameObjectPoint.getX(), gameObjectPoint.getY());
             gameObjectPackets.queueWidgetOnTileObject(src, gameObject);
         }
     }
