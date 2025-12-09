@@ -3,6 +3,8 @@ package com.kraken.api.query.widget;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
 import com.kraken.api.util.StringUtils;
+import net.runelite.api.GameObject;
+import net.runelite.api.NPC;
 import net.runelite.api.widgets.Widget;
 
 public class WidgetEntity extends AbstractEntity<Widget> {
@@ -79,6 +81,28 @@ public class WidgetEntity extends AbstractEntity<Widget> {
     public boolean useOn(Widget destinationWidget) {
         if(raw == null) return false;
         ctx.getInteractionManager().interact(raw, destinationWidget);
+        return true;
+    }
+
+    /**
+     * Uses a widget on an NPC (i.e. Crumble Undead Spell -> Undead Spawn from Vorkath)
+     * @param npc NPC to use the widget on.
+     * @return True if the action was successful and false otherwise.
+     */
+    public boolean useOn(NPC npc) {
+        if(raw == null) return false;
+        ctx.getInteractionManager().interact(raw, npc);
+        return true;
+    }
+
+    /**
+     * Uses a widget on a Game Object (i.e. Bones -> Chaos Altar)
+     * @param gameObject The Game Object to use the widget on.
+     * @return True if the action was successful and false otherwise.
+     */
+    public boolean useOn(GameObject gameObject) {
+        if(raw == null) return false;
+        ctx.getInteractionManager().interact(raw, gameObject);
         return true;
     }
 }

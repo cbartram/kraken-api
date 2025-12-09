@@ -11,10 +11,7 @@ import com.kraken.api.query.groundobject.GroundItem;
 import com.kraken.api.service.ui.UIService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.Point;
-import net.runelite.api.TileObject;
+import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
 
 /**
@@ -147,6 +144,38 @@ public class InteractionManager {
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetOnWidget(src, dest);
+        }
+    }
+
+    /**
+     * Uses a source widget on a destination NPC (i.e. Crumble Undead spell -> Vorkath Spawn)
+     * @param src The source widget to use on the destination widget
+     * @param npc The NPC to use the widget on
+     */
+    public void interact(Widget src, NPC npc) {
+        if(!ctxProvider.get().isPacketsLoaded()) return;
+
+        Point pt = uiService.getClickbox(src);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            npcPackets.queueWidgetOnNPC(npc, src);
+        }
+    }
+
+    /**
+     * Uses a source widget on a destination Game Object (i.e. "Bones" -> "Chaos Altar")
+     * @param src The source widget to use on the destination widget
+     * @param gameObject The Game Object to use the widget on
+     */
+    public void interact(Widget src, GameObject gameObject) {
+        if(!ctxProvider.get().isPacketsLoaded()) return;
+
+        Point pt = uiService.getClickbox(src);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            gameObjectPackets.queueWidgetOnTileObject(src, gameObject);
         }
     }
 

@@ -4,6 +4,7 @@ import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
 import net.runelite.api.GameObject;
 import net.runelite.api.ObjectComposition;
+import net.runelite.api.widgets.Widget;
 
 public class GameObjectEntity extends AbstractEntity<GameObject> {
 
@@ -43,6 +44,17 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
     public boolean interact(String action) {
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
+        return true;
+    }
+
+    /**
+     * Uses a specified widget on the Game Object (i.e. "Bones" -> "Chaos Altar")
+     * @param widget The widget to use on the Game Object
+     * @return True if the interaction was successful and false otherwise
+     */
+    public boolean useWidget(Widget widget) {
+        if (raw == null) return false;
+        ctx.getInteractionManager().interact(widget, raw);
         return true;
     }
 }
