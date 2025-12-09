@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Queue;
 
 // TODO
-// 1. NPC's need to be able to try to found a way out if player moves under them
+// 1. NPC's need to be able to try to find a way out if player moves under them
 
 /**
  * Simulation engine for NPC and player movement.

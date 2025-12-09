@@ -5,6 +5,7 @@ import com.kraken.api.core.AbstractEntity;
 import lombok.SneakyThrows;
 import net.runelite.api.HeadIcon;
 import net.runelite.api.NPC;
+import net.runelite.api.widgets.Widget;
 
 public class NpcEntity extends AbstractEntity<NPC> {
     public NpcEntity(Context ctx, NPC raw) {
@@ -75,5 +76,16 @@ public class NpcEntity extends AbstractEntity<NPC> {
      */
     public boolean attack() {
         return interact("attack");
+    }
+
+    /**
+     * Uses a specified widget on the NPC (i.e. Casting Crumble Undead Spell -> Vorkaths Spawn)
+     * @param widget The widget to use on the NPC
+     * @return True if the interaction was successful and false otherwise
+     */
+    public boolean useWidget(Widget widget) {
+        if (raw == null) return false;
+        ctx.getInteractionManager().interact(widget, raw);
+        return true;
     }
 }
