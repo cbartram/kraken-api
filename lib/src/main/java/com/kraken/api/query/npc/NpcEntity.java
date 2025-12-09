@@ -79,7 +79,7 @@ public class NpcEntity extends AbstractEntity<NPC> {
     }
 
     /**
-     * Uses a specified widget on the NPC (i.e. Casting Crumble Undead Spell -> Vorkaths Spawn)
+     * Uses a specified widget on the NPC (i.e. Casting Crumble Undead Spell on the Vorkaths Spawn)
      * @param widget The widget to use on the NPC
      * @return True if the interaction was successful and false otherwise
      */

@@ -148,7 +148,7 @@ public class InteractionManager {
     }
 
     /**
-     * Uses a source widget on a destination NPC (i.e. Crumble Undead spell -> Vorkath Spawn)
+     * Uses a source widget on a destination NPC (i.e. Crumble Undead spell on Vorkath Spawn)
      * @param src The source widget to use on the destination widget
      * @param npc The NPC to use the widget on
      */
@@ -164,7 +164,7 @@ public class InteractionManager {
     }
 
     /**
-     * Uses a source widget on a destination Game Object (i.e. "Bones" -> "Chaos Altar")
+     * Uses a source widget on a destination Game Object (i.e. "Bones" on the "Chaos Altar")
      * @param src The source widget to use on the destination widget
      * @param gameObject The Game Object to use the widget on
      */
