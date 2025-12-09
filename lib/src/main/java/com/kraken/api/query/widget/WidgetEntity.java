@@ -85,7 +85,7 @@ public class WidgetEntity extends AbstractEntity<Widget> {
     }
 
     /**
-     * Uses a widget on an NPC (i.e. Crumble Undead Spell -> Undead Spawn from Vorkath)
+     * Uses a widget on an NPC (i.e. Crumble Undead Spell on the Undead Spawn from Vorkath)
      * @param npc NPC to use the widget on.
      * @return True if the action was successful and false otherwise.
      */
@@ -96,7 +96,7 @@ public class WidgetEntity extends AbstractEntity<Widget> {
     }
 
     /**
-     * Uses a widget on a Game Object (i.e. Bones -> Chaos Altar)
+     * Uses a widget on a Game Object (i.e. Bones on the Chaos Altar)
      * @param gameObject The Game Object to use the widget on.
      * @return True if the action was successful and false otherwise.
      */

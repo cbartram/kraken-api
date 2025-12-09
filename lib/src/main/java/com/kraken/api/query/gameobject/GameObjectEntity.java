@@ -48,7 +48,7 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
     }
 
     /**
-     * Uses a specified widget on the Game Object (i.e. "Bones" -> "Chaos Altar")
+     * Uses a specified widget on the Game Object (i.e. "Bones" on the "Chaos Altar")
      * @param widget The widget to use on the Game Object
      * @return True if the interaction was successful and false otherwise
      */
