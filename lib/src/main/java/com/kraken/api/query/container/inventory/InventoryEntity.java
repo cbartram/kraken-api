@@ -51,6 +51,16 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
     }
 
     /**
+     * Uses one item in the inventory on the other. This is a shallow wrapper
+     * around {@code combineWith()}
+     * @param other The other inventory item to be used on.
+     * @return True if the use on item was successful and false otherwise
+     */
+    public boolean useOn(ContainerItem other) {
+        return combineWith(other);
+    }
+
+    /**
      * Drops the item from the inventory.
      * @return True if the item was successfully dropped, false otherwise.
      */
