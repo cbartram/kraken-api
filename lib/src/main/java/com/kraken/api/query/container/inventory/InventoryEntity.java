@@ -3,6 +3,8 @@ package com.kraken.api.query.container.inventory;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
 import com.kraken.api.query.container.ContainerItem;
+import net.runelite.api.GameObject;
+import net.runelite.api.NPC;
 
 import java.util.Arrays;
 
@@ -45,6 +47,42 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
     public boolean combineWith(ContainerItem other) {
         if(raw.getWidget() != null && other.getWidget() != null){
             ctx.getInteractionManager().interact(raw.getWidget(), other.getWidget());
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Uses one item in the inventory on the other. This is a shallow wrapper
+     * around {@code combineWith()}
+     * @param other The other inventory item to be used on.
+     * @return True if the use on item was successful and false otherwise
+     */
+    public boolean useOn(ContainerItem other) {
+        return combineWith(other);
+    }
+
+    /**
+     * Uses one item in the inventory on an NPC.
+     * @param npc The NPC to use the inventory item on.
+     * @return True if the use on item was successful and false otherwise
+     */
+    public boolean useOn(NPC npc) {
+        if(raw.getWidget() != null && npc!= null){
+            ctx.getInteractionManager().interact(raw.getWidget(), npc);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Uses one item in the inventory on a Game object.
+     * @param gameObject The GameObject to use the inventory item on.
+     * @return True if the use on item was successful and false otherwise
+     */
+    public boolean useOn(GameObject gameObject) {
+        if(raw.getWidget() != null && gameObject != null){
+            ctx.getInteractionManager().interact(raw.getWidget(), gameObject);
             return true;
         }
         return false;
