@@ -22,10 +22,80 @@
 
 # 🚀 Getting Started
 
-Kraken API is designed to extend the RuneLite API with additional client-interaction utilities for writing automation based plugins that are compatible with RuneLite. If you are
-just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.com](https://kraken-plugins.com).
+Kraken API is designed to extend the RuneLite API with additional client interaction utilities for writing automation based plugins that are fully compatible with RuneLite.
+This API uses network packets to perform "click" interactions within the game client and is based on mappings defined by the [EthanVann API](https://github.com/Septharoth/EthanVannPlugins/tree/master).
 
-For more documentation on the API and Kraken plugins please see our [official documentation here](https://kraken-plugins.com/docs/).
+## API Usage
+
+The following RuneLite "plugin" is purely for an example of the API's capabilities and isn't a full fledged automation script.
+
+```java
+@PluginDescriptor(
+        name = "Example",
+        description = "Example plugin"
+)
+public class ExamplePlugin extends Plugin {
+    
+    @Inject
+    private Context ctx;
+    
+    @Inject
+    private BankService bank;
+    
+    @Inject
+    private MovementService movement;
+    
+    @Inject
+    private PrayerService prayer;
+    
+    @Subscribe
+    private void onGameTick(GameTick e) {
+      Player local = ctx.players().local().raw();
+      
+      if(local.isInteracting()) {
+          return;
+      }
+      
+      if(!bank.isOpen()) {
+          // Open a bank
+          ctx.gameObjects().withName("Bank booth").nearest().interact("Open");
+      } else {
+          // Withdraw a Rune Scimitar
+          ctx.bank().nameContains("Rune scimitar").first().withdraw();
+      }
+      
+      // Wield a Rune Scimitar
+      ctx.equipment().withId(1333).first().wield();
+      
+      // Move to a new position
+      movement.moveTo(new WorldPoint(1234, 5678));
+      
+      // Activate a protection prayer
+      prayer.activatePrayer(Prayer.PROTECT_FROM_MELEE);
+      
+      // "Click" on a Goblin and attack it.
+      ctx.npcs().withName("Goblin")
+            .except(n -> n.raw().isInteracting())
+            .nearest()
+            .interact("Attack");
+      
+      
+      // Take the goblin bones
+      ctx.groundItems().reachable()
+              .within(5)
+              .filter(item -> item.name().equalIgnoreCase("bones"))
+              .first()
+              .take();
+      
+      // Bury the bones
+      ctx.inventory().withName("Bones").first().interact("Bury");
+    }
+}
+```
+
+
+> If you are just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.com](https://kraken-plugins.com). 
+> For more documentation on the API and Kraken plugins please see our [official documentation here](https://kraken-plugins.com/docs/).
 
 ### Prerequisites
 - [Java 11+](https://adoptium.net/) (JDK required)
