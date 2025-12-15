@@ -14,13 +14,15 @@ public class WidgetEntity extends AbstractEntity<Widget> {
 
     @Override
     public String getName() {
-        return raw.getName();
+        Widget w = raw();
+        return w != null ? w.getName() : null;
     }
 
 
     @Override
     public int getId() {
-        return raw.getItemId();
+        Widget w = raw();
+        return w != null ? w.getItemId() : -1;
     }
 
     /**
@@ -30,6 +32,7 @@ public class WidgetEntity extends AbstractEntity<Widget> {
      * @return true if there is a match within the search string for a specific widget and false otherwise
      */
     public boolean matches(String search, boolean exact) {
+        Widget raw = raw();
         if (raw == null) return false;
 
         if (isMatchFound(search, exact)) return true;
@@ -51,6 +54,7 @@ public class WidgetEntity extends AbstractEntity<Widget> {
     }
 
     private boolean isMatchFound(String search, boolean exact) {
+        Widget raw = raw();
         String cleanText = StringUtils.stripColTags(raw.getText());
         String cleanName = StringUtils.stripColTags(raw.getName());
 
@@ -68,8 +72,9 @@ public class WidgetEntity extends AbstractEntity<Widget> {
 
     @Override
     public boolean interact(String action) {
-        if (raw == null) return false;
-        ctx.getInteractionManager().interact(raw, action);
+        Widget w = raw();
+        if (w == null) return false;
+        ctx.getInteractionManager().interact(w, action);
         return true;
     }
 
@@ -79,8 +84,9 @@ public class WidgetEntity extends AbstractEntity<Widget> {
      * @return True if the action is successful and false otherwise.
      */
     public boolean useOn(Widget destinationWidget) {
-        if(raw == null) return false;
-        ctx.getInteractionManager().interact(raw, destinationWidget);
+        Widget w = raw();
+        if(w == null) return false;
+        ctx.getInteractionManager().interact(w, destinationWidget);
         return true;
     }
 
@@ -90,8 +96,9 @@ public class WidgetEntity extends AbstractEntity<Widget> {
      * @return True if the action was successful and false otherwise.
      */
     public boolean useOn(NPC npc) {
-        if(raw == null) return false;
-        ctx.getInteractionManager().interact(raw, npc);
+        Widget w = raw();
+        if(w == null) return false;
+        ctx.getInteractionManager().interact(w, npc);
         return true;
     }
 
@@ -101,8 +108,9 @@ public class WidgetEntity extends AbstractEntity<Widget> {
      * @return True if the action was successful and false otherwise.
      */
     public boolean useOn(GameObject gameObject) {
-        if(raw == null) return false;
-        ctx.getInteractionManager().interact(raw, gameObject);
+        Widget w = raw();
+        if(w == null) return false;
+        ctx.getInteractionManager().interact(w, gameObject);
         return true;
     }
 }

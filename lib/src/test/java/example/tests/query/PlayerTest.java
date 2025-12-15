@@ -1,6 +1,7 @@
 package example.tests.query;
 
 import com.kraken.api.Context;
+import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.query.player.PlayerEntity;
 import example.tests.BaseApiTest;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ public class PlayerTest extends BaseApiTest {
         try {
             // 1. Local Player Retrieval
             // Verify we can grab the special LocalPlayerEntity
-            var local = ctx.players().local();
+            LocalPlayerEntity local = ctx.players().local();
             if (local == null) {
                 log.error("Failed to retrieve 'local()' player entity");
                 testsPassed = false;

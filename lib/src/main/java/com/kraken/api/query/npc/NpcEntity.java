@@ -14,12 +14,14 @@ public class NpcEntity extends AbstractEntity<NPC> {
 
     @Override
     public String getName() {
-        return raw.getName();
+        NPC n = raw();
+        return n != null ? n.getName() : null;
     }
 
     @Override
     public int getId() {
-        return raw.getId();
+        NPC n = raw();
+        return n != null ? n.getId(): -1;
     }
 
     /**
@@ -27,6 +29,7 @@ public class NpcEntity extends AbstractEntity<NPC> {
      * @return Health percentage (0-100), or -1 if unknown
      */
     public double getHealthPercentage() {
+        NPC raw = raw();
         int ratio = raw.getHealthRatio();
         int scale = raw.getHealthScale();
 
@@ -41,6 +44,7 @@ public class NpcEntity extends AbstractEntity<NPC> {
      */
     @SneakyThrows
     public HeadIcon getHeadIcon() {
+        NPC raw = raw();
         if (raw.getOverheadSpriteIds() == null) return null;
 
         for (int i = 0; i < raw.getOverheadSpriteIds().length; i++) {
@@ -59,12 +63,14 @@ public class NpcEntity extends AbstractEntity<NPC> {
      * @return Distance in tiles
      */
     public int getDistanceFromPlayer() {
+        NPC raw = raw();
         return ctx.runOnClientThreadOptional(() -> raw.getLocalLocation().distanceTo(
                 ctx.getClient().getLocalPlayer().getLocalLocation())).orElse(Integer.MAX_VALUE);
     }
 
     @Override
     public boolean interact(String action) {
+        NPC raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
@@ -84,6 +90,7 @@ public class NpcEntity extends AbstractEntity<NPC> {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean useWidget(Widget widget) {
+        NPC raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(widget, raw);
         return true;

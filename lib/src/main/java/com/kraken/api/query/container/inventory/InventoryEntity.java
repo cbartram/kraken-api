@@ -15,11 +15,13 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
 
     @Override
     public String getName() {
-        return raw.getName();
+        ContainerItem item = raw();
+        return item != null ? item.getName() : null;
     }
 
     @Override
     public boolean interact(String action) {
+        ContainerItem raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
@@ -27,7 +29,8 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
 
     @Override
     public int getId() {
-        return raw.getId();
+        ContainerItem item = raw();
+        return item != null ? item.getId() : -1;
     }
 
     /**
@@ -36,7 +39,8 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
      * @return True if the item has the action and false otherwise
      */
     public boolean hasAction(String action) {
-        return Arrays.stream(raw.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
+        ContainerItem item = raw();
+        return Arrays.stream(item.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase(action));
     }
 
     /**
@@ -45,8 +49,9 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
      * @return True if the combination action was successful and false otherwise
      */
     public boolean combineWith(ContainerItem other) {
-        if(raw.getWidget() != null && other.getWidget() != null){
-            ctx.getInteractionManager().interact(raw.getWidget(), other.getWidget());
+        ContainerItem item = raw();
+        if(item.getWidget() != null && other.getWidget() != null){
+            ctx.getInteractionManager().interact(item.getWidget(), other.getWidget());
             return true;
         }
         return false;
@@ -68,8 +73,10 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
      * @return True if the use on item was successful and false otherwise
      */
     public boolean useOn(NPC npc) {
-        if(raw.getWidget() != null && npc!= null){
-            ctx.getInteractionManager().interact(raw.getWidget(), npc);
+        ContainerItem item = raw();
+
+        if(item.getWidget() != null && npc!= null) {
+            ctx.getInteractionManager().interact(item.getWidget(), npc);
             return true;
         }
         return false;
@@ -81,8 +88,10 @@ public class InventoryEntity extends AbstractEntity<ContainerItem> {
      * @return True if the use on item was successful and false otherwise
      */
     public boolean useOn(GameObject gameObject) {
-        if(raw.getWidget() != null && gameObject != null){
-            ctx.getInteractionManager().interact(raw.getWidget(), gameObject);
+        ContainerItem item = raw();
+
+        if(item.getWidget() != null && gameObject != null) {
+            ctx.getInteractionManager().interact(item.getWidget(), gameObject);
             return true;
         }
         return false;

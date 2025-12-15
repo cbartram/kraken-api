@@ -8,11 +8,12 @@ import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
 import com.kraken.api.query.container.bank.BankInventoryQuery;
 import com.kraken.api.query.container.bank.BankQuery;
+import com.kraken.api.query.container.inventory.InventoryQuery;
 import com.kraken.api.query.equipment.EquipmentQuery;
 import com.kraken.api.query.gameobject.GameObjectQuery;
 import com.kraken.api.query.groundobject.GroundObjectQuery;
-import com.kraken.api.query.container.inventory.InventoryQuery;
 import com.kraken.api.query.npc.NpcQuery;
+import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.service.bank.BankService;
@@ -58,6 +59,7 @@ public class Context {
     private boolean isRegistered = false;
     private boolean packetsLoaded = false;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    private final LocalPlayerEntity localPlayer;
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),
@@ -85,6 +87,8 @@ public class Context {
         this.interactionManager = interactionManager;
         this.itemManager = itemManager;
         this.tileService = tileService;
+        this.localPlayer = new LocalPlayerEntity(this, executor);
+        this.eventBus.register(this.localPlayer);
     }
 
     /**
@@ -147,6 +151,7 @@ public class Context {
                     }
                 }
             }
+            eventBus.unregister(localPlayer);
         } catch (Exception e) {
             log.error("Error un-registering event handlers: {}", e.getMessage());
             return;
@@ -290,7 +295,7 @@ public class Context {
      * @return PlayerQuery object used to chain together predicates to select specific Players's within the scene.
      */
     public PlayerQuery players() {
-        return new PlayerQuery(this, executor);
+        return new PlayerQuery(this);
     }
 
     /**

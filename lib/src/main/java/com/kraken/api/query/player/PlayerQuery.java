@@ -9,18 +9,14 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player> {
 
-    private final ScheduledExecutorService executor;
-
-    public PlayerQuery(Context ctx, ScheduledExecutorService executor) {
+    public PlayerQuery(Context ctx) {
         super(ctx);
-        this.executor = executor;
     }
 
     @Override
@@ -57,14 +53,14 @@ public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player
     /**
      * Filters for players within a specified area. The min WorldPoint should be the southwest tile of the area
      * and the max WorldPoint should be the northeast tile of the area.
-     * @param min The southwest minimum world point of the area to check
+     * @param minimum The southwest minimum world point of the area to check
      * @param max The northeast maximum world point of the area to check
      * @return NpcQuery
      */
-    public PlayerQuery withinArea(WorldPoint min, WorldPoint max) {
-        int x1 = min.getX();
+    public PlayerQuery withinArea(WorldPoint minimum, WorldPoint max) {
+        int x1 = minimum.getX();
         int x2 = max.getX();
-        int y1 = min.getY();
+        int y1 = minimum.getY();
         int y2 = max.getY();
 
         return filter(p -> {
@@ -115,12 +111,6 @@ public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player
      * @return PlayerEntity the {@code LocalPlayerEntity} object.
      */
     public LocalPlayerEntity local() {
-        return ctx.runOnClientThread(() -> {
-            Player local = ctx.getClient().getLocalPlayer();
-            if(local == null) return null;
-            LocalPlayerEntity localEntity = new LocalPlayerEntity(ctx, local, executor);
-            ctx.getEventBus().register(localEntity);
-            return localEntity;
-        });
+        return ctx.getLocalPlayer();
     }
 }
