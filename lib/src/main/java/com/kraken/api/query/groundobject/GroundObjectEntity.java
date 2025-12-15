@@ -9,9 +9,17 @@ public class GroundObjectEntity extends AbstractEntity<GroundItem> {
         super(ctx, raw);
     }
 
+
+    @Override
+    public int getId() {
+        GroundItem raw = raw();
+        return raw != null ? raw.getItemId() : -1;
+    }
+
     @Override
     public String getName() {
-        return this.raw.getName();
+        GroundItem raw = raw();
+        return raw != null ? raw.getName() : null;
     }
 
     /**
@@ -26,6 +34,7 @@ public class GroundObjectEntity extends AbstractEntity<GroundItem> {
      */
     @Override
     public boolean interact(String action) {
+        GroundItem raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw);
         return true;
@@ -37,10 +46,5 @@ public class GroundObjectEntity extends AbstractEntity<GroundItem> {
      */
     public boolean take() {
         return interact("take"); // Can be any string it doesn't matter, for readability its "take"
-    }
-
-    @Override
-    public int getId() {
-        return raw.getItemId();
     }
 }

@@ -5,20 +5,20 @@ import com.kraken.api.core.AbstractEntity;
 import com.kraken.api.query.container.ContainerItem;
 
 public class EquipmentEntity extends AbstractEntity<ContainerItem> {
-    private final String name;
 
-    public EquipmentEntity(Context ctx, String name, ContainerItem raw) {
+    public EquipmentEntity(Context ctx, ContainerItem raw) {
         super(ctx, raw);
-        this.name = name;
     }
 
     @Override
     public String getName() {
-        return this.name;
+        ContainerItem item = raw();
+        return item != null ? item.getName(): null;
     }
 
     @Override
     public boolean interact(String action) {
+        ContainerItem raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
@@ -26,7 +26,8 @@ public class EquipmentEntity extends AbstractEntity<ContainerItem> {
 
     @Override
     public int getId() {
-        return raw.getId();
+        ContainerItem item = raw();
+        return item != null ? item.getId() : -1;
     }
 
     /**

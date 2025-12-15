@@ -76,7 +76,7 @@ public class SceneOverlay extends Overlay {
         var localEntity = ctx.players().local();
         if (localEntity != null && !localEntity.isNull()) {
             // Draw Blue box around self
-            renderPlayerPolygon(graphics, localEntity, Color.BLUE, "Me");
+            renderPlayerPolygon(graphics, localEntity, Color.BLUE, localEntity.getName());
         }
     }
 

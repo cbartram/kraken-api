@@ -19,8 +19,8 @@ public class LocalPlayerEntity extends PlayerEntity {
 
     private final ScheduledExecutorService executor;
 
-    public LocalPlayerEntity(Context ctx, Player raw, ScheduledExecutorService executor) {
-        super(ctx, raw);
+    public LocalPlayerEntity(Context ctx, ScheduledExecutorService executor) {
+        super(ctx, ctx.getClient().getLocalPlayer());
         this.executor = executor;
     }
 
@@ -62,6 +62,11 @@ public class LocalPlayerEntity extends PlayerEntity {
             isVenomed = poisonValue >= VENOM_THRESHOLD;
             isPoisoned = poisonValue >= 0 || poisonValue < VENOM_VALUE_CUTOFF;
         }
+    }
+
+    @Override
+    public Player raw() {
+        return ctx.getClient().getLocalPlayer();
     }
 
     /**

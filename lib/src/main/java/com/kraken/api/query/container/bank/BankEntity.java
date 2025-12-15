@@ -15,11 +15,14 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     @Override
     public String getName() {
-        return raw.getName();
+        BankItemWidget item = raw();
+        return item != null ? item.getName() : null;
     }
 
     @Override
     public boolean interact(String action) {
+        BankItemWidget raw = raw();
+
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
@@ -27,7 +30,8 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
 
     @Override
     public int getId() {
-        return raw.getItemId();
+        BankItemWidget raw = raw();
+        return raw != null ? raw.getItemId() : -1;
     }
 
     /**
@@ -91,6 +95,8 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
      */
     public boolean withdraw(int amount, boolean noted) {
         if (!ctx.isPacketsLoaded()) return false;
+
+        BankItemWidget raw = raw();
 
         if (amount == 1) return setModeAndInteract(noted, "Withdraw-1");
         if (amount == 5) return setModeAndInteract(noted, "Withdraw-5");

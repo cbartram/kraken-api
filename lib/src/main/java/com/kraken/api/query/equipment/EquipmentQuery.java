@@ -135,7 +135,7 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
 
             if(actions.contains("wield") || actions.contains("wear")) {
                 Widget w = (i < inventoryWidgets.length) ? inventoryWidgets[i] : null;
-                entities.add(new EquipmentEntity(ctx, def.getName(), new ContainerItem(item, def, i, ctx, w, ContainerItem.ItemOrigin.INVENTORY)));
+                entities.add(new EquipmentEntity(ctx, new ContainerItem(item, def, i, ctx, w, ContainerItem.ItemOrigin.INVENTORY)));
             }
         }
         return entities;
@@ -171,7 +171,7 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
 
             // Create ContainerItem with EQUIPMENT origin
             // Pass slotIndex so we know which equipment slot this is
-            entities.add(new EquipmentEntity(ctx, def.getName(), new ContainerItem(item, def, i, ctx, w, ContainerItem.ItemOrigin.EQUIPMENT)));
+            entities.add(new EquipmentEntity(ctx, new ContainerItem(item, def, i, ctx, w, ContainerItem.ItemOrigin.EQUIPMENT)));
         }
         return entities;
     }
@@ -220,6 +220,6 @@ public class EquipmentQuery extends AbstractQuery<EquipmentEntity, EquipmentQuer
                 .stream()
                 .filter(i -> i.raw().getSlot() == slot.getSlotIdx())
                 .findFirst()
-                .orElse(new EquipmentEntity(ctx, "", null)));
+                .orElse(new EquipmentEntity(ctx, null)));
     }
 }

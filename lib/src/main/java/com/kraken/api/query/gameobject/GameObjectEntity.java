@@ -14,20 +14,8 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
 
     @Override
     public int getId() {
-        return raw.getId();
-    }
-
-    /**
-     * Returns the object composition for a given {@code TileObject}.
-     * @return The object composition for the wrapped {@code TileObject}.
-     */
-    public ObjectComposition getObjectComposition() {
-        ObjectComposition def = ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(this.raw.getId()));
-        if(def.getImpostorIds() != null && def.getImpostor() != null) {
-            return ctx.runOnClientThread(def::getImpostor);
-        }
-
-        return def;
+        GameObject raw = raw();
+        return raw != null ? raw.getId() : -1;
     }
 
     @Override
@@ -40,8 +28,24 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
         return "Unknown (no composition)";
     }
 
+
+    /**
+     * Returns the object composition for a given {@code TileObject}.
+     * @return The object composition for the wrapped {@code TileObject}.
+     */
+    public ObjectComposition getObjectComposition() {
+        GameObject raw = raw();
+        ObjectComposition def = ctx.runOnClientThread(() -> ctx.getClient().getObjectDefinition(raw.getId()));
+        if(def.getImpostorIds() != null && def.getImpostor() != null) {
+            return ctx.runOnClientThread(def::getImpostor);
+        }
+
+        return def;
+    }
+
     @Override
     public boolean interact(String action) {
+        GameObject raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
@@ -53,6 +57,7 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
      * @return True if the interaction was successful and false otherwise
      */
     public boolean useWidget(Widget widget) {
+        GameObject raw = raw();
         if (raw == null) return false;
         ctx.getInteractionManager().interact(widget, raw);
         return true;

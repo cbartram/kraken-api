@@ -12,11 +12,14 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
 
     @Override
     public String getName() {
-        return raw.getName();
+        ContainerItem raw = raw();
+        return raw != null ? raw.getName() : null;
     }
 
     @Override
     public boolean interact(String action) {
+        ContainerItem raw = raw();
+
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
@@ -24,7 +27,8 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
 
     @Override
     public int getId() {
-        return raw.getId();
+        ContainerItem raw = raw();
+        return raw != null ? raw.getId() : -1;
     }
 
     /**
@@ -59,6 +63,8 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
      */
     public boolean deposit(int amount) {
         if(!ctx.getBankService().isOpen()) return false;
+        ContainerItem raw = raw();
+
         switch(amount) {
             case 1:
                 ctx.getInteractionManager().interact(raw, "Deposit-1");

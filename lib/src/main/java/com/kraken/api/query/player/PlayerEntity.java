@@ -11,18 +11,22 @@ public class PlayerEntity extends AbstractEntity<Player> {
 
     @Override
     public int getId() {
-        return raw.getId();
+        Player p = raw();
+        return p != null ? p.getId() : -1;
     }
 
     @Override
     public String getName() {
-        return raw.getName();
+        Player p = raw();
+        return p != null ? p.getName() : null;
     }
 
     @Override
     public boolean interact(String action) {
-        if (raw == null) return false;
-        ctx.getInteractionManager().interact(raw, action);
+        Player p = raw();
+        if (p == null) return false;
+
+        ctx.getInteractionManager().interact(p, action);
         return true;
     }
 }
