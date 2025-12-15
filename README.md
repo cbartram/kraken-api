@@ -93,6 +93,15 @@ public class ExamplePlugin extends Plugin {
 }
 ```
 
+In order to use the API in an actual RuneLite plugin you should check out the [Kraken Example Plugin](https://github.com/cbartram/kraken-example-plugin)
+which shows a best practice usage of the API within an actual plugin.
+To set up your development environment we recommend following [this guide on RuneLite's Wiki](https://github.com/runelite/runelite/wiki/Building-with-IntelliJ-IDEA).
+
+Once you have the example plugin cloned and setup within Intellij you can run the main class in `src/test/java/ExamplePluginTest.java` to run RuneLite with
+the example plugin loaded in the plugin panel within RuneLite's sidebar. See [consuming the API](#consuming-the-api) section for more information on
+integrating the API into your plugins and build process.
+
+![example-plugin](./images/example-plugin.png)
 
 > If you are just looking to use pre-existing plugins, you can skip this repository and head over to our website: [kraken-plugins.com](https://kraken-plugins.com). 
 > For more documentation on the API and Kraken plugins please see our [official documentation here](https://kraken-plugins.com/docs/).
@@ -165,17 +174,6 @@ dependencies {
 }
 ```
 
-### Example Plugin Setup
-
-In order to use the API in an actual RuneLite plugin you should check out the [Kraken Example Plugin](https://github.com/cbartram/kraken-example-plugin)
-which shows a best practice usage of the API within an actual plugin.
-To set up your development environment we recommend following [this guide on RuneLite's Wiki](https://github.com/runelite/runelite/wiki/Building-with-IntelliJ-IDEA).
-
-Once you have the example plugin cloned and setup within Intellij you can run the main class in `src/test/java/ExamplePluginTest.java` to run RuneLite with 
-the example plugin loaded in the plugin panel within RuneLite's sidebar. 
-
-![example-plugin](./images/example-plugin.png)
-
 ### Packets & Reflection
 
 When the API starts it will dynamically parse necessary client methods to determine which methods are used to send packets. These methods are then
@@ -209,14 +207,11 @@ The Service API paradigm is useful for static widgets or global game entities, f
 - Prayers - A finite amount of static prayer widgets
 - Spells - A fixed amount of in-game spells
 - UI - Static utilities for calculating UI element bounds
+- Camera - A single camera exists and is centered around your local player (`ctx.cameras().first()` doesn't really make much sense!)
 - etc...
 
 If you needed to toggle a prayer, cast a spell, or close the bank then the service API paradigm would suite your plugin
 well.
-
-- Interacting with Game Object through the `GameObjectService`
-- Checking if the inventory is full with the`InventoryService`
-- Sleeping during downtime using the `SleepService`
 
 #### Query System
 
@@ -227,20 +222,21 @@ The query system allows you to flexibly "query", refine, and filter for dynamic 
 - Game objects
 - Ground Items
 - Widgets
-- Equipment
-- Inventory
-- and Banking
+- Worn equipment (in the interface as well as your inventory)
+- Inventory items
+- and Bank items
 
 The query paradigm wraps familiar RuneLite API objects with an `Interactable` interface allowing you to not
 only __find__ game entities but also __interact__ with them in a straightforward fashion. 
 All interactions use network packets to communicate directly with the game servers.
+
 The API utilizes method chaining to filter for specific game entities loaded within the scene and exposes all methods on the underlying RuneLite 
 API objects using the `raw()` method on every wrapped game entity class. 
 
 The entire query API is exposed through a single class called the game `Context`.
 This singleton class allows you to have one lightweight dependency which functions as a facade to query just about any game entity you would want for plugin development.
 
-For example, to attack with a nearby Goblin: 
+For example, to attack a nearby Goblin: 
 
 ```java
 @PluginDescriptor(
@@ -268,12 +264,14 @@ public class ExamplePlugin extends Plugin {
 }
 ```
 
-The entire query API is designed to be thread safe so any queries, filters, or interactions can be ran on non-client threads. When
-callable methods need to execute on RuneLite's client thread they will be scheduled there, blocking until the method executes. 
+The entire query API is designed to be thread safe so any queries, filters, or interactions can be run on non-client threads. 
+When callable methods need to execute on RuneLite's client thread they will be scheduled there, blocking until the method executes. 
 This helps ensure your plugin code is fully thread safe, predictable, and easy to read.
 
 To see specific examples of various queries check out the [API tests](https://github.com/cbartram/kraken-api/tree/master/lib/src/test/java) which utilize a real RuneLite plugin to query and find
 various game entities around Varrock east bank.
+
+> :warning: When running on non-client threads the action must be scheduled on the client thread and is thus asynchronous in nature.
 
 ### Structure
 
@@ -304,7 +302,7 @@ file.
 
 This file maps specific fields, methods, values, and classes from the obfuscated game client to be used in order to send packets and provide much of the API's functionality correctly.
 The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
-A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
+A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to a library instead of plugin, etc...) however,
 the functionality for client analysis, obfuscated class names, and packet ops are sourced from the Packet Utils repository (credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic).
 
 - Check the [PRs](https://github.com/Ethan-Vann/PacketUtils/pulls) for the Packet Utils repository. 
@@ -315,11 +313,24 @@ the functionality for client analysis, obfuscated class names, and packet ops ar
 
 ### Running Tests
 
-Run the full test suite with:
+This project is unique in that it functions exclusively within a RuneLite game client environment. This means that automated tests through a framework
+like JUnit don't provide as much value. Sure, you can test functionality within the API but does is **really** find NPC's within 10 tiles of your player? 
+The only way to know for sure is to run tests within the game client.
 
-```bash
-./gradlew test
-```
+You can run tests by running the main class in `ExamplePluginTest.java`. This will launch a new game client which loads a custom "Testing" plugin
+called "API Tests" which you will see within RuneLite. Through this plugin you can run specific tests which cover various query and service related classes
+and dump output into the console for PASS/FAIL.
+
+Most of the tests are fully self-sufficient, that is, they set themselves up with the necessary in game items before running the tests. However,
+there are a few conditions:
+
+- The tests are designed to be run from Varrock West Bank where nearby "Guard" NPCs are present.
+- Rune Full Helm, Platebody, Platelegs, and Scimitar must be present in your bank
+- Lobster and Swordfish must be present in your bank
+- Law, fire, and air runes must be present within your bank
+- Protect from Melee prayer must be unlocked
+- Must be on the standard spellbook
+- Player tests require a nearby player and it will "follow" them
 
 ### Development Workflow
 
@@ -343,6 +354,7 @@ The deployment is fully automated and consists of:
 - Publishing a new version to the GitHub Releases section
   - This will be picked up by Github Packages for easy integration into other gradle projects.
 - Uploading the JAR file to the Minio storage server used by the Kraken Client at runtime.
+
 ---
 
 ## 🛠 Built With

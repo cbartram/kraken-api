@@ -11,6 +11,7 @@ import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
 import example.tests.query.*;
+import example.tests.service.CameraServiceTest;
 import example.tests.service.MovementServiceTest;
 import example.tests.service.PrayerServiceTest;
 import example.tests.service.SpellServiceTest;
@@ -105,6 +106,9 @@ public class ExamplePlugin extends Plugin {
     private MovementServiceTest movementServiceTest;
 
     @Inject
+    private CameraServiceTest cameraServiceTest;
+
+    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -173,6 +177,8 @@ public class ExamplePlugin extends Plugin {
                 testResultManager.startTest("MovementService", movementServiceTest.executeTest());
             } else if(key.equalsIgnoreCase("enableSpell") && config.enableSpellTests()) {
                 testResultManager.startTest("SpellService", spellServiceTest.executeTest());
+            } else if(key.equalsIgnoreCase("enableCamera") && config.enableCameraTests()) {
+                testResultManager.startTest("CameraService", cameraServiceTest.executeTest());
             }
 
             if(event.getKey().equals("clearTests") && config.clearTests()) {
