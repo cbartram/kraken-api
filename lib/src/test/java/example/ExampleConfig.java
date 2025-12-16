@@ -166,6 +166,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableCamera",
+            name = "Start Camera Service Tests",
+            description = "Enable camera service tests",
+            section = serviceTests,
+            position = 4
+    )
+    default boolean enableCameraTests() {
+        return true;
+    }
+
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
     // ==============================================
