@@ -11,7 +11,7 @@ The simulation engine supports:
 - Placing NPCs at locations
 - Different NPC sizes
 
-![../images/sim.png](simulation-image)
+![sim-example-image](../images/sim.png)
 
 Currently, there isn't a full fledged API for performing a simulation in the context of the game however,
 this is being developed.
