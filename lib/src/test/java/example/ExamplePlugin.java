@@ -33,8 +33,12 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 @Slf4j
 @Singleton
@@ -71,45 +75,6 @@ public class ExamplePlugin extends Plugin {
     private TestResultManager testResultManager;
 
     @Inject
-    private PrayerServiceTest prayerServiceTest;
-
-    @Inject
-    private BankTest bankQueryTest;
-
-    @Inject
-    private EquipmentTest equipmentQueryTest;
-
-    @Inject
-    private InventoryTest inventoryQueryTest;
-
-    @Inject
-    private BankInventoryTest bankInventoryQueryTest;
-
-    @Inject
-    private GameObjectTest gameObjectQueryTest;
-
-    @Inject
-    private NpcTest npcQueryTest;
-
-    @Inject
-    private GroundObjectTest groundObjectQueryTest;
-
-    @Inject
-    private PlayerTest playerQueryTest;
-
-    @Inject
-    private WidgetTest widgetQueryTest;
-
-    @Inject
-    private SpellServiceTest spellServiceTest;
-
-    @Inject
-    private MovementServiceTest movementServiceTest;
-
-    @Inject
-    private CameraServiceTest cameraServiceTest;
-
-    @Inject
     private SimulationVisualizer visualizer;
 
     @Inject
@@ -127,12 +92,44 @@ public class ExamplePlugin extends Plugin {
     @Getter
     private WorldPoint targetTile;
 
+    @Inject
+    private Pathfinder pathfinder;
 
-    @Inject private Pathfinder pathfinder;
-    @Getter private List<WorldPoint> currentPath;
+    @Getter
+    private List<WorldPoint> currentPath;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
+
+    private final Map<String, TestExecution> testExecutions = new HashMap<>();
+
+    @Inject
+    private void initializeTests(
+            PrayerServiceTest prayerServiceTest, BankTest bankQueryTest, EquipmentTest equipmentQueryTest,
+            InventoryTest inventoryQueryTest, BankInventoryTest bankInventoryQueryTest, GameObjectTest gameObjectQueryTest,
+            NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
+            WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
+            CameraServiceTest cameraServiceTest
+    ) {
+        registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
+        registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
+        registerTest("enableInventoryQuery", "InventoryQuery", config::enableInventoryQuery, inventoryQueryTest::executeTest);
+        registerTest("enableBankInventoryQuery", "BankInventoryTest", config::enableBankInventoryQuery, bankInventoryQueryTest::executeTest);
+        registerTest("enableEquipmentQuery", "EquipmentQuery", config::enableEquipmentQuery, equipmentQueryTest::executeTest);
+        registerTest("enableGameObjectQuery", "GameObjectQuery", config::enableGameObjectQuery, gameObjectQueryTest::executeTest);
+        registerTest("enableGroundObjectQuery", "GroundObjectQuery", config::enableGroundObjectQuery, groundObjectQueryTest::executeTest);
+        registerTest("enableNpcQuery", "NpcQuery", config::enableNpcQuery, npcQueryTest::executeTest);
+        registerTest("enablePlayerQuery", "PlayerQuery", config::enablePlayerQuery, playerQueryTest::executeTest);
+        registerTest("enableWidgetQuery", "WidgetQuery", config::enableWidgetQuery, widgetQueryTest::executeTest);
+        registerTest("enableMovement", "MovementService", config::enableMovementTests, movementServiceTest::executeTest);
+        registerTest("enableSpell", "SpellService", config::enableSpellTests, spellServiceTest::executeTest);
+        registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
+    }
+
+    private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {
+        testExecutions.put(configKey, new TestExecution(testName, enabled, test));
+        testResultManager.registerTest(testName);
+    }
 
     @Provides
     ExampleConfig provideConfig(final ConfigManager configManager) {
@@ -141,7 +138,7 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     private void onMenuOptionClicked(MenuOptionClicked event) {
-        if(config.showDebugInfo()) {
+        if (config.showDebugInfo()) {
             log.info("Option={}, Target={}, Param0={}, Param1={}, MenuAction={}, ItemId={}, id={}, itemOp={}, str={}",
                     event.getMenuOption(), event.getMenuTarget(), event.getParam0(), event.getParam1(), event.getMenuAction().name(), event.getItemId(),
                     event.getId(), event.getItemOp(), event);
@@ -150,61 +147,36 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     private void onConfigChanged(final ConfigChanged event) {
-        if (event.getGroup().equals("testapi")) {
-            if(event.getKey().equals("simVisualizer")) {
-                // Init will dump collision data and load the game state. This should only be called
-                // if game state is logged in
-                if(client.getGameState() == GameState.LOGGED_IN && config.showVisualizer()) {
-                    visualizer.init();
-                    visualizer.setVisible(true);
-                }
-            }
+        if (!event.getGroup().equals("testapi")) {
+            return;
+        }
 
-            if(event.getKey().equalsIgnoreCase("showMouse")) {
-                if(config.showMouse()) {
-                    overlayManager.add(mouseOverlay);
+        String key = event.getKey();
+
+        if (key.equals("simVisualizer")) {
+            if (client.getGameState() == GameState.LOGGED_IN && config.showVisualizer()) {
+                visualizer.init();
+                visualizer.setVisible(true);
+            }
+        } else if (key.equalsIgnoreCase("showMouse")) {
+            if (config.showMouse()) {
+                overlayManager.add(mouseOverlay);
+            } else {
+                overlayManager.remove(mouseOverlay);
+            }
+        } else if (key.equalsIgnoreCase("moveMouse") && config.moveMouse()) {
+            log.info("Moving mouse to: {}, {}", config.mouseX(), config.mouseY());
+            virtualMouse.move(Integer.parseInt(config.mouseX()), Integer.parseInt(config.mouseY()));
+        } else if (key.equals("clearTests") && config.clearTests()) {
+            testResultManager.clearAllResults();
+        } else {
+            TestExecution execution = testExecutions.get(key);
+            if (execution != null) {
+                if (execution.getEnabled().getAsBoolean()) {
+                    testResultManager.startTest(execution.getTestName(), execution.getTest().get());
                 } else {
-                    overlayManager.remove(mouseOverlay);
+                    testResultManager.cancelTest(execution.getTestName());
                 }
-            }
-
-            if(event.getKey().equalsIgnoreCase("moveMouse") && config.moveMouse()) {
-                log.info("Moving mouse to: {}, {}", config.mouseX(), config.mouseY());
-                virtualMouse.move(Integer.parseInt(config.mouseX()), Integer.parseInt(config.mouseY()));
-            }
-
-            String key = event.getKey();
-            if(key.equalsIgnoreCase("enablePrayer") && config.enablePrayerTests()) {
-                testResultManager.startTest("PrayerServiceTest", prayerServiceTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableBankQuery") && config.enableBankQuery()) {
-                testResultManager.startTest("BankQuery", bankQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableInventoryQuery") && config.enableInventoryQuery()) {
-                testResultManager.startTest("InventoryQuery", inventoryQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableBankInventoryQuery") && config.enableBankInventoryQuery()) {
-                testResultManager.startTest("BankInventoryTest", bankInventoryQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableEquipmentQuery") && config.enableEquipmentQuery()) {
-                testResultManager.startTest("EquipmentQuery", equipmentQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableGameObjectQuery") && config.enableGameObjectQuery()) {
-                testResultManager.startTest("GameObjectQuery", gameObjectQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableGroundObjectQuery") && config.enableGroundObjectQuery()) {
-                testResultManager.startTest("GroundObjectQuery", groundObjectQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableNpcQuery") && config.enableNpcQuery()) {
-                testResultManager.startTest("NpcQuery", npcQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enablePlayerQuery") && config.enablePlayerQuery()) {
-                testResultManager.startTest("PlayerQuery", playerQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableWidgetQuery") && config.enableWidgetQuery()) {
-                testResultManager.startTest("WidgetQuery", widgetQueryTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableMovement") && config.enableMovementTests()) {
-                testResultManager.startTest("MovementService", movementServiceTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableSpell") && config.enableSpellTests()) {
-                testResultManager.startTest("SpellService", spellServiceTest.executeTest());
-            } else if(key.equalsIgnoreCase("enableCamera") && config.enableCameraTests()) {
-                testResultManager.startTest("CameraService", cameraServiceTest.executeTest());
-            }
-
-            if(event.getKey().equals("clearTests") && config.clearTests()) {
-                testResultManager.cancelAllTests();
-                testResultManager.getAllTestResults().clear();
             }
         }
     }
@@ -214,12 +186,11 @@ public class ExamplePlugin extends Plugin {
         context.register();
         context.initializePackets();
 
-        // Add overlays
         overlayManager.add(overlay);
         overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
         overlayManager.add(sceneOverlay);
-        if(config.showMouse()) {
+        if (config.showMouse()) {
             overlayManager.add(mouseOverlay);
         }
     }
@@ -228,7 +199,6 @@ public class ExamplePlugin extends Plugin {
     protected void shutDown() {
         testResultManager.cancelAllTests();
 
-        // Remove overlays
         overlayManager.remove(overlay);
         overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);
@@ -238,18 +208,10 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     private void onGameStateChanged(final GameStateChanged event) {
-        final GameState gameState = event.getGameState();
-
-        switch (gameState) {
-            case LOGGED_IN:
-                startUp();
-                break;
-            case HOPPING:
-            case LOGIN_SCREEN:
-                shutDown();
-                break;
-            default:
-                break;
+        if (event.getGameState() == GameState.LOGGED_IN) {
+            startUp();
+        } else if (event.getGameState() == GameState.LOGIN_SCREEN || event.getGameState() == GameState.HOPPING) {
+            shutDown();
         }
     }
 
@@ -303,5 +265,18 @@ public class ExamplePlugin extends Plugin {
             }
         }
         return null;
+    }
+
+    @Getter
+    private static class TestExecution {
+        private final String testName;
+        private final BooleanSupplier enabled;
+        private final Supplier<java.util.concurrent.CompletableFuture<Boolean>> test;
+
+        public TestExecution(String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {
+            this.testName = testName;
+            this.enabled = enabled;
+            this.test = test;
+        }
     }
 }
