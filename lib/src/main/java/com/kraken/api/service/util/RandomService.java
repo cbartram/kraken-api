@@ -1,4 +1,4 @@
-package com.kraken.api.service;
+package com.kraken.api.service.util;
 
 import com.google.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;

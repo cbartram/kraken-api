@@ -2,7 +2,7 @@ package example.tests.service;
 
 import com.google.inject.Inject;
 import com.kraken.api.Context;
-import com.kraken.api.service.RandomService;
+import com.kraken.api.service.util.RandomService;
 import com.kraken.api.service.camera.CameraService;
 import example.ExamplePlugin;
 import example.tests.BaseApiTest;
