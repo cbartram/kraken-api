@@ -2,17 +2,16 @@ package com.kraken.api.input;
 
 import com.google.inject.Singleton;
 import com.kraken.api.service.RandomService;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 
 import javax.inject.Inject;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,79 +22,42 @@ public class VirtualMouse {
 
     private final Client client;
     private final ScheduledExecutorService scheduledExecutorService;
-    
-    
-    private boolean exited = true;
-    private static final int POINT_LIFETIME = 14;// Maximum number of points to store
-    final int MAX_POINTS = 500;
-    Deque<Point> points = new ConcurrentLinkedDeque<>();
-    Point lastClick = new Point(-1, -1); // getter for last click
-    // getter for click before last click
-    Point lastClick2 = new Point(-1, -1);
-    Point lastMove = new Point(-1, -1); // getter for last move
-    float hue = 0.0f; // Initial hue value
-    Timer timer = new Timer(POINT_LIFETIME, e -> points.pollFirst());
 
-    public Canvas getCanvas() {
-        return client.getCanvas();
-    }
+    @Getter
+    private final Canvas canvas;
+
+    @Getter
+    @Setter
+    private Point lastMove = new Point(-1, -1);
 
     @Inject
     public VirtualMouse(Client client) {
         this.scheduledExecutorService = Executors.newScheduledThreadPool(10);
-        //getCanvas().setFocusable(false);
         this.client = client;
+        this.canvas = client.getCanvas();
     }
 
-    public void setLastClick(Point point) {
-        lastClick2 = lastClick;
-        lastClick = point;
-    }
-
-    public void setLastMove(Point point) {
-        lastMove = point;
-        points.add(point);
-        if (points.size() > MAX_POINTS) {
-            points.pollFirst();
-        }
-    }
-
-    private void handleClick(Point point, boolean rightClick) {
-        entered(point);
-        exited(point);
-        moved(point);
-        pressed(point, rightClick ? MouseEvent.BUTTON3 : MouseEvent.BUTTON1);
-        released(point, rightClick ? MouseEvent.BUTTON3 : MouseEvent.BUTTON1);
-        clicked(point, rightClick ? MouseEvent.BUTTON3 : MouseEvent.BUTTON1);
-        setLastClick(point);
-    }
-    public VirtualMouse click(Point point, boolean rightClick) {
-        if (point == null) return this;
-
-        Runnable clickAction = () -> handleClick(point, rightClick);
-
-        if (client.isClientThread()) {
-            scheduledExecutorService.schedule(clickAction, 0, TimeUnit.MILLISECONDS);
-        } else {
-            clickAction.run();
-        }
-
-        return this;
-    }
-    
-    public VirtualMouse click(Point point) {
-        return click(point, false);
-    }
-
+    /**
+     * Moves the mouse to the specified point.
+     *
+     * @param point The destination point.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse move(Point point) {
         setLastMove(point);
-        MouseEvent mouseMove = new MouseEvent(client.getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
+        MouseEvent mouseMove = new MouseEvent(getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         mouseMove.setSource("Kraken");
         getCanvas().dispatchEvent(mouseMove);
 
         return this;
     }
 
+    /**
+     * Moves the mouse to the center of the specified rectangle.
+     *
+     * @param rect The rectangle to move to.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse move(Rectangle rect) {
         MouseEvent mouseMove = new MouseEvent(client.getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, (int) rect.getCenterX(), (int) rect.getCenterY(), 0, false);
         mouseMove.setSource("Kraken");
@@ -104,6 +66,12 @@ public class VirtualMouse {
         return this;
     }
 
+    /**
+     * Moves the mouse to the center of the specified polygon.
+     *
+     * @param polygon The polygon to move to.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse move(Polygon polygon) {
         Point point = new Point((int) polygon.getBounds().getCenterX(), (int) polygon.getBounds().getCenterY());
 
@@ -114,6 +82,12 @@ public class VirtualMouse {
         return this;
     }
 
+    /**
+     * Scrolls the mouse wheel down at the specified point.
+     *
+     * @param point The point where the scroll occurs.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse scrollDown(Point point) {
         long time = System.currentTimeMillis();
 
@@ -121,13 +95,19 @@ public class VirtualMouse {
 
         scheduledExecutorService.schedule(() -> {
             MouseEvent mouseScroll = new MouseWheelEvent(getCanvas(), MouseEvent.MOUSE_WHEEL, time, 0, point.getX(), point.getY(), 0, false,
-                    0, 10, 2);
+                    MouseWheelEvent.WHEEL_UNIT_SCROLL, 10, 2);
             mouseScroll.setSource("Kraken");
             getCanvas().dispatchEvent(mouseScroll);
         }, RandomService.between(40,100), TimeUnit.MILLISECONDS);
         return this;
     }
 
+    /**
+     * Scrolls the mouse wheel up at the specified point.
+     *
+     * @param point The point where the scroll occurs.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse scrollUp(Point point) {
         long time = System.currentTimeMillis();
 
@@ -135,37 +115,53 @@ public class VirtualMouse {
 
         scheduledExecutorService.schedule(() -> {
             MouseEvent mouseScroll = new MouseWheelEvent(getCanvas(), MouseEvent.MOUSE_WHEEL, time, 0, point.getX(), point.getY(), 0, false,
-                    0, -10, -2);
+                    MouseWheelEvent.WHEEL_UNIT_SCROLL, -10, -2);
             mouseScroll.setSource("Kraken");
             getCanvas().dispatchEvent(mouseScroll);
         }, RandomService.between(40,100), TimeUnit.MILLISECONDS);
         return this;
     }
 
-    
+    /**
+     * Gets the last known mouse position from a move event generated by this class.
+     *
+     * @return The last move point.
+     */
     public java.awt.Point getMousePosition() {
         Point point = lastMove;
         return new java.awt.Point(point.getX(), point.getY());
     }
 
+    /**
+     * Gets the current mouse position from the AWT Canvas component.
+     *
+     * @return The system mouse position relative to the canvas.
+     */
     public java.awt.Point getCanvasMousePosition() {
        return client.getCanvas().getMousePosition();
     }
-    
+
+    /**
+     * Moves the mouse to the specified coordinates.
+     *
+     * @param x The x coordinate.
+     * @param y The y coordinate.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse move(int x, int y) {
         return move(new Point(x, y));
     }
 
-    
+
+    /**
+     * Moves the mouse to the specified coordinates.
+     *
+     * @param x The x coordinate.
+     * @param y The y coordinate.
+     * @return The VirtualMouse instance for chaining.
+     */
     public VirtualMouse move(double x, double y) {
         return move(new Point((int) x, (int) y));
-    }
-
-    @Deprecated
-    private void mouseEvent(int id, Point point, boolean rightClick) {
-        int button = rightClick ? MouseEvent.BUTTON3 : MouseEvent.BUTTON1;
-        MouseEvent e = new MouseEvent(client.getCanvas(), id, System.currentTimeMillis(), 0, point.getX(), point.getY(), 1, false, button);
-        getCanvas().dispatchEvent(e);
     }
 
     private synchronized void pressed(Point point, int button) {
@@ -190,14 +186,12 @@ public class VirtualMouse {
         MouseEvent event = new MouseEvent(client.getCanvas(), MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Kraken");
         getCanvas().dispatchEvent(event);
-        exited = true;
     }
 
     private synchronized void entered(Point point) {
         MouseEvent event = new MouseEvent(client.getCanvas(), MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Kraken");
         getCanvas().dispatchEvent(event);
-        exited = false;
     }
 
     private synchronized void moved(Point point) {

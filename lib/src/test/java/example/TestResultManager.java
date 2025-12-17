@@ -1,17 +1,20 @@
 package example;
 
+import com.google.inject.Singleton;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Getter
+@Singleton
 public class TestResultManager {
 
     @Getter
@@ -65,12 +68,16 @@ public class TestResultManager {
     private final Map<String, TestResult> testResults = new ConcurrentHashMap<>();
     private final Map<String, CompletableFuture<Boolean>> runningTests = new ConcurrentHashMap<>();
 
+    public void registerTest(String testName) {
+        testResults.putIfAbsent(testName, new TestResult(testName));
+    }
+
     public Map<String, TestResult> getAllTestResults() {
         return new ConcurrentHashMap<>(testResults);
     }
 
     public void startTest(String testName, CompletableFuture<Boolean> testFuture) {
-        TestResult result = new TestResult(testName);
+        TestResult result = testResults.computeIfAbsent(testName, TestResult::new);
         result.setRunning();
         runningTests.put(testName, testFuture);
 
@@ -95,10 +102,7 @@ public class TestResultManager {
     }
 
     public void setTestDisabled(String testName) {
-        TestResult result = testResults.get(testName);
-        if (result != null) {
-            result.setDisabled();
-        }
+        testResults.computeIfAbsent(testName, TestResult::new).setDisabled();
     }
 
     public boolean isTestRunning(String testName) {
@@ -109,18 +113,24 @@ public class TestResultManager {
         return !runningTests.isEmpty();
     }
 
-    public void cancelAllTests() {
-        for (CompletableFuture<Boolean> future : runningTests.values()) {
+    public void cancelTest(String testName) {
+        CompletableFuture<Boolean> future = runningTests.remove(testName);
+        if (future != null) {
             future.cancel(true);
         }
-        runningTests.clear();
-
-        // Reset any running tests to not started
-        for (TestResult result : testResults.values()) {
-            if (result.getStatus() == TestStatus.RUNNING) {
-                result.status = TestStatus.NOT_STARTED;
-            }
+        TestResult result = testResults.get(testName);
+        if (result != null && result.getStatus() == TestStatus.RUNNING) {
+            result.status = TestStatus.NOT_STARTED;
         }
+    }
+
+    public void cancelAllTests() {
+        new ArrayList<>(runningTests.keySet()).forEach(this::cancelTest);
+    }
+
+    public void clearAllResults() {
+        cancelAllTests();
+        testResults.clear();
     }
 
     public int getPassedTestCount() {

@@ -90,7 +90,6 @@ public class CameraServiceTest extends BaseApiTest {
 //        }
 
         log.info("--- Testing Centering ---");
-        // Move camera so it is definitely NOT centered
         camera.setPitch(128);
         camera.setAngle(camera.getAngle() + 90, 10);
         Thread.sleep(RandomService.between(2000, 3500));
@@ -110,7 +109,6 @@ public class CameraServiceTest extends BaseApiTest {
 
     private WorldPoint waitForTargetSelection() throws InterruptedException {
         int timeout = 0;
-        // Wait up to 30 seconds for user input
         while (examplePlugin.getTargetTile() == null && timeout < 300) {
             Thread.sleep(100);
             timeout++;

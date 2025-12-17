@@ -30,13 +30,15 @@ public class MinimapService {
     @Inject
     private SpriteManager spriteManager;
 
+    @Inject
+    private MovementService movementService;
+
     public boolean walkMiniMap(WorldPoint worldPoint) {
         return walkMiniMap(worldPoint, 5.0f);
     }
 
     /**
-     * Walks to a world point via a click on the Minimap. This must have a fixed mode client and the stretched mode plugin
-     * turned off to work correctly. Zoom values can be between 2 and 8.
+     * Walks to a world point via a click on the Minimap. Zoom values can be between 2 and 8.
      * @param worldPoint The world point to walk to
      * @param zoomDistance The zoom distance for the minimap
      * @return True if the walk operation was successful and false otherwise.
@@ -68,7 +70,7 @@ public class MinimapService {
             return false;
         }
 
-        ctx.getMouse().click(point);
+        movementService.moveTo(worldPoint);
         return true;
     }
 

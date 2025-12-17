@@ -280,14 +280,14 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "fontSize",
-            name = "Font Size",
-            description = "Font size for overlay text",
-            section = overlaySettings,
-            position = 12
+            name = "Show Mouse Overlay",
+            keyName = "showMouse",
+            description = "Shows an overlay of the mouse position and trail.",
+            position = 13,
+            section = overlaySettings
     )
-    default int fontSize() {
-        return 12;
+    default boolean showMouse() {
+        return false;
     }
 
     @ConfigItem(
@@ -295,7 +295,7 @@ public interface ExampleConfig extends Config {
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
             section = overlaySettings,
-            position = 13
+            position = 14
     )
     default boolean showDebugInfo() {
         return false;
@@ -305,7 +305,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 14,
+            position = 15,
             section = overlaySettings
     )
     default boolean showVisualizer() {

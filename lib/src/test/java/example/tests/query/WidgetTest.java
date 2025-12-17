@@ -53,13 +53,12 @@ public class WidgetTest extends BaseApiTest {
             // 3. Test Action Filter
             // We search for something with a generic action usually available.
             // "Report" is a common button text/action on the chatbox frame.
-            // Alternatively, checking for "Switch" on side stones (inventory, prayer, etc).
-            boolean hasSwitchAction = !ctx.widgets().withAction("Switch").first().isNull();
-            if (!hasSwitchAction) {
+            boolean abuse = !ctx.widgets().withAction("Report abuse").first().isNull();
+            if (!abuse) {
                 // Fallback: Try "Activate" (Quick prayer) or "Walk here" (Minimap)
-                boolean hasWalk = !ctx.widgets().withAction("Walk here").first().isNull();
-                if (!hasWalk) {
-                    log.warn("Could not find any widgets with 'Switch' or 'Walk here' actions (Unusual but possible if interfaces hidden)");
+                boolean quickPrayers = !ctx.widgets().withAction("Activate Quick-prayers").first().isNull();
+                if (!quickPrayers) {
+                    log.warn("Could not find any widgets with 'Report abuse' or 'Activate Quick-prayers' actions (Unusual but possible if interfaces hidden)");
                 }
             }
 
