@@ -1,7 +1,7 @@
 package com.kraken.api.service.ui;
 
 import com.kraken.api.Context;
-import com.kraken.api.service.SleepService;
+import com.kraken.api.service.util.SleepService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 

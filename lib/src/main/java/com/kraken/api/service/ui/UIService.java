@@ -2,7 +2,7 @@ package com.kraken.api.service.ui;
 
 import com.kraken.api.Context;
 import com.kraken.api.query.container.ContainerItem;
-import com.kraken.api.service.RandomService;
+import com.kraken.api.service.util.RandomService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.Point;

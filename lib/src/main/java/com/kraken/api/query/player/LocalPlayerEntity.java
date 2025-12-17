@@ -85,6 +85,22 @@ public class LocalPlayerEntity extends PlayerEntity {
         }).orElse(false);
     }
 
+
+    /**
+     * Checks if the player is currently idle based on their pose animation.
+     * A player is considered idle if their pose animation is the same as their idle pose animation.
+     * @return {@code true} if the player is idle, {@code false} if they are moving.
+     */
+    public boolean isIdle() {
+        return ctx.runOnClientThreadOptional(() -> {
+            Player localPlayer = ctx.getClient().getLocalPlayer();
+            if (localPlayer == null) {
+                return false;
+            }
+            return localPlayer.getPoseAnimation() == localPlayer.getIdlePoseAnimation();
+        }).orElse(false);
+    }
+
     /**
      * Gets the amount of special attack energy remaining as a percent (0-100).
      * @return int the amount of special attack energy the player has remaining.
