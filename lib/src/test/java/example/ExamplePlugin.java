@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.movement.Pathfinder;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -120,8 +121,12 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private MouseOverlay mouseOverlay;
 
+    @Inject
+    private VirtualMouse virtualMouse;
+
     @Getter
     private WorldPoint targetTile;
+
 
     @Inject private Pathfinder pathfinder;
     @Getter private List<WorldPoint> currentPath;
@@ -161,6 +166,11 @@ public class ExamplePlugin extends Plugin {
                 } else {
                     overlayManager.remove(mouseOverlay);
                 }
+            }
+
+            if(event.getKey().equalsIgnoreCase("moveMouse") && config.moveMouse()) {
+                log.info("Moving mouse to: {}, {}", config.mouseX(), config.mouseY());
+                virtualMouse.move(Integer.parseInt(config.mouseX()), Integer.parseInt(config.mouseY()));
             }
 
             String key = event.getKey();

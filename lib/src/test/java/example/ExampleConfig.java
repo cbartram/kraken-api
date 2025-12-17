@@ -302,6 +302,39 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
+            name = "Move Mouse",
+            keyName = "moveMouse",
+            description = "Moves the mouse to the configured coords.",
+            position = 13,
+            section = overlaySettings
+    )
+    default boolean moveMouse() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Mouse X",
+            keyName = "mouseX",
+            description = "X coord",
+            position = 13,
+            section = overlaySettings
+    )
+    default String mouseX() {
+        return "";
+    }
+
+    @ConfigItem(
+            name = "Mouse Y",
+            keyName = "mouseY",
+            description = "Y coord",
+            position = 13,
+            section = overlaySettings
+    )
+    default String mouseY() {
+        return "";
+    }
+
+    @ConfigItem(
             keyName = "showDebugInfo",
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
