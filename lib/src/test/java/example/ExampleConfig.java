@@ -291,11 +291,22 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
+            name = "Show Mouse Overlay",
+            keyName = "showMouse",
+            description = "Shows an overlay of the mouse position and trail.",
+            position = 13,
+            section = overlaySettings
+    )
+    default boolean showMouse() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "showDebugInfo",
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
             section = overlaySettings,
-            position = 13
+            position = 14
     )
     default boolean showDebugInfo() {
         return false;
@@ -305,7 +316,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 14,
+            position = 15,
             section = overlaySettings
     )
     default boolean showVisualizer() {

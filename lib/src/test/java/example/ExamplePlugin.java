@@ -117,6 +117,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private SceneOverlay sceneOverlay;
 
+    @Inject
+    private MouseOverlay mouseOverlay;
+
     @Getter
     private WorldPoint targetTile;
 
@@ -149,6 +152,14 @@ public class ExamplePlugin extends Plugin {
                 if(client.getGameState() == GameState.LOGGED_IN && config.showVisualizer()) {
                     visualizer.init();
                     visualizer.setVisible(true);
+                }
+            }
+
+            if(event.getKey().equalsIgnoreCase("showMouse")) {
+                if(config.showMouse()) {
+                    overlayManager.add(mouseOverlay);
+                } else {
+                    overlayManager.remove(mouseOverlay);
                 }
             }
 
@@ -198,6 +209,9 @@ public class ExamplePlugin extends Plugin {
         overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
         overlayManager.add(sceneOverlay);
+        if(config.showMouse()) {
+            overlayManager.add(mouseOverlay);
+        }
     }
 
     @Override
@@ -209,6 +223,7 @@ public class ExamplePlugin extends Plugin {
         overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);
         overlayManager.remove(sceneOverlay);
+        overlayManager.remove(mouseOverlay);
     }
 
     @Subscribe
