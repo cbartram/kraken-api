@@ -280,17 +280,6 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "fontSize",
-            name = "Font Size",
-            description = "Font size for overlay text",
-            section = overlaySettings,
-            position = 12
-    )
-    default int fontSize() {
-        return 12;
-    }
-
-    @ConfigItem(
             name = "Show Mouse Overlay",
             keyName = "showMouse",
             description = "Shows an overlay of the mouse position and trail.",
@@ -299,39 +288,6 @@ public interface ExampleConfig extends Config {
     )
     default boolean showMouse() {
         return false;
-    }
-
-    @ConfigItem(
-            name = "Move Mouse",
-            keyName = "moveMouse",
-            description = "Moves the mouse to the configured coords.",
-            position = 13,
-            section = overlaySettings
-    )
-    default boolean moveMouse() {
-        return false;
-    }
-
-    @ConfigItem(
-            name = "Mouse X",
-            keyName = "mouseX",
-            description = "X coord",
-            position = 13,
-            section = overlaySettings
-    )
-    default String mouseX() {
-        return "";
-    }
-
-    @ConfigItem(
-            name = "Mouse Y",
-            keyName = "mouseY",
-            description = "Y coord",
-            position = 13,
-            section = overlaySettings
-    )
-    default String mouseY() {
-        return "";
     }
 
     @ConfigItem(

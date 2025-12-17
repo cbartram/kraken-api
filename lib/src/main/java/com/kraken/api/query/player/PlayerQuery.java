@@ -77,6 +77,16 @@ public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player
     }
 
     /**
+     * Filters the stream for players within a specified distance from the local player.
+     *
+     * @param distance The maximum distance from the local player.
+     * @return PlayerQuery
+     */
+    public PlayerQuery withinDistance(int distance) {
+        return filter(p -> p.raw().getLocalLocation().distanceTo(ctx.getClient().getLocalPlayer().getLocalLocation()) <= distance);
+    }
+
+    /**
      * Filters the stream for players within a specified combat level (inclusive).
      * @param low The minimum combat level bound
      * @param high The maximum combat level bound

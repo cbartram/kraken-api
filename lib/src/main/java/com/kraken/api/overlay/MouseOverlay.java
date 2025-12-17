@@ -46,7 +46,9 @@ public class MouseOverlay extends Overlay {
         }
 
         if(renderCrosshair) {
-            renderCrosshair(graphics, mousePos);
+            if (mousePos.getX() != -1 && mousePos.getY() != -1) {
+                renderCrosshair(graphics, mousePos);
+            }
         }
 
         return null;
@@ -55,14 +57,17 @@ public class MouseOverlay extends Overlay {
     private void updateTrail(net.runelite.api.Point currentPos) {
         long now = System.currentTimeMillis();
 
-        // Calculate speed (distance from last point) to determine fade factor
-        double speed = 0;
-        if (!trail.isEmpty()) {
-            Point last = trail.peekLast().point;
-            speed = Math.sqrt(Math.pow(currentPos.getX() - last.getX(), 2) + Math.pow(currentPos.getY() - last.getY(), 2));
-        }
+        // Only add a new point if it's on the canvas
+        if (currentPos.getX() != -1 && currentPos.getY() != -1) {
+            // Calculate speed (distance from last point) to determine fade factor
+            double speed = 0;
+            if (!trail.isEmpty()) {
+                Point last = trail.peekLast().point;
+                speed = Math.sqrt(Math.pow(currentPos.getX() - last.getX(), 2) + Math.pow(currentPos.getY() - last.getY(), 2));
+            }
 
-        trail.add(new TrailPoint(currentPos, now, speed));
+            trail.add(new TrailPoint(currentPos, now, speed));
+        }
 
         // Prune old points based on time
         while (!trail.isEmpty() && (now - trail.peekFirst().timestamp > MAX_TRAIL_LIFETIME_MS)) {

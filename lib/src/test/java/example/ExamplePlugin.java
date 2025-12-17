@@ -164,10 +164,7 @@ public class ExamplePlugin extends Plugin {
             } else {
                 overlayManager.remove(mouseOverlay);
             }
-        } else if (key.equalsIgnoreCase("moveMouse") && config.moveMouse()) {
-            log.info("Moving mouse to: {}, {}", config.mouseX(), config.mouseY());
-            virtualMouse.move(Integer.parseInt(config.mouseX()), Integer.parseInt(config.mouseY()));
-        } else if (key.equals("clearTests") && config.clearTests()) {
+        } if (key.equals("clearTests") && config.clearTests()) {
             testResultManager.clearAllResults();
         } else {
             TestExecution execution = testExecutions.get(key);

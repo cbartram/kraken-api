@@ -81,7 +81,7 @@ public class SceneOverlay extends Overlay {
     }
 
     private void renderOtherPlayers(Graphics2D graphics) {
-        List<PlayerEntity> players = ctx.players().stream().collect(Collectors.toList());
+        List<PlayerEntity> players = ctx.players().withinDistance(config.playerRange()).stream().collect(Collectors.toList());
 
         for (PlayerEntity p : players) {
             Color color = Color.WHITE;
@@ -110,7 +110,6 @@ public class SceneOverlay extends Overlay {
     }
 
     private void renderWidgetDebug(Graphics2D graphics) {
-        // 1. Get current mouse position
         net.runelite.api.Point mouse = ctx.getClient().getMouseCanvasPosition();
 
         // 2. Find the top-most visible widget under the mouse
