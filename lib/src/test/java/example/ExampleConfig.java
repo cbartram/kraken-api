@@ -177,6 +177,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enablePathfinder",
+            name = "Start Pathfinder Tests",
+            description = "Enable pathfinder service tests",
+            section = serviceTests,
+            position = 5
+    )
+    default boolean enablePathfinder() {
+        return true;
+    }
+
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
     // ==============================================

@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
+import com.kraken.api.query.InteractionManager;
 import com.kraken.api.query.container.bank.BankInventoryQuery;
 import com.kraken.api.query.container.bank.BankQuery;
 import com.kraken.api.query.container.inventory.InventoryQuery;
@@ -21,6 +22,7 @@ import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
+import com.kraken.api.service.tile.TileService;
 import com.kraken.api.service.ui.TabService;
 import com.kraken.api.service.ui.UIService;
 import lombok.Getter;
@@ -32,6 +34,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -52,11 +55,27 @@ public class Context {
     @Getter
     private final ClientThread clientThread;
 
+    @Getter
+    private boolean packetsLoaded = false;
+
+    @Getter
+    private final InteractionManager interactionManager;
+
+    @Getter
+    private final TileService tileService;
+
+    @Getter
+    private final LocalPlayerEntity localPlayer;
+
+    @Getter
+    private final BankService bankService;
+
+    @Getter
+    private final ItemManager itemManager;
+
     private final Injector injector;
     private final EventBus eventBus;
-    private boolean packetsLoaded = false;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-    private final LocalPlayerEntity localPlayer;
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),
@@ -71,12 +90,18 @@ public class Context {
     );
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector) {
+    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus,
+                   final Injector injector, final InteractionManager interactionManager, final TileService tileService,
+                   final BankService bankService, final ItemManager itemManager) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
         this.eventBus = eventBus;
+        this.tileService = tileService;
+        this.interactionManager = interactionManager;
+        this.bankService = bankService;
+        this.itemManager = itemManager;
         this.localPlayer = new LocalPlayerEntity(this, executor);
         this.eventBus.register(this.localPlayer);
     }
