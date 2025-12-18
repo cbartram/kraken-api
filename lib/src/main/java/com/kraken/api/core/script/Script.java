@@ -27,6 +27,7 @@ public class Script implements Scriptable {
     /**
      * Subscriber to the game tick event to handle dealing with starting new futures for the loop() method. Game ticks
      * execute every 0.6 seconds.
+     * @param event the game tick event
      */
     public final void onGameTick(GameTick event) {
         if(loopTask == null) {
