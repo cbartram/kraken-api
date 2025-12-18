@@ -97,7 +97,7 @@ public class LocalPlayerEntity extends PlayerEntity {
             if (localPlayer == null) {
                 return false;
             }
-            return localPlayer.getPoseAnimation() == localPlayer.getIdlePoseAnimation();
+            return localPlayer.getPoseAnimation() == localPlayer.getIdlePoseAnimation() && localPlayer.getAnimation() == -1;
         }).orElse(false);
     }
 
