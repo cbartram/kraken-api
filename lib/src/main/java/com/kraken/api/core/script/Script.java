@@ -3,8 +3,6 @@ package com.kraken.api.core.script;
 import com.google.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.plugins.Plugin;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
@@ -13,17 +11,19 @@ import java.util.concurrent.Future;
 
 @Slf4j
 @Singleton
-public class Script extends Plugin implements Scriptable {
+public class Script implements Scriptable {
     private Future<?> future = null;
     private final static ExecutorService executor = Executors.newCachedThreadPool();
 
     /**
-     * This method is intended to be overridden by subclasses to define the script's main logic.
-     * It is called repeatedly on a separate thread by the script's internal game tick handler.
+     * This method is intended to be implemented in another class to define the script's main logic.
+     * It is called repeatedly on a separate thread by the script's internal game tick handler. This
+     * should be used over the onGameTick() method for core script logic because it runs in a separate thread
+     * so sleeps and script delays can be used.
      */
     public void loop() throws Exception {
-        // Intentionally left empty for subclasses to override.
-        // Subclasses should implement their script's main logic here.
+        // Intentionally left empty for implementing classes to override.
+        // Implementing classes should implement their script's main logic here.
     }
 
     /**
@@ -59,8 +59,7 @@ public class Script extends Plugin implements Scriptable {
      * Subscriber to the game tick event to handle dealing with starting new futures for the loop() method. Game ticks
      * execute every 0.6 seconds.
      */
-    @Subscribe
-    public final void _onGameTick(GameTick event) {
+    public final void onGameTick(GameTick event) {
         if (!isOverridden(this, "loop")) return;
 
         if(future != null && !future.isDone()) return;
@@ -68,9 +67,9 @@ public class Script extends Plugin implements Scriptable {
             try {
                 loop();
             } catch (RuntimeException e) {
-                log.error("[{}] loop() has been interrupted: ", this.getName(), e);
+                log.error("loop() has been interrupted: ", e);
             } catch (Throwable e) {
-                log.error("[{}] Error in loop():", this.getName(), e);
+                log.error("Error in loop():", e);
             } finally {
                 RunnableTask.dispose();
             }
@@ -84,7 +83,7 @@ public class Script extends Plugin implements Scriptable {
     public void stop(Runnable callback) {
         if(future == null || future.isDone()) callback.run();
 
-        log.info("Stopping loop: {}", getName());
+        log.info("Stopping loop");
         RunnableTask.cancel();
         executor.submit(() -> {
             try {
@@ -93,7 +92,7 @@ public class Script extends Plugin implements Scriptable {
                         Thread.sleep(10);
                     } catch (InterruptedException ignored) {}
                 }
-                log.info("loop stopped: {}", getName());
+                log.info("loop stopped");
                 if(callback != null) callback.run();
             } catch (Exception e) {
                 System.err.println("Task execution failed: " + e.getMessage());
