@@ -287,28 +287,30 @@ public class LocalPlayerEntity extends PlayerEntity {
      * @return {@code true} if the player is within the specified area, {@code false} otherwise.
      */
     public boolean isInArea(WorldPoint worldPoint, int xRadius, int yRadius) {
-        if (worldPoint == null) {
-            return false;
-        }
+        return ctx.runOnClientThread(() -> {
+            Player localPlayer = raw();
+            if (worldPoint == null || localPlayer == null) {
+                return false;
+            }
 
-        if (xRadius < 0 || yRadius < 0) {
-            return false;
-        }
+            if (xRadius < 0 || yRadius < 0) {
+                return false;
+            }
 
-        WorldPoint playerLocation = raw.getWorldLocation();
+            WorldPoint playerLocation = localPlayer.getWorldLocation();
 
-        if (playerLocation == null) {
-            return false;
-        }
+            if (playerLocation == null) {
+                return false;
+            }
 
-        if (worldPoint.getPlane() != playerLocation.getPlane()) {
-            return false;
-        }
+            if (worldPoint.getPlane() != playerLocation.getPlane()) {
+                return false;
+            }
 
-        int deltaX = Math.abs(playerLocation.getX() - worldPoint.getX());
-        int deltaY = Math.abs(playerLocation.getY() - worldPoint.getY());
+            int deltaX = Math.abs(playerLocation.getX() - worldPoint.getX());
+            int deltaY = Math.abs(playerLocation.getY() - worldPoint.getY());
 
-        return deltaX <= xRadius && deltaY <= yRadius;
+            return deltaX <= xRadius && deltaY <= yRadius;
+        });
     }
-
 }
