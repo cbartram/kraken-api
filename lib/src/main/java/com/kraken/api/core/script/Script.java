@@ -4,7 +4,6 @@ import com.google.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -27,41 +26,10 @@ public class Script implements Scriptable {
     }
 
     /**
-     * Checks if a method with the given name and argument types is overridden in the provided object's class
-     * compared to its superclass.
-     *
-     * @param obj The object whose class's method implementation is to be checked.
-     * @param methodName The name of the method to check.
-     * @param argTypes An array of {@code Class} objects representing the parameter types of the method.
-     *                 If the method has no parameters, an empty array should be used.
-     * @return {@code true} if the method is overridden in {@code obj}'s class; {@code false} otherwise,
-     *         or if {@code obj} or {@code methodName} is null, or if the method does not exist.
-     */
-    private boolean isOverridden(Object obj, String methodName, Class<?>... argTypes) {
-        if (obj == null || methodName == null) {
-            return false;
-        }
-
-        Class<?> objClass = obj.getClass();
-        Class<?> superClass = objClass.getSuperclass();
-
-        try {
-            Method objMethod = objClass.getDeclaredMethod(methodName, argTypes);
-            Method superMethod = superClass.getMethod(methodName, argTypes);
-
-            return !objMethod.equals(superMethod);
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
-
-    /**
      * Subscriber to the game tick event to handle dealing with starting new futures for the loop() method. Game ticks
      * execute every 0.6 seconds.
      */
     public final void onGameTick(GameTick event) {
-        if (!isOverridden(this, "loop")) return;
-
         if(future != null && !future.isDone()) return;
         future = executor.submit(new RunnableTask(() -> {
             try {
