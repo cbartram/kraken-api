@@ -1,6 +1,7 @@
 package com.kraken.api.core.script;
 
 import com.google.inject.Singleton;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
 
@@ -15,25 +16,28 @@ public class Script implements Scriptable {
     private final static ExecutorService executor = Executors.newCachedThreadPool();
 
     /**
-     * This method is intended to be implemented in another class to define the script's main logic.
+     * This field is intended to be set in another class to define the script's main logic.
      * It is called repeatedly on a separate thread by the script's internal game tick handler. This
      * should be used over the onGameTick() method for core script logic because it runs in a separate thread
      * so sleeps and script delays can be used.
      */
-    public void loop() throws Exception {
-        // Intentionally left empty for implementing classes to override.
-        // Implementing classes should implement their script's main logic here.
-    }
+    @Setter
+    private Runnable loopTask;
 
     /**
      * Subscriber to the game tick event to handle dealing with starting new futures for the loop() method. Game ticks
      * execute every 0.6 seconds.
      */
     public final void onGameTick(GameTick event) {
+        if(loopTask == null) {
+            log.error("Loop Task is not set. use script.setLoopTask(yourLoopRunnable) before starting the script.");
+            return;
+        }
+
         if(future != null && !future.isDone()) return;
         future = executor.submit(new RunnableTask(() -> {
             try {
-                loop();
+                loopTask.run();
             } catch (RuntimeException e) {
                 log.error("loop() has been interrupted: ", e);
             } catch (Throwable e) {
