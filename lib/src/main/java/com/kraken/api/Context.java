@@ -5,7 +5,6 @@ import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.VirtualMouse;
-import com.kraken.api.query.InteractionManager;
 import com.kraken.api.query.container.bank.BankInventoryQuery;
 import com.kraken.api.query.container.bank.BankQuery;
 import com.kraken.api.query.container.inventory.InventoryQuery;
@@ -22,7 +21,6 @@ import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
-import com.kraken.api.service.tile.TileService;
 import com.kraken.api.service.ui.TabService;
 import com.kraken.api.service.ui.UIService;
 import lombok.Getter;
@@ -34,7 +32,6 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.game.ItemManager;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -42,21 +39,21 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 @Slf4j
-@Getter
 @Singleton
 public class Context {
 
     @Setter
+    @Getter
     private VirtualMouse mouse;
+
+    @Getter
     private final Client client;
+
+    @Getter
     private final ClientThread clientThread;
+
     private final Injector injector;
     private final EventBus eventBus;
-    private final InteractionManager interactionManager;
-    private final ItemManager itemManager;
-    private final TileService tileService;
-    private final BankService bankService;
-    private boolean isRegistered = false;
     private boolean packetsLoaded = false;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private final LocalPlayerEntity localPlayer;
@@ -74,19 +71,12 @@ public class Context {
     );
 
     @Inject
-    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse,
-                   final EventBus eventBus, final Injector injector,
-                   final InteractionManager interactionManager, final ItemManager itemManager,
-                   final TileService tileService, final BankService bankService) {
+    public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus, final Injector injector) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
-        this.bankService = bankService;
         this.eventBus = eventBus;
-        this.interactionManager = interactionManager;
-        this.itemManager = itemManager;
-        this.tileService = tileService;
         this.localPlayer = new LocalPlayerEntity(this, executor);
         this.eventBus.register(this.localPlayer);
     }
@@ -131,8 +121,6 @@ public class Context {
             log.error("Error registering event handlers: {}", e.getMessage());
             return;
         }
-
-        isRegistered = true;
     }
 
     /**
@@ -156,8 +144,6 @@ public class Context {
             log.error("Error un-registering event handlers: {}", e.getMessage());
             return;
         }
-
-        isRegistered = false;
     }
 
     /**
