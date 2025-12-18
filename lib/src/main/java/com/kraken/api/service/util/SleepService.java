@@ -279,6 +279,29 @@ public class SleepService {
     }
 
     /**
+     * Sleeps while the specified condition is true or until the timeout is reached.
+     * @param condition the condition to be met
+     * @param timeout the maximum time to sleep in milliseconds
+     * @return true if the condition became false, false if the timeout was reached
+     */
+    public boolean sleepWhile(BooleanSupplier condition, int timeout) {
+        long start = System.currentTimeMillis();
+        while (condition.getAsBoolean()) {
+            if (System.currentTimeMillis() - start > timeout) {
+                return false;
+            }
+
+            if (Thread.currentThread().isInterrupted() || RunnableTask.isCanceled()) {
+                throw new RuntimeException();
+            }
+
+            sleep(100);
+        }
+        return true;
+    }
+
+
+    /**
      * Sleeps for a specified number of game ticks.
      * @param ticksToWait the number of ticks to wait
      * @return true if the sleep completed, false if it was interrupted or timed out
