@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.input.VirtualMouse;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.movement.Pathfinder;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -12,10 +11,7 @@ import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
 import example.overlay.TestApiOverlay;
 import example.tests.query.*;
-import example.tests.service.CameraServiceTest;
-import example.tests.service.MovementServiceTest;
-import example.tests.service.PrayerServiceTest;
-import example.tests.service.SpellServiceTest;
+import example.tests.service.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -32,11 +28,7 @@ import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -86,9 +78,6 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private MouseOverlay mouseOverlay;
 
-    @Inject
-    private VirtualMouse virtualMouse;
-
     @Getter
     private WorldPoint targetTile;
 
@@ -96,7 +85,7 @@ public class ExamplePlugin extends Plugin {
     private Pathfinder pathfinder;
 
     @Getter
-    private List<WorldPoint> currentPath;
+    private List<WorldPoint> currentPath = new ArrayList<>();
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -109,7 +98,7 @@ public class ExamplePlugin extends Plugin {
             InventoryTest inventoryQueryTest, BankInventoryTest bankInventoryQueryTest, GameObjectTest gameObjectQueryTest,
             NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
             WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
-            CameraServiceTest cameraServiceTest
+            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest
     ) {
         registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
         registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
@@ -124,6 +113,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enableMovement", "MovementService", config::enableMovementTests, movementServiceTest::executeTest);
         registerTest("enableSpell", "SpellService", config::enableSpellTests, spellServiceTest::executeTest);
         registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
+        registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {

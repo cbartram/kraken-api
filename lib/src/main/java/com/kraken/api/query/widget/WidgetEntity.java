@@ -79,6 +79,17 @@ public class WidgetEntity extends AbstractEntity<Widget> {
     }
 
     /**
+     * Checks if the widget is currently visible.
+     *
+     * <p>A widget is considered visible if it is not marked as hidden in its underlying raw state.</p>
+     *
+     * @return {@code true} if the widget is visible; {@code false} otherwise.
+     */
+    public boolean isVisible() {
+        return !raw().isHidden();
+    }
+
+    /**
      * Uses a widget on another widget. (i.e. High Alchemy)
      * @param destinationWidget The destination widget to use this entity on
      * @return True if the action is successful and false otherwise.

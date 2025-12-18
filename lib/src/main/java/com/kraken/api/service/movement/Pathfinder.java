@@ -2,10 +2,7 @@ package com.kraken.api.service.movement;
 
 import com.kraken.api.Context;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.CollisionData;
-import net.runelite.api.CollisionDataFlag;
-import net.runelite.api.Perspective;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
@@ -77,13 +74,57 @@ public class Pathfinder {
     }
 
     /**
-     * Finds the shortest path from a given start point to a target point. This uses player movement behavior and BFS
-     * to find the shortest path.
+     * Finds the shortest path from a given start point to a target point.
+     * If the target is outside the currently loaded scene, it will find a path
+     * to the edge of the scene in the direction of the target.
+     *
+     * @param start  WorldPoint the starting location
+     * @param target WorldPoint the ending location
+     * @return List of WorldPoints comprising the path
+     */
+    public List<WorldPoint> findPath(WorldPoint start, WorldPoint target) {
+        if (isInScene(target)) {
+            return findScenePath(start, target);
+        }
+
+        WorldPoint edgePoint = findEdgeOfScene(target);
+        if (edgePoint == null) {
+            return Collections.emptyList();
+        }
+
+        return findScenePath(start, edgePoint);
+    }
+
+    private WorldPoint findEdgeOfScene(WorldPoint target) {
+        return ctx.runOnClientThread(() -> {
+            WorldView wv = client.getTopLevelWorldView();
+            WorldPoint base = new WorldPoint(wv.getBaseX(), wv.getBaseY(), wv.getPlane());
+            if (base == null) {
+                return null;
+            }
+            int sceneMinX = base.getX();
+            int sceneMinY = base.getY();
+            int sceneMaxX = sceneMinX + SCENE_SIZE - 1;
+            int sceneMaxY = sceneMinY + SCENE_SIZE - 1;
+
+            int targetX = target.getX();
+            int targetY = target.getY();
+
+            int clampedX = Math.max(sceneMinX, Math.min(targetX, sceneMaxX));
+            int clampedY = Math.max(sceneMinY, Math.min(targetY, sceneMaxY));
+
+            return new WorldPoint(clampedX, clampedY, client.getTopLevelWorldView().getPlane());
+        });
+    }
+
+    /**
+     * Finds the shortest path from a given start point to a target point within the current scene. This uses player
+     * movement behavior and BFS to find the shortest path.
      * @param start WorldPoint the starting location (generally the players current position)
      * @param target WorldPoint the ending or target location to find a path towards.
      * @return List of Points comprising the path
      */
-    public List<WorldPoint> findPath(WorldPoint start, WorldPoint target) {
+    private List<WorldPoint> findScenePath(WorldPoint start, WorldPoint target) {
         return ctx.runOnClientThread(() -> {
             if (start.equals(target)) return Collections.emptyList();
 
@@ -175,7 +216,22 @@ public class Pathfinder {
     }
 
     /**
-     * If exact target is unreachable, searches a 21x21 area around target 
+     * Returns true if the provided WorldPoint is in the currently loaded scene data.
+     * @param worldPoint The point to check.
+     * @return True if the point is in the scene, false otherwise.
+     */
+    public boolean isInScene(WorldPoint worldPoint) {
+        return ctx.runOnClientThread(() -> {
+            WorldPoint start = new WorldPoint(client.getTopLevelWorldView().getBaseX(), client.getTopLevelWorldView().getBaseY(), client.getTopLevelWorldView().getPlane());
+            WorldPoint end = new WorldPoint(start.getX() + SCENE_SIZE - 1, start.getY() + SCENE_SIZE - 1, start.getPlane());
+            return worldPoint.getX() >= start.getX() && worldPoint.getX() <= end.getX()
+                    && worldPoint.getY() >= start.getY() && worldPoint.getY() <= end.getY()
+                    && worldPoint.getPlane() == start.getPlane();
+        });
+    }
+
+    /**
+     * If exact target is unreachable, searches a 21x21 area around target
      * for the best reachable tile.
      */
     private List<WorldPoint> findBestApproximatePath(WorldPoint target, int[][] dist, WorldPoint[][] parent) {
@@ -244,7 +300,7 @@ public class Pathfinder {
             if (prev == null) break; // Reached start
             curr = prev;
         }
-        // The path list currently includes the Start point. 
+        // The path list currently includes the Start point.
         // Usually we want to remove the start point for rendering/walking.
         if (!path.isEmpty()) {
             path.removeFirst();
