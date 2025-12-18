@@ -45,7 +45,10 @@ public class SceneOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
         List<WorldPoint> path = plugin.getCurrentPath();
-        pathfinder.renderPath(path, graphics);
+
+        if(config.renderCurrentPath()) {
+            pathfinder.renderPath(path, graphics);
+        }
 
         if (config.showGameObjects()) {
             renderGameObjects(graphics);

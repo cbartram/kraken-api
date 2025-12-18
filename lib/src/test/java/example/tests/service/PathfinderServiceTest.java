@@ -20,7 +20,7 @@ public class PathfinderServiceTest extends BaseApiTest {
 
     private static final WorldPoint PLAYER_START = new WorldPoint(3253, 3421, 0);
     private static final WorldPoint VARROCK_SQUARE = new WorldPoint(3208, 3422, 0);
-    private static final WorldPoint BLUE_MOON_INN_INVALID = new WorldPoint(3220, 3404, 0); // An unreachable tile should find closest point.
+    private static final WorldPoint VARROCK_WALL_INVALID = new WorldPoint(3270, 3441, 0); // An unreachable tile should find closest point.
     private static final WorldPoint OUT_OF_SCENE_LUMBRIDGE = new WorldPoint(3253, 3251, 0); // A tile far outside the currently loaded region
 
     @Inject
@@ -52,8 +52,8 @@ public class PathfinderServiceTest extends BaseApiTest {
         plugin.getCurrentPath().addAll(path);
         Thread.sleep(RandomService.between(3000, 5000));
 
-        List<WorldPoint> blueMoonPath = pathfinder.findPath(PLAYER_START, BLUE_MOON_INN_INVALID);
-        if(blueMoonPath.isEmpty() || blueMoonPath.size() < 40) {
+        List<WorldPoint> blueMoonPath = pathfinder.findPath(PLAYER_START, VARROCK_WALL_INVALID);
+        if(blueMoonPath.isEmpty() || blueMoonPath.size() < 10) {
             log.info("Blue Moon path size: {}", blueMoonPath.size());
             return false;
         }

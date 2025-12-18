@@ -313,10 +313,21 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "renderCurrentPath",
+            name = "Show Current Path",
+            description = "Displays the current path calculated by the local pathfinder.",
+            section = overlaySettings,
+            position = 15
+    )
+    default boolean renderCurrentPath() {
+        return false;
+    }
+
+    @ConfigItem(
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 15,
+            position = 16,
             section = overlaySettings
     )
     default boolean showVisualizer() {

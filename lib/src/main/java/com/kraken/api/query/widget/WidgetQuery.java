@@ -88,6 +88,21 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
     }
 
     /**
+     * Retrieves the first {@link WidgetEntity} matching the specified packed ID.
+     *
+     * <p>This method filters widgets by their packed ID, which is a composite of the
+     * group ID and child ID. It is useful when the exact packed ID of a widget is known.</p>
+     *
+     * @param packedId The packed ID of the widget to retrieve. This ID encapsulates both
+     *                 the group and child ID into a single integer value.
+     * @return The {@link WidgetEntity} corresponding to the specified packed ID, or
+     *         {@code null} if no matching widget is found.
+     */
+    public WidgetEntity get(int packedId) {
+        return withId(packedId).first();
+    }
+
+    /**
      * Filters for widgets belonging to a specific Interface Group.
      * Example: 149 is the Inventory group.
      * @param groupId The group id of the widget to search for
