@@ -84,6 +84,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private Pathfinder pathfinder;
 
+    @Inject
+    private ExampleScript exampleScript;
+
     @Getter
     private List<WorldPoint> currentPath = new ArrayList<>();
 
@@ -143,6 +146,12 @@ public class ExamplePlugin extends Plugin {
 
         String key = event.getKey();
 
+        if(key.equalsIgnoreCase("pauseScript") && config.pauseScript()) {
+            exampleScript.pause();
+        } else {
+            exampleScript.resume();
+        }
+
         if (key.equals("simVisualizer")) {
             if (client.getGameState() == GameState.LOGGED_IN && config.showVisualizer()) {
                 visualizer.init();
@@ -172,6 +181,7 @@ public class ExamplePlugin extends Plugin {
     protected void startUp() {
         context.register();
         context.initializePackets();
+        exampleScript.start();
 
         overlayManager.add(overlay);
         overlayManager.add(testApiOverlay);
@@ -185,6 +195,7 @@ public class ExamplePlugin extends Plugin {
     @Override
     protected void shutDown() {
         testResultManager.cancelAllTests();
+        exampleScript.stop();
 
         overlayManager.remove(overlay);
         overlayManager.remove(testApiOverlay);

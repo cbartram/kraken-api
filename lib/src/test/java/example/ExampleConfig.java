@@ -333,4 +333,15 @@ public interface ExampleConfig extends Config {
     default boolean showVisualizer() {
         return false;
     }
+
+    @ConfigItem(
+            name = "Pause Script",
+            keyName = "pauseScript",
+            description = "Pauses the Example Script.",
+            position = 17,
+            section = overlaySettings
+    )
+    default boolean pauseScript() {
+        return false;
+    }
 }

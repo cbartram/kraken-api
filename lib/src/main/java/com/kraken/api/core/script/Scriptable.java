@@ -11,4 +11,6 @@ public interface Scriptable {
      * @param callback Callback function to execute once the the loop() is stopped.
      */
     void stop(Runnable callback);
+    void onStart();
+    void onStop();
 }
