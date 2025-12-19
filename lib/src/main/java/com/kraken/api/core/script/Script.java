@@ -33,12 +33,12 @@ public abstract class Script implements Scriptable {
      * </p>
      *
      * @return an integer value representing the amount of time to sleep in milliseconds. Since this is called every game
-     *  tick, any value <= 600 will execute on the next game tick.
+     *  tick, any value {@literal  <=} 600 will execute on the next game tick.
      *
      * <p><strong>Example Usage:</strong></p>
-     * <pre>{@code
+     * <pre>{
      * public class CustomScript extends Script {
-     *     @Override
+     *     {@literal @Override}
      *     public int loop() {
      *         // Do something to automate the game
      *         return 100;
@@ -132,7 +132,7 @@ public abstract class Script implements Scriptable {
      * <code>
      * {@literal @Subscribe}
      * private void onConfigChanged(final ConfigChanged event) {
-     *     if (event.getGroup().equals("testapi") && event.getKey().equalsIgnoreCase("pauseScript")) {
+     *     if (event.getGroup().equals("testapi") and event.getKey().equalsIgnoreCase("pauseScript")) {
      *         if (config.pauseScript()) {
      *             exampleScript.pause();
      *         } else {
@@ -172,7 +172,7 @@ public abstract class Script implements Scriptable {
      * <code>
      * {@literal @Subscribe}
      * private void onConfigChanged(final ConfigChanged event) {
-     *     if (event.getGroup().equals("testapi") && event.getKey().equalsIgnoreCase("pauseScript")) {
+     *     if (event.getGroup().equals("testapi") and event.getKey().equalsIgnoreCase("pauseScript")) {
      *         if (config.pauseScript()) {
      *             exampleScript.pause();
      *         } else {
