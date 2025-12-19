@@ -9,7 +9,6 @@ package com.kraken.api.core.script;
  *   <li>The core execution logic of the task.</li>
  *   <li>A status string for display or tracking purposes.</li>
  * </ul>
- * </p>
  */
 public interface Task {
     /**
