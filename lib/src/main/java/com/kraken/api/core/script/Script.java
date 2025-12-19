@@ -19,6 +19,11 @@ public abstract class Script implements Scriptable {
     private Future<?> future = null;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private boolean isRunning = false;
+    private final String name;
+
+    public Script() {
+        this.name = this.getClass().getName();
+    }
 
     /**
      * Executes a specific loop logic and returns an integer result based on the implementation.
@@ -83,7 +88,7 @@ public abstract class Script implements Scriptable {
      * <pre>
      * <code>
      * // Called during the plugin's start-up phase to launch the script
-     * @Override
+     * {@literal @Override}
      * protected void startUp() {
      *     context.register();
      *     context.initializePackets();
@@ -98,7 +103,7 @@ public abstract class Script implements Scriptable {
         if (isRunning) return;
         isRunning = true;
         eventBus.register(this);
-        log.info("Script started");
+        log.info("[{}] script started", this.name);
         onStart();
     }
 
@@ -141,7 +146,7 @@ public abstract class Script implements Scriptable {
     public final void pause() {
         if(isRunning) {
             isRunning = false;
-            log.info("Script paused");
+            log.info("[{}] script paused", this.name);
         }
     }
 
@@ -181,7 +186,7 @@ public abstract class Script implements Scriptable {
     public final void resume() {
         if(!isRunning) {
             isRunning = true;
-            log.info("Script resumed");
+            log.info("[{}] script resumed", this.name);
         }
     }
 
@@ -242,7 +247,7 @@ public abstract class Script implements Scriptable {
             } catch (InterruptedException e) {
                 // Thread interrupted, likely due to stop() being called
             } catch (Exception e) {
-                log.error("Error in script loop:", e);
+                log.error("[{}] Error in script:", this.name, e);
             } finally {
                 RunnableTask.dispose();
             }
@@ -272,7 +277,7 @@ public abstract class Script implements Scriptable {
 
         if(future == null || future.isDone()) callback.run();
 
-        log.info("Stopping loop");
+        log.info("[{}] Stopping script...", this.name);
         RunnableTask.cancel();
         executor.submit(() -> {
             try {
@@ -281,11 +286,11 @@ public abstract class Script implements Scriptable {
                         Thread.sleep(10);
                     } catch (InterruptedException ignored) {}
                 }
-                log.info("loop stopped");
+                log.info("[{}] Script stopped", this.name);
                 onStop();
                 if(callback != null) callback.run();
             } catch (Exception e) {
-                System.err.println("Task execution failed: " + e.getMessage());
+                log.error("[{}] Task execution failed: ", this.name, e);
             }
         });
     }
