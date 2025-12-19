@@ -15,6 +15,16 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            name = "Pause Script",
+            keyName = "pauseScript",
+            description = "Pauses the example script loop which runs in the background.",
+            position = -5
+    )
+    default boolean pauseScript() {
+        return false;
+    }
+
     // =========== Tests Section ================
     @ConfigSection(
             name = "Query Tests",
@@ -331,17 +341,6 @@ public interface ExampleConfig extends Config {
             section = overlaySettings
     )
     default boolean showVisualizer() {
-        return false;
-    }
-
-    @ConfigItem(
-            name = "Pause Script",
-            keyName = "pauseScript",
-            description = "Pauses the Example Script.",
-            position = 17,
-            section = overlaySettings
-    )
-    default boolean pauseScript() {
         return false;
     }
 }

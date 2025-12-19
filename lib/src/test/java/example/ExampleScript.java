@@ -20,19 +20,19 @@ public class ExampleScript extends Script {
 
     @Override
     public int loop() {
-        log.info("Looping on tick: {}", ctx.getClient().getTickCount());
+        log.debug("Looping on tick: {}", ctx.getClient().getTickCount());
 
-        if(ctx.getClient().getTickCount() % 25 == 0) {
+        if(ctx.getClient().getTickCount() % 100 == 0) {
             int sleepTicks = RandomService.between(5, 10);
-            log.info("Sleeping for: {}", sleepTicks);
+            log.debug("Sleeping for: {}", sleepTicks);
             sleepService.tick(sleepTicks);
             return 100;
         }
 
 
         if(ctx.getClient().getTickCount() % 50 == 0) {
-            log.info("Sleeping for 2 game ticks (with return) starting on: {}", ctx.getClient().getTickCount());
-            return 1200;
+            log.debug("Sleeping for 3 game ticks (with return) starting on: {}", ctx.getClient().getTickCount());
+            return 1800;
         }
 
         return 0;
