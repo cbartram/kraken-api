@@ -126,17 +126,53 @@ The output API `.jar` will be located in:
 ./lib/build/libs/kraken-api-<version>.jar
 ```
 
-### Consuming the API
+## Gradle Example (Simple)
 
-To use the API in a project add the package to your `build.gradle` file. You will need to either: 
+Although we recommend using the [Github packages approach](#gradle-example-recommended) to access the API since it is more reliable, [Jitpack](https://jitpack.io/) can get you set up with
+the Kraken API without a personal access token.
+
+```groovy
+plugins {
+    id 'java'
+    id 'application'
+}
+
+// Replace with the package version of the API you need
+def krakenApiVersion = 'X.Y.Z'
+
+allprojects {
+    apply plugin: 'java'
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+
+dependencies {
+    compileOnly group: 'com.github.cbartram', name:'kraken-api', version: krakenApiVersion
+    // ... other dependencies
+}
+```
+
+## Gradle Example (Recommended)
+
+To use the API jar file in your plugin project you will need to either:
 - `export GITHUB_ACTOR=<YOUR_GITHUB_USERNAME>; export GITHUB_TOKEN=<GITHUB_PAT`
-- Add the following to your `gradle.properties` file: `gpr.user=your-github-username gpr.key=your-personal-access-token`
+- or add the following to your `gradle.properties` file: `gpr.user=your-github-username gpr.key=your-personal-access-token`
 
-You can generate a Github personal access token (PAT) by navigating to your [Github Settings](https://github.com/settings/personal-access-tokens)
-and clicking "Generate new Token". Give the token a unique name and optional description with read-only access to public repositories. Store the token
-in a safe place as it won't be viewable again. It can be used to authenticate to GitHub and pull Kraken API packages. Do **NOT** share this token with anyone.
+More information on generating a GitHub Personal Access token can [be found below](#authentication).
 
-Here is an example `build.gradle` for incorporating the API
+###  Authentication
+
+Since the API packages are hosted on [GitHub Packages](https://docs.github.com/en/packages/learn-github-packages/introduction-to-github-packages) you will
+need to generate a [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens?versionId=free-pro-team%40latest&productId=packages&restPage=learn-github-packages%2Cintroduction-to-github-packages) on GitHub
+to authenticate and pull down the API.
+
+You can generate a GitHub PAT by navigating to your [GitHub Settings](https://github.com/settings/personal-access-tokens)
+and clicking "Generate new Token." Give the token a unique name and optional description with read-only access to public repositories. Store the token
+in a safe place as it won't be viewable again. It can be used to authenticate to GitHub and pull Kraken API packages.
+
+> :warning: Do **NOT** share this token with anyone.
 
 ```groovy
 plugins {
@@ -161,7 +197,7 @@ allprojects {
             }
         }
 
-        // Jitpack is a legacy provider for Kraken API artifacts < 1.0.77 as well as shortest-path artifacts <= 1.0.3
+        // Jitpack is an alternative means of accessing the API Jar file
         maven { url 'https://jitpack.io' }
     }
 }
