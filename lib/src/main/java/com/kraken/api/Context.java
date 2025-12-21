@@ -16,6 +16,7 @@ import com.kraken.api.query.npc.NpcQuery;
 import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
+import com.kraken.api.query.world.WorldQuery;
 import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.camera.CameraService;
 import com.kraken.api.service.movement.MovementService;
@@ -396,5 +397,21 @@ public class Context {
      */
     public WidgetQuery widgets() {
         return new WidgetQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for Worlds. A WorldQuery provides functionality
+     * for filtering and selecting specific game worlds based on various criteria,
+     * such as population, world type, or location.
+     *
+     * <p>Worlds are the game servers that players can connect to. Each world may
+     * have unique properties, such as member status, high population, or special
+     * game rules.</p>
+     *
+     * @return {@literal @}WorldQuery object used to chain together predicates to
+     *         select specific game worlds.
+     */
+    public WorldQuery worlds() {
+        return new WorldQuery(this);
     }
 }

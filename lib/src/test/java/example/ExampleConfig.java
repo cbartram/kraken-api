@@ -133,6 +133,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableWorldQuery",
+            name = "Start World Tests",
+            description = "Enable World object query tests",
+            section = tests,
+            position = 10
+    )
+    default boolean enableWorldQuery() {
+        return true;
+    }
+
     // ==============================================
     // ========== SERVICE TEST SETTINGS ==========
     // ==============================================

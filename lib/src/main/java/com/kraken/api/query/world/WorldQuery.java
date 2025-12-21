@@ -142,10 +142,10 @@ public class WorldQuery extends AbstractQuery<WorldEntity, WorldQuery, World> {
      * <ul>
      *   <li>Have the {@literal @WorldType.SKILL_TOTAL} tag in their list of types.</li>
      *   <li>Have a skill total requirement, determined by numeric parsing of the
-     *       world&apos;s activity description.</li>
+     *       world's activity description.</li>
      * </ul>
      * If these conditions are not met for a world, it is excluded from the results.
-     * </p>
+     *
      *
      * @param total The maximum skill total value (inclusive) to include in the filtered results.
      *              Worlds with a skill total requirement greater than this value will be excluded.
@@ -181,7 +181,7 @@ public class WorldQuery extends AbstractQuery<WorldEntity, WorldQuery, World> {
      * </ul>
      * Worlds that do not meet these conditions, or those with invalid or missing activity information,
      * are excluded from the results.
-     * </p>
+     *
      *
      * @return A {@code WorldQuery} object filtered to include only worlds with skill total requirements
      *         that are valid and met by the local player's total skill level.
@@ -346,6 +346,7 @@ public class WorldQuery extends AbstractQuery<WorldEntity, WorldQuery, World> {
      * <p>The following world types will be excluded:
      * <ul>
      *     <li>{@literal @}WorldType.PVP_ARENA</li>
+     *     <li>{@literal @}WorldType.PVP</li>
      *     <li>{@literal @}WorldType.QUEST_SPEEDRUNNING</li>
      *     <li>{@literal @}WorldType.BETA_WORLD</li>
      *     <li>{@literal @}WorldType.LEGACY_ONLY</li>
@@ -355,12 +356,13 @@ public class WorldQuery extends AbstractQuery<WorldEntity, WorldQuery, World> {
      *     <li>{@literal @}WorldType.DEADMAN</li>
      *     <li>{@literal @}WorldType.SEASONAL</li>
      * </ul>
-     * </p>
+     *
      *
      * @return A {@code WorldQuery} object that specifically excludes the listed world types.
      */
     public WorldQuery standard() {
         return withOutTypes(
+                WorldType.PVP,
                 WorldType.PVP_ARENA,
                 WorldType.QUEST_SPEEDRUNNING,
                 WorldType.BETA_WORLD,
