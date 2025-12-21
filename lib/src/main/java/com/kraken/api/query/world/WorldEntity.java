@@ -2,12 +2,15 @@ package com.kraken.api.query.world;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import com.kraken.api.query.widget.WidgetEntity;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.World;
 import net.runelite.api.gameval.InterfaceID;
 
+@Slf4j
 public class WorldEntity extends AbstractEntity<World> {
 
     @Getter
@@ -43,13 +46,32 @@ public class WorldEntity extends AbstractEntity<World> {
                 return true;
             }
 
-            if (client.getWidget(InterfaceID.Worldswitcher.BUTTONS) == null) {
+            if (ctx.widgets().get(InterfaceID.Worldswitcher.BUTTONS) == null) {
+                // TODO This takes time to complete widgets aren't visible yet. Need to run in client thread separately as to not block before
+                // we actually
                 client.openWorldHopper();
-                client.hopToWorld(raw());
-                return true;
-            }
 
-            return false;
+                WidgetEntity widget = ctx.widgets()
+                        .withId(InterfaceID.Worldswitcher.BUTTONS)
+                        .nameContains(String.valueOf(this.getId())).first();
+
+                if(widget == null) {
+                    log.error("world: {} widget is null", this.getId());
+                    return false;
+                }
+
+                return widget.interact("Switch");
+            } else {
+                WidgetEntity widget = ctx.widgets()
+                        .withId(InterfaceID.Worldswitcher.BUTTONS)
+                        .nameContains(String.valueOf(this.getId())).first();
+
+                if(widget == null) {
+                    log.error("world widget: {} is null", this.getId());
+                    return false;
+                }
+                return widget.interact("Switch");
+            }
         });
     }
 
