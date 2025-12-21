@@ -86,7 +86,7 @@ public class WidgetEntity extends AbstractEntity<Widget> {
      * @return {@code true} if the widget is visible; {@code false} otherwise.
      */
     public boolean isVisible() {
-        return !raw().isHidden();
+        return !raw().isHidden() && !raw().isSelfHidden();
     }
 
     /**

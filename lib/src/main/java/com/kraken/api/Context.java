@@ -18,13 +18,13 @@ import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.camera.CameraService;
-import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.tile.TileService;
 import com.kraken.api.service.ui.TabService;
 import com.kraken.api.service.ui.UIService;
+import com.kraken.api.service.util.WorldMapService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -82,11 +82,11 @@ public class Context {
             BankService.class,
             CameraService.class,
             MovementService.class,
-            MinimapService.class,
             PrayerService.class,
             SpellService.class,
             UIService.class,
-            TabService.class
+            TabService.class,
+            WorldMapService.class
     );
 
     @Inject

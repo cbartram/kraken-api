@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.service.movement.MovementService;
-import com.kraken.api.service.movement.Pathfinder;
+import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.util.RandomService;
 import com.kraken.api.service.util.SleepService;
 import example.ExamplePlugin;
@@ -24,7 +24,7 @@ public class PathfinderServiceTest extends BaseApiTest {
     private static final WorldPoint OUT_OF_SCENE_LUMBRIDGE = new WorldPoint(3253, 3251, 0); // A tile far outside the currently loaded region
 
     @Inject
-    private Pathfinder pathfinder;
+    private LocalPathfinder pathfinder;
 
     @Inject
     private ExamplePlugin plugin;

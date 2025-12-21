@@ -5,7 +5,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.overlay.MouseOverlay;
-import com.kraken.api.service.movement.Pathfinder;
+import com.kraken.api.service.pathfinding.LocalPathfinder;
+import com.kraken.api.service.util.WorldMapService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
@@ -16,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -74,21 +77,23 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private MouseOverlay mouseOverlay;
 
-    @Getter
-    private WorldPoint targetTile;
+    @Inject
+    private LocalPathfinder pathfinder;
 
     @Inject
-    private Pathfinder pathfinder;
+    private WorldMapService worldMapService;
 
     @Inject
     private ExampleScript exampleScript;
+
+    @Getter
+    private WorldPoint targetTile;
 
     @Getter
     private List<WorldPoint> currentPath = new ArrayList<>();
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
-
     private final Map<String, TestExecution> testExecutions = new HashMap<>();
 
     @Inject
@@ -221,8 +226,32 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     private void onMenuEntryAdded(MenuEntryAdded event) {
+        // Handles a user setting custom destination for movement test within the game world by Shift + clicking a tile
         if (client.isKeyPressed(KeyCode.KC_SHIFT) && event.getOption().equals("Walk here") && event.getTarget().isEmpty()) {
             addMenuEntry(event, "Set", TARGET_TILE, 1);
+        }
+
+        // If a right click occurs on the world map get the WorldPoint of where the click occurred
+        // and allow players to set a destination that way.
+        final Widget map = client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER);
+        if(map == null) return;
+
+        Point lastMenuOpenedPoint = client.getMouseCanvasPosition();
+        final WorldPoint wp = worldMapService.mapClickToWorldPoint(lastMenuOpenedPoint.getX(), lastMenuOpenedPoint.getY());
+
+        if (wp != null) {
+            client.getMenu().createMenuEntry(0)
+                    .setOption("Set")
+                    .setTarget(ColorUtil.wrapWithColorTag(wp.toString(), JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND))
+                    .setParam0(event.getActionParam0())
+                    .setParam1(event.getActionParam1())
+                    .setIdentifier(event.getIdentifier())
+                    .setType(MenuAction.RUNELITE)
+                    .onClick(e -> {
+                        if(e.getOption().equalsIgnoreCase("Set")) {
+                            targetTile = wp;
+                        }
+                    });
         }
     }
 

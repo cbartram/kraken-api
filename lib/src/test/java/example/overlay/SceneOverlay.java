@@ -7,7 +7,7 @@ import com.kraken.api.query.groundobject.GroundObjectEntity;
 import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.query.player.PlayerEntity;
 import com.kraken.api.query.widget.WidgetEntity;
-import com.kraken.api.service.movement.Pathfinder;
+import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.tile.TileService;
 import example.ExampleConfig;
 import example.ExamplePlugin;
@@ -29,13 +29,14 @@ import static net.runelite.client.ui.overlay.OverlayUtil.renderPolygon;
 
 public class SceneOverlay extends Overlay {
     private final ExamplePlugin plugin;
-    private final Pathfinder pathfinder;
+    private final LocalPathfinder pathfinder;
     private final Context ctx;
     private final ExampleConfig config;
     private final TileService tileService;
 
     @Inject
-    public SceneOverlay(ExamplePlugin plugin, Pathfinder pathfinder, Context ctx, ExampleConfig config, TileService tileService) {
+    public SceneOverlay(ExamplePlugin plugin, LocalPathfinder pathfinder, Context ctx, ExampleConfig config,
+                        TileService tileService) {
         this.plugin = plugin;
         this.pathfinder = pathfinder;
         this.ctx = ctx;
@@ -53,7 +54,8 @@ public class SceneOverlay extends Overlay {
         renderTargetTile(graphics);
 
         if(config.renderCurrentPath()) {
-            pathfinder.renderPath(path, graphics);
+            pathfinder.renderPath(path, graphics, Color.ORANGE);
+            pathfinder.renderMinimapPath(path, graphics, Color.CYAN);
         }
 
         if (config.showGameObjects()) {
