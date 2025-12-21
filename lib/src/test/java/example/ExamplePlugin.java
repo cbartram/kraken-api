@@ -9,7 +9,6 @@ import com.kraken.api.service.movement.Pathfinder;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
-import example.overlay.TestApiOverlay;
 import example.tests.query.*;
 import example.tests.service.*;
 import lombok.Getter;
@@ -56,9 +55,6 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private MouseOverlay overlay;
-
-    @Inject
-    private TestApiOverlay testApiOverlay;
 
     @Inject
     private InfoPanelOverlay infoPanelOverlay;
@@ -184,7 +180,6 @@ public class ExamplePlugin extends Plugin {
         exampleScript.start();
 
         overlayManager.add(overlay);
-        overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
         overlayManager.add(sceneOverlay);
         if (config.showMouse()) {
@@ -198,7 +193,6 @@ public class ExamplePlugin extends Plugin {
         exampleScript.stop();
 
         overlayManager.remove(overlay);
-        overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);
         overlayManager.remove(sceneOverlay);
         overlayManager.remove(mouseOverlay);

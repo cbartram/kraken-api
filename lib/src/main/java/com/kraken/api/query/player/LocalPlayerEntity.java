@@ -1,6 +1,9 @@
 package com.kraken.api.query.player;
 
 import com.kraken.api.Context;
+import com.kraken.api.query.widget.WidgetEntity;
+import com.kraken.api.service.ui.InterfaceTab;
+import com.kraken.api.service.ui.TabService;
 import lombok.Getter;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
@@ -16,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class LocalPlayerEntity extends PlayerEntity {
     private static final int VENOM_VALUE_CUTOFF = -38;
     private static final int VENOM_THRESHOLD = 1000000;
+    private static final int LOGOUT_WIDGET_ID = 11927560;
 
     private final ScheduledExecutorService executor;
 
@@ -255,6 +259,32 @@ public class LocalPlayerEntity extends PlayerEntity {
      */
     public int currentRunEnergy() {
         return ctx.getClient().getEnergy() / 100;
+    }
+
+
+    public boolean logout() {
+        ctx.runOnClientThread(() -> {
+            Player localPlayer = ctx.getClient().getLocalPlayer();
+            if (localPlayer == null) {
+                return false;
+            }
+            TabService tabService = ctx.getService(TabService.class);
+            return tabService.switchTo(InterfaceTab.LOGOUT);
+        });
+
+        return ctx.runOnClientThread(() -> {
+            WidgetEntity logoutButton = ctx.widgets().withId(LOGOUT_WIDGET_ID).first();
+
+            if (logoutButton == null) {
+                logoutButton = ctx.widgets().withAction("Logout").first();
+            }
+
+            if (logoutButton == null || !logoutButton.isVisible()) {
+                return false;
+            }
+
+            return logoutButton.interact("Logout");
+        });
     }
 
     /**

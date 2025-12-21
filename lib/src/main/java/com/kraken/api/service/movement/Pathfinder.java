@@ -3,8 +3,10 @@ package com.kraken.api.service.movement;
 import com.kraken.api.Context;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.ui.overlay.OverlayUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -370,6 +372,49 @@ public class Pathfinder {
         }
 
         return false;
+    }
+
+    /**
+     * Renders a path on the minimap.
+     *
+     * @param graphics The graphics context to draw on.
+     * @param path     The list of WorldPoints representing the path.
+     * @param color    The color to use for drawing the path.
+     */
+    public void renderMinimapPath(Graphics2D graphics, List<WorldPoint> path, Color color) {
+        if(graphics == null || path == null || path.isEmpty()) {
+            return;
+        }
+
+        for (WorldPoint point : path) {
+            renderMinimapPoint(graphics, point, color);
+        }
+    }
+
+    /**
+     * Renders a single point on the minimap.
+     *
+     * @param graphics The graphics context to draw on.
+     * @param point    The WorldPoint to render.
+     * @param color    The color to use for rendering the node.
+     */
+    public void renderMinimapPoint(Graphics2D graphics, WorldPoint point, Color color) {
+        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        if (point.distanceTo(playerLocation) >= 16) {
+            return;
+        }
+
+        LocalPoint lp = LocalPoint.fromWorld(client, point);
+        if (lp == null) {
+            return;
+        }
+
+        Point miniMapPosition = Perspective.localToMinimap(client, lp);
+        if (miniMapPosition == null) {
+            return;
+        }
+
+        OverlayUtil.renderMinimapLocation(graphics, miniMapPosition, color);
     }
 
 

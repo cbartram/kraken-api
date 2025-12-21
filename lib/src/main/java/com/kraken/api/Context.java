@@ -288,6 +288,17 @@ public class Context {
     }
 
     /**
+     * Retrieves an instance of a specified service class.
+     *
+     * @param serviceClass The class of the service to retrieve.
+     * @param <T>          The type of the service.
+     * @return The instance of the service.
+     */
+    public <T> T getService(Class<T> serviceClass) {
+        return injector.getInstance(serviceClass);
+    }
+
+    /**
      * Creates a new query builder for NPCs.
      * Usage: ctx.npcs().withName("Goblin").first().interact("Attack");
      *

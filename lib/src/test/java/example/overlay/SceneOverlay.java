@@ -8,6 +8,7 @@ import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.query.player.PlayerEntity;
 import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.movement.Pathfinder;
+import com.kraken.api.service.tile.TileService;
 import example.ExampleConfig;
 import example.ExamplePlugin;
 import net.runelite.api.Actor;
@@ -23,19 +24,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static net.runelite.client.ui.overlay.OverlayUtil.renderPolygon;
+
 
 public class SceneOverlay extends Overlay {
     private final ExamplePlugin plugin;
     private final Pathfinder pathfinder;
     private final Context ctx;
     private final ExampleConfig config;
+    private final TileService tileService;
 
     @Inject
-    public SceneOverlay(ExamplePlugin plugin, Pathfinder pathfinder, Context ctx, ExampleConfig config) {
+    public SceneOverlay(ExamplePlugin plugin, Pathfinder pathfinder, Context ctx, ExampleConfig config, TileService tileService) {
         this.plugin = plugin;
         this.pathfinder = pathfinder;
         this.ctx = ctx;
         this.config = config;
+        this.tileService = tileService;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
@@ -45,6 +50,7 @@ public class SceneOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
         List<WorldPoint> path = plugin.getCurrentPath();
+        renderTargetTile(graphics);
 
         if(config.renderCurrentPath()) {
             pathfinder.renderPath(path, graphics);
@@ -73,6 +79,23 @@ public class SceneOverlay extends Overlay {
         }
 
         return null;
+    }
+
+    private void renderTargetTile(Graphics2D g) {
+        if(plugin.getTargetTile() != null) {
+            LocalPoint lp;
+            if(ctx.getClient().getTopLevelWorldView().isInstance()) {
+                lp = tileService.fromWorldInstance(plugin.getTargetTile());
+            } else {
+                lp = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), plugin.getTargetTile());
+            }
+
+            if(lp == null) return;
+            Polygon polygon = Perspective.getCanvasTilePoly(ctx.getClient(), lp);
+            if(polygon == null) return;
+
+            renderPolygon(g, polygon, new Color(241, 160, 9), new Color(241, 160, 9, 20), new BasicStroke(2));
+        }
     }
 
     private void renderLocalPlayer(Graphics2D graphics) {
