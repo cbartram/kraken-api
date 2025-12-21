@@ -288,6 +288,25 @@ public class LocalPlayerEntity extends PlayerEntity {
     }
 
     /**
+     * Calculates the total skill level of the player by summing up the real levels of all their skills.
+     * <p>
+     * This method iterates over all available skills and retrieves their real levels from the game client.
+     * It then calculates the total by summing up these levels.
+     * </p>
+     *
+     * @return The total skill level of the player as an integer.
+     */
+    public int totalSkillLevel() {
+        return ctx.runOnClientThread(() -> {
+            int totalLevel = 0;
+            for (Skill skill : Skill.values()) {
+                totalLevel += ctx.getClient().getRealSkillLevel(skill);
+            }
+            return totalLevel;
+        });
+    }
+
+    /**
      * Checks if the player is within 5 tiles of a given {@link WorldPoint}.
      *
      * @param worldPoint The {@link WorldPoint} to check proximity to.

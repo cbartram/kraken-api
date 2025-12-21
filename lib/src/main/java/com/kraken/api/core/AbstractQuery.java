@@ -129,7 +129,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
      * Filters out elements that match the given predicate.
      * Effectively: filter(!predicate)
      * @param predicate The predicate to apply
-     * @return Q All entities except for the ones which match the given predicate
+     * @return Q All entities except for the ones that match the given predicate
      */
     @SuppressWarnings("unchecked")
     public Q except(Predicate<T> predicate) {
