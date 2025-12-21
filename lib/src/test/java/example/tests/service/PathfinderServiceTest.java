@@ -39,7 +39,7 @@ public class PathfinderServiceTest extends BaseApiTest {
     protected boolean runTest(Context ctx) throws Exception {
         log.info("Moving player to start position");
         movementService.moveTo(PLAYER_START);
-        sleepService.sleepUntil(() -> ctx.players().local().isIdle() && ctx.players().local().raw().getWorldLocation() == PLAYER_START, 10000);
+        sleepService.sleepUntil(() -> ctx.players().local().isIdle() && ctx.players().local().raw().getWorldLocation() == PLAYER_START, 5000);
 
         // Assert we can find a path within the scene, this assumes we are standing in or near Varrock west
         List<WorldPoint> path = pathfinder.findPath(PLAYER_START, VARROCK_SQUARE);

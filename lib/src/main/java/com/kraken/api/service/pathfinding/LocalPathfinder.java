@@ -1,10 +1,12 @@
 package com.kraken.api.service.pathfinding;
 
 import com.kraken.api.Context;
+import com.kraken.api.service.util.RandomService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.OverlayUtil;
 
@@ -31,7 +33,7 @@ import java.util.Queue;
  * <ul>
  *   <li>Compute the shortest path between points in a game scene, including computing sparse waypoints with {@link #findSparsePath(WorldPoint, WorldPoint)}.</li>
  *   <li>Verify whether target points are within the loaded scene or reachable from a specific point using {@link #isInScene(WorldPoint)}.</li>
- *   <li>Render computed paths on a graphical interface using methods like {@link #renderMinimapPath(List, Graphics2D, Color)} and {@link #renderPath(List, Graphics2D)}.</li>
+ *   <li>Render computed paths on a graphical interface using methods like {@link #renderMinimapPath(List, Graphics2D, Color)} and {@link #renderPath(List, Graphics2D, Color)}.</li>
  *   <li>Handle approximate pathfinding if exact target points are not reachable.</li>
  * </ul>
  */
@@ -50,12 +52,18 @@ public class LocalPathfinder {
     private Client client;
 
     /**
-     * Generates a sparse path (Waypoints only) from start to target.
-     * Reduces a dense tile-by-tile path into a list of "clicking points" where direction changes.
+     * Finds a sparse path between a starting point and a target point by filtering
+     * out unnecessary intermediate points from a previously computed dense path.
      *
-     * @param start  WorldPoint the starting location
-     * @param target WorldPoint the ending location
-     * @return List of WorldPoints representing the turns/waypoints
+     * <p>The method calculates directional changes in the dense path and retains
+     * only the waypoints where the direction changes, along with the final destination.
+     * This ensures a simplified path that accurately represents the required turns or
+     * path changes while omitting redundant points.</p>
+     *
+     * @param start {@literal @}WorldPoint representing the starting location of the path.
+     * @param target {@literal @}WorldPoint representing the destination point of the path.
+     * @return A {@literal @}List of {@literal @}WorldPoint objects representing the sparse path.
+     *         Returns an empty list if no path can be computed.
      */
     public List<WorldPoint> findSparsePath(WorldPoint start, WorldPoint target) {
         List<WorldPoint> densePath = findPath(start, target);
@@ -76,7 +84,7 @@ public class LocalPathfinder {
             int d1x = current.getX() - prev.getX();
             int d1y = current.getY() - prev.getY();
 
-            // Calculate outgoing direction (Current -> Next)
+            // outgoing direction (Current -> Next)
             int d2x = next.getX() - current.getX();
             int d2y = next.getY() - current.getY();
 
@@ -96,13 +104,19 @@ public class LocalPathfinder {
     }
 
     /**
-     * Finds the shortest path from a given start point to a target point.
-     * If the target is outside the currently loaded scene, it will find a path
-     * to the edge of the scene in the direction of the target.
+     * Calculates and returns a path from a starting point to a target point within the game world.
+     * If the target point is outside the scene, the method attempts to determine the edge of the
+     * scene closest to the target and calculates a path to that edge instead.
      *
-     * @param start  WorldPoint the starting location
-     * @param target WorldPoint the ending location
-     * @return List of WorldPoints comprising the path
+     * <p>If the target point is within the loaded scene, the method directly computes the path
+     * to the target using the {@code findScenePath} method. If the target is outside the scene,
+     * it finds the nearest edge point to the target and calculates a path to that point.</p>
+     *
+     * @param start {@literal @}WorldPoint representing the starting location of the path.
+     * @param target {@literal @}WorldPoint representing the destination point of the path.
+     * @return A {@literal @}List of {@literal @}WorldPoint objects representing the calculated path
+     *         from the start to the target (or closest reachable edge point). If no path can be calculated,
+     *         an empty list is returned.
      */
     public List<WorldPoint> findPath(WorldPoint start, WorldPoint target) {
         if (isInScene(target)) {
@@ -117,13 +131,131 @@ public class LocalPathfinder {
         return findScenePath(start, edgePoint);
     }
 
+    /**
+     * Finds an approximate path from a starting point to a target point within a given radius.
+     * <p>
+     * This method searches for paths using a breadth-first search (BFS) approach. If the target point is not within the game
+     * scene, a full path is computed to the target. Otherwise, the method will look for an approximate path to a point within
+     * the specified radius of the target that is traversable in the scene.
+     *
+     * @param start  the {@link WorldPoint} representing the starting point of the path.
+     * @param target the {@link WorldPoint} representing the target point of the path.
+     *               If it lies outside the game scene, a full path is calculated for this target.
+     * @param radius the radius, in tiles, within which the method will search for a traversable point near the target.
+     * @return a {@link List} of {@link WorldPoint} instances representing the path from the start to the selected point
+     *         within the specified radius of the target. If no valid candidates are found, an approximate path to the target
+     *         is returned. The list is in order of movement from start to destination.
+     *
+     * <p>Steps performed in the method:</p>
+     * <ul>
+     *   <li>If the target is not in the scene, calculate and return the full path to the target using {@code findPath}.</li>
+     *   <li>Run a breadth-first search (BFS) to determine distances from the start point and record parent nodes.</li>
+     *   <li>Search for all points within the specified radius of the target that are in the scene and traversable.</li>
+     *   <li>If valid points are found and randomly select one of them, return the path to that point.</li>
+     *   <li>If no valid points are found, calculate and return an approximate path to the target.</li>
+     * </ul>
+     */
+    public List<WorldPoint> findApproximatePath(WorldPoint start, WorldPoint target, int radius) {
+        if (!isInScene(target)) {
+            return findPath(start, target);
+        }
+
+        return ctx.runOnClientThread(() -> {
+            BFSState bfsState = bfs(start, null);
+
+            List<WorldPoint> candidates = new ArrayList<>();
+            int targetX = target.getX() - client.getTopLevelWorldView().getBaseX();
+            int targetY = target.getY() - client.getTopLevelWorldView().getBaseY();
+
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dy = -radius; dy <= radius; dy++) {
+                    int x = targetX + dx;
+                    int y = targetY + dy;
+
+                    if (isInScene(x, y) && bfsState.dist[x][y] != -1) {
+                        candidates.add(new WorldPoint(
+                                client.getTopLevelWorldView().getBaseX() + x,
+                                client.getTopLevelWorldView().getBaseY() + y,
+                                client.getTopLevelWorldView().getPlane()
+                        ));
+                    }
+                }
+            }
+
+            if (candidates.isEmpty()) {
+                return findBestApproximatePath(target, bfsState.dist, bfsState.parent);
+            }
+
+            WorldPoint selected = candidates.get(new Random().nextInt(candidates.size()));
+            return buildPath(bfsState.parent, selected);
+        });
+    }
+
+    /**
+     * Computes an approximate path from a starting point to a destination within a specified area.
+     * This method identifies candidates within the area that are reachable and constructs a path
+     * to one of the candidates. It uses breadth-first search (BFS) to calculate distances and possible paths.
+     *
+     * <p>The method performs pathfinding only if the specified area and starting point are on the same plane.</p>
+     *
+     * @param start the starting {@link WorldPoint} from which the pathfinding begins.
+     * @param area the {@link WorldArea} that defines the bounds of the target area where the path should lead.
+     *             The method will consider reachable points only within this area.
+     *
+     * @return a {@link List} of {@link WorldPoint}s representing the calculated path to a candidate
+     *         within the defined area, or an empty list if no valid path could be determined.
+     *
+     * <ul>
+     *     <li>Returns an empty list if the {@code area} is outside the current viewport or on a different plane.</li>
+     *     <li>Returns an empty list if no reachable candidate points exist within the {@link WorldArea}.</li>
+     * </ul>
+     */
+    public List<WorldPoint> findApproximatePath(WorldPoint start, WorldArea area) {
+        return ctx.runOnClientThread(() -> {
+            if (area.getPlane() != client.getTopLevelWorldView().getPlane()) {
+                return Collections.emptyList();
+            }
+
+            BFSState bfsState = bfs(start, null);
+            List<WorldPoint> candidates = new ArrayList<>();
+
+            int sceneBaseX = client.getTopLevelWorldView().getBaseX();
+            int sceneBaseY = client.getTopLevelWorldView().getBaseY();
+
+            int minX = Math.max(area.getX(), sceneBaseX);
+            int maxX = Math.min(area.getX() + area.getWidth() - 1, sceneBaseX + SCENE_SIZE - 1);
+            int minY = Math.max(area.getY(), sceneBaseY);
+            int maxY = Math.min(area.getY() + area.getHeight() - 1, sceneBaseY + SCENE_SIZE - 1);
+
+            if (minX > maxX || minY > maxY) {
+                return Collections.emptyList();
+            }
+
+            for (int x = minX; x <= maxX; x++) {
+                for (int y = minY; y <= maxY; y++) {
+                    int sx = x - sceneBaseX;
+                    int sy = y - sceneBaseY;
+
+                    if (bfsState.dist[sx][sy] != -1) {
+                        candidates.add(new WorldPoint(x, y, area.getPlane()));
+                    }
+                }
+            }
+
+            if (candidates.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            WorldPoint selected = candidates.get(RandomService.between(0, candidates.size() - 1));
+            return buildPath(bfsState.parent, selected);
+        });
+    }
+    
     private WorldPoint findEdgeOfScene(WorldPoint target) {
         return ctx.runOnClientThread(() -> {
             WorldView wv = client.getTopLevelWorldView();
             WorldPoint base = new WorldPoint(wv.getBaseX(), wv.getBaseY(), wv.getPlane());
-            if (base == null) {
-                return null;
-            }
+            
             int sceneMinX = base.getX();
             int sceneMinY = base.getY();
             int sceneMaxX = sceneMinX + SCENE_SIZE - 1;
@@ -140,91 +272,109 @@ public class LocalPathfinder {
     }
 
     /**
-     * Finds the shortest path from a given start point to a target point within the current scene. This uses player
-     * movement behavior and BFS to find the shortest path.
-     * @param start WorldPoint the starting location (generally the players current position)
-     * @param target WorldPoint the ending or target location to find a path towards.
-     * @return List of Points comprising the path
+     * Finds the shortest path between two points within the currently loaded
+     * scene using a breadth-first search (BFS) algorithm. If the target point
+     * is unreachable, the method returns an approximate path toward the target
+     * based on available scene data.
+     *
+     * <p>The method ensures paths avoid collision flags and checks the accessibility
+     * of neighboring tiles. It reconstructs the path upon completion of the BFS
+     * using the parent array and returns an ordered list of path nodes. If the
+     * target point is unreachable using valid scene tiles, this method falls back
+     * to an approximation strategy to generate a path.
+     *
+     * @param start  {@literal @}WorldPoint representing the starting location.
+     * @param target {@literal @}WorldPoint representing the target location.
+     * @return A {@literal @}List of {@literal @}WorldPoint objects representing the
+     *         path from the starting point to the target point. Returns an empty
+     *         list if the target is unreachable.
      */
     private List<WorldPoint> findScenePath(WorldPoint start, WorldPoint target) {
         return ctx.runOnClientThread(() -> {
             if (start.equals(target)) return Collections.emptyList();
 
-            // 1. Setup State
-            CollisionData[] collisionData = client.getTopLevelWorldView().getCollisionMaps();
-            if (collisionData == null) return Collections.emptyList();
+            BFSState bfsState = bfs(start, target);
 
-            int plane = client.getTopLevelWorldView().getPlane();
-            int[][] flags = collisionData[plane].getFlags();
-
-            // Distances array (initialized to -1)
-            // This maps [sceneX][sceneY] -> distance from start
-            int[][] dist = new int[SCENE_SIZE][SCENE_SIZE];
-            for (int[] row : dist) Arrays.fill(row, -1);
-
-            // Parent array to reconstruct path
-            WorldPoint[][] parent = new WorldPoint[SCENE_SIZE][SCENE_SIZE];
-
-            // BFS Queue
-            Queue<WorldPoint> queue = new ArrayDeque<>();
-
-            int startX = start.getX() - client.getTopLevelWorldView().getBaseX();
-            int startY = start.getY() - client.getTopLevelWorldView().getBaseY();
-
-            if (!isInScene(startX, startY)) return Collections.emptyList();
-
-            dist[startX][startY] = 0;
-            queue.add(start);
-
-            boolean targetReached = false;
-
-            // Run BFS
-            while (!queue.isEmpty()) {
-                WorldPoint current = queue.poll();
-
-                // If we found the exact target, we can stop early
-                if (current.equals(target)) {
-                    targetReached = true;
-                    break;
-                }
-
-                int cx = current.getX() - client.getTopLevelWorldView().getBaseX();
-                int cy = current.getY() - client.getTopLevelWorldView().getBaseY();
-                int currentDist = dist[cx][cy];
-
-                // Check neighbors in specific order: W, E, S, N, SW, SE, NW, NE
-                for (int i = 0; i < 8; i++) {
-                    int nx = cx + DIR_X[i];
-                    int ny = cy + DIR_Y[i];
-
-                    // Bounds check
-                    if (!isInScene(nx, ny)) continue;
-
-                    // If not visited yet
-                    if (dist[nx][ny] == -1) {
-                        WorldPoint neighbor = new WorldPoint(
-                                client.getTopLevelWorldView().getBaseX() + nx,
-                                client.getTopLevelWorldView().getBaseY() + ny,
-                                plane
-                        );
-
-                        if (isWalkable(flags, current, neighbor)) {
-                            dist[nx][ny] = currentDist + 1;
-                            parent[nx][ny] = current;
-                            queue.add(neighbor);
-                        }
-                    }
-                }
-            }
-
-            if (targetReached) {
-                return buildPath(parent, target);
+            if (bfsState.targetReached) {
+                return buildPath(bfsState.parent, target);
             } else {
                 // Target not reached (unreachable or blocked).
                 // Run the "Approximation" search
-                return findBestApproximatePath(target, dist, parent);
+                return findBestApproximatePath(target, bfsState.dist, bfsState.parent);
             }
         });
+    }
+
+    private static class BFSState {
+        final int[][] dist;
+        final WorldPoint[][] parent;
+        final boolean targetReached;
+
+        BFSState(int[][] dist, WorldPoint[][] parent, boolean targetReached) {
+            this.dist = dist;
+            this.parent = parent;
+            this.targetReached = targetReached;
+        }
+    }
+
+    private BFSState bfs(WorldPoint start, WorldPoint target) {
+        CollisionData[] collisionData = client.getTopLevelWorldView().getCollisionMaps();
+        if (collisionData == null) return new BFSState(new int[SCENE_SIZE][SCENE_SIZE], new WorldPoint[SCENE_SIZE][SCENE_SIZE], false);
+
+        int plane = client.getTopLevelWorldView().getPlane();
+        int[][] flags = collisionData[plane].getFlags();
+
+        int[][] dist = new int[SCENE_SIZE][SCENE_SIZE];
+        for (int[] row : dist) Arrays.fill(row, -1);
+
+        WorldPoint[][] parent = new WorldPoint[SCENE_SIZE][SCENE_SIZE];
+        Queue<WorldPoint> queue = new ArrayDeque<>();
+
+        int startX = start.getX() - client.getTopLevelWorldView().getBaseX();
+        int startY = start.getY() - client.getTopLevelWorldView().getBaseY();
+
+        if (!isInScene(startX, startY)) return new BFSState(dist, parent, false);
+
+        dist[startX][startY] = 0;
+        queue.add(start);
+
+        boolean targetReached = false;
+
+        while (!queue.isEmpty()) {
+            WorldPoint current = queue.poll();
+
+            if (target != null && current.equals(target)) {
+                targetReached = true;
+                break;
+            }
+
+            int cx = current.getX() - client.getTopLevelWorldView().getBaseX();
+            int cy = current.getY() - client.getTopLevelWorldView().getBaseY();
+            int currentDist = dist[cx][cy];
+
+            for (int i = 0; i < 8; i++) {
+                int nx = cx + DIR_X[i];
+                int ny = cy + DIR_Y[i];
+
+                if (!isInScene(nx, ny)) continue;
+
+                if (dist[nx][ny] == -1) {
+                    WorldPoint neighbor = new WorldPoint(
+                            client.getTopLevelWorldView().getBaseX() + nx,
+                            client.getTopLevelWorldView().getBaseY() + ny,
+                            plane
+                    );
+
+                    if (isWalkable(flags, current, neighbor)) {
+                        dist[nx][ny] = currentDist + 1;
+                        parent[nx][ny] = current;
+                        queue.add(neighbor);
+                    }
+                }
+            }
+        }
+
+        return new BFSState(dist, parent, targetReached);
     }
 
     /**
@@ -253,8 +403,21 @@ public class LocalPathfinder {
     }
 
     /**
-     * If exact target is unreachable, searches a 21x21 area around target
-     * for the best reachable tile.
+     * Finds the best approximate path to a target point based on both shortest path distance
+     * and Euclidean proximity within the given constraints.
+     *
+     * <p>The method evaluates all tiles within a 21x21 grid centered on the target tile.
+     * It prioritizes tiles based on shortest path distance and uses Euclidean proximity to
+     * the actual target as a secondary sorting criterion. If a valid approximate point is
+     * found, a path is built leading to that point. Otherwise, an empty path is returned.</p>
+     *
+     * @param target The target {@literal @}WorldPoint to which the method should compute an approximate path.
+     * @param dist A 2D array of shortest path distances from the starting point to each tile in the scene.
+     *             Distances of -1 indicate that no path exists to the given tile.
+     * @param parent A 2D array representing the parent relationship of each tile in the scene,
+     *               allowing the reconstruction of paths.
+     * @return A {@literal @}List of {@literal @}WorldPoint objects representing the path to the best approximate target point.
+     *         Returns an empty list if no valid path can be found.
      */
     private List<WorldPoint> findBestApproximatePath(WorldPoint target, int[][] dist, WorldPoint[][] parent) {
         int targetX = target.getX() - client.getTopLevelWorldView().getBaseX();
@@ -363,32 +526,31 @@ public class LocalPathfinder {
         }
 
         // Diagonal
-        if (dx != 0 && dy != 0) {
-            int xFlags = flags[sX + dx][sY];
-            int yFlags = flags[sX][sY + dy];
+        // dx != 0 && dy != 0 is implicitly true here
+        int xFlags = flags[sX + dx][sY];
+        int yFlags = flags[sX][sY + dy];
 
-            if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0) return false;
+        if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0) return false;
 
-            if (dx > 0 && dy > 0) { // NE
-                if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
-                if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
-                return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
-            }
-            if (dx < 0 && dy > 0) { // NW
-                if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
-                if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
-                return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
-            }
-            if (dx > 0 && dy < 0) { // SE
-                if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
-                if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
-                return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
-            }
-            if (dx < 0 && dy < 0) { // SW
-                if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
-                if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
-                return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
-            }
+        if (dx > 0 && dy > 0) { // NE
+            if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
+            if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
+            return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
+        }
+        if (dx < 0 && dy > 0) { // NW
+            if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
+            if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
+            return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
+        }
+        if (dx > 0 && dy < 0) { // SE
+            if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
+            if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
+            return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
+        }
+        if (dx < 0 && dy < 0) { // SW
+            if ((sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_WEST) != 0 || (sourceFlags & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) != 0) return false;
+            if ((targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_EAST) != 0 || (targetFlags & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) != 0) return false;
+            return (xFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0 && (yFlags & CollisionDataFlag.BLOCK_MOVEMENT_FULL) == 0;
         }
 
         return false;
@@ -439,10 +601,18 @@ public class LocalPathfinder {
 
 
     /**
-     * A helper function to render a computed path onto the UI.
-     * @param path List of WorldPoints (the path) to render.
-     * @param graphics Graphics2D object to draw on the canvas.
-     * @return Dimension rendering the path onto the canvas.
+     * Renders a series of tiles representing a path on the game canvas.
+     * This includes drawing connected lines between the tiles and optionally
+     * highlighting the last tile in the path.
+     *
+     * <p> The method uses the provided {@literal Graphics2D} instance to draw
+     * on the screen and a {@literal Color} to style the tiles.
+     *
+     * @param path       The list of {@literal WorldPoint} objects representing the path.
+     *                   Each point is rendered on the game canvas.
+     * @param graphics   The {@literal Graphics2D} instance used to render the path on the screen.
+     * @param pathColor  The {@literal Color} used to draw the tiles on the path. The last tile
+     *                   is highlighted in red with partial transparency.
      */
     public void renderPath(List<WorldPoint> path, Graphics2D graphics, Color pathColor) {
         if (path == null || path.isEmpty()) {
@@ -453,29 +623,24 @@ public class LocalPathfinder {
 
         int i = 0;
         for (WorldPoint point : path) {
-            // 1. Validate Planes (don't draw if player is on z=0 and path is on z=1)
             if (point.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
 
-            // 2. Convert WorldPoint to LocalPoint
-            // This is necessary because drawing is done relative to the camera in the scene
             LocalPoint lp = LocalPoint.fromWorld(client, point);
             if (lp == null) {
-                continue; // Point is outside the currently loaded scene
+                continue;
             }
 
-            // 3. Get the Polygon for the tile
             Polygon poly = Perspective.getCanvasTilePoly(client, lp);
             if (poly != null) {
-                // Determine color based on position in path
                 if (i == path.size() - 1) {
                     graphics.setColor(endColor);
-                    graphics.fill(poly); // Fill the last tile
+                    graphics.fill(poly);
                 } else {
                     graphics.setColor(pathColor);
                     graphics.setStroke(new BasicStroke(2));
-                    graphics.draw(poly); // Outline the path tiles
+                    graphics.draw(poly);
                 }
             }
             i++;
@@ -489,7 +654,7 @@ public class LocalPathfinder {
         graphics.setColor(Color.WHITE);
         graphics.setStroke(new BasicStroke(1));
 
-        net.runelite.api.Point prevCenter = null;
+        Point prevCenter = null;
 
         // Add player location as the start of the line
         LocalPoint playerLp = client.getLocalPlayer().getLocalLocation();
@@ -501,7 +666,7 @@ public class LocalPathfinder {
             LocalPoint lp = LocalPoint.fromWorld(client, point);
             if (lp == null) continue;
 
-            net.runelite.api.Point center = Perspective.localToCanvas(client, lp, client.getTopLevelWorldView().getPlane());
+            Point center = Perspective.localToCanvas(client, lp, client.getTopLevelWorldView().getPlane());
             if (center != null && prevCenter != null) {
                 graphics.drawLine(prevCenter.getX(), prevCenter.getY(), center.getX(), center.getY());
             }

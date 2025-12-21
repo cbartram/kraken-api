@@ -15,6 +15,7 @@ import net.runelite.api.Actor;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.*;
@@ -54,8 +55,11 @@ public class SceneOverlay extends Overlay {
         renderTargetTile(graphics);
 
         if(config.renderCurrentPath()) {
-            pathfinder.renderPath(path, graphics, Color.ORANGE);
+            pathfinder.renderPath(path, graphics, Color.GREEN);
             pathfinder.renderMinimapPath(path, graphics, Color.CYAN);
+            if(plugin.getTargetArea() != null) {
+                renderArea(plugin.getTargetArea(), graphics);
+            }
         }
 
         if (config.showGameObjects()) {
@@ -82,6 +86,46 @@ public class SceneOverlay extends Overlay {
 
         return null;
     }
+
+    /**
+     * Renders a Target area with a solid border and transparent fill.
+     * @param area WorldArea the area to render
+     */
+    private void renderArea(WorldArea area, Graphics2D graphics) {
+        if(area != null) {
+            int centerX = area.getX() + area.getWidth() / 2;
+            int centerY = area.getY() + area.getHeight() / 2;
+            WorldPoint center = new WorldPoint(centerX, centerY, area.getPlane());
+            LocalPoint centerPt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), center);
+            if(centerPt == null) {
+                return;
+            }
+
+            Polygon polygon = Perspective.getCanvasTileAreaPoly(ctx.getClient(), centerPt, area.getWidth(), area.getHeight(), area.getPlane(), 0);
+            if (polygon != null) {
+                graphics.setColor(new Color(0, 255, 255, 0));
+                graphics.fill(polygon);
+                graphics.setColor(Color.CYAN); // Solid Cyan
+                graphics.draw(polygon);
+            }
+
+        }
+    }    /**
+     * Calculates the center WorldPoint of a given WorldArea.
+     *
+     * @param area The WorldArea to calculate the center for.
+     * @return The center WorldPoint of the area.
+     */
+    private WorldPoint getCenterOfArea(WorldArea area) {
+        if (area == null) {
+            return null;
+        }
+        // Calculate the center point of the area from the southwest point
+        int centerX = area.getX() + area.getWidth() / 2;
+        int centerY = area.getY() + area.getHeight() / 2;
+        return new WorldPoint(centerX, centerY, area.getPlane());
+    }
+
 
     private void renderTargetTile(Graphics2D g) {
         if(plugin.getTargetTile() != null) {

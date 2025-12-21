@@ -15,6 +15,7 @@ import example.tests.service.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.gameval.InterfaceID;
@@ -91,6 +92,9 @@ public class ExamplePlugin extends Plugin {
 
     @Getter
     private List<WorldPoint> currentPath = new ArrayList<>();
+
+    @Getter
+    private WorldArea targetArea;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -215,7 +219,8 @@ public class ExamplePlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick event) {
         if (targetTile != null) {
-            this.currentPath = pathfinder.findSparsePath(client.getLocalPlayer().getWorldLocation(), targetTile);
+            this.targetArea = new WorldArea(targetTile, 5, 5);
+            this.currentPath = pathfinder.findPath(client.getLocalPlayer().getWorldLocation(), this.targetTile);
         }
     }
 
