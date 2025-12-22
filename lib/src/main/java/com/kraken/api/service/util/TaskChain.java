@@ -144,21 +144,31 @@ public class TaskChain {
             LocalPathfinder pathfinder = ctx.getService(LocalPathfinder.class);
             Client client = ctx.getClient();
 
-            AtomicReference<List<WorldPoint>> pathRef = new AtomicReference<>();
-            ctx.runOnClientThread(() -> {
-                WorldPoint start = client.getLocalPlayer().getWorldLocation();
-                pathRef.set(pathfinder.findApproximatePath(start, target, radius));
-            });
+            int maxRefreshes = 50;
 
-            List<WorldPoint> path = pathRef.get();
+            for (int i = 0; i < maxRefreshes; i++) {
+                WorldPoint currentLoc = client.getLocalPlayer().getWorldLocation();
 
-            if (path == null || path.isEmpty()) {
-                log.warn("TaskChain: No approximate path found to target {} with radius {}", target, radius);
-                return false;
+                // 2. Calculate path to the area
+                AtomicReference<List<WorldPoint>> pathRef = new AtomicReference<>();
+                ctx.runOnClientThread(() -> {
+                    // Note: findApproximatePath handles logic for "nearest tile in area"
+                    pathRef.set(pathfinder.findApproximatePath(currentLoc, target, radius));
+                });
+
+                List<WorldPoint> densePath = pathRef.get();
+
+                if (densePath == null || densePath.isEmpty()) {
+                    log.warn("TaskChain: No path found to target {}", target);
+                    return false;
+                }
+
+                List<WorldPoint> stridedPath = movement.applyVariableStride(densePath);
+                if (!movement.traversePath(client, movement, stridedPath)) {
+                    return false;
+                }
             }
-
-            List<WorldPoint> stridedPath = movement.applyVariableStride(path);
-            return movement.traversePath(client, movement, stridedPath);
+            return false;
         });
         return this;
     }
@@ -229,30 +239,25 @@ public class TaskChain {
      */
     public TaskChain retryUntil(Runnable action, BooleanSupplier successCondition, int maxRetries, int retryDelayMs) {
         tasks.add(() -> {
-            // attempt 0 is the first try, so we run loop maxRetries + 1 times
             for (int attempt = 0; attempt <= maxRetries; attempt++) {
 
-                // 1. Perform the action
                 ctx.runOnClientThread(action);
-
-                // 2. Wait for the action to potentially take effect
                 Thread.sleep(retryDelayMs);
 
-                // 3. Check if it worked
                 AtomicBoolean success = new AtomicBoolean(false);
                 ctx.runOnClientThread(() -> success.set(successCondition.getAsBoolean()));
 
                 if (success.get()) {
-                    return true; // Condition met, proceed to next task
+                    return true;
                 }
 
                 if (attempt < maxRetries) {
-                    log.debug("TaskChain: Condition not met, retrying... (Attempt {}/{})", attempt + 1, maxRetries);
+                    log.info("TaskChain: Condition not met, retrying... (Attempt {}/{})", attempt + 1, maxRetries);
                 }
             }
 
             log.warn("TaskChain: retryUntil failed after {} attempts.", maxRetries + 1);
-            return false; // Stop the chain
+            return false;
         });
         return this;
     }

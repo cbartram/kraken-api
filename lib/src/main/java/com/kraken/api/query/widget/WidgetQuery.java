@@ -103,6 +103,37 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
     }
 
     /**
+     * Filters for a widget with a specific group ID and child ID.
+     *
+     * <p>This method evaluates the group and child ID of each widget by decomposing
+     * its packed ID. The packed ID is a combination where the group ID occupies the
+     * higher 16 bits, and the child ID occupies the lower 16 bits.</p>
+     *
+     * <p>For example, in the packed id format:<br>
+     * {@code packedId = (groupId << 16) | childId}<br>
+     * The group ID and child ID are derived as follows:</p>
+     * <ul>
+     *   <li>{@code groupId = packedId >> 16}</li>
+     *   <li>{@code childId = packedId & 0xFFFF}</li>
+     * </ul>
+     *
+     * <p>Only the widgets that match the specified group and child ID will be included
+     * in the resulting query.</p>
+     *
+     * @param group The group identifier of the widget.
+     * @param child The child identifier of the widget.
+     * @return {@literal WidgetQuery} A new query filtered for widgets with the specified
+     *         group and child IDs.
+     */
+    public WidgetQuery withGroupChild(int group, int child) {
+        return filter(w -> {
+            int widgetGroup = w.raw().getId() >> 16;
+            int widgetChild = w.raw().getId() & 0xFFFF;
+            return widgetGroup == group && widgetChild == child;
+        });
+    }
+
+    /**
      * Filters for widgets belonging to a specific Interface Group.
      * Example: 149 is the Inventory group.
      * @param groupId The group id of the widget to search for
