@@ -16,15 +16,16 @@ import com.kraken.api.query.npc.NpcQuery;
 import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
+import com.kraken.api.query.world.WorldQuery;
 import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.camera.CameraService;
-import com.kraken.api.service.movement.MinimapService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.tile.TileService;
 import com.kraken.api.service.ui.TabService;
 import com.kraken.api.service.ui.UIService;
+import com.kraken.api.service.util.WorldMapService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -82,11 +83,11 @@ public class Context {
             BankService.class,
             CameraService.class,
             MovementService.class,
-            MinimapService.class,
             PrayerService.class,
             SpellService.class,
             UIService.class,
-            TabService.class
+            TabService.class,
+            WorldMapService.class
     );
 
     @Inject
@@ -288,6 +289,17 @@ public class Context {
     }
 
     /**
+     * Retrieves an instance of a specified service class.
+     *
+     * @param serviceClass The class of the service to retrieve.
+     * @param <T>          The type of the service.
+     * @return The instance of the service.
+     */
+    public <T> T getService(Class<T> serviceClass) {
+        return injector.getInstance(serviceClass);
+    }
+
+    /**
      * Creates a new query builder for NPCs.
      * Usage: ctx.npcs().withName("Goblin").first().interact("Attack");
      *
@@ -385,5 +397,21 @@ public class Context {
      */
     public WidgetQuery widgets() {
         return new WidgetQuery(this);
+    }
+
+    /**
+     * Creates a new query builder for Worlds. A WorldQuery provides functionality
+     * for filtering and selecting specific game worlds based on various criteria,
+     * such as population, world type, or location.
+     *
+     * <p>Worlds are the game servers that players can connect to. Each world may
+     * have unique properties, such as member status, high population, or special
+     * game rules.</p>
+     *
+     * @return {@literal @}WorldQuery object used to chain together predicates to
+     *         select specific game worlds.
+     */
+    public WorldQuery worlds() {
+        return new WorldQuery(this);
     }
 }

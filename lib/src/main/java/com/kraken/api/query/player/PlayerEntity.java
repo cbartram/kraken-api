@@ -29,4 +29,12 @@ public class PlayerEntity extends AbstractEntity<Player> {
         ctx.getInteractionManager().interact(p, action);
         return true;
     }
+
+    /**
+     * Returns true if the player has a Skull icon above their head and false otherwise.
+     * @return boolean True if the player is skulled
+     */
+    public boolean isSkulled() {
+        return raw().getSkullIcon() != -1;
+    }
 }

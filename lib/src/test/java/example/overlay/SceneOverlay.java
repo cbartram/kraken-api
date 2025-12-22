@@ -7,13 +7,15 @@ import com.kraken.api.query.groundobject.GroundObjectEntity;
 import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.query.player.PlayerEntity;
 import com.kraken.api.query.widget.WidgetEntity;
-import com.kraken.api.service.movement.Pathfinder;
+import com.kraken.api.service.pathfinding.LocalPathfinder;
+import com.kraken.api.service.tile.TileService;
 import example.ExampleConfig;
 import example.ExamplePlugin;
 import net.runelite.api.Actor;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.*;
@@ -23,19 +25,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static net.runelite.client.ui.overlay.OverlayUtil.renderPolygon;
+
 
 public class SceneOverlay extends Overlay {
     private final ExamplePlugin plugin;
-    private final Pathfinder pathfinder;
+    private final LocalPathfinder pathfinder;
     private final Context ctx;
     private final ExampleConfig config;
+    private final TileService tileService;
 
     @Inject
-    public SceneOverlay(ExamplePlugin plugin, Pathfinder pathfinder, Context ctx, ExampleConfig config) {
+    public SceneOverlay(ExamplePlugin plugin, LocalPathfinder pathfinder, Context ctx, ExampleConfig config,
+                        TileService tileService) {
         this.plugin = plugin;
         this.pathfinder = pathfinder;
         this.ctx = ctx;
         this.config = config;
+        this.tileService = tileService;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
@@ -45,9 +52,14 @@ public class SceneOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
         List<WorldPoint> path = plugin.getCurrentPath();
+        renderTargetTile(graphics);
 
         if(config.renderCurrentPath()) {
-            pathfinder.renderPath(path, graphics);
+            pathfinder.renderPath(path, graphics, Color.GREEN);
+            pathfinder.renderMinimapPath(path, graphics, Color.CYAN);
+            if(plugin.getTargetArea() != null) {
+                renderArea(plugin.getTargetArea(), graphics);
+            }
         }
 
         if (config.showGameObjects()) {
@@ -73,6 +85,63 @@ public class SceneOverlay extends Overlay {
         }
 
         return null;
+    }
+
+    /**
+     * Renders a Target area with a solid border and transparent fill.
+     * @param area WorldArea the area to render
+     */
+    private void renderArea(WorldArea area, Graphics2D graphics) {
+        if(area != null) {
+            int centerX = area.getX() + area.getWidth() / 2;
+            int centerY = area.getY() + area.getHeight() / 2;
+            WorldPoint center = new WorldPoint(centerX, centerY, area.getPlane());
+            LocalPoint centerPt = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), center);
+            if(centerPt == null) {
+                return;
+            }
+
+            Polygon polygon = Perspective.getCanvasTileAreaPoly(ctx.getClient(), centerPt, area.getWidth(), area.getHeight(), area.getPlane(), 0);
+            if (polygon != null) {
+                graphics.setColor(new Color(0, 255, 255, 0));
+                graphics.fill(polygon);
+                graphics.setColor(Color.CYAN); // Solid Cyan
+                graphics.draw(polygon);
+            }
+
+        }
+    }    /**
+     * Calculates the center WorldPoint of a given WorldArea.
+     *
+     * @param area The WorldArea to calculate the center for.
+     * @return The center WorldPoint of the area.
+     */
+    private WorldPoint getCenterOfArea(WorldArea area) {
+        if (area == null) {
+            return null;
+        }
+        // Calculate the center point of the area from the southwest point
+        int centerX = area.getX() + area.getWidth() / 2;
+        int centerY = area.getY() + area.getHeight() / 2;
+        return new WorldPoint(centerX, centerY, area.getPlane());
+    }
+
+
+    private void renderTargetTile(Graphics2D g) {
+        if(plugin.getTargetTile() != null) {
+            LocalPoint lp;
+            if(ctx.getClient().getTopLevelWorldView().isInstance()) {
+                lp = tileService.fromWorldInstance(plugin.getTargetTile());
+            } else {
+                lp = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), plugin.getTargetTile());
+            }
+
+            if(lp == null) return;
+            Polygon polygon = Perspective.getCanvasTilePoly(ctx.getClient(), lp);
+            if(polygon == null) return;
+
+            renderPolygon(g, polygon, new Color(241, 160, 9), new Color(241, 160, 9, 20), new BasicStroke(2));
+        }
     }
 
     private void renderLocalPlayer(Graphics2D graphics) {

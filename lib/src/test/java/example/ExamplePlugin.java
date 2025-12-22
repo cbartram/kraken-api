@@ -5,19 +5,22 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.overlay.MouseOverlay;
-import com.kraken.api.service.movement.Pathfinder;
+import com.kraken.api.service.pathfinding.LocalPathfinder;
+import com.kraken.api.service.util.WorldMapService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
-import example.overlay.TestApiOverlay;
 import example.tests.query.*;
 import example.tests.service.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -58,9 +61,6 @@ public class ExamplePlugin extends Plugin {
     private MouseOverlay overlay;
 
     @Inject
-    private TestApiOverlay testApiOverlay;
-
-    @Inject
     private InfoPanelOverlay infoPanelOverlay;
 
     @Inject
@@ -78,21 +78,26 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private MouseOverlay mouseOverlay;
 
-    @Getter
-    private WorldPoint targetTile;
+    @Inject
+    private LocalPathfinder pathfinder;
 
     @Inject
-    private Pathfinder pathfinder;
+    private WorldMapService worldMapService;
 
     @Inject
     private ExampleScript exampleScript;
 
     @Getter
+    private WorldPoint targetTile;
+
+    @Getter
     private List<WorldPoint> currentPath = new ArrayList<>();
+
+    @Getter
+    private WorldArea targetArea;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
-
     private final Map<String, TestExecution> testExecutions = new HashMap<>();
 
     @Inject
@@ -101,7 +106,7 @@ public class ExamplePlugin extends Plugin {
             InventoryTest inventoryQueryTest, BankInventoryTest bankInventoryQueryTest, GameObjectTest gameObjectQueryTest,
             NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
             WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
-            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest
+            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest
     ) {
         registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
         registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
@@ -117,6 +122,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enableSpell", "SpellService", config::enableSpellTests, spellServiceTest::executeTest);
         registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
         registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
+        registerTest("enableWorldQuery", "WorldQuery", config::enableWorldQuery, worldQueryTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {
@@ -184,7 +190,6 @@ public class ExamplePlugin extends Plugin {
         exampleScript.start();
 
         overlayManager.add(overlay);
-        overlayManager.add(testApiOverlay);
         overlayManager.add(infoPanelOverlay);
         overlayManager.add(sceneOverlay);
         if (config.showMouse()) {
@@ -198,7 +203,6 @@ public class ExamplePlugin extends Plugin {
         exampleScript.stop();
 
         overlayManager.remove(overlay);
-        overlayManager.remove(testApiOverlay);
         overlayManager.remove(infoPanelOverlay);
         overlayManager.remove(sceneOverlay);
         overlayManager.remove(mouseOverlay);
@@ -216,7 +220,8 @@ public class ExamplePlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick event) {
         if (targetTile != null) {
-            this.currentPath = pathfinder.findSparsePath(client.getLocalPlayer().getWorldLocation(), targetTile);
+            this.targetArea = new WorldArea(targetTile, 5, 5);
+            this.currentPath = pathfinder.findPath(client.getLocalPlayer().getWorldLocation(), this.targetTile);
         }
     }
 
@@ -227,8 +232,32 @@ public class ExamplePlugin extends Plugin {
 
     @Subscribe
     private void onMenuEntryAdded(MenuEntryAdded event) {
+        // Handles a user setting custom destination for movement test within the game world by Shift + clicking a tile
         if (client.isKeyPressed(KeyCode.KC_SHIFT) && event.getOption().equals("Walk here") && event.getTarget().isEmpty()) {
             addMenuEntry(event, "Set", TARGET_TILE, 1);
+        }
+
+        // If a right click occurs on the world map get the WorldPoint of where the click occurred
+        // and allow players to set a destination that way.
+        final Widget map = client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER);
+        if(map == null) return;
+
+        Point lastMenuOpenedPoint = client.getMouseCanvasPosition();
+        final WorldPoint wp = worldMapService.mapClickToWorldPoint(lastMenuOpenedPoint.getX(), lastMenuOpenedPoint.getY());
+
+        if (wp != null) {
+            client.getMenu().createMenuEntry(0)
+                    .setOption("Set")
+                    .setTarget(ColorUtil.wrapWithColorTag(wp.toString(), JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND))
+                    .setParam0(event.getActionParam0())
+                    .setParam1(event.getActionParam1())
+                    .setIdentifier(event.getIdentifier())
+                    .setType(MenuAction.RUNELITE)
+                    .onClick(e -> {
+                        if(e.getOption().equalsIgnoreCase("Set")) {
+                            targetTile = wp;
+                        }
+                    });
         }
     }
 
