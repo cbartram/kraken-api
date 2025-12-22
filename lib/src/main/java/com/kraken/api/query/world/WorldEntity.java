@@ -3,6 +3,7 @@ package com.kraken.api.query.world;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
 import com.kraken.api.query.widget.WidgetEntity;
+import com.kraken.api.service.util.SleepService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -33,46 +34,44 @@ public class WorldEntity extends AbstractEntity<World> {
         return w != null ? w.getId() : -1;
     }
 
-    // Note: I believe this requires the world hopper plugin to be enabled.
     @Override
     public boolean interact(String action) {
-        return ctx.runOnClientThread(() -> {
-             Client client = ctx.getClient();
-            if(client == null) return false;
+        boolean isLoginScreen = ctx.runOnClientThread(() -> ctx.getClient().getGameState() == GameState.LOGIN_SCREEN);
+        if(!isLoginScreen) {
+            boolean worldHopperNotOpen = ctx.runOnClientThread(() -> ctx.widgets().get(InterfaceID.Worldswitcher.BUTTONS) == null);
+            if(worldHopperNotOpen) {
+                ctx.getClient().openWorldHopper();
+                boolean opened = ctx.getService(SleepService.class).sleepUntil(() ->
+                        ctx.runOnClientThread(() -> ctx.widgets().get(InterfaceID.Worldswitcher.BUTTONS) != null),
+                        2000
+                );
 
-            if(client.getGameState() == GameState.LOGIN_SCREEN) {
+                if (!opened) {
+                    log.error("Timed out waiting for World Hopper to open.");
+                    return false;
+                }
+
+            }
+
+            return ctx.runOnClientThread(() -> {
+                WidgetEntity widget = ctx.widgets()
+                        .withId(InterfaceID.Worldswitcher.BUTTONS)
+                        .nameContains(String.valueOf(getId())).first();
+
+                if(widget == null) {
+                    log.error("world widget: {} is null", getId());
+                    return false;
+                }
+                return widget.interact("Switch");
+            });
+        } else {
+            return ctx.runOnClientThread(() -> {
+                Client client = ctx.getClient();
                 client.changeWorld(raw());
                 client.hopToWorld(raw());
                 return true;
-            }
-
-            if (ctx.widgets().get(InterfaceID.Worldswitcher.BUTTONS) == null) {
-                // TODO This takes time to complete widgets aren't visible yet. Need to run in client thread separately as to not block before
-                // we actually
-                client.openWorldHopper();
-
-                WidgetEntity widget = ctx.widgets()
-                        .withId(InterfaceID.Worldswitcher.BUTTONS)
-                        .nameContains(String.valueOf(this.getId())).first();
-
-                if(widget == null) {
-                    log.error("world: {} widget is null", this.getId());
-                    return false;
-                }
-
-                return widget.interact("Switch");
-            } else {
-                WidgetEntity widget = ctx.widgets()
-                        .withId(InterfaceID.Worldswitcher.BUTTONS)
-                        .nameContains(String.valueOf(this.getId())).first();
-
-                if(widget == null) {
-                    log.error("world widget: {} is null", this.getId());
-                    return false;
-                }
-                return widget.interact("Switch");
-            }
-        });
+            });
+        }
     }
 
     /**
