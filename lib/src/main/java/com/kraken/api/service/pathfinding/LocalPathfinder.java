@@ -141,6 +141,33 @@ public class LocalPathfinder {
      * @param start  the {@link WorldPoint} representing the starting point of the path.
      * @param target the {@link WorldPoint} representing the target point of the path.
      *               If it lies outside the game scene, a full path is calculated for this target.
+     * @return a {@link List} of {@link WorldPoint} instances representing the path from the start to the selected point
+     *         within the specified radius of the target. If no valid candidates are found, an approximate path to the target
+     *         is returned. The list is in order of movement from start to destination.
+     *
+     * <p>Steps performed in the method:</p>
+     * <ul>
+     *   <li>If the target is not in the scene, calculate and return the full path to the target using {@code findPath}.</li>
+     *   <li>Run a breadth-first search (BFS) to determine distances from the start point and record parent nodes.</li>
+     *   <li>Search for all points within the specified radius of the target that are in the scene and traversable.</li>
+     *   <li>If valid points are found and randomly select one of them, return the path to that point.</li>
+     *   <li>If no valid points are found, calculate and return an approximate path to the target.</li>
+     * </ul>
+     */
+    public List<WorldPoint> findApproximatePath(WorldPoint start, WorldPoint target) {
+        return findApproximatePath(start, target, 5);
+    }
+
+    /**
+     * Finds an approximate path from a starting point to a target point within a given radius.
+     * <p>
+     * This method searches for paths using a breadth-first search (BFS) approach. If the target point is not within the game
+     * scene, a full path is computed to the target. Otherwise, the method will look for an approximate path to a point within
+     * the specified radius of the target that is traversable in the scene.
+     *
+     * @param start  the {@link WorldPoint} representing the starting point of the path.
+     * @param target the {@link WorldPoint} representing the target point of the path.
+     *               If it lies outside the game scene, a full path is calculated for this target.
      * @param radius the radius, in tiles, within which the method will search for a traversable point near the target.
      * @return a {@link List} of {@link WorldPoint} instances representing the path from the start to the selected point
      *         within the specified radius of the target. If no valid candidates are found, an approximate path to the target

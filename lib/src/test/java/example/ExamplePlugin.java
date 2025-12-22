@@ -6,7 +6,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
-import com.kraken.api.service.util.WorldMapService;
+import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
@@ -84,6 +84,7 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private WorldMapService worldMapService;
 
+
     @Inject
     private ExampleScript exampleScript;
 
@@ -106,7 +107,8 @@ public class ExamplePlugin extends Plugin {
             InventoryTest inventoryQueryTest, BankInventoryTest bankInventoryQueryTest, GameObjectTest gameObjectQueryTest,
             NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
             WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
-            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest
+            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest,
+            TaskChainTest taskChainTest
     ) {
         registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
         registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
@@ -123,6 +125,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
         registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
         registerTest("enableWorldQuery", "WorldQuery", config::enableWorldQuery, worldQueryTest::executeTest);
+        registerTest("enableTaskChain", "TaskChain", config::enableTaskChain, taskChainTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {

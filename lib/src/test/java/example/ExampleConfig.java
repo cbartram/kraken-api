@@ -209,6 +209,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableTaskChain",
+            name = "Start Task Chain Tests",
+            description = "Enable task chain tests",
+            section = serviceTests,
+            position = 6
+    )
+    default boolean enableTaskChain() {
+        return true;
+    }
+
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
     // ==============================================
