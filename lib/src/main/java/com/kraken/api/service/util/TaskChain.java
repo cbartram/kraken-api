@@ -11,8 +11,6 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 @Slf4j
@@ -88,7 +86,7 @@ public class TaskChain {
             Client client = ctx.getClient();
 
             // Guardrail: Prevent infinite loops if pathing fails repeatedly
-            int maxRefreshes = 50;
+            int maxRefreshes = 20;
 
             for (int i = 0; i < maxRefreshes; i++) {
                 WorldPoint currentLoc = client.getLocalPlayer().getWorldLocation();
@@ -97,12 +95,7 @@ public class TaskChain {
                 if (currentLoc.distanceTo(target) <= 3) {
                     return true;
                 }
-
-                // 2. Calculate path (Client Thread)
-                // This might return a path to the TARGET (if close) or the EDGE (if far)
-                AtomicReference<List<WorldPoint>> pathRef = new AtomicReference<>();
-                ctx.runOnClientThread(() -> pathRef.set(pathfinder.findPath(currentLoc, target)));
-                List<WorldPoint> densePath = pathRef.get();
+                List<WorldPoint> densePath = pathfinder.findPath(currentLoc, target);
 
                 // If path is empty but we aren't at the target, we are stuck/unreachable
                 if (densePath == null || densePath.isEmpty()) {
@@ -144,19 +137,13 @@ public class TaskChain {
             LocalPathfinder pathfinder = ctx.getService(LocalPathfinder.class);
             Client client = ctx.getClient();
 
-            int maxRefreshes = 50;
+            int maxRefreshes = 20;
 
             for (int i = 0; i < maxRefreshes; i++) {
                 WorldPoint currentLoc = client.getLocalPlayer().getWorldLocation();
 
                 // 2. Calculate path to the area
-                AtomicReference<List<WorldPoint>> pathRef = new AtomicReference<>();
-                ctx.runOnClientThread(() -> {
-                    // Note: findApproximatePath handles logic for "nearest tile in area"
-                    pathRef.set(pathfinder.findApproximatePath(currentLoc, target, radius));
-                });
-
-                List<WorldPoint> densePath = pathRef.get();
+                List<WorldPoint> densePath = pathfinder.findApproximatePath(currentLoc, target, radius);
 
                 if (densePath == null || densePath.isEmpty()) {
                     log.warn("TaskChain: No path found to target {}", target);
@@ -185,7 +172,7 @@ public class TaskChain {
             LocalPathfinder pathfinder = ctx.getService(LocalPathfinder.class);
             Client client = ctx.getClient();
 
-            int maxRefreshes = 50;
+            int maxRefreshes = 20;
 
             for (int i = 0; i < maxRefreshes; i++) {
                 WorldPoint currentLoc = client.getLocalPlayer().getWorldLocation();
@@ -195,14 +182,7 @@ public class TaskChain {
                     return true;
                 }
 
-                // 2. Calculate path to the area
-                AtomicReference<List<WorldPoint>> pathRef = new AtomicReference<>();
-                ctx.runOnClientThread(() -> {
-                    // Note: findApproximatePath handles logic for "nearest tile in area"
-                    pathRef.set(pathfinder.findApproximatePath(currentLoc, area));
-                });
-
-                List<WorldPoint> densePath = pathRef.get();
+                List<WorldPoint> densePath = pathfinder.findApproximatePath(currentLoc, area);
 
                 if (densePath == null || densePath.isEmpty()) {
                     log.warn("TaskChain: No path found to area {}", area);
@@ -244,10 +224,7 @@ public class TaskChain {
                 ctx.runOnClientThread(action);
                 Thread.sleep(retryDelayMs);
 
-                AtomicBoolean success = new AtomicBoolean(false);
-                ctx.runOnClientThread(() -> success.set(successCondition.getAsBoolean()));
-
-                if (success.get()) {
+                if (ctx.runOnClientThread(successCondition::getAsBoolean)) {
                     return true;
                 }
 
@@ -301,10 +278,7 @@ public class TaskChain {
                     return false;
                 }
 
-                AtomicBoolean result = new AtomicBoolean(false);
-                ctx.runOnClientThread(() -> result.set(condition.getAsBoolean()));
-
-                if (result.get()) {
+                if (ctx.runOnClientThread(condition::getAsBoolean)) {
                     return true; // Condition met, move next
                 }
 

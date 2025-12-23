@@ -2,7 +2,10 @@ package com.kraken.api.query.gameobject;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
-import net.runelite.api.*;
+import net.runelite.api.GameObject;
+import net.runelite.api.ObjectComposition;
+import net.runelite.api.Perspective;
+import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 

@@ -102,6 +102,29 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
         return withId(packedId).first();
     }
 
+
+    /**
+     * Retrieves a {@link WidgetEntity} based on the specified group ID and child ID.
+     *
+     * <p>This method accesses a widget using its hierarchical identifiers:
+     * <ul>
+     *   <li><b>groupId:</b> Represents the interface group to which the widget belongs.</li>
+     *   <li><b>childId:</b> Identifies the specific widget within the group.</li>
+     * </ul>
+     * </p>
+     *
+     * <p>The widget is created and returned as a {@link WidgetEntity} instance, allowing for further
+     * interaction or queries.</p>
+     *
+     * @param groupId The group ID of the widget to retrieve. Represents the top-level container or interface.
+     * @param childId The child ID of the widget to retrieve. Represents the specific item within the group.
+     * @return A {@link WidgetEntity} representing the widget with the provided group ID and child ID,
+     *         or {@code null} if no matching widget is found.
+     */
+    public WidgetEntity get(int groupId, int childId) {
+        return new WidgetEntity(ctx, ctx.getClient().getWidget(groupId, childId));
+    }
+
     /**
      * Filters for a widget with a specific group ID and child ID.
      *

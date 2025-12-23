@@ -3,6 +3,7 @@ package com.kraken.api.core.packet;
 import com.kraken.api.core.packet.model.PacketDefinition;
 import com.kraken.api.core.packet.model.PacketMethods;
 import com.kraken.api.core.packet.model.PacketType;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -28,6 +29,8 @@ import java.util.List;
 public class PacketClient {
 
     private final PacketMethods methods;
+
+    @Getter
     private final Client client;
 
     /**
