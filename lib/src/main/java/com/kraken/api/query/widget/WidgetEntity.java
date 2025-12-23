@@ -79,6 +79,29 @@ public class WidgetEntity extends AbstractEntity<Widget> {
     }
 
     /**
+     * Interacts with a widget by invoking a specified menu and action.
+     *
+     * <p>This method attempts to perform an interaction on a widget identified
+     * by its underlying raw representation. If the raw widget is {@code null},
+     * the method will immediately return {@code false}. Otherwise, it delegates
+     * the interaction process to the interaction manager.</p>
+     *
+     * @param menu The menu option to be selected during the interaction.
+     *             For example, this could represent a contextual menu option like "Use" or "Examine".
+     * @param action The specific action to be invoked within the selected menu option.
+     *               This typically represents the intended effect of the interaction, such as "Wield".
+     *
+     * @return {@code true} if the interaction process was initiated successfully;
+     *         {@code false} if the underlying widget was {@code null} and no action was performed.
+     */
+    public boolean interact(String menu, String action) {
+        Widget w = raw();
+        if (w == null) return false;
+        ctx.getInteractionManager().interact(w, menu, action);
+        return true;
+    }
+
+    /**
      * Checks if the widget is currently visible.
      *
      * <p>A widget is considered visible if it is not marked as hidden in its underlying raw state.</p>

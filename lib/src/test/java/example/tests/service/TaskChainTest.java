@@ -24,13 +24,12 @@ public class TaskChainTest extends BaseApiTest {
                     }
                     return false;
                 })
-                // 27262996
                 .run(() -> ctx.gameObjects().withAction("Shape-Canoe").nearest().interact("Shape-Canoe"))
                 .waitUntil(() -> {
                     WidgetEntity entity = ctx.widgets().get(416, 3);
                     log.info("Canoe widget entity: {}", entity);
                     if(entity == null) return false;
-                    return !entity.isNull() || entity.isVisible();
+                    return !entity.isNull();
                 })
                 .run(() -> {
                     log.info("Making canoe...");
