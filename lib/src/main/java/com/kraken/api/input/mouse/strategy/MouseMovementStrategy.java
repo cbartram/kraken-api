@@ -1,5 +1,6 @@
 package com.kraken.api.input.mouse.strategy;
 
+import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.strategy.bezier.BezierStrategy;
 import com.kraken.api.input.mouse.strategy.instant.InstantStrategy;
 import com.kraken.api.input.mouse.strategy.linear.LinearStrategy;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 
 @Slf4j
+@Singleton
 public enum MouseMovementStrategy {
     NO_MOVEMENT(NoMovement.class),
     INSTANT(InstantStrategy.class),

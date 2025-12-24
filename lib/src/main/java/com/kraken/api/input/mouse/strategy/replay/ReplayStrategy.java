@@ -1,6 +1,7 @@
 package com.kraken.api.input.mouse.strategy.replay;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.model.NormalizedPath;
 import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import com.kraken.api.input.mouse.strategy.bezier.BezierStrategy;
@@ -14,6 +15,7 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 
 @Slf4j
+@Singleton
 public class ReplayStrategy implements MoveableMouse {
 
     @Inject

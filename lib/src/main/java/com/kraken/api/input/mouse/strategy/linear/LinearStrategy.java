@@ -1,6 +1,7 @@
 package com.kraken.api.input.mouse.strategy.linear;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import com.kraken.api.input.mouse.strategy.instant.InstantStrategy;
 import com.kraken.api.service.util.RandomService;
@@ -13,6 +14,7 @@ import net.runelite.api.Point;
 import java.awt.*;
 
 @Slf4j
+@Singleton
 public class LinearStrategy implements MoveableMouse {
 
     @Inject

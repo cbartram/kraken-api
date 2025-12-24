@@ -1,6 +1,7 @@
 package com.kraken.api.input.mouse.strategy.bezier;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import com.kraken.api.input.mouse.strategy.instant.InstantStrategy;
 import com.kraken.api.service.util.RandomService;
@@ -10,6 +11,7 @@ import net.runelite.api.Point;
 
 import java.awt.*;
 
+@Singleton
 public class BezierStrategy implements MoveableMouse {
 
     @Inject

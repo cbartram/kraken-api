@@ -2,6 +2,7 @@ package com.kraken.api.input.mouse;
 
 import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
+import com.kraken.api.input.mouse.strategy.linear.LinearStrategy;
 import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,13 @@ public class VirtualMouse {
         if(strategy == null) {
             log.error("Null mouse movement strategy provided as default.");
             return;
+        }
+
+        // Defaults to 50 steps. Users should override this for longer or shorter mouse movement if they go with
+        // the linear movement pattern.
+        if(strategy == MouseMovementStrategy.LINEAR) {
+            LinearStrategy linear = (LinearStrategy) strategy.getStrategy();
+            linear.setSteps(50);
         }
 
         defaultMouseMovementStrategy = strategy;

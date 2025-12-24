@@ -1,6 +1,7 @@
 package com.kraken.api.input.mouse.strategy.none;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import lombok.Getter;
 import net.runelite.api.Client;
@@ -8,6 +9,7 @@ import net.runelite.api.Point;
 
 import java.awt.*;
 
+@Singleton
 public class NoMovement implements MoveableMouse {
 
     @Inject
