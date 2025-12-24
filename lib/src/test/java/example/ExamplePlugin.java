@@ -11,6 +11,7 @@ import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
+import example.tests.input.MouseTest;
 import example.tests.query.*;
 import example.tests.service.*;
 import lombok.Getter;
@@ -112,7 +113,7 @@ public class ExamplePlugin extends Plugin {
             NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
             WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
             CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest,
-            TaskChainTest taskChainTest
+            TaskChainTest taskChainTest, MouseTest mouseTest
     ) {
         registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
         registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
@@ -130,6 +131,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
         registerTest("enableWorldQuery", "WorldQuery", config::enableWorldQuery, worldQueryTest::executeTest);
         registerTest("enableTaskChain", "TaskChain", config::enableTaskChain, taskChainTest::executeTest);
+        registerTest("enableMouseTest", "VirtualMouse", config::enableMouseTest, mouseTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {

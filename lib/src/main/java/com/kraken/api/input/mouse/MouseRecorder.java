@@ -205,6 +205,7 @@ public class MouseRecorder implements MouseListener {
 
         // Check if we need to flush memory
         if (gestureBuffer.size() >= BATCH_SIZE) {
+            log.info("Gesture buffer full, flushing to disk");
             flushGestures(false);
         }
     }

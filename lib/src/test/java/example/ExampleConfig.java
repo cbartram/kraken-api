@@ -242,6 +242,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableMouseTest",
+            name = "Start Mouse Test",
+            description = "Starts the mouse movement test, using the \"test\" recording data",
+            section = mouseSettings,
+            position = 2
+    )
+    default boolean enableMouseTest() {
+        return true;
+    }
+
 
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
