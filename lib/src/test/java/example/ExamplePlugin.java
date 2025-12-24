@@ -4,12 +4,14 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
-import com.kraken.api.service.util.WorldMapService;
+import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
+import example.tests.input.MouseTest;
 import example.tests.query.*;
 import example.tests.service.*;
 import lombok.Getter;
@@ -84,8 +86,12 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private WorldMapService worldMapService;
 
+
     @Inject
     private ExampleScript exampleScript;
+
+    @Inject
+    private MouseRecorder mouseRecorder;
 
     @Getter
     private WorldPoint targetTile;
@@ -106,7 +112,8 @@ public class ExamplePlugin extends Plugin {
             InventoryTest inventoryQueryTest, BankInventoryTest bankInventoryQueryTest, GameObjectTest gameObjectQueryTest,
             NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
             WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
-            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest
+            CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest,
+            TaskChainTest taskChainTest, MouseTest mouseTest
     ) {
         registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
         registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
@@ -123,6 +130,8 @@ public class ExamplePlugin extends Plugin {
         registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
         registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
         registerTest("enableWorldQuery", "WorldQuery", config::enableWorldQuery, worldQueryTest::executeTest);
+        registerTest("enableTaskChain", "TaskChain", config::enableTaskChain, taskChainTest::executeTest);
+        registerTest("enableMouseTest", "VirtualMouse", config::enableMouseTest, mouseTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {
@@ -156,6 +165,14 @@ public class ExamplePlugin extends Plugin {
             exampleScript.pause();
         } else {
             exampleScript.resume();
+        }
+
+        if(key.equals("mouseRecord") && config.mouseRecord()) {
+            log.info("Starting recording...");
+            mouseRecorder.start("test");
+        } else if(key.equals("mouseRecord") && !config.mouseRecord()) {
+            log.info("Stopping recording");
+            mouseRecorder.stop();
         }
 
         if (key.equals("simVisualizer")) {

@@ -132,6 +132,22 @@ public class InteractionManager {
     }
 
     /**
+     * Interacts with a widget using the specific sub action.
+     * @param item The widget to interact with
+     * @param menu The menu to select
+     * @param action The action to take i.e. Wield, Use or Examine
+     */
+    public void interact(Widget item, String menu, String action) {
+        if(!ctxProvider.get().isPacketsLoaded()) return;
+        Point pt = uiService.getClickbox(item);
+
+        if(pt != null) {
+            mousePackets.queueClickPacket(pt.getX(), pt.getY());
+            widgetPackets.queueWidgetSubAction(item, menu, action);
+        }
+    }
+
+    /**
      * Uses a source widget on a destination widget (i.e. High Alchemy)
      * @param src The source widget to use on the destination widget
      * @param dest The destination widget

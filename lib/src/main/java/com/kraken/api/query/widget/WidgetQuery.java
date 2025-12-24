@@ -102,6 +102,59 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
         return withId(packedId).first();
     }
 
+
+    /**
+     * Retrieves a {@link WidgetEntity} based on the specified group ID and child ID.
+     *
+     * <p>This method accesses a widget using its hierarchical identifiers:
+     * <ul>
+     *   <li><b>groupId:</b> Represents the interface group to which the widget belongs.</li>
+     *   <li><b>childId:</b> Identifies the specific widget within the group.</li>
+     * </ul>
+     *
+     * <p>The widget is created and returned as a {@link WidgetEntity} instance, allowing for further
+     * interaction or queries.</p>
+     *
+     * @param groupId The group ID of the widget to retrieve. Represents the top-level container or interface.
+     * @param childId The child ID of the widget to retrieve. Represents the specific item within the group.
+     * @return A {@link WidgetEntity} representing the widget with the provided group ID and child ID,
+     *         or {@code null} if no matching widget is found.
+     */
+    public WidgetEntity get(int groupId, int childId) {
+        return new WidgetEntity(ctx, ctx.getClient().getWidget(groupId, childId));
+    }
+
+    /**
+     * Filters for a widget with a specific group ID and child ID.
+     *
+     * <p>This method evaluates the group and child ID of each widget by decomposing
+     * its packed ID. The packed ID is a combination where the group ID occupies the
+     * higher 16 bits, and the child ID occupies the lower 16 bits.</p>
+     *
+     * <p>For example, in the packed id format:<br>
+     * {@code packedId = (groupId << 16) | childId}<br>
+     * The group ID and child ID are derived as follows:</p>
+     * <ul>
+     *   <li>{@code groupId = packedId >> 16}</li>
+     *   <li>{@code childId = packedId & 0xFFFF}</li>
+     * </ul>
+     *
+     * <p>Only the widgets that match the specified group and child ID will be included
+     * in the resulting query.</p>
+     *
+     * @param group The group identifier of the widget.
+     * @param child The child identifier of the widget.
+     * @return {@literal WidgetQuery} A new query filtered for widgets with the specified
+     *         group and child IDs.
+     */
+    public WidgetQuery withGroupChild(int group, int child) {
+        return filter(w -> {
+            int widgetGroup = w.raw().getId() >> 16;
+            int widgetChild = w.raw().getId() & 0xFFFF;
+            return widgetGroup == group && widgetChild == child;
+        });
+    }
+
     /**
      * Filters for widgets belonging to a specific Interface Group.
      * Example: 149 is the Inventory group.

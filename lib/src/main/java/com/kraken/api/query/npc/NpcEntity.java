@@ -15,13 +15,13 @@ public class NpcEntity extends AbstractEntity<NPC> {
     @Override
     public String getName() {
         NPC n = raw();
-        return n != null ? n.getName() : null;
+        return n != null ? ctx.runOnClientThread(n::getName) : null;
     }
 
     @Override
     public int getId() {
         NPC n = raw();
-        return n != null ? n.getId(): -1;
+        return n != null ? ctx.runOnClientThread(n::getId) : -1;
     }
 
     /**

@@ -1,6 +1,7 @@
 
 package example;
 
+import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
 import net.runelite.client.config.*;
 
 @ConfigGroup("testapi")
@@ -208,6 +209,62 @@ public interface ExampleConfig extends Config {
     default boolean enablePathfinder() {
         return true;
     }
+
+    @ConfigItem(
+            keyName = "enableTaskChain",
+            name = "Start Task Chain Tests",
+            description = "Enable task chain tests",
+            section = serviceTests,
+            position = 6
+    )
+    default boolean enableTaskChain() {
+        return true;
+    }
+
+    // ==============================================
+    // ========== MOUSE SETTINGS ==========
+    // ==============================================
+    @ConfigSection(
+            name = "Mouse Settings",
+            description = "Settings for testing mouse movement, pathing, and recording.",
+            position = 80
+    )
+    String mouseSettings = "Mouse Settings";
+
+    @ConfigItem(
+            keyName = "mouseRecord",
+            name = "Start Recording",
+            description = "Starts or stops the mouse recording. When checked mouse recording " +
+                    "is happening. When un-checked mouse recording stops.",
+            section = mouseSettings,
+            position = 1
+    )
+    default boolean mouseRecord() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "mouseStrategy",
+            name = "Mouse Movement Strategy",
+            description = "Determines the strategy to use for moving the mouse.",
+            section = mouseSettings,
+            position = 2
+    )
+    default MouseMovementStrategy mouseStrategy() {
+        return MouseMovementStrategy.NO_MOVEMENT;
+    }
+
+    @ConfigItem(
+            keyName = "enableMouseTest",
+            name = "Start Mouse Test",
+            description = "Starts the mouse movement test, using the \"test\" recording data",
+            section = mouseSettings,
+            position = 3
+    )
+    default boolean enableMouseTest() {
+        return true;
+    }
+
 
     // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========

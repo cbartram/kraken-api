@@ -2,7 +2,10 @@ package com.kraken.api.query.gameobject;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
-import net.runelite.api.*;
+import net.runelite.api.GameObject;
+import net.runelite.api.ObjectComposition;
+import net.runelite.api.Perspective;
+import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 
@@ -107,6 +110,27 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
             String[] actions = obj.getObjectComposition().getActions();
             if (actions == null) return false;
             return Arrays.stream(actions).filter(Objects::nonNull).anyMatch(a -> a.equalsIgnoreCase(action));
+        });
+    }
+
+    /**
+     * Filters the game objects to include only those with at least one action containing the specified substring.
+     * <p>
+     * This method is case-insensitive and matches the specified substring against all non-null action strings
+     * associated with the game object.
+     * </p>
+     *
+     * @param actionSubstring The substring to search for within the actions of the game objects.
+     *                        Must not be {@code null}.
+     * @return A {@code GameObjectQuery} with the applied filter to include only objects with actions matching
+     *         the specified substring.
+     */
+    public GameObjectQuery withPartialAction(String actionSubstring) {
+        return filter(obj -> {
+            if (obj.getObjectComposition() == null) return false;
+            String[] actions = obj.getObjectComposition().getActions();
+            if (actions == null) return false;
+            return Arrays.stream(actions).filter(Objects::nonNull).anyMatch(a -> a.toLowerCase().contains(actionSubstring.toLowerCase()));
         });
     }
 

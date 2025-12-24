@@ -1,4 +1,4 @@
-package com.kraken.api.service.util;
+package com.kraken.api.service.map;
 
 import com.google.inject.Singleton;
 import net.runelite.api.coords.WorldPoint;
