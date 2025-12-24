@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 @Slf4j
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PathLibrary {
-    private static final String DATA_DIR = System.getProperty("user.home") + "/.runelite/kraken/mouse_data/";
+    public static final String DATA_DIR = System.getProperty("user.home") + "/.runelite/kraken/mouse_data/";
 
     /**
      * Loads and normalizes a set of mouse gestures from a specified library file,

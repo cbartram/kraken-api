@@ -1,21 +1,25 @@
 package com.kraken.api.input.mouse.strategy.bezier;
 
 import com.google.inject.Inject;
-import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
+import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import com.kraken.api.input.mouse.strategy.instant.InstantStrategy;
 import com.kraken.api.service.util.RandomService;
+import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 
 import java.awt.*;
 
-public class BezierStrategy implements MouseMovementStrategy {
+public class BezierStrategy implements MoveableMouse {
 
     @Inject
     private InstantStrategy instantStrategy;
 
     @Inject
     private Client client;
+
+    @Getter
+    private Point lastPoint;
 
     @Override
     public Canvas getCanvas() {
@@ -78,6 +82,7 @@ public class BezierStrategy implements MouseMovementStrategy {
 
         // Ensure we land exactly on the target at the end
         instantStrategy.move(target);
+        lastPoint = target;
     }
 
     /**

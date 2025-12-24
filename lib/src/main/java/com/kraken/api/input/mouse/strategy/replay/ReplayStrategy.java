@@ -2,24 +2,28 @@ package com.kraken.api.input.mouse.strategy.replay;
 
 import com.google.inject.Inject;
 import com.kraken.api.input.mouse.model.NormalizedPath;
-import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
+import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import com.kraken.api.input.mouse.strategy.bezier.BezierStrategy;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 
 import java.awt.*;
-import java.util.List;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
 @Slf4j
-public class ReplayStrategy implements MouseMovementStrategy {
+public class ReplayStrategy implements MoveableMouse {
 
     @Inject
     private Client client;
 
     @Inject
     private BezierStrategy bezierStrategy;
+
+    @Getter
+    private Point lastPoint = new Point(0, 0);
 
     private String libraryName;
     private List<NormalizedPath> library;
@@ -56,6 +60,7 @@ public class ReplayStrategy implements MouseMovementStrategy {
         } else {
             log.warn("No similar mouse gesture found for library '{}' distance {}, falling back to bezier movement", libraryName, distance);
             bezierStrategy.move(target);
+            lastPoint = target;
         }
     }
 
@@ -97,6 +102,11 @@ public class ReplayStrategy implements MouseMovementStrategy {
      *             </ul>
      */
     private void executePath(List<MotionFactory.TimedPoint> path) {
+        MouseEvent event = new MouseEvent(
+                getCanvas(), MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(),
+                0, 0, 0, 0, false
+        );
         for (MotionFactory.TimedPoint p : path) {
             // Busy-wait loop for precision (Thread.sleep is too inaccurate for <10ms)
             // or use a high-precision timer.
@@ -109,13 +119,15 @@ public class ReplayStrategy implements MouseMovementStrategy {
                 } catch (InterruptedException e) { return; }
             }
 
-            MouseEvent event = new MouseEvent(
+            event = new MouseEvent(
                     getCanvas(), MouseEvent.MOUSE_MOVED,
                     System.currentTimeMillis(),
                     0, p.x, p.y, 0, false
             );
             getCanvas().dispatchEvent(event);
         }
+
+        lastPoint = new Point(event.getX(), event.getY());
     }
 
 

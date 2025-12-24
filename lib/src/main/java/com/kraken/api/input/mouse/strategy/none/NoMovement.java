@@ -1,16 +1,20 @@
 package com.kraken.api.input.mouse.strategy.none;
 
 import com.google.inject.Inject;
-import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
+import com.kraken.api.input.mouse.strategy.MoveableMouse;
+import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 
 import java.awt.*;
 
-public class NoMovementStrategy implements MouseMovementStrategy {
+public class NoMovement implements MoveableMouse {
 
     @Inject
     private Client client;
+
+    @Getter
+    private final Point lastPoint = new Point(-1, -1);
 
     @Override
     public Canvas getCanvas() {
