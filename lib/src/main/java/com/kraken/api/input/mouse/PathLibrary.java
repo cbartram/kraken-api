@@ -1,13 +1,11 @@
 package com.kraken.api.input.mouse;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.model.MouseGesture;
 import com.kraken.api.input.mouse.model.NormalizedPath;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,16 +54,29 @@ public class PathLibrary {
     }
 
     private void loadFile(Path filePath) {
-        try (Reader reader = Files.newBufferedReader(filePath)) {
-            // Parse the list of raw gestures
-            List<MouseGesture> rawGestures = gson.fromJson(reader, new TypeToken<List<MouseGesture>>(){}.getType());
-
+        // Use BufferedReader explicitly to access readLine()
+        try (java.io.BufferedReader reader = Files.newBufferedReader(filePath)) {
+            String line;
             int count = 0;
-            for (MouseGesture raw : rawGestures) {
-                NormalizedPath norm = normalizer.normalize(raw);
-                if (norm != null) {
-                    library.computeIfAbsent(norm.getLabel(), k -> new ArrayList<>()).add(norm);
-                    count++;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+
+                try {
+                    // Parse the single line as a single MouseGesture object
+                    MouseGesture raw = gson.fromJson(line, MouseGesture.class);
+
+                    // Proceed with your normalization logic
+                    NormalizedPath norm = normalizer.normalize(raw);
+                    if (norm != null) {
+                        library.computeIfAbsent(norm.getLabel(), k -> new ArrayList<>()).add(norm);
+                        count++;
+                    }
+                } catch (Exception parseEx) {
+                    // Optional: Log specific bad lines without crashing the whole load
+                    log.warn("Skipping malformed line in {}: {}", filePath.getFileName(), parseEx.getMessage());
                 }
             }
             log.info("Loaded {} paths from {}", count, filePath.getFileName());

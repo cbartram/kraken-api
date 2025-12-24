@@ -48,7 +48,13 @@ public class VirtualMouse {
             return this;
         }
 
-        Point start = new Point(getCanvasMousePosition().x, getCanvasMousePosition().y);
+        Point start;
+        if(getCanvasMousePosition() == null) {
+            start = lastMove;
+        } else {
+            start = new Point(getCanvasMousePosition().x, getCanvasMousePosition().y);
+        }
+
         double distance = start.distanceTo(target);
 
         // 1. Try to get a human path
