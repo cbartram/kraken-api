@@ -1,13 +1,14 @@
-package com.kraken.api.input.mouse;
+package com.kraken.api.input.mouse.strategy.replay;
 
 import com.kraken.api.input.mouse.model.MouseGesture;
 import com.kraken.api.input.mouse.model.NormalizedPath;
 import com.kraken.api.input.mouse.model.RecordedPoint;
 import com.kraken.api.input.mouse.model.UnitPoint;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -16,17 +17,6 @@ import java.util.stream.Collectors;
  * of different gestures by transforming them into a generic dataset that operates
  * in a normalized coordinate and time space.
  * </p>
- *
- * <p>
- * Specifically, this class performs the following transformation steps:
- * </p>
- *
- * <ul>
- *     <li><b>Translation:</b> Shifts the entire path so its origin starts at (0,0).</li>
- *     <li><b>Rotation:</b> Rotates the path such that it aligns with the X-axis.</li>
- *     <li><b>Scaling:</b> Scales the path to fit within a unit size of 1.0 while preserving proportions.</li>
- *     <li><b>Time Normalization:</b> Adjusts the time dimension to a 0.0 to 1.0 range.</li>
- * </ul>
  *
  * <p>
  * This allows the resulting path to be device-independent and facilitates further analysis,
@@ -38,37 +28,31 @@ import java.util.stream.Collectors;
  * relevant metadata and the transformed points representing the gesture.
  * </p>
  */
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PathNormalizer {
 
     /**
-     * Normalizes a list of {@literal @<MouseGesture>} instances by converting each gesture
-     * into a {@literal @<NormalizedPath>} using the {@code normalize} method.
-     * This allows mouse gesture data to be transformed into a standard, reusable format.
+     * Normalizes a {@literal @}link MouseGesture into a unit-scaled {@literal @}link NormalizedPath representation.
+     * <p>
+     * This method processes the raw motion data of a gesture to create a scaled, translated, and rotated form
+     * that aligns with the X-axis and maps all data points into a 0.0 to 1.0 range for spatial and temporal dimensions.
+     * The normalization ensures geometric and temporal consistency for gesture comparison.
+     * </p>
      *
-     * <p>The normalization process involves scaling and rotating the raw movement paths
-     * so that they fit into a unit-length path starting at (0, 0) and ending at (1, 0).
-     * This ensures consistency across gestures while retaining key shape and timing characteristics.
+     * @param raw The {@literal @}link MouseGesture instance containing raw input data to be normalized.
+     *            Must include all point data, start and end coordinates, duration, and other metadata.
+     *            If the input gesture has zero or near-zero distance, {@code null} is returned.
      *
-     * @param gestures A list of {@literal @<MouseGesture>} objects representing raw
-     *                 gesture inputs recorded during user interactions.
-     *                 Each gesture contains positional, timing, and metadata on the movement.
-     *
-     * @return A list of {@literal @<NormalizedPath>} objects, where each path corresponds
-     *         to a normalized representation of an input gesture. The result retains
-     *         the key characteristics of the input gestures but is guaranteed to conform
-     *         to a standardized format.
+     * @return A normalized {@literal @}link NormalizedPath object containing:
+     *         <ul>
+     *         <li>The gesture's original label.</li>
+     *         <li>The original distance and duration.</li>
+     *         <li>A list of {@literal @}link UnitPoint instances, each representing a normalized spatial
+     *             and temporal data point.</li>
+     *         </ul>
+     *         If the gesture distance is near zero, {@code null} is returned.
      */
-    public List<NormalizedPath> normalizeAll(List<MouseGesture> gestures) {
-        return gestures.stream().map(this::normalize).collect(Collectors.toList());
-    }
-
-    /**
-     * Converts a raw, specific mouse gesture into a generic, reusable unit path.
-     *
-     * @param raw The raw recording from the MouseRecorder.
-     * @return A normalized path starting at (0,0) and ending at (1,0).
-     */
-    public NormalizedPath normalize(MouseGesture raw) {
+    public static NormalizedPath normalize(MouseGesture raw) {
         // 1. Calculate the geometry of the raw movement
         double dx = raw.getEndX() - raw.getStartX();
         double dy = raw.getEndY() - raw.getStartY();
@@ -77,33 +61,33 @@ public class PathNormalizer {
 
         // Prevent division by zero for instant/zero-distance clicks
         if (distance < 1.0) {
-            return null; // Or handle as a special "zero move" case
+            return null;
         }
 
-        // 2. Calculate the angle required to rotate this path to the X-axis
+        // Calculate the angle required to rotate this path to the X-axis
         // We want to rotate 'down' by the angle of the path.
         double angleToXAxis = -Math.atan2(dy, dx);
 
         List<UnitPoint> normalizedPoints = new ArrayList<>();
 
-        // 3. Transform every point
+        // Transform every point along the path
         for (RecordedPoint p : raw.getPoints()) {
 
-            // A. TRANSLATE: Shift point so start is at (0,0)
+            // Translate the point by shift point so start is at (0,0)
             double tx = p.getX() - raw.getStartX();
             double ty = p.getY() - raw.getStartY();
 
-            // B. ROTATE: Apply 2D rotation matrix
+            // Rotate the point by applying a 2D rotation matrix
             // x' = x cos(θ) - y sin(θ)
             // y' = x sin(θ) + y cos(θ)
             double rx = tx * Math.cos(angleToXAxis) - ty * Math.sin(angleToXAxis);
             double ry = tx * Math.sin(angleToXAxis) + ty * Math.cos(angleToXAxis);
 
-            // C. SCALE: Divide by total distance to fit in 0.0 - 1.0 range
+            // Scale the point by dividing by the total distance to fit in [0.0, 1.0) range
             double sx = rx / distance;
             double sy = ry / distance;
 
-            // D. NORMALIZE TIME: 0.0 to 1.0
+            // Finally, normalize the time to [0.0, 1.0)
             double st = (double) p.getTimeOffset() / raw.getDurationMs();
 
             normalizedPoints.add(new UnitPoint(sx, sy, st));

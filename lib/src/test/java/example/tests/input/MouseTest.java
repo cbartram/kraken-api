@@ -28,14 +28,14 @@ public class MouseTest extends BaseApiTest {
         // Find a random game object, move mouse to it
         GameObjectEntity gameObject = ctx.gameObjects().within(7).random();
         log.info("Moving to random game object: {}", gameObject.getName());
-        mouse.move(uiService.getClickbox(gameObject.raw()));
+        mouse.move(gameObject.raw());
 
         Thread.sleep(RandomService.between(3000, 5000));
 
         // Find a random NPC, move mouse to it
         NpcEntity npc = ctx.npcs().within(10).random();
         log.info("Moving to random NPC: {}", npc.getName());
-        mouse.move(uiService.getClickbox(npc.raw()));
+        mouse.move(npc.raw());
 
         Thread.sleep(RandomService.between(3000, 5000));
 
@@ -44,7 +44,7 @@ public class MouseTest extends BaseApiTest {
         PlayerEntity player = ctx.players().nearest();
         if(player != null) {
             log.info("Moving to random player: {}", player.getName());
-            mouse.move(uiService.getClickbox(player.raw()));
+            mouse.move(player.raw());
         } else {
             log.info("No nearby players found.");
         }
@@ -55,7 +55,7 @@ public class MouseTest extends BaseApiTest {
         int x = ctx.players().local().raw().getWorldLocation().getX() + RandomService.between(1, 10);
         int y = ctx.players().local().raw().getWorldLocation().getY() + RandomService.between(1, 10);
         log.info("Moving to random world point: ({}, {})", x, y);
-        mouse.move(uiService.getClickbox(new WorldPoint(x, y, 0)));
+        mouse.move(new WorldPoint(x, y, 0));
 
         Thread.sleep(RandomService.between(3000, 5000));
         return true;
