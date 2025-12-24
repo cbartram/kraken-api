@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.map.WorldMapService;
@@ -88,6 +89,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private ExampleScript exampleScript;
 
+    @Inject
+    private MouseRecorder mouseRecorder;
+
     @Getter
     private WorldPoint targetTile;
 
@@ -159,6 +163,14 @@ public class ExamplePlugin extends Plugin {
             exampleScript.pause();
         } else {
             exampleScript.resume();
+        }
+
+        if(key.equals("mouseRecord") && config.mouseRecord()) {
+            log.info("Starting recording...");
+            mouseRecorder.start("test");
+        } else if(key.equals("mouseRecord") && !config.mouseRecord()) {
+            log.info("Stopping recording");
+            mouseRecorder.stop();
         }
 
         if (key.equals("simVisualizer")) {

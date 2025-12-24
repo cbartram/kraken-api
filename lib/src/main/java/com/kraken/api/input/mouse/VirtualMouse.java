@@ -1,4 +1,4 @@
-package com.kraken.api.input;
+package com.kraken.api.input.mouse;
 
 import com.google.inject.Singleton;
 import com.kraken.api.service.util.RandomService;

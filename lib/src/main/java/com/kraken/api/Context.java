@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
-import com.kraken.api.input.VirtualMouse;
+import com.kraken.api.input.mouse.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
 import com.kraken.api.query.container.bank.BankInventoryQuery;
 import com.kraken.api.query.container.bank.BankQuery;

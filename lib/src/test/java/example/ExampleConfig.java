@@ -221,6 +221,29 @@ public interface ExampleConfig extends Config {
     }
 
     // ==============================================
+    // ========== MOUSE SETTINGS ==========
+    // ==============================================
+    @ConfigSection(
+            name = "Mouse Settings",
+            description = "Settings for testing mouse movement, pathing, and recording.",
+            position = 80
+    )
+    String mouseSettings = "Mouse Settings";
+
+    @ConfigItem(
+            keyName = "mouseRecord",
+            name = "Start Recording",
+            description = "Starts or stops the mouse recording. When checked mouse recording " +
+                    "is happening. When un-checked mouse recording stops.",
+            section = mouseSettings,
+            position = 1
+    )
+    default boolean mouseRecord() {
+        return true;
+    }
+
+
+    // ==============================================
     // ========== GENERAL OVERLAY SETTINGS ==========
     // ==============================================
     @ConfigSection(
