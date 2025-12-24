@@ -111,7 +111,6 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      *   <li><b>groupId:</b> Represents the interface group to which the widget belongs.</li>
      *   <li><b>childId:</b> Identifies the specific widget within the group.</li>
      * </ul>
-     * </p>
      *
      * <p>The widget is created and returned as a {@link WidgetEntity} instance, allowing for further
      * interaction or queries.</p>

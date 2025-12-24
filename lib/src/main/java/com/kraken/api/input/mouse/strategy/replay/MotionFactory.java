@@ -25,7 +25,7 @@ public class MotionFactory {
      *   <li>Translation: Translates the points to the starting position.</li>
      *   <li>Timing: Maps the normalized time of each point to the provided duration.</li>
      * </ul>
-     * </p>
+     * 
      *
      * @param template The {@literal @link NormalizedPath} containing the normalized unit points to be transformed.
      *                 It defines the shape and time distribution of the motion path.

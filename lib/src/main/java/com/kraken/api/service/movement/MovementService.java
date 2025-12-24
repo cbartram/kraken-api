@@ -100,6 +100,8 @@ public class MovementService {
     /**
      * Converts a dense path (every tile) into a strided path.
      * Logic: Start with a stride of 5, increase by 1 every step, cap at 12.
+     * @param densePath The dense path with which to apply variable strides.
+     * @return A list of {@literal WorldPoint} representing the strided path.
      */
     public List<WorldPoint> applyVariableStride(List<WorldPoint> densePath) {
         if (densePath.size() <= 5) {
