@@ -319,6 +319,7 @@ The documentation below describes the most likely packages developers will use w
   - `core.packet` - The package includes low and high level API's to send network packets to game servers for automation actions.
     - `core.packet.entity` - Generally most packet layer use cases will use the `core.packet.entity` API for interaction with Game Objects, NPC's, interfaces, and players.
 - `service` - The package contains high level API's for directly interacting with static/global game elements such as (banking, prayer, spells, etc...) and use the `core.packet` package to form the backbone for the interactions
+- `input` - Contains classes to help process and use input devices like mouses and keyboards.
 - `query` - Contains the query API classes for finding and interacting with dynamic game elements like: inventory, npcs, players, game objects and more.
 - `overlay` - Contains simple and common overlays which can be directly used in RuneLite plugins e.g. Mouse position
 - `sim` - Includes classes for simulating game ticks, NPC pathing, movement, line of sight, and players. This is useful for advanced
@@ -328,6 +329,11 @@ The documentation below describes the most likely packages developers will use w
 
 For more information on writing scripts using the Kraken API 
 check out the detailed [scripting guide](docs/SCRIPTING.md).
+
+### Mouse Movement
+
+For more information on mouse movement in the API check out the
+detailed [mouse movement guide](docs/MOUSE.md)
 
 ### Game Updates
 
