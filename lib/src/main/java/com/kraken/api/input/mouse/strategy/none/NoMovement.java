@@ -15,9 +15,6 @@ public class NoMovement implements MoveableMouse {
     @Inject
     private Client client;
 
-    @Getter
-    private final Point lastPoint = new Point(-1, -1);
-
     @Override
     public Canvas getCanvas() {
         return client.getCanvas();
@@ -27,5 +24,5 @@ public class NoMovement implements MoveableMouse {
     // if so desired. They can use this strategy to skip mouse movement all-together while maintaing the ability
     // for users to switch strategies on the fly in their plugins.
     @Override
-    public void move(Point target) {}
+    public void move(Point start, Point target) {}
 }

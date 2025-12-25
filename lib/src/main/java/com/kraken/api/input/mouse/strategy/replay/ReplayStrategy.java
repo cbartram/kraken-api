@@ -24,9 +24,6 @@ public class ReplayStrategy implements MoveableMouse {
     @Inject
     private BezierStrategy bezierStrategy;
 
-    @Getter
-    private Point lastPoint = new Point(0, 0);
-
     private String libraryName;
     private List<NormalizedPath> library;
 
@@ -36,18 +33,10 @@ public class ReplayStrategy implements MoveableMouse {
     }
 
     @Override
-    public void move(Point target) {
-    if(libraryName == null || library == null || library.isEmpty()) {
+    public void move(Point start, Point target) {
+        if(libraryName == null || library == null || library.isEmpty()) {
             log.error("Cannot move mouse, no library was loaded or loaded library contained no usable data. Use loadLibrary() to load a specific library.");
             return;
-        }
-
-        // TODO Always starts with (0,0)
-        Point start;
-        if(getCanvas().getMousePosition() == null) {
-            start = new Point(0, 0);
-        } else {
-            start = new Point(getCanvas().getMousePosition().x, getCanvas().getMousePosition().y);
         }
 
         double distance = start.distanceTo(target);
@@ -61,8 +50,7 @@ public class ReplayStrategy implements MoveableMouse {
             executePath(path);
         } else {
             log.warn("No similar mouse gesture found for library '{}' distance {}, falling back to bezier movement", libraryName, distance);
-            bezierStrategy.move(target);
-            lastPoint = target;
+            bezierStrategy.move(start, target);
         }
     }
 
@@ -128,8 +116,6 @@ public class ReplayStrategy implements MoveableMouse {
             );
             getCanvas().dispatchEvent(event);
         }
-
-        lastPoint = new Point(event.getX(), event.getY());
     }
 
 

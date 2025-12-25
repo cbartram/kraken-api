@@ -5,17 +5,19 @@ import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
 import com.kraken.api.input.mouse.strategy.linear.LinearStrategy;
 import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.service.ui.UIService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Actor;
+import net.runelite.api.*;
 import net.runelite.api.Point;
-import net.runelite.api.Tile;
-import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.input.MouseListener;
+import net.runelite.client.input.MouseManager;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,11 +31,38 @@ import static com.kraken.api.input.mouse.strategy.replay.PathLibrary.DATA_DIR;
 
 @Slf4j
 @Singleton
-public class VirtualMouse {
+public class VirtualMouse implements MouseListener {
+
+    private final UIService uiService;
+
+    @Getter
+    private Point lastPoint;
+
+    private static MouseMovementStrategy defaultMouseMovementStrategy = MouseMovementStrategy.BEZIER;
+
 
     @Inject
-    private UIService uiService;
-    private static MouseMovementStrategy defaultMouseMovementStrategy = MouseMovementStrategy.BEZIER;
+    public VirtualMouse(UIService uiService, MouseManager mouseManager, Client client) {
+        this.uiService = uiService;
+        mouseManager.registerMouseListener(this);
+        if(client.getCanvas().getMousePosition() == null) {
+            this.lastPoint = new Point(0, 0);
+        } else {
+            this.lastPoint = new Point((int) client.getCanvas().getMousePosition().getX(), (int) client.getCanvas().getMousePosition().getY());
+        }
+    }
+
+    @Override
+    public MouseEvent mouseMoved(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
+
+    @Override
+    public MouseEvent mouseDragged(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
 
     /**
      * Loads a replay library for the REPLAY mouse movement strategy. Any other strategy will be
@@ -133,7 +162,12 @@ public class VirtualMouse {
      * @return The {@link VirtualMouse} instance for method chaining.
      */
     public VirtualMouse move(Point target, MouseMovementStrategy strategy) {
-        strategy.getStrategy().move(target);
+        if(lastPoint == null) {
+            lastPoint = new Point(0, 0);
+        }
+        log.info("Last point is: ({}, {})", lastPoint.getX(), lastPoint.getY());
+        strategy.getStrategy().move(lastPoint, target);
+        this.lastPoint = target;
         return this;
     }
 
@@ -346,4 +380,10 @@ public class VirtualMouse {
         int y = (int) polygon.getBounds().getY() + (int) (polygon.getBounds().getHeight() * (new Random().nextGaussian() * 0.15 + 0.5));
         return move(new Point(x, y));
     }
+
+    @Override public MouseEvent mouseReleased(MouseEvent e) { return e; }
+    @Override public MouseEvent mouseClicked(MouseEvent e) { return e; }
+    @Override public MouseEvent mouseEntered(MouseEvent e) { return e; }
+    @Override public MouseEvent mouseExited(MouseEvent e) { return e; }
+    @Override public MouseEvent mousePressed(MouseEvent e) { return e; }
 }
