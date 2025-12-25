@@ -5,6 +5,7 @@ import com.kraken.api.Context;
 import com.kraken.api.core.packet.PacketClient;
 import com.kraken.api.core.packet.model.PacketDefFactory;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.widgets.Widget;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
  * It uses a {@link PacketDefFactory} to determine the correct packet type and a
  * {@link PacketClient} to send the raw data.
  */
+@Slf4j
 public class NPCPackets {
 
     @Inject
@@ -66,7 +68,7 @@ public class NPCPackets {
             return;
         }
 
-        NPCComposition comp = ctxProvider.get().runOnClientThreadOptional(npc::getComposition).orElse(null);
+        NPCComposition comp = ctxProvider.get().runOnClientThread(npc::getComposition);
         if (comp == null || comp.getActions() == null) {
             return;
         }
@@ -89,6 +91,7 @@ public class NPCPackets {
         if (num < 1 || num > 10) {
             return;
         }
+
         queueNPCAction(num, npc.getIndex(), false);
     }
 

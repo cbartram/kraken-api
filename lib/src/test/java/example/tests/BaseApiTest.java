@@ -62,6 +62,26 @@ public abstract class BaseApiTest {
     }
 
     /**
+     * Verifies that a given condition is {@literal true}. If the condition evaluates to {@literal false}, logs
+     * an error with the specified message and returns {@literal false}.
+     *
+     * <p>This method serves as a helper for performing assertion-like checks in test scenarios.</p>
+     *
+     * @param condition the boolean condition to evaluate. If {@literal true}, the method returns {@literal true}.
+     *                  If {@literal false}, an error message is logged.
+     * @param message the message to be logged when the condition evaluates to {@literal false}.
+     * @return {@literal true} if the condition is met, {@literal false} otherwise.
+     */
+    protected boolean assertTrue(boolean condition, String message) {
+        if(condition) {
+            return true;
+        }
+
+        log.error("Test assertion failed: {}", message);
+        return false;
+    }
+
+    /**
      * Helper method to check if a value is not null
      * @param value the value to check
      * @param message the message to log if value is null

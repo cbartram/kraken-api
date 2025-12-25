@@ -221,6 +221,18 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableDialogueService",
+            name = "Start Dialogue Service Tests",
+            description = "Enable dialogue service tests",
+            section = serviceTests,
+            position = 7
+    )
+    default boolean enableDialogueService() {
+        return true;
+    }
+
+
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================

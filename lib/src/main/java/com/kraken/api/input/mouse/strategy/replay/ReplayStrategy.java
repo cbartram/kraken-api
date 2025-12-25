@@ -5,7 +5,6 @@ import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.model.NormalizedPath;
 import com.kraken.api.input.mouse.strategy.MoveableMouse;
 import com.kraken.api.input.mouse.strategy.bezier.BezierStrategy;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;

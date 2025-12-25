@@ -38,9 +38,18 @@ public class NpcEntity extends AbstractEntity<NPC> {
     }
 
     /**
-     * Returns the head icon for an NPC if it exists. A head icon would be a prayer the NPC is prayer:
-     * i.e. Hunlleff's prayers or Nex's deflect melee.
-     * @return HeadIcon for the NPC
+     * Retrieves the head icon associated with the NPC, if it exists.
+     * <p>
+     * A head icon represents an overhead visual indicator, such as combat prayers or effects
+     * like Hunllef's prayers or Nex's deflect melee. This is determined from the NPC's overhead sprite IDs.
+     * </p>
+     *
+     * <ul>
+     *   <li>If no head icons are defined for the NPC, this will return {@code null}.</li>
+     *   <li>If a valid head icon is found, it will be returned as a {@code HeadIcon} enum.</li>
+     * </ul>
+     *
+     * @return The {@code HeadIcon} for the NPC, or {@code null} if no valid head icon exists.
      */
     @SneakyThrows
     public HeadIcon getHeadIcon() {
@@ -57,10 +66,20 @@ public class NpcEntity extends AbstractEntity<NPC> {
     }
 
     /**
-     * Gets the distance from this NPC to the player.
-     * Uses client thread for safe access to player location.
+     * Calculates the distance between the NPC and the local player within the game world.
+     * <p>
+     * The method retrieves the NPC's local location and the local player's location
+     * from the game client, then computes the distance between the two positions.
+     * If the distance cannot be calculated (e.g., due to a timeout on the client thread),
+     * {@code Integer.MAX_VALUE} is returned as a fallback.
+     * </p>
      *
-     * @return Distance in tiles
+     * <ul>
+     *   <li>The computation is performed on the game's client thread to ensure thread safety unless the result is unavailable.</li>
+     * </ul>
+     *
+     * @return The distance between the NPC's location and the local player's location in the game world,
+     *         or {@code Integer.MAX_VALUE} if the distance cannot be determined.
      */
     public int getDistanceFromPlayer() {
         NPC raw = raw();
