@@ -34,6 +34,7 @@ import static com.kraken.api.input.mouse.strategy.replay.PathLibrary.DATA_DIR;
 public class VirtualMouse implements MouseListener {
 
     private final UIService uiService;
+    private final Client client;
 
     @Getter
     private Point lastPoint;
@@ -44,11 +45,16 @@ public class VirtualMouse implements MouseListener {
     @Inject
     public VirtualMouse(UIService uiService, MouseManager mouseManager, Client client) {
         this.uiService = uiService;
+        this.client = client;
         mouseManager.registerMouseListener(this);
-        if(client.getCanvas().getMousePosition() == null) {
+        updatePosition();
+    }
+
+    private void updatePosition() {
+        if (client.getMouseCanvasPosition() != null) {
+            this.lastPoint = client.getMouseCanvasPosition();
+        } else if (this.lastPoint == null) {
             this.lastPoint = new Point(0, 0);
-        } else {
-            this.lastPoint = new Point((int) client.getCanvas().getMousePosition().getX(), (int) client.getCanvas().getMousePosition().getY());
         }
     }
 
@@ -60,6 +66,36 @@ public class VirtualMouse implements MouseListener {
 
     @Override
     public MouseEvent mouseDragged(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
+
+    @Override
+    public MouseEvent mouseEntered(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
+
+    @Override
+    public MouseEvent mouseExited(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
+
+    @Override
+    public MouseEvent mousePressed(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
+
+    @Override
+    public MouseEvent mouseReleased(MouseEvent e) {
+        lastPoint = new Point(e.getX(), e.getY());
+        return e;
+    }
+
+    @Override
+    public MouseEvent mouseClicked(MouseEvent e) {
         lastPoint = new Point(e.getX(), e.getY());
         return e;
     }
@@ -126,6 +162,36 @@ public class VirtualMouse implements MouseListener {
         return Collections.emptyList();
     }
 
+     /**
+     * Moves the mouse to the specified target position using the provided movement strategy.
+     *
+     * <p>This method uses the given {@code MouseMovementStrategy} to dictate how the mouse moves
+     * to the specified {@code Point} target. The movement behavior varies depending on the selected
+     * strategy (e.g., linear, bezier, instant, etc.).</p>
+     *
+     * <ul>
+     *   <li>If the movement strategy is not properly initialized, unexpected behavior may occur.</li>
+     *   <li>The mouse's final position will be the given {@code Point} after the strategy completes.</li>
+     * </ul>
+     *
+     * @param target   The target position represented as a {@link Point} to which the mouse will be moved.
+     * @param strategy The {@link MouseMovementStrategy} defining how the mouse moves to the target point.
+     * @return The {@link VirtualMouse} instance for method chaining.
+     */
+    public VirtualMouse move(Point target, MouseMovementStrategy strategy) {
+        // Only update position if we haven't tracked any movement yet (e.g. startup)
+        // Otherwise, we rely on the internal tracking which allows for chained virtual movements
+        // independent of the physical mouse.
+        if (lastPoint.getX() == 0 && lastPoint.getY() == 0) {
+            updatePosition();
+        }
+
+        log.info("Last point is: ({}, {})", lastPoint.getX(), lastPoint.getY());
+        strategy.getStrategy().move(lastPoint, target);
+        this.lastPoint = target;
+        return this;
+    }
+
     /**
      * Moves the mouse to the specified target position using the default mouse movement strategy.
      *
@@ -143,32 +209,6 @@ public class VirtualMouse implements MouseListener {
      */
     public VirtualMouse move(Point target) {
         return move(target, defaultMouseMovementStrategy);
-    }
-
-    /**
-     * Moves the mouse to the specified target position using the provided movement strategy.
-     *
-     * <p>This method uses the given {@code MouseMovementStrategy} to dictate how the mouse moves
-     * to the specified {@code Point} target. The movement behavior varies depending on the selected
-     * strategy (e.g., linear, bezier, instant, etc.).</p>
-     *
-     * <ul>
-     *   <li>If the movement strategy is not properly initialized, unexpected behavior may occur.</li>
-     *   <li>The mouse's final position will be the given {@code Point} after the strategy completes.</li>
-     * </ul>
-     *
-     * @param target   The target position represented as a {@link Point} to which the mouse will be moved.
-     * @param strategy The {@link MouseMovementStrategy} defining how the mouse moves to the target point.
-     * @return The {@link VirtualMouse} instance for method chaining.
-     */
-    public VirtualMouse move(Point target, MouseMovementStrategy strategy) {
-        if(lastPoint == null) {
-            lastPoint = new Point(0, 0);
-        }
-        log.info("Last point is: ({}, {})", lastPoint.getX(), lastPoint.getY());
-        strategy.getStrategy().move(lastPoint, target);
-        this.lastPoint = target;
-        return this;
     }
 
     /**
@@ -380,10 +420,4 @@ public class VirtualMouse implements MouseListener {
         int y = (int) polygon.getBounds().getY() + (int) (polygon.getBounds().getHeight() * (new Random().nextGaussian() * 0.15 + 0.5));
         return move(new Point(x, y));
     }
-
-    @Override public MouseEvent mouseReleased(MouseEvent e) { return e; }
-    @Override public MouseEvent mouseClicked(MouseEvent e) { return e; }
-    @Override public MouseEvent mouseEntered(MouseEvent e) { return e; }
-    @Override public MouseEvent mouseExited(MouseEvent e) { return e; }
-    @Override public MouseEvent mousePressed(MouseEvent e) { return e; }
 }
