@@ -2,8 +2,8 @@ package com.kraken.api.query.player;
 
 import com.kraken.api.Context;
 import com.kraken.api.query.widget.WidgetEntity;
-import com.kraken.api.service.ui.InterfaceTab;
-import com.kraken.api.service.ui.TabService;
+import com.kraken.api.service.ui.tab.InterfaceTab;
+import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;

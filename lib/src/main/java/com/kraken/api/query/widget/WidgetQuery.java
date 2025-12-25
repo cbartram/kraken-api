@@ -3,6 +3,7 @@ package com.kraken.api.query.widget;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.util.Text;
 
 import java.util.ArrayList;
@@ -100,6 +101,20 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      */
     public WidgetEntity get(int packedId) {
         return withId(packedId).first();
+    }
+
+
+    /**
+     * Retrieves the first {@link WidgetEntity} that matches the specified {@link WidgetInfo}.
+     *
+     * <p>This method filters widgets based on the packed ID retrieved from the {@link WidgetInfo} instance.</p>
+     *
+     * @param widgetInfo The {@link WidgetInfo} instance containing the packed ID to search for.
+     *                   The packed ID incorporates both the group and child ID.
+     * @return The corresponding {@link WidgetEntity}, or {@code null} if no match is found.
+     */
+    public WidgetEntity get(WidgetInfo widgetInfo) {
+        return withId(widgetInfo.getId()).first();
     }
 
 

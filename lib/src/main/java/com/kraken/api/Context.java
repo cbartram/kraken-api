@@ -23,7 +23,7 @@ import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.tile.TileService;
-import com.kraken.api.service.ui.TabService;
+import com.kraken.api.service.ui.tab.TabService;
 import com.kraken.api.service.ui.UIService;
 import com.kraken.api.service.map.WorldMapService;
 import lombok.Getter;
