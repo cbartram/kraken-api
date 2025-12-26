@@ -46,58 +46,56 @@ public class DialogueService {
      */
     public boolean isDialoguePresent() {
         return ctx.runOnClientThread(() -> {
+
+            // When the player talks
             if (ctx.widgets().get(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE) != null) {
-                return ctx.widgets().get(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE).isVisible();
+                return true;
             }
             if (ctx.widgets().get(11, 0) != null) {
-                log.info("2");
                 return true;
             }
+
+            // When an NPC talks
             if (ctx.widgets().get(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE) != null) {
-                log.info("3");
                 return true;
             }
+
+            // When a sprite is shown
             if (ctx.widgets().get(WidgetInfo.DIALOG_SPRITE) != null) {
-                log.info("4");
                 return true;
             }
+
             if (ctx.widgets().get(633, 0) != null) {
-                log.info("5");
                 return true;
             }
 
             if (ctx.widgets().get(229, DialogNotification.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(229, DialogNotification.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    log.info("6");
                     return true;
                 }
             }
             if (ctx.widgets().get(229, MinigameDialog.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(229, MinigameDialog.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    log.info("7");
                     return true;
                 }
             }
             if(ctx.widgets().get(InterfaceID.Messagebox.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(InterfaceID.Messagebox.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    log.info("8");
                     return true;
                 }
             }
             if(ctx.widgets().get(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    log.info("9");
                     return true;
                 }
             }
             if(ctx.widgets().get(InterfaceID.Chatbox.MES_TEXT2) != null) {
                 Widget w = ctx.widgets().get(InterfaceID.Chatbox.MES_TEXT2).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    log.info("10");
                     return true;
                 }
             }
@@ -386,6 +384,8 @@ public class DialogueService {
     public boolean continueDialogue() {
         Client client = ctx.getClient();
         return ctx.runOnClientThread(() -> {
+
+            // When an NPC is speaking
             if (ctx.widgets().get(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE) != null) {
                 widgetPackets.queueResumePause(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE);
                 return true;
@@ -395,16 +395,21 @@ public class DialogueService {
                 widgetPackets.queueResumePause(packed, -1);
                 return true;
             }
+
+            // When the player speaks
             if (ctx.widgets().get(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE) != null) {
                 int id = getWidgetId(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE);
                 widgetPackets.queueResumePause(id, -1);
                 return true;
             }
+
+            // When a sprite is shown
             if (ctx.widgets().get(WidgetInfo.DIALOG_SPRITE) != null) {
                 int id = getWidgetId(11, 0);
                 widgetPackets.queueResumePause(id, 0);
                 return true;
             }
+
             if (ctx.widgets().get(11, 0) != null) {
                 int id = getWidgetId(11, DialogSprite2.CONTINUE);
                 widgetPackets.queueResumePause(id, -1);
@@ -418,6 +423,7 @@ public class DialogueService {
                     return true;
                 }
             }
+
             if (ctx.widgets().get(229, DialogNotification.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(229, DialogNotification.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
@@ -426,6 +432,7 @@ public class DialogueService {
                     return true;
                 }
             }
+
             if (ctx.widgets().get(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
@@ -434,6 +441,7 @@ public class DialogueService {
                     return true;
                 }
             }
+
             if(ctx.widgets().get(InterfaceID.Messagebox.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(InterfaceID.Messagebox.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {

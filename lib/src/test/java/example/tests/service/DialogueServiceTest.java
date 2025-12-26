@@ -45,16 +45,24 @@ public class DialogueServiceTest extends BaseApiTest {
             return false;
         }
 
+        dialogueService.continueDialogue();
+        sleepService.sleep(3000, 5000);
+
+        if(dialogueService.getDialogueText().equals("Good day, how may I help you?")) {
+            log.error("Dialogue text is not correct after continuing the dialogue, got: {}", dialogueService.getDialogueText());
+            return false;
+        }
+
         // Selects "What is this place?"
         dialogueService.selectOption(4);
         sleepService.sleep(3000, 5000);
-
 
         // --- Step 1: Player asks "What is this place?" ---
         if (!dialogueService.getDialogueHeader().equals("Player")) {
             log.error("Expected Player dialogue header, got: {}", dialogueService.getDialogueHeader());
             return false;
         }
+
         if (!dialogueService.getDialogueText().equals("What is this place?")) {
             log.error("Expected 'What is this place?', got: {}", dialogueService.getDialogueText());
             return false;
@@ -66,7 +74,7 @@ public class DialogueServiceTest extends BaseApiTest {
         // --- Step 2: Banker explains "This is a branch..." ---
         // Note: checking 'contains' is safer for long strings to avoid issues with punctuation/spacing
         if (!dialogueService.getDialogueText().contains("This is a branch of the Bank of Gielinor")) {
-            log.error("Expected Bank of Gielinor text, got: {}", dialogueService.getDialogueText());
+            log.error("Expected \"Bank of Gielinor\" text, got: {}", dialogueService.getDialogueText());
             return false;
         }
 

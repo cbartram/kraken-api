@@ -42,9 +42,7 @@ public class Example extends Script {
 
     @Override
     public void loop() {
-        ctx.runOnClientThread(() -> {
-            System.out.println("I'm on the client thread!");
-        });
+        ctx.runOnClientThread(() -> System.out.println("I'm on the client thread!"));
     }
 }
 ```

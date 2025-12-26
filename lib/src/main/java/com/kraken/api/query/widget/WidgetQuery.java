@@ -136,7 +136,7 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      *         or {@code null} if no matching widget is found.
      */
     public WidgetEntity get(int groupId, int childId) {
-        return new WidgetEntity(ctx, ctx.getClient().getWidget(groupId, childId));
+        return withGroupChild(groupId, childId).first();
     }
 
     /**
@@ -150,7 +150,7 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      * {@code packedId = (groupId << 16) | childId}<br>
      * The group ID and child ID are derived as follows:</p>
      * <ul>
-     *   <li>{@code groupId = packedId >> 16}</li>
+     *   <li>{@code groupId = packedId >>> 16}</li>
      *   <li>{@code childId = packedId & 0xFFFF}</li>
      * </ul>
      *
@@ -164,8 +164,8 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
      */
     public WidgetQuery withGroupChild(int group, int child) {
         return filter(w -> {
-            int widgetGroup = w.raw().getId() >> 16;
             int widgetChild = w.raw().getId() & 0xFFFF;
+            int widgetGroup = w.raw().getId() >>> 16;
             return widgetGroup == group && widgetChild == child;
         });
     }

@@ -10,9 +10,10 @@ The simulation engine supports:
 - Basic LoS (advanced is still being implemented)
 - Placing NPCs at locations
 - Different NPC sizes
+- Obstacles (based on collision maps)
 
 ![sim-example-image](../images/sim.png)
 
-Currently, there isn't a full fledged API for performing a simulation in the context of the game however,
-this is being developed.
+Currently, there isn't a full-fledged API for performing a simulation in the context of the game; however, 
+this is actively being developed and is open to some contributions!
 
