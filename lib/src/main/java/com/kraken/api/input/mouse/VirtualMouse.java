@@ -17,6 +17,7 @@ import net.runelite.client.input.MouseManager;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -419,5 +420,31 @@ public class VirtualMouse implements MouseListener {
         int x = (int) polygon.getBounds().getX() + (int) (polygon.getBounds().getWidth() * (new Random().nextGaussian() * 0.15 + 0.5));
         int y = (int) polygon.getBounds().getY() + (int) (polygon.getBounds().getHeight() * (new Random().nextGaussian() * 0.15 + 0.5));
         return move(new Point(x, y));
+    }
+
+    /**
+     * Clicks the mouse at the current position.
+     *
+     * @return The VirtualMouse instance for chaining.
+     */
+    public VirtualMouse click() {
+        if (client.getCanvas() == null) {
+            return this;
+        }
+
+        Point point = lastPoint;
+        Canvas canvas = client.getCanvas();
+        long time = System.currentTimeMillis();
+
+        MouseEvent pressed = new MouseEvent(canvas, MouseEvent.MOUSE_PRESSED, time, InputEvent.BUTTON1_DOWN_MASK, point.getX(), point.getY(), 1, false, MouseEvent.BUTTON1);
+        canvas.dispatchEvent(pressed);
+
+        MouseEvent released = new MouseEvent(canvas, MouseEvent.MOUSE_RELEASED, time, 0, point.getX(), point.getY(), 1, false, MouseEvent.BUTTON1);
+        canvas.dispatchEvent(released);
+
+        MouseEvent clicked = new MouseEvent(canvas, MouseEvent.MOUSE_CLICKED, time, 0, point.getX(), point.getY(), 1, false, MouseEvent.BUTTON1);
+        canvas.dispatchEvent(clicked);
+
+        return this;
     }
 }
