@@ -45,8 +45,13 @@ public class DialogueServiceTest extends BaseApiTest {
             return false;
         }
 
-        dialogueService.continueDialogue();
-        sleepService.sleep(3000, 5000);
+        boolean success = dialogueService.continueDialogue();
+        if(!success) {
+            log.error("Dialogue failed to continue after talking to the banker.");
+            return false;
+        }
+
+        sleepService.sleep(1000, 3000);
 
         if(dialogueService.getDialogueText().equals("Good day, how may I help you?")) {
             log.error("Dialogue text is not correct after continuing the dialogue, got: {}", dialogueService.getDialogueText());
@@ -55,7 +60,7 @@ public class DialogueServiceTest extends BaseApiTest {
 
         // Selects "What is this place?"
         dialogueService.selectOption(4);
-        sleepService.sleep(3000, 5000);
+        sleepService.sleep(1000, 3000);
 
         // --- Step 1: Player asks "What is this place?" ---
         if (!dialogueService.getDialogueHeader().equals("Player")) {
