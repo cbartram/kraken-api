@@ -5,6 +5,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
+import com.kraken.api.service.bank.BankService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
@@ -92,5 +93,18 @@ public class BankQuery extends AbstractQuery<BankEntity, BankQuery, BankItemWidg
      */
     public BankQuery withId(int id) {
         return filter(item -> item.raw().getItemId() == id);
+    }
+
+
+    /**
+     * Determines whether the bank interface is currently open.
+     *
+     * <p>This method interacts with the {@code BankService} to check the status of the bank interface.
+     * The bank is considered open if the corresponding interface is visible and active in the client.
+     *
+     * @return {@code true} if the bank interface is open, {@code false} otherwise.
+     */
+    public boolean isOpen() {
+        return ctx.getService(BankService.class).isOpen();
     }
 }
