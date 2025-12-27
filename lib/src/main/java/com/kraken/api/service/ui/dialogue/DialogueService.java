@@ -370,7 +370,6 @@ public class DialogueService {
      *   <li>{@literal ctx.widgets().get(229, DialogNotification.TEXT)}</li>
      *   <li>{@literal ctx.widgets().get(InterfaceID.Messagebox.TEXT)}</li>
      * </ul>
-     * </p>
      *
      * <p>If no dialogue text is found across any of these widgets, an empty string will be returned.</p>
      *
