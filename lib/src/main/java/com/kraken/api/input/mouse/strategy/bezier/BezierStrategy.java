@@ -20,9 +20,6 @@ public class BezierStrategy implements MoveableMouse {
     @Inject
     private Client client;
 
-    @Getter
-    private Point lastPoint;
-
     @Override
     public Canvas getCanvas() {
         return client.getCanvas();
@@ -47,14 +44,7 @@ public class BezierStrategy implements MoveableMouse {
      *               This is represented as a {@code Point}.
      */
     @Override
-    public void move(Point target) {
-        Point start;
-        if(getCanvas().getMousePosition() == null) {
-            start = new Point(0, 0);
-        } else {
-            start = new Point(getCanvas().getMousePosition().x, getCanvas().getMousePosition().y);
-        }
-
+    public void move(Point start, Point target) {
         // Add randomness so the curve varies.
         Point p1 = generateControlPoint(start, target);
         Point p2 = generateControlPoint(start, target);
@@ -74,7 +64,7 @@ public class BezierStrategy implements MoveableMouse {
             double easedT = -(Math.cos(Math.PI * t) - 1) / 2;
 
             Point p = getBezierPoint(start, p1, p2, target, easedT);
-            instantStrategy.move(p);
+            instantStrategy.move(null, p); // Start point isn't used in instant move
             try {
                 Thread.sleep(RandomService.between(3, 8));
             } catch (InterruptedException e) {
@@ -83,8 +73,7 @@ public class BezierStrategy implements MoveableMouse {
         }
 
         // Ensure we land exactly on the target at the end
-        instantStrategy.move(target);
-        lastPoint = target;
+        instantStrategy.move(null, target);
     }
 
     /**

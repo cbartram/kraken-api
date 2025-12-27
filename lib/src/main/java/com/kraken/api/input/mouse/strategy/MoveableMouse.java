@@ -6,6 +6,5 @@ import java.awt.*;
 
 public interface MoveableMouse {
     Canvas getCanvas();
-    void move(Point target);
-    Point getLastPoint();
+    void move(Point start, Point target);
 }

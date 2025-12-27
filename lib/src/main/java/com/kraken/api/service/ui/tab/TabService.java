@@ -1,4 +1,4 @@
-package com.kraken.api.service.ui;
+package com.kraken.api.service.ui.tab;
 
 import com.kraken.api.Context;
 import com.kraken.api.service.util.SleepService;

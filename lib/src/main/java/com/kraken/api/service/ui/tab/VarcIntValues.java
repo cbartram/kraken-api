@@ -1,4 +1,4 @@
-package com.kraken.api.service.ui;
+package com.kraken.api.service.ui.tab;
 
 import lombok.Getter;
 

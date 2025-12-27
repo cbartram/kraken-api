@@ -323,7 +323,7 @@ public class PacketDefFactory {
         ));
     }
 
-    // Resume packets for dialogs
+    // Resume packets for dialogues with NPC's in the chatbox.
     public PacketDefinition getResumePausebutton() {
         return cache.computeIfAbsent("RESUME_PAUSEBUTTON", k -> new PacketDefinition(
                 ObfuscatedNames.RESUME_PAUSEBUTTON_OBFUSCATEDNAME,

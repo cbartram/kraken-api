@@ -196,7 +196,7 @@ public class WidgetPackets {
     /**
      * Queues the RESUME_PAUSEBUTTON packet, typically sent when the player
      * clicks a "Click here to continue" or "Close" button on a standard,
-     * non-interactable dialog, such as a completion message or a pause screen.
+     * non-interactable dialog, such as a dialogue with an NPC.
      *
      * @param widgetId The ID of the top-level widget.
      * @param childId The ID of the child component that was clicked.
@@ -248,8 +248,7 @@ public class WidgetPackets {
      * @param name The string name entered by the player.
      */
     public void queueResumeName(String name) {
-        int length = name.length() + 1;
-        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeNameDialog(), length, name);
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeNameDialog(), name.length() + 1, name);
     }
 
     /**
@@ -261,7 +260,6 @@ public class WidgetPackets {
      * @param string The string input entered by the player.
      */
     public void queueResumeString(String string) {
-        int length = string.length() + 1;
-        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeStringDialog(), length, string);
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumeStringDialog(), string.length() + 1, string);
     }
 }

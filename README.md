@@ -20,14 +20,16 @@
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
-Kraken API is designed to extend the RuneLite API with additional client interaction utilities for writing automation based plugins that are fully compatible with RuneLite.
-This API uses network packets to perform "click" interactions within the game client and is based on mappings defined by the [EthanVann API](https://github.com/Septharoth/EthanVannPlugins/tree/master).
+Kraken API is designed to extend the RuneLite API with additional client interaction utilities for writing automation-based plugins that are fully compatible with RuneLite.
+This API uses network packets to perform "click" interactions within the game client and is based on mappings defined by the [EthanVann API](https://github.com/Septharoth/EthanVannPlugins/tree/master). It's also worth shouting
+out the [Vitalite](https://github.com/Tonic-Box/VitaLite/) client and project as their open source expertise of the game client helped make some of the Kraken API possible!
+Specifically credit to Vitalite's Dialogue API and inspiration on Kraken's `TaskChain` and `ReplayStrategy` for mouse movement!
 
 ## API Usage
 
-The following RuneLite "plugin" is purely for an example of the API's capabilities and isn't a full fledged automation script.
+The following RuneLite "plugin" is purely for an example of the API's capabilities and isn't a full-fledged automation script.
 
 ```java
 @PluginDescriptor(
@@ -93,11 +95,11 @@ public class ExamplePlugin extends Plugin {
 }
 ```
 
-In order to use the API in an actual RuneLite plugin you should check out the [Kraken Example Plugin](https://github.com/cbartram/kraken-example-plugin)
+To use the API in an actual RuneLite plugin, you should check out the [Kraken Example Plugin](https://github.com/cbartram/kraken-example-plugin)
 which shows a best practice usage of the API within an actual plugin.
-To set up your development environment we recommend following [this guide on RuneLite's Wiki](https://github.com/runelite/runelite/wiki/Building-with-IntelliJ-IDEA).
+To set up your development environment, we recommend following [this guide on RuneLite's Wiki](https://github.com/runelite/runelite/wiki/Building-with-IntelliJ-IDEA).
 
-Once you have the example plugin cloned and setup within Intellij you can run the main class in `src/test/java/ExamplePluginTest.java` to run RuneLite with
+Once you have the example plugin cloned and setup within Intellij, you can run the main class in `src/test/java/ExamplePluginTest.java` to run RuneLite with
 the example plugin loaded in the plugin panel within RuneLite's sidebar. See [consuming the API](#consuming-the-api) section for more information on
 integrating the API into your plugins and build process.
 
@@ -218,7 +220,8 @@ with OSRS servers and facilitate automatic interactions with the game client.
 
 The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
 A good portion of the code has been re-written to follow best practices (using logs, factory design pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
-the functionality for client analysis and packet ops are sourced from the Packet Utils repository (credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic).
+the functionality for client analysis, packet wrappers, and packet ops are sourced from the Packet Utils repository.
+(Credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic.)
 
 ### API Design & Methodology
 
@@ -240,9 +243,9 @@ Dependency injection ensures that your script classes remain lightweight, testab
 The Service API paradigm is useful for static widgets or global game entities, for example:
 
 - Bank interface - There is only a single bank interface to open, close, and set withdrawal modes on
-- Prayers - A finite amount of static prayer widgets
-- Spells - A fixed amount of in-game spells
-- UI - Static utilities for calculating UI element bounds
+- Prayers - A finite number of static prayer widgets
+- Spells - A fixed number of in-game spells
+- UI - Static utilities for calculating UI element bounds, interfacing with Dialogue, and switching client tabs
 - Camera - A single camera exists and is centered around your local player (`ctx.cameras().first()` doesn't really make much sense!)
 - etc...
 
@@ -312,14 +315,15 @@ various game entities around Varrock east bank.
 ### Structure
 
 The Kraken API exposes both high and low level functions for working with
-game objects, NPC's, movement, pathing, simulations, network packets and more. 
+game objects, NPC's, movement, pathing, simulations, network packets, and more. 
 The documentation below describes the most likely packages developers will use when writing scripts or plugins.
 
 - `core` - The package contains abstract base class logic which is used internally by different API methods and exposes the `Script` class.
   - `core.packet` - The package includes low and high level API's to send network packets to game servers for automation actions.
     - `core.packet.entity` - Generally most packet layer use cases will use the `core.packet.entity` API for interaction with Game Objects, NPC's, interfaces, and players.
 - `service` - The package contains high level API's for directly interacting with static/global game elements such as (banking, prayer, spells, etc...) and use the `core.packet` package to form the backbone for the interactions
-- `query` - Contains the query API classes for finding and interacting with dynamic game elements like: inventory, npcs, players, game objects and more.
+- `input` - Contains classes to help process and use input devices like mouses and keyboards.
+- `query` - Contains the query API classes for finding and interacting with dynamic game elements like: inventory, npcs, players, game objects, and more.
 - `overlay` - Contains simple and common overlays which can be directly used in RuneLite plugins e.g. Mouse position
 - `sim` - Includes classes for simulating game ticks, NPC pathing, movement, line of sight, and players. This is useful for advanced
   plugins which evaluate hundreds of potential outcomes every game tick to determine the best "decision". e.g. Inferno and Colosseum plugins
@@ -328,6 +332,11 @@ The documentation below describes the most likely packages developers will use w
 
 For more information on writing scripts using the Kraken API 
 check out the detailed [scripting guide](docs/SCRIPTING.md).
+
+### Mouse Movement
+
+For more information on mouse movement in the API check out the
+detailed [mouse movement guide](docs/MOUSE.md)
 
 ### Game Updates
 
@@ -416,7 +425,7 @@ CI will automatically bump the patch version on each merge to master i.e. `1.1.4
 a minor or major version then update the `version.txt` file in the root of the repository with the new version you
 want to use as a base.
 
-For example, moving from version: `1.3.5` -> `1.4.0` the `version.txt` should be `1.4.0`.
+For example, moving from: `1.3.5` -> `1.4.0` the `version.txt` should be `1.4.0`.
 
 ---
 
@@ -430,7 +439,8 @@ This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
 
 * **RuneLite** — For API's to work with and view in game data for Old School RuneScape
 * **Packet Utils** - [Plugin](https://github.com/Ethan-Vann/PacketUtils) from Ethan Vann providing access to complex packet sending functionality which was used to develop the `core.packet` package of the API
-* **Microbot** — For clever ideas on client and plugin interaction.
+* **Vitalite** - Vitalite for showing some incredible open source examples of dialogue, packets, mouse movement, and just working with the client in general
+* **Microbot** — For clever ideas on client and plugin interaction using reflection.
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-api.svg?style=for-the-badge
 [contributors-url]: https://github.com/cbartram/kraken-api/graphs/contributors
