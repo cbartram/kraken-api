@@ -69,6 +69,50 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     }
 
     /**
+     * Randomizes the order of elements in the stream and returns a new stream with the shuffled elements.
+     * <p>
+     * This method collects all elements in the stream into a list, shuffles the list using
+     * {@code Collections.shuffle(List)}, and then converts the shuffled list back into a stream for further use.
+     * </p>
+     *
+     * <p>
+     * Note: This operation consumes the original stream, making it unsuitable for re-use after calling this method.
+     * Additionally, the shuffling process may impact performance for very large datasets due to memory usage
+     * (as it fully materializes the stream into a list) and the shuffling algorithm.
+     * </p>
+     *
+     * @return A new {@code Stream<T>} containing the same elements as the original stream, but in a randomized order.
+     */
+    public Stream<T> shuffle() {
+        List<T> list = stream().collect(Collectors.toList());
+        Collections.shuffle(list);
+        return list.stream();
+    }
+
+
+    /**
+     * Reverses the order of elements in the stream and returns a new stream with the reversed order.
+     * <p>
+     * This method collects all elements in the stream into a list, reverses the list using
+     * {@code Collections.reverse(List)}, and then converts the reversed list back into a stream for further use.
+     * </p>
+     *
+     * <p>
+     * Note: This operation consumes the original stream, making it unsuitable for re-use
+     * after calling this method. Additionally, the reversal process may impact performance
+     * for very large datasets due to memory usage (as it fully materializes the stream into a list).
+     * </p>
+     *
+     * @return A new {@code Stream<T>} containing the same elements as the original stream, but in reversed order.
+     */
+    public Stream<T> reverse() {
+        List<T> list = stream().collect(Collectors.toList());
+        Collections.reverse(list);
+        return list.stream();
+    }
+
+
+    /**
      * Returns the raw stream of elements in the query so filters and matching can be
      * manually applied.
      * @return Stream of entities

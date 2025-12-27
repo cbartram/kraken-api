@@ -100,6 +100,27 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
     }
 
     /**
+     * Determines whether the inventory contains all items specified by the given list of IDs.
+     * <p>
+     * If the provided list of IDs is {@code null} or empty, the method returns {@code true}.
+     * Otherwise, it internally converts the list to an array and delegates the check to the
+     * {@code hasItems(int... ids)} method.
+     *
+     * @param ids A {@code List} of {@code Integer} IDs representing the items to search for.
+     *            Each ID corresponds to a specific inventory item.
+     *            <ul>
+     *                <li>If the list is {@code null} or empty, the method will return {@code true}.</li>
+     *                <li>All IDs in the list must exist in the inventory for the method to return {@code true}.</li>
+     *            </ul>
+     * @return {@code true} if the inventory contains all items specified in the list, or if the list is {@code null} or empty.
+     *         Otherwise, {@code false} is returned.
+     */
+    public boolean hasItems(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return true;
+        return hasItems(ids.stream().mapToInt(Integer::intValue).toArray());
+    }
+
+    /**
      * Returns true ONLY if the inventory contains ALL of the specified item names.
      * This is case-insensitive.
      * @param names Variable argument of item names to search for.
@@ -125,6 +146,32 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
         }
 
         return true;
+    }
+
+    /**
+     * Sorts the inventory query results based on the specified {@code InventoryOrder}.
+     * <p>
+     * This method applies the given {@code InventoryOrder}'s comparator to
+     * sort inventory items based on the desired order or pattern.
+     * </p>
+     *
+     * @param order The {@code InventoryOrder} specifying the sorting strategy.
+     *              <ul>
+     *                  <li>{@literal @}TOP_LEFT_BOTTOM_RIGHT - Standard reading order: Row 1 (Left{@literal ->}Right),
+     *                      Row 2 (Left{@literal ->}Right), etc.</li>
+     *                  <li>{@literal @}BOTTOM_RIGHT_TOP_LEFT - Reverse reading order: Last Item {@literal ->} First Item.</li>
+     *                  <li>{@literal @}ZIG_ZAG - Snake/Zig-Zag pattern: Row 1 (Left{@literal ->}Right),
+     *                      Row 2 (Right{@literal ->}Left), Row 3 (Left{@literal ->}Right), etc.</li>
+     *                  <li>{@literal @}ZIG_ZAG_REVERSE - Reverse Snake/Zig-Zag pattern starting from the bottom right.</li>
+     *                  <li>{@literal @}TOP_DOWN_LEFT_RIGHT - Vertical columns:
+     *                      Column 1 (Top{@literal ->}Bottom), Column 2 (Top{@literal ->}Bottom), etc.</li>
+     *              </ul>
+     *
+     * @return An {@code InventoryQuery} object containing the inventory items
+     *         sorted based on the given order.
+     */
+    public InventoryQuery orderBy(InventoryOrder order) {
+         return sorted(order.getComparator());
     }
 
     /**
