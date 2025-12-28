@@ -32,6 +32,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -77,6 +78,13 @@ public class Context {
     private final Injector injector;
     private final EventBus eventBus;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+    @Getter
+    public static Context context;
+
+    static {
+        context = RuneLite.getInjector().getInstance(Context.class);
+    }
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),

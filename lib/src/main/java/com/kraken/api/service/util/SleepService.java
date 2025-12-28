@@ -6,7 +6,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
@@ -16,14 +15,13 @@ import java.util.function.Supplier;
 @Singleton
 public class SleepService {
 
-    @Inject
-    private Context ctx;
+    private static final Context ctx = Context.getContext();
 
     /**
      * Waits until the specified condition is true.
      * @param condition the condition to be met
      */
-    public void sleepUntil(Supplier<Boolean> condition) {
+    public static void sleepUntil(Supplier<Boolean> condition) {
         while(!condition.get()) {
             if(Thread.currentThread().isInterrupted() || RunnableTask.isCanceled()) {
                 throw new RuntimeException();
@@ -38,7 +36,7 @@ public class SleepService {
      * @param timeoutMS the maximum time to sleep in milliseconds
      * @return true if the condition was met, false if the timeout was reached
      */
-    public boolean sleepUntil(Supplier<Boolean> condition, long timeoutMS) {
+    public static boolean sleepUntil(Supplier<Boolean> condition, long timeoutMS) {
         long start = System.currentTimeMillis();
         while(!condition.get()) {
             if(System.currentTimeMillis() - start > timeoutMS) {
@@ -60,7 +58,7 @@ public class SleepService {
      * @param ticks the maximum time to sleep in game ticks
      * @return true if the condition was met, false if the timeout was reached
      */
-    public boolean sleepUntil(Supplier<Boolean> condition, int ticks) {
+    public static boolean sleepUntil(Supplier<Boolean> condition, int ticks) {
         int end = ctx.getClient().getTickCount() + ticks;
         while(!condition.get()) {
             if(ctx.getClient().getTickCount() >= end) {
@@ -79,7 +77,7 @@ public class SleepService {
     /**
      * Sleeps until the local player's animation is idle.
      */
-    public void sleepUntilIdle() {
+    public static void sleepUntilIdle() {
         do {
             tick(1);
         } while (!ctx.players().local().isIdle());
@@ -90,7 +88,7 @@ public class SleepService {
      * @param worldX the x-coordinate of the target tile
      * @param worldY the y-coordinate of the target tile
      */
-    public void sleepUntilTile(int worldX, int worldY) {
+    public static void sleepUntilTile(int worldX, int worldY) {
         Player player = ctx.players().local().raw();
         while((player.getWorldLocation().getX() != worldX || player.getWorldLocation().getY() != worldY)) {
             tick(1);
@@ -101,7 +99,8 @@ public class SleepService {
      * Sleeps for a specified amount of time in milliseconds. This sleep is interruptible by script cancellation.
      * @param duration the duration to sleep in milliseconds
      */
-    public void sleep(int duration) {
+    public static void sleep(int duration) {
+        // Prevent sleeping on the client thread to avoid freezing the game
         if (ctx.getClient().isClientThread()) return;
         sleep((long) duration);
     }
@@ -149,7 +148,7 @@ public class SleepService {
      * @param start the minimum sleep time
      * @param end the maximum sleep time
      */
-    public void sleep(int start, int end) {
+    public static void sleep(int start, int end) {
         int randomSleep = RandomService.between(start, end);
         sleep(randomSleep);
     }
@@ -159,7 +158,7 @@ public class SleepService {
      * @param mean the mean sleep time
      * @param stddev the standard deviation of the sleep time
      */
-    public void sleepGaussian(int mean, int stddev) {
+    public static void sleepGaussian(int mean, int stddev) {
         int randomSleep = RandomService.randomGaussian(mean, stddev);
         sleep(randomSleep);
     }
@@ -173,7 +172,7 @@ public class SleepService {
      * @return the non-null value, or null if the timeout was reached
      */
     @SneakyThrows
-    public <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis, int sleepMillis) {
+    public static <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis, int sleepMillis) {
         if (ctx.getClient().isClientThread()) return null;
         boolean done;
         T methodResponse;
@@ -199,7 +198,7 @@ public class SleepService {
      * @param <T> the return type of the method
      * @return the non-null value, or null if the timeout was reached
      */
-    public <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis) {
+    public static <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis) {
         return sleepUntilNotNull(method, timeoutMillis, 100);
     }
 
@@ -208,7 +207,7 @@ public class SleepService {
      * @param awaitedCondition the condition to be met
      * @return true if the condition was met, false if the timeout was reached
      */
-    public boolean sleepUntil(BooleanSupplier awaitedCondition) {
+    public static boolean sleepUntil(BooleanSupplier awaitedCondition) {
         return sleepUntil(awaitedCondition, 5000);
     }
 
@@ -218,7 +217,7 @@ public class SleepService {
      * @param time the maximum time to wait in milliseconds
      * @return true if the condition was met, false if the timeout was reached
      */
-    public boolean sleepUntil(BooleanSupplier awaitedCondition, int time) {
+    public static boolean sleepUntil(BooleanSupplier awaitedCondition, int time) {
         if (ctx.getClient().isClientThread()) return false;
         boolean done;
         long startTime = System.currentTimeMillis();
@@ -237,7 +236,7 @@ public class SleepService {
     /**
      * Sleeps the current thread for one game tick
      */
-    public void tick() {
+    public static void tick() {
         tick(1);
     }
 
@@ -245,7 +244,7 @@ public class SleepService {
      * Sleeps the current thread by the specified number of game ticks
      * @param ticks ticks
      */
-    public void tick(int ticks) {
+    public static void tick(int ticks) {
         int tick = ctx.getClient().getTickCount() + ticks;
         int start = ctx.getClient().getTickCount();
         while(ctx.getClient().getTickCount() < tick && ctx.getClient().getTickCount() >= start) {
@@ -263,7 +262,7 @@ public class SleepService {
      * @param timeout the maximum time to wait in milliseconds
      * @return true if the condition was met, false if the timeout was reached
      */
-    public boolean sleepUntilTrue(BooleanSupplier awaitedCondition, int time, int timeout) {
+    public static boolean sleepUntilTrue(BooleanSupplier awaitedCondition, int time, int timeout) {
         if (ctx.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
         do {
@@ -284,7 +283,7 @@ public class SleepService {
      * @param timeout the maximum time to sleep in milliseconds
      * @return true if the condition became false, false if the timeout was reached
      */
-    public boolean sleepWhile(BooleanSupplier condition, int timeout) {
+    public static boolean sleepWhile(BooleanSupplier condition, int timeout) {
         long start = System.currentTimeMillis();
         while (condition.getAsBoolean()) {
             if (System.currentTimeMillis() - start > timeout) {
@@ -306,7 +305,7 @@ public class SleepService {
      * @param ticksToWait the number of ticks to wait
      * @return true if the sleep completed, false if it was interrupted or timed out
      */
-    public boolean sleepUntilTick(int ticksToWait) {
+    public static boolean sleepUntilTick(int ticksToWait) {
         int startTick = ctx.getClient().getTickCount();
         return sleepUntil(() -> ctx.getClient().getTickCount() >= startTick + ticksToWait, ticksToWait * 600 + 2000);
     }
