@@ -23,7 +23,7 @@ public enum InventoryOrder {
 
     /**
      * Drops two rows at a time starting from left to right.
-     * Sequence: (R0,C0)->(R1,C0) then (R0,C1)->(R1,C1)...
+     * Sequence: (R0,C0){@literal ->}(R1,C0) then (R0,C1){@literal ->}(R1,C1)...
      */
     TWO_ROW_LEFT_RIGHT(Comparator.comparingInt(e -> {
         int index = e.raw().getSlot();
