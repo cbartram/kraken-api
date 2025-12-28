@@ -19,20 +19,19 @@ import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.query.world.WorldQuery;
 import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.camera.CameraService;
+import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.tile.TileService;
-import com.kraken.api.service.ui.tab.TabService;
 import com.kraken.api.service.ui.UIService;
-import com.kraken.api.service.map.WorldMapService;
+import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -78,13 +77,6 @@ public class Context {
     private final Injector injector;
     private final EventBus eventBus;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-
-    @Getter
-    public static Context context;
-
-    static {
-        context = RuneLite.getInjector().getInstance(Context.class);
-    }
 
     private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
             this.getClass(),

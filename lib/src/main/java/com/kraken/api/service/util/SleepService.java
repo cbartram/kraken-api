@@ -5,6 +5,7 @@ import com.kraken.api.core.script.RunnableTask;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
+import net.runelite.client.RuneLite;
 
 import javax.inject.Singleton;
 import java.util.concurrent.Callable;
@@ -15,7 +16,7 @@ import java.util.function.Supplier;
 @Singleton
 public class SleepService {
 
-    private static final Context ctx = Context.getContext();
+    private static final Context ctx = RuneLite.getInjector().getInstance(Context.class);
 
     /**
      * Waits until the specified condition is true.
