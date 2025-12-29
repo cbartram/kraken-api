@@ -356,28 +356,11 @@ the functionality for client analysis, obfuscated class names, and packet ops ar
 - Run the example plugin to make sure packets still function correctly and the right packet class can be located for the RuneLite version and revision
 - Commit and open a PR to build a new version of the API
 
-### Running Tests
+## Running Tests
 
-This project is unique in that it functions exclusively within a RuneLite game client environment. This means that automated tests through a framework
-like JUnit don't provide as much value. Sure, you can test functionality within the API but does is **really** find NPC's within 10 tiles of your player? 
-The only way to know for sure is to run tests within the game client.
+Please see the [testing guide](docs/TESTS.md) for more information on running tests.
 
-You can run tests by running the main class in `ExamplePluginTest.java`. This will launch a new game client which loads a custom "Testing" plugin
-called "API Tests" which you will see within RuneLite. Through this plugin you can run specific tests which cover various query and service related classes
-and dump output into the console for PASS/FAIL.
-
-Most of the tests are fully self-sufficient, that is, they set themselves up with the necessary in game items before running the tests. However,
-there are a few conditions:
-
-- The tests are designed to be run from Varrock West Bank where nearby "Guard" NPCs are present.
-- Rune Full Helm, Platebody, Platelegs, and Scimitar must be present in your bank
-- Lobster and Swordfish must be present in your bank
-- Law, fire, and air runes must be present within your bank
-- Protect from Melee prayer must be unlocked
-- Must be on the standard spellbook
-- Player tests require a nearby player and it will "follow" them
-
-### Development Workflow
+## Development Workflow
 
 1. Create a new branch from `master`
 2. Implement or update your plugin/feature for the API

@@ -232,6 +232,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableProcessingService",
+            name = "Start Process Service Tests",
+            description = "Enable process service tests",
+            section = serviceTests,
+            position = 8
+    )
+    default boolean enableProcessService() {
+        return true;
+    }
+
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================

@@ -113,7 +113,7 @@ public class ExamplePlugin extends Plugin {
             NpcTest npcQueryTest, GroundObjectTest groundObjectQueryTest, PlayerTest playerQueryTest,
             WidgetTest widgetQueryTest, SpellServiceTest spellServiceTest, MovementServiceTest movementServiceTest,
             CameraServiceTest cameraServiceTest, PathfinderServiceTest pathfinderServiceTest, WorldQueryTest worldQueryTest,
-            TaskChainTest taskChainTest, MouseTest mouseTest, DialogueServiceTest dialogueServiceTest
+            TaskChainTest taskChainTest, MouseTest mouseTest, DialogueServiceTest dialogueServiceTest, ProcessingServiceTest processingServiceTest
     ) {
         registerTest("enablePrayer", "PrayerServiceTest", config::enablePrayerTests, prayerServiceTest::executeTest);
         registerTest("enableBankQuery", "BankQuery", config::enableBankQuery, bankQueryTest::executeTest);
@@ -133,6 +133,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enableTaskChain", "TaskChain", config::enableTaskChain, taskChainTest::executeTest);
         registerTest("enableMouseTest", "VirtualMouse", config::enableMouseTest, mouseTest::executeTest);
         registerTest("enableDialogueService", "DialogueService", config::enableDialogueService, dialogueServiceTest::executeTest);
+        registerTest("enableProcessingService", "ProcessingService", config::enableProcessService, processingServiceTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {

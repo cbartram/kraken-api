@@ -7,6 +7,7 @@ import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.query.widget.WidgetEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.VarClientID;
@@ -16,6 +17,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Singleton
 public class ProcessingService {
 
@@ -44,6 +46,7 @@ public class ProcessingService {
     public boolean process(int... itemIds) {
         List<ExtendedItem> items = getProcessableItems();
         for (ExtendedItem item : items) {
+            System.out.println("Item: " + item.name);
             if (ArrayUtils.contains(itemIds, item.getId())) {
                 widgetPackets.queueResumePause(item.getSlot(), getAmount());
                 return true;
@@ -109,7 +112,7 @@ public class ProcessingService {
      * @return {@code true} if the widget is open and currently visible; {@code false} otherwise.
      */
     public boolean isOpen() {
-        WidgetEntity widget =ctx.widgets().get(InterfaceID.Skillmulti.UNIVERSE);
+        WidgetEntity widget = ctx.widgets().get(InterfaceID.Skillmulti.UNIVERSE);
         if(widget == null) {
             return false;
         }
@@ -185,16 +188,19 @@ public class ProcessingService {
             for (int i = InterfaceID.Skillmulti.A; i < InterfaceID.Skillmulti.R; i++) {
                 WidgetEntity widget = ctx.widgets().get(i);
                 if(widget == null) {
+                    log.info("Widget id: {} is null skipping", i);
                     continue;
                 }
 
                 Widget button = widget.raw();
                 if (button == null || button.isSelfHidden()) {
+                    log.info("Widget is hidden skipping: {}", i);
                     continue;
                 }
 
                 Widget[] parts = button.getChildren();
                 if (parts == null) {
+                    log.info("Widget: {} has no children skipping", i);
                     continue;
                 }
 
