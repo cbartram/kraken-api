@@ -204,7 +204,6 @@ public class ExamplePlugin extends Plugin {
 
     @Override
     protected void startUp() {
-        context.register();
         context.initializePackets();
         exampleScript.start();
 

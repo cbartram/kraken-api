@@ -15,9 +15,6 @@ public class TabService {
     @Inject
     private Context ctx;
 
-    @Inject
-    private SleepService sleepService;
-
     public InterfaceTab getCurrentTab() {
         final int varcIntValue = ctx.getClient().getVarcIntValue(171); // Inventory tab varc int
         switch (VarcIntValues.valueOf(varcIntValue)) {
@@ -63,9 +60,8 @@ public class TabService {
         if (tab == InterfaceTab.NOTHING_SELECTED && ctx.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
             return false;
 
-        // 915 is a tab switch script
         ctx.getClientThread().invokeLater(() -> ctx.getClient().runScript(915, tab.getIndex()));
-        return sleepService.sleepUntil(() -> isCurrentTab(tab));
+        return SleepService.sleepUntil(() -> isCurrentTab(tab));
     }
 
     public boolean isCurrentTab(InterfaceTab tab) {

@@ -22,7 +22,7 @@ public class ExampleScript extends Script {
         if(ctx.getClient().getTickCount() % 100 == 0) {
             int sleepTicks = RandomService.between(5, 10);
             log.debug("Sleeping for: {}", sleepTicks);
-            SleepService.tick(sleepTicks);
+            SleepService.sleepFor(sleepTicks);
             return 100;
         }
 
