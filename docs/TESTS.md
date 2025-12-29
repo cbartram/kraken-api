@@ -16,7 +16,7 @@ there are a few conditions listed below.
 - **Location**: Most of the tests are designed to be run from **Varrock West Bank**.
 - **NPCs**: Nearby "Guard" NPCs must be present (Varrock West Bank has them).
 - **Players**: Some tests require other players to be nearby (e.g., `PlayerTest`).
-- **Bank**: The player must be near a bank booth (Varrock West Bank).
+- **Bank**: The player must be near a bank booth (Varrock West Bank) and have either no PIN set or have pre-entered their bank pin.
 
 ## Inventory & Bank Requirements
 
@@ -63,7 +63,7 @@ The following items must be present in your **Bank**:
 - **Configuration**: If using `REPLAY` strategy, a recording named "test" must exist. If using `LINEAR`, no specific setup is needed other than valid targets nearby.
 
 ### `PathfinderServiceTest`
-- **Location**: Starts near Varrock East Bank (specifically `3253, 3421, 0`).
+- **Location**: Starts near Varrock East Bank (specifically `WorldPoint(3253, 3421, 0)`).
 - **Note**: This test moves the player.
 
 ### `MovementServiceTest`
@@ -74,11 +74,12 @@ The following items must be present in your **Bank**:
 
 ### `EquipmentTest`
 - **Bank**: Requires Rune armor set (Helm, Body, Legs, Scimitar) to be in the bank.
-- **State**: Player should ideally not be wearing the Rune armor at the start (the test will withdraw and equip it).
+- **State**: Player should ideally NOT be wearing the Rune armor at the start (the test will withdraw and equip it).
 
 ### `SpellServiceTest`
 - **Bank**: Requires Fire, Air, and Law runes in the bank.
-- **State**: Bank must be openable.
+- **Level**: Level 25 magic to cast Varrock Teleport
+- **State**: Bank must be openable (No PIN or pre-entered PIN).
 
 ### `CameraServiceTest`
 - **Interaction**: Requires a target tile to be selected via the plugin overlay/interaction before the test proceeds.
