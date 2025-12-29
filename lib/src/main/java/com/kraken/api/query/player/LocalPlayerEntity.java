@@ -5,6 +5,7 @@ import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.ui.tab.InterfaceTab;
 import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
+import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
@@ -13,6 +14,7 @@ import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -21,11 +23,10 @@ public class LocalPlayerEntity extends PlayerEntity {
     private static final int VENOM_THRESHOLD = 1000000;
     private static final int LOGOUT_WIDGET_ID = 11927560;
 
-    private final ScheduledExecutorService executor;
+    private final  ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
-    public LocalPlayerEntity(Context ctx, ScheduledExecutorService executor) {
+    public LocalPlayerEntity(Context ctx) {
         super(ctx, ctx.getClient().getLocalPlayer());
-        this.executor = executor;
     }
 
     private int antiVenomTime = -1;
@@ -303,6 +304,73 @@ public class LocalPlayerEntity extends PlayerEntity {
                 totalLevel += ctx.getClient().getRealSkillLevel(skill);
             }
             return totalLevel;
+        });
+    }
+
+    /**
+     * Retrieves the base level of the specified skill.
+     * <p>
+     * This method executes a client-side operation to obtain the real (unboosted) level
+     * of the given skill. The skill must be a valid {@code Skill} object.
+     * </p>
+     *
+     * @param skill The {@code Skill} for which the base level is being queried.
+     *              Represents one of the player's in-game skills.
+     * @return The base level of the specified skill as an integer. If the skill is
+     *         invalid or cannot be retrieved, the method may return 0 or throw
+     *         an exception depending on the implementation details.
+     */
+    public int getLevel(Skill skill) {
+        return ctx.runOnClientThread(() -> ctx.getClient().getRealSkillLevel(skill));
+    }
+
+    /**
+     * Retrieves the boosted level of a specified skill.
+     * <p>
+     * This method executes on the client thread to safely fetch the current boosted level
+     * of the provided skill from the client.
+     *
+     * @param skill The {@literal @}Skill object representing the skill for which the boosted level is needed.
+     *              Must not be {@literal null}.
+     * @return The boosted level of the specified skill as an integer.
+     */
+    public int getBoostedLevel(Skill skill) {
+        return ctx.runOnClientThread(() -> ctx.getClient().getBoostedSkillLevel(skill));
+    }
+
+    /**
+     * Retrieves the total experience of the specified skill for the current client.
+     *
+     * <p>
+     * This method executes a thread-safe operation to fetch the experience points
+     * associated with the given {@link Skill} object by running on the client thread.
+     * </p>
+     *
+     * @param skill the skill whose experience is to be retrieved.
+     *              This parameter must not be {@literal null}.
+     * @return the total experience points of the specified skill.
+     */
+    public int getExperience(Skill skill) {
+        Client client = ctx.getClient();
+        return ctx.runOnClientThread(() -> client.getSkillExperience(skill));
+    }
+
+    /**
+     * Calculates the total experience across all skills for the current client.
+     *
+     * <p>This method iterates through all the skill categories, retrieves their individual
+     * experience values, and then sums them up to return the total accumulated experience.</p>
+     *
+     * @return the total experience points of all skills combined for the client.
+     */
+    public int getTotalExperience() {
+        Client client = ctx.getClient();
+        return ctx.runOnClientThread(() -> {
+            int totalExperience = 0;
+            for (Skill skill : Skill.values()) {
+                totalExperience += client.getSkillExperience(skill);
+            }
+            return totalExperience;
         });
     }
 

@@ -18,13 +18,7 @@ import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.query.world.WorldQuery;
 import com.kraken.api.service.bank.BankService;
-import com.kraken.api.service.camera.CameraService;
-import com.kraken.api.service.map.WorldMapService;
-import com.kraken.api.service.movement.MovementService;
-import com.kraken.api.service.prayer.PrayerService;
-import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.tile.TileService;
-import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -33,12 +27,9 @@ import net.runelite.api.Client;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 
-import java.lang.reflect.Method;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.*;
 
 @Slf4j
@@ -75,18 +66,6 @@ public class Context {
 
     private final Injector injector;
     private final EventBus eventBus;
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-
-    private final Set<Class<?>> EVENTBUS_LISTENERS = Set.of(
-            this.getClass(),
-            BankService.class,
-            CameraService.class,
-            MovementService.class,
-            PrayerService.class,
-            SpellService.class,
-            TabService.class,
-            WorldMapService.class
-    );
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus,
@@ -101,7 +80,7 @@ public class Context {
         this.interactionManager = interactionManager;
         this.bankService = bankService;
         this.itemManager = itemManager;
-        this.localPlayer = new LocalPlayerEntity(this, executor);
+        this.localPlayer = new LocalPlayerEntity(this);
         this.eventBus.register(this.localPlayer);
     }
 
@@ -125,54 +104,8 @@ public class Context {
     }
 
     /**
-     * Registers all Service classes that have methods annotated with @Subscribe to the EventBus.
-     * This allows the API to listen for key RuneLite events and respond accordingly.
-     */
-    public void register() {
-        try {
-            for (Class<?> clazz : EVENTBUS_LISTENERS) {
-                for (Method method : clazz.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(Subscribe.class)) {
-                        Object handler = injector.getInstance(clazz);
-                        if (handler != null) {
-                            eventBus.register(handler);
-                            log.debug("Registered class: {} with eventbus", clazz.getSimpleName());
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error registering event handlers: {}", e.getMessage());
-            return;
-        }
-    }
-
-    /**
-     * Unregisters all Service classes that have methods annotated with @Subscribe from the EventBus.
-     */
-    public void destroy() {
-        try {
-            for (Class<?> clazz : EVENTBUS_LISTENERS) {
-                for (Method method : clazz.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(Subscribe.class)) {
-                        Object handler = injector.getInstance(clazz);
-                        if (handler != null) {
-                            log.info("Unregistering {} from eventbus", clazz.getSimpleName());
-                            eventBus.unregister(handler);
-                        }
-                    }
-                }
-            }
-            eventBus.unregister(localPlayer);
-        } catch (Exception e) {
-            log.error("Error un-registering event handlers: {}", e.getMessage());
-            return;
-        }
-    }
-
-    /**
      * Returns a varbit value from the RuneLite client. This method is
-     * thread safe and runs on the client thread to retrieve the value.
+     *  thread-safe and runs on the client thread to retrieve the value.
      * @param varbit The varbit value to retrieve.
      * @return The varbit value (either 0 for false/unset or 1 for true/set).
      */
@@ -182,7 +115,7 @@ public class Context {
 
     /**
      * Returns a var player value from the RuneLite client. This method is
-     * thread safe and runs on the client thread to retrieve the value.
+     *  thread-safe and runs on the client thread to retrieve the value.
      * @param varp The varp value to retrieve.
      * @return The varp value (either 0 for false/unset or 1 for true/set).
      */
@@ -192,7 +125,7 @@ public class Context {
 
     /**
      * Retrieves a Widget from the RuneLite client. This method is
-     * thread safe and will run on the client thread to retrieve the Widget.
+     *  thread-safe and will run on the client thread to retrieve the Widget.
      * @param widgetId int The widget id
      * @return Widget
      */
