@@ -368,8 +368,7 @@ public class TaskChain {
         }
 
         tasks.add(() -> {
-            SleepService sleep = ctx.getService(SleepService.class);
-            sleep.tick(ticks);
+            SleepService.sleepFor(ticks);
             return true;
         });
         return this;

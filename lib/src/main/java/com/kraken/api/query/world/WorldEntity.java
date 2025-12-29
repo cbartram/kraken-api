@@ -41,7 +41,7 @@ public class WorldEntity extends AbstractEntity<World> {
             boolean worldHopperNotOpen = ctx.runOnClientThread(() -> ctx.widgets().get(InterfaceID.Worldswitcher.BUTTONS) == null);
             if(worldHopperNotOpen) {
                 ctx.getClient().openWorldHopper();
-                boolean opened = ctx.getService(SleepService.class).sleepUntil(() ->
+                boolean opened = SleepService.sleepUntil(() ->
                         ctx.runOnClientThread(() -> ctx.widgets().get(InterfaceID.Worldswitcher.BUTTONS) != null),
                         2000
                 );

@@ -34,9 +34,6 @@ public class CameraService {
     private Context ctx;
 
     @Inject
-    private SleepService sleepService;
-
-    @Inject
     private ConfigManager configManager;
 
     @Inject
@@ -240,11 +237,11 @@ public class CameraService {
 
         if (getAngleTo(targetDegrees) > maxAngle) {
             keyboardService.keyHold(KeyEvent.VK_LEFT);
-            sleepService.sleepUntilTrue(() -> Math.abs(getAngleTo(targetDegrees)) <= maxAngle, 50, 5000);
+            SleepService.sleepUntilTrue(() -> Math.abs(getAngleTo(targetDegrees)) <= maxAngle, 50, 5000);
             keyboardService.keyRelease(KeyEvent.VK_LEFT);
         } else if (getAngleTo(targetDegrees) < -maxAngle) {
             keyboardService.keyHold(KeyEvent.VK_RIGHT);
-            sleepService.sleepUntilTrue(() -> Math.abs(getAngleTo(targetDegrees)) <= maxAngle, 50, 5000);
+            SleepService.sleepUntilTrue(() -> Math.abs(getAngleTo(targetDegrees)) <= maxAngle, 50, 5000);
             keyboardService.keyRelease(KeyEvent.VK_RIGHT);
         }
 
@@ -262,11 +259,11 @@ public class CameraService {
 
         if (currentPitchPercentage < percentage) {
             keyboardService.keyHold(KeyEvent.VK_UP);
-            sleepService.sleepUntilTrue(() -> cameraPitchPercentage() >= percentage, 50, 5000);
+            SleepService.sleepUntilTrue(() -> cameraPitchPercentage() >= percentage, 50, 5000);
             keyboardService.keyRelease(KeyEvent.VK_UP);
         } else {
             keyboardService.keyHold(KeyEvent.VK_DOWN);
-            sleepService.sleepUntilTrue(() -> cameraPitchPercentage() <= percentage, 50, 5000);
+            SleepService.sleepUntilTrue(() -> cameraPitchPercentage() <= percentage, 50, 5000);
             keyboardService.keyRelease(KeyEvent.VK_DOWN);
         }
     }

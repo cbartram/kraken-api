@@ -17,9 +17,6 @@ public class KeyboardService {
     @Inject
     private Context ctx;
     
-    @Inject
-    private SleepService sleepService;
-    
     /**
      * Executes a given action with the canvas temporarily made focusable if it wasn't already.
      * This ensures key events are properly dispatched to the game client.
@@ -70,7 +67,7 @@ public class KeyboardService {
             {
                 int delay = RandomService.between(20, 200);
                 dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, c, delay);
-                sleepService.sleep(100, 200);
+                SleepService.sleep(100, 200);
             }
         });
     }
