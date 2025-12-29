@@ -196,13 +196,26 @@ public class WidgetPackets {
     /**
      * Queues the RESUME_PAUSEBUTTON packet, typically sent when the player
      * clicks a "Click here to continue" or "Close" button on a standard,
-     * non-interactable dialog, such as a dialogue with an NPC.
+     * non-interactable dialog, such as a dialogue with an NPC. The widget id should be
+     * a packed integer (containing both the group and child ids).
      *
-     * @param widgetId The ID of the top-level widget.
+     * @param widgetId The ID of the top-level widget (packed to include group and child ids).
      * @param childId The ID of the child component that was clicked.
      */
     public void queueResumePause(int widgetId, int childId) {
         packetSenderProvider.get().sendPacket(packetDefFactory.getResumePausebutton(), widgetId, childId);
+    }
+
+    /**
+     * Queues the RESUME_PAUSEBUTTON packet, usually sent when interacting with
+     * non-interactable dialogs (e.g., "Click here to continue").
+     *
+     * <p>This method sends a packet using the provided packed widget ID.
+     *
+     * @param packed The packed widget ID, which includes both group and child IDs.
+     */
+    public void queueResumePause(int packed) {
+        packetSenderProvider.get().sendPacket(packetDefFactory.getResumePausebutton(), packed, -1);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.query.widget.WidgetEntity;
+import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.InterfaceID;
@@ -152,7 +153,7 @@ public class DialogueService {
      * @param option the index of the option to select, typically starting from 0 for the first option.
      */
     public void selectOption(int option) {
-        ctx.runOnClientThread(() -> widgetPackets.queueResumePause(getWidgetId(WidgetID.DIALOG_OPTION_GROUP_ID, DialogOption.OPTIONS), option));
+        ctx.runOnClientThread(() -> widgetPackets.queueResumePause(UIService.pack(WidgetID.DIALOG_OPTION_GROUP_ID, DialogOption.OPTIONS), option));
     }
 
     /**
@@ -423,39 +424,38 @@ public class DialogueService {
         return ctx.runOnClientThread(() -> {
             // When an NPC is speaking
             if (ctx.widgets().get(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE) != null) {
-                widgetPackets.queueResumePause(15138821, -1);
+                widgetPackets.queueResumePause(UIService.pack(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE), -1);
                 return true;
             }
 
             if (ctx.widgets().get(633, 0) != null) {
-                int packed = 633 << 16 | 0;
-                widgetPackets.queueResumePause(packed, -1);
+                widgetPackets.queueResumePause(UIService.pack(633, 0), -1);
                 return true;
             }
 
             // When the player speaks
             if (ctx.widgets().get(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE) != null) {
-                int id = getWidgetId(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE);
+                int id = UIService.pack(WidgetID.DIALOG_PLAYER_GROUP_ID, DialogPlayer.CONTINUE);
                 widgetPackets.queueResumePause(id, -1);
                 return true;
             }
 
             // When a sprite is shown
             if (ctx.widgets().get(WidgetInfo.DIALOG_SPRITE) != null) {
-                int id = getWidgetId(11, 0);
+                int id = UIService.pack(11, 0);
                 widgetPackets.queueResumePause(id, 0);
                 return true;
             }
 
             if (ctx.widgets().get(11, 0) != null) {
-                int id = getWidgetId(11, DialogSprite2.CONTINUE);
+                int id = UIService.pack(11, DialogSprite2.CONTINUE);
                 widgetPackets.queueResumePause(id, -1);
                 return true;
             }
             if (ctx.widgets().get(229, MinigameDialog.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(229, MinigameDialog.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    int id = getWidgetId(229, MinigameDialog.CONTINUE);
+                    int id = UIService.pack(229, MinigameDialog.CONTINUE);
                     widgetPackets.queueResumePause(id, -1);
                     return true;
                 }
@@ -464,7 +464,7 @@ public class DialogueService {
             if (ctx.widgets().get(229, DialogNotification.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(229, DialogNotification.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    int id = getWidgetId(229, DialogNotification.CONTINUE);
+                    int id = UIService.pack(229, DialogNotification.CONTINUE);
                     widgetPackets.queueResumePause(id, -1);
                     return true;
                 }
@@ -473,7 +473,7 @@ public class DialogueService {
             if (ctx.widgets().get(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE) != null) {
                 Widget w = ctx.widgets().get(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE).raw();
                 if(w != null && w.getText() != null && w.getText().equals("Click here to continue")) {
-                    int id = getWidgetId(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE);
+                    int id = UIService.pack(WidgetID.LEVEL_UP_GROUP_ID, LevelUp.CONTINUE);
                     widgetPackets.queueResumePause(id, -1);
                     return true;
                 }
@@ -516,21 +516,6 @@ public class DialogueService {
             }
         }
         return false;
-    }
-
-
-    /**
-     * Computes and returns the packed widget ID based on the provided group and child identifiers.
-     * <p>
-     * The method combines the {@code group} and {@code child} parameters into a single integer
-     * using a bit-shifting operation.
-     *
-     * @param group the identifier for the group; it occupies the higher-order bits in the generated ID.
-     * @param child the identifier for the child; it occupies the lower-order bits in the generated ID.
-     * @return an integer representing the unique widget ID created from the {@code group} and {@code child} values.
-     */
-    private int getWidgetId(int group, int child) {
-        return (group << 16) | child;
     }
 
     static class DialogOption {

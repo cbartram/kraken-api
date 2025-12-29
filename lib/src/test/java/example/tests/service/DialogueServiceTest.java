@@ -59,7 +59,7 @@ public class DialogueServiceTest extends BaseApiTest {
         }
 
         // Selects "What is this place?"
-        dialogueService.selectOption(4);
+        dialogueService.selectOption(5);
         sleepService.sleep(1000, 3000);
 
         // --- Step 1: Player asks "What is this place?" ---
