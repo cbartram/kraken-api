@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.query.widget.WidgetEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -119,12 +118,12 @@ public class ProcessingService {
      * @return {@code true} if the widget is open and currently visible; {@code false} otherwise.
      */
     public boolean isOpen() {
-        WidgetEntity widget = ctx.widgets().get(InterfaceID.Skillmulti.UNIVERSE);
+        Widget widget = ctx.getClient().getWidget(InterfaceID.Skillmulti.UNIVERSE);
         if(widget == null) {
             return false;
         }
 
-        return widget.isVisible();
+        return !widget.isSelfHidden();
     }
 
     /**
