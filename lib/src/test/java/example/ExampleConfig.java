@@ -232,7 +232,6 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
-
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================

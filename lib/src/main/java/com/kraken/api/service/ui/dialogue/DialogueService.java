@@ -139,7 +139,6 @@ public class DialogueService {
                 }
             }
 
-            log.info("Final: {}", ctx.widgets().get(WidgetID.DIALOG_OPTION_GROUP_ID, DialogOption.OPTIONS) != null || ctx.widgets().get(WidgetInfo.DIALOG_OPTION_OPTIONS) != null);
             return ctx.widgets().get(WidgetID.DIALOG_OPTION_GROUP_ID, DialogOption.OPTIONS) != null || ctx.widgets().get(WidgetInfo.DIALOG_OPTION_OPTIONS) != null;
         });
     }
@@ -419,14 +418,12 @@ public class DialogueService {
      * @return {@code true} if a valid dialogue widget was interacted with to continue the dialogue,
      *         {@code false} if no applicable dialogue widget was found or interacted with.
      */
-    // TODO For some reason this doesn't work at a packet level. It sends the packet with the correct data, no idea
-    //  why the server rejects it. Look into exactly how resumePause works
     public boolean continueDialogue() {
         Client client = ctx.getClient();
         return ctx.runOnClientThread(() -> {
             // When an NPC is speaking
             if (ctx.widgets().get(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE) != null) {
-                widgetPackets.queueResumePause(WidgetID.DIALOG_NPC_GROUP_ID, DialogNPC.CONTINUE);
+                widgetPackets.queueResumePause(15138821, -1);
                 return true;
             }
 

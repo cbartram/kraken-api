@@ -33,6 +33,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
+    testImplementation files('/Users/christianbartram/IdeaProjects/PacketUtils/build/libs/example-5.4.jar')
 
     implementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation 'junit:junit:4.12'
