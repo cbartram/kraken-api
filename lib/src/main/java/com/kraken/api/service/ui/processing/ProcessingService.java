@@ -29,7 +29,9 @@ public class ProcessingService {
 
     /**
      * Confirms the selection of one of the specified item IDs by resuming the appropriate widget
-     * interaction based on the current multi-quantity value.
+     * interaction based on the current multi-quantity value. This method expects the item id of the item
+     * to create, not necessarily the item the player has. i.e. for cooking Salmon it expects the item id
+     * of a cooked salmon, not the raw salmon that the player may have in their inventory.
      *
      * <p>This method iterates over a map of processable item IDs and their associated slot indices,
      * checking if any of the provided {@code itemIds} match the available items. If a match is found,
@@ -99,6 +101,11 @@ public class ProcessingService {
      *              component of the base widget that the action will target.
      */
     public void processByIndex(int index) {
+        if(index > 16 || index < 0) {
+           log.error("Index cannot be greater than 16 or less than 0, got: {}", index);
+           return;
+        }
+
         ctx.runOnClientThread(() -> widgetPackets.queueResumePause(InterfaceID.Skillmulti.A + index, getAmount()));
     }
 
@@ -186,31 +193,20 @@ public class ProcessingService {
             List<ExtendedItem> items = new ArrayList<>();
             Client client = ctx.getClient();
             for (int i = InterfaceID.Skillmulti.A; i < InterfaceID.Skillmulti.R; i++) {
-                WidgetEntity widget = ctx.widgets().get(i);
-                if(widget == null) {
-                    log.info("Widget id: {} is null skipping", i);
-                    continue;
-                }
+                Widget button = client.getWidget(i);
+                if (button == null) continue;
+                if(button.isSelfHidden()) continue;
 
-                Widget button = widget.raw();
-                if (button == null || button.isSelfHidden()) {
-                    log.info("Widget is hidden skipping: {}", i);
-                    continue;
-                }
+                Widget[] children = button.getChildren();
+                if (children == null) continue;
 
-                Widget[] parts = button.getChildren();
-                if (parts == null) {
-                    log.info("Widget: {} has no children skipping", i);
-                    continue;
-                }
-
-                for (Widget part : parts) {
-                    int itemId = part.getItemId();
+                for (Widget child : children) {
+                    int itemId = child.getItemId();
                     if (itemId == -1 || itemId == 6512) {
                         continue;
                     }
                     String name = client.getItemDefinition(itemId).getName();
-                    items.add(new ExtendedItem(itemId, part.getItemQuantity(), i, name));
+                    items.add(new ExtendedItem(itemId, child.getItemQuantity(), i, name));
                 }
             }
             return items;

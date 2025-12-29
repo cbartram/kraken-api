@@ -41,14 +41,14 @@ public class ProcessingServiceTest extends BaseApiTest {
 
          SleepService.sleep(2000, 2500);
          processingService.setAmount(2);
-         if(!processingService.process(335)) {
-             log.error("Failed to process item 335");
+         if(!processingService.process(329)) { // Cooked salmon is what we want to make raw salmon 335 is what we have
+             log.error("Failed to process item 329 -> 335");
              return false;
          }
 
          SleepService.sleep(2000, 2500);
-         if(!processingService.process(331)) {
-             log.error("Failed to process item 331");
+         if(!processingService.process(333)) { // Cooked trout 333 is what we want, 331 raw is what we have
+             log.error("Failed to process item 331 -> 333");
              return false;
          }
 

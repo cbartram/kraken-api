@@ -39,9 +39,10 @@ The following items must be present in your **Bank**:
 
 ## Skill & Spellbook Requirements
 
-- **Prayer**: Protect from Melee prayer must be unlocked.
+- **Prayer**: Protect from Melee prayer must be unlocked at level 43 prayer.
 - **Spellbook**: Must be on the **Standard Spellbook**.
 - **Magic Level**: High enough to cast Varrock Teleport (Level 25).
+- **Cooking Level**: Cooking level of 25 to cook salmon.
 
 ## Specific Test Requirements
 
