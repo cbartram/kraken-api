@@ -24,7 +24,6 @@ import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.prayer.PrayerService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.tile.TileService;
-import com.kraken.api.service.ui.UIService;
 import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
 import lombok.Setter;
@@ -85,7 +84,6 @@ public class Context {
             MovementService.class,
             PrayerService.class,
             SpellService.class,
-            UIService.class,
             TabService.class,
             WorldMapService.class
     );

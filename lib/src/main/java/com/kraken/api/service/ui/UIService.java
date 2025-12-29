@@ -9,9 +9,8 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.RuneLite;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.awt.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,18 +22,59 @@ import java.util.concurrent.ThreadLocalRandom;
 @Slf4j
 @Singleton
 public class UIService {
+    
+    private final static Context ctx = RuneLite.getInjector().getInstance(Context.class);
 
-    @Inject
-    private Provider<Context> ctxProvider;
+
+    /**
+     * Converts the given packed widget integer ID to a group ID by performing a bitwise right shift.
+     *
+     * <p>This method shifts the bits of the input ID 16 positions to the right,
+     * effectively dividing by 2^16 and discarding the lower 16 bits.
+     *
+     * @param packedId the integer ID to be converted.
+     * @return the resulting group ID after the bitwise shift.
+     */
+    public static int toGroupId(int packedId) {
+        return packedId >>> 16;
+    }
+
+    /**
+     * Converts a given integer ID to a child ID by masking higher-order bits.
+     *
+     * <p>
+     * This method extracts the lower 16 bits of the provided integer.
+     *
+     * @param packedId the input integer ID to be converted.
+     * @return the child ID represented as the lower 16 bits of the input ID.
+     */
+    public static int toChildId(int packedId) {
+        return packedId & 0xFFFF;
+    }
+
+    /**
+     * Combines a group ID and a child ID into a single packed integer.
+     *
+     * <p>The group ID is shifted 16 bits to the left and combined with the child ID
+     * using a bitwise OR operation.</p>
+     *
+     * @param groupId the identifier for the group
+     * @param childId the identifier for the child
+     * @return the packed integer containing the group ID and child ID
+     */
+    public static int pack(int groupId, int childId) {
+        return groupId << 16 | childId;
+    }
+
 
     /**
      * Returns a default rectangle representing the entire game canvas with a slight random offset.
      *
      * @return Rectangle covering the canvas area
      */
-    public Rectangle getDefaultRectangle() {
+    public static Rectangle getDefaultRectangle() {
         int randomValue = ThreadLocalRandom.current().nextInt(3) - 1;
-        return new Rectangle(randomValue, randomValue, ctxProvider.get().getClient().getCanvasWidth(), ctxProvider.get().getClient().getCanvasHeight());
+        return new Rectangle(randomValue, randomValue, ctx.getClient().getCanvasWidth(), ctx.getClient().getCanvasHeight());
     }
 
     /**
@@ -43,14 +83,14 @@ public class UIService {
      * @param actor the actor to get the clickbox for
      * @return the actor's clickbox, or default rectangle if unavailable
      */
-    public Rectangle getActorClickbox(Actor actor) {
+    public static Rectangle getActorClickbox(Actor actor) {
         LocalPoint lp = actor.getLocalLocation();
         if (lp == null) {
             return getDefaultRectangle();
         }
 
-        Shape clickbox = ctxProvider.get().runOnClientThreadOptional(() -> Perspective.getClickbox(ctxProvider.get().getClient(), ctxProvider.get().getClient().getTopLevelWorldView(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
-                        Perspective.getTileHeight(ctxProvider.get().getClient(), lp, actor.getWorldLocation().getPlane())))
+        Shape clickbox = ctx.runOnClientThreadOptional(() -> Perspective.getClickbox(ctx.getClient(), ctx.getClient().getTopLevelWorldView(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
+                        Perspective.getTileHeight(ctx.getClient(), lp, actor.getWorldLocation().getPlane())))
                 .orElse(null);
 
         if (clickbox == null) return getDefaultRectangle();
@@ -63,9 +103,9 @@ public class UIService {
      * @param object the tile object to get the clickbox for
      * @return the object's clickbox, or default rectangle if unavailable
      */
-    public Rectangle getObjectClickbox(TileObject object) {
+    public static Rectangle getObjectClickbox(TileObject object) {
         if (object == null) return getDefaultRectangle();
-        Shape clickbox = ctxProvider.get().runOnClientThreadOptional(object::getClickbox).orElse(null);
+        Shape clickbox = ctx.runOnClientThreadOptional(object::getClickbox).orElse(null);
         if (clickbox == null) return getDefaultRectangle();
         if (clickbox.getBounds() == null) return getDefaultRectangle();
 
@@ -78,14 +118,14 @@ public class UIService {
      * @param tile the tile to get the clickbox for
      * @return the tile's clickbox, or default rectangle if unavailable
      */
-    public Rectangle getTileClickbox(Tile tile) {
+    public static Rectangle getTileClickbox(Tile tile) {
         if (tile == null) return getDefaultRectangle();
 
         LocalPoint localPoint = tile.getLocalLocation();
         if (localPoint == null) return getDefaultRectangle();
 
         // Get the screen point of the tile center
-        Point screenPoint = Perspective.localToCanvas(ctxProvider.get().getClient(), localPoint, ctxProvider.get().getClient().getTopLevelWorldView().getPlane());
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, ctx.getClient().getTopLevelWorldView().getPlane());
 
         if (screenPoint == null) return getDefaultRectangle();
 
@@ -102,13 +142,13 @@ public class UIService {
      * @param worldPoint the world point to get the clickbox for
      * @return a small clickbox around the world point's screen location, or default rectangle if unavailable
      */
-    public Rectangle getWorldPointClickbox(WorldPoint worldPoint) {
+    public static Rectangle getWorldPointClickbox(WorldPoint worldPoint) {
         if (worldPoint == null) return getDefaultRectangle();
 
-        LocalPoint localPoint = LocalPoint.fromWorld(ctxProvider.get().getClient().getTopLevelWorldView(), worldPoint);
+        LocalPoint localPoint = LocalPoint.fromWorld(ctx.getClient().getTopLevelWorldView(), worldPoint);
         if (localPoint == null) return getDefaultRectangle();
 
-        Point screenPoint = Perspective.localToCanvas(ctxProvider.get().getClient(), localPoint, worldPoint.getPlane());
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, worldPoint.getPlane());
         if (screenPoint == null) return getDefaultRectangle();
 
         // TODO Different resolutions may cause problems here
@@ -124,10 +164,10 @@ public class UIService {
      * @param localPoint the local point to get the clickbox for
      * @return a small clickbox around the local point's screen location, or default rectangle if unavailable
      */
-    public Rectangle getLocalPointClickbox(LocalPoint localPoint) {
+    public static Rectangle getLocalPointClickbox(LocalPoint localPoint) {
         if (localPoint == null) return getDefaultRectangle();
 
-        Point screenPoint = Perspective.localToCanvas(ctxProvider.get().getClient(), localPoint, ctxProvider.get().getClient().getTopLevelWorldView().getPlane());
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, ctx.getClient().getTopLevelWorldView().getPlane());
         if (screenPoint == null) return getDefaultRectangle();
 
         // Create a small clickable area around the point (20x20 pixels)
@@ -145,10 +185,10 @@ public class UIService {
      * @param plane the plane/height level
      * @return a small clickbox around the local point's screen location, or default rectangle if unavailable
      */
-    public Rectangle getLocalPointClickbox(LocalPoint localPoint, int plane) {
+    public static Rectangle getLocalPointClickbox(LocalPoint localPoint, int plane) {
         if (localPoint == null) return getDefaultRectangle();
 
-        Point screenPoint = Perspective.localToCanvas(ctxProvider.get().getClient(), localPoint, plane);
+        Point screenPoint = Perspective.localToCanvas(ctx.getClient(), localPoint, plane);
         if (screenPoint == null) return getDefaultRectangle();
 
         // Create a small clickable area around the point (20x20 pixels)
@@ -164,7 +204,7 @@ public class UIService {
      * @param widget the widget to get the clickbox for
      * @return the widget's bounds, or default rectangle if unavailable
      */
-    public Rectangle getWidgetClickbox(Widget widget) {
+    public static Rectangle getWidgetClickbox(Widget widget) {
         if(widget == null) return getDefaultRectangle();
         return widget.getBounds();
     }
@@ -175,7 +215,7 @@ public class UIService {
      * @param actor the actor to get the clickbox for
      * @return a randomized point within the actor's clickbox
      */
-    public Point getClickbox(Actor actor) {
+    public static Point getClickbox(Actor actor) {
         return getClickbox(actor, true);
     }
 
@@ -184,7 +224,7 @@ public class UIService {
      * @param item The inventory item
      * @return The canvas point for the inventory items clickbox (randomizes the point).
      */
-    public Point getClickbox(ContainerItem item) {
+    public static Point getClickbox(ContainerItem item) {
         return getClickbox(item, true);
     }
 
@@ -194,8 +234,8 @@ public class UIService {
      * @param randomize True if the point should be randomized. If false it will return the center point.
      * @return Center point or random point within the bounds of the inventory item.
      */
-    public Point getClickbox(ContainerItem item, boolean randomize) {
-        Rectangle bounds = item.getBounds(ctxProvider.get(), ctxProvider.get().getClient());
+    public static Point getClickbox(ContainerItem item, boolean randomize) {
+        Rectangle bounds = item.getBounds(ctx, ctx.getClient());
         if(bounds == null) return getClickingPoint(getDefaultRectangle(), true);
         return getClickingPoint(bounds, randomize);
     }
@@ -207,7 +247,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the actor's clickbox (randomized or centered)
      */
-    public Point getClickbox(Actor actor, boolean randomize) {
+    public static Point getClickbox(Actor actor, boolean randomize) {
         Rectangle clickbox = getActorClickbox(actor);
         return getClickingPoint(clickbox, randomize);
     }
@@ -218,7 +258,7 @@ public class UIService {
      * @param object the tile object to get the clickbox for
      * @return a randomized point within the object's clickbox
      */
-    public Point getClickbox(TileObject object) {
+    public static Point getClickbox(TileObject object) {
         return getClickbox(object, true);
     }
 
@@ -229,7 +269,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the object's clickbox (randomized or centered)
      */
-    public Point getClickbox(TileObject object, boolean randomize) {
+    public static Point getClickbox(TileObject object, boolean randomize) {
         Rectangle clickbox = getObjectClickbox(object);
         return getClickingPoint(clickbox, randomize);
     }
@@ -240,7 +280,7 @@ public class UIService {
      * @param tile the tile to get the clickbox for
      * @return a randomized point within the tile's clickbox
      */
-    public Point getClickbox(Tile tile) {
+    public static Point getClickbox(Tile tile) {
         return getClickbox(tile, true);
     }
 
@@ -251,7 +291,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the tile's clickbox (randomized or centered)
      */
-    public Point getClickbox(Tile tile, boolean randomize) {
+    public static Point getClickbox(Tile tile, boolean randomize) {
         Rectangle clickbox = getTileClickbox(tile);
         return getClickingPoint(clickbox, randomize);
     }
@@ -262,7 +302,7 @@ public class UIService {
      * @param widget the widget to get the clickbox for
      * @return a randomized point within the widget's clickbox
      */
-    public Point getClickbox(Widget widget) {
+    public static Point getClickbox(Widget widget) {
         return getClickbox(widget, true);
     }
 
@@ -273,7 +313,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the widget's clickbox (randomized or centered)
      */
-    public Point getClickbox(Widget widget, boolean randomize) {
+    public static Point getClickbox(Widget widget, boolean randomize) {
         Rectangle clickbox = getWidgetClickbox(widget);
         return getClickingPoint(clickbox, randomize);
     }
@@ -284,7 +324,7 @@ public class UIService {
      * @param worldPoint the world point to get the clickbox for
      * @return a randomized point within the world point's clickbox
      */
-    public Point getClickbox(WorldPoint worldPoint) {
+    public static Point getClickbox(WorldPoint worldPoint) {
         return getClickbox(worldPoint, true);
     }
 
@@ -295,7 +335,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the world point's clickbox (randomized or centered)
      */
-    public Point getClickbox(WorldPoint worldPoint, boolean randomize) {
+    public static Point getClickbox(WorldPoint worldPoint, boolean randomize) {
         Rectangle clickbox = getWorldPointClickbox(worldPoint);
         return getClickingPoint(clickbox, randomize);
     }
@@ -306,7 +346,7 @@ public class UIService {
      * @param localPoint the local point to get the clickbox for
      * @return a randomized point within the local point's clickbox
      */
-    public Point getClickbox(LocalPoint localPoint) {
+    public static Point getClickbox(LocalPoint localPoint) {
         return getClickbox(localPoint, true);
     }
 
@@ -317,7 +357,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the local point's clickbox (randomized or centered)
      */
-    public Point getClickbox(LocalPoint localPoint, boolean randomize) {
+    public static Point getClickbox(LocalPoint localPoint, boolean randomize) {
         Rectangle clickbox = getLocalPointClickbox(localPoint);
         return getClickingPoint(clickbox, randomize);
     }
@@ -329,7 +369,7 @@ public class UIService {
      * @param plane the plane/height level
      * @return a randomized point within the local point's clickbox
      */
-    public Point getClickbox(LocalPoint localPoint, int plane) {
+    public static Point getClickbox(LocalPoint localPoint, int plane) {
         return getClickbox(localPoint, plane, true);
     }
 
@@ -341,7 +381,7 @@ public class UIService {
      * @param randomize whether to randomize the point within the clickbox
      * @return a point within the local point's clickbox (randomized or centered)
      */
-    public Point getClickbox(LocalPoint localPoint, int plane, boolean randomize) {
+    public static Point getClickbox(LocalPoint localPoint, int plane, boolean randomize) {
         Rectangle clickbox = getLocalPointClickbox(localPoint, plane);
         return getClickingPoint(clickbox, randomize);
     }

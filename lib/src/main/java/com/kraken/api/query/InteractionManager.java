@@ -41,9 +41,6 @@ public class InteractionManager {
     private GroundItemPackets groundItemPackets;
 
     @Inject
-    private UIService uiService;
-
-    @Inject
     private Provider<Context> ctxProvider;
 
     /**
@@ -54,7 +51,7 @@ public class InteractionManager {
      */
     public void interact(NPC npc, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point point = uiService.getClickbox(npc);
+        Point point = UIService.getClickbox(npc);
         if (point != null) {
             mousePackets.queueClickPacket(point.getX(), point.getY());
             npcPackets.queueNPCAction(npc, action);
@@ -69,7 +66,7 @@ public class InteractionManager {
      */
     public void interact(Player player, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point point = uiService.getClickbox(player);
+        Point point = UIService.getClickbox(player);
         if (point != null) {
             mousePackets.queueClickPacket(point.getX(), point.getY());
             playerPackets.queuePlayerAction(player, action);
@@ -95,7 +92,7 @@ public class InteractionManager {
                 return;
             }
 
-            Point pt = uiService.getClickbox(item);
+            Point pt = UIService.getClickbox(item);
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
             widgetPackets.queueWidgetAction(w, action);
         });
@@ -108,7 +105,7 @@ public class InteractionManager {
      */
     public void interact(BankItemWidget item, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point pt = uiService.getClickbox(item);
+        Point pt = UIService.getClickbox(item);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -123,7 +120,7 @@ public class InteractionManager {
      */
     public void interact(Widget item, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point pt = uiService.getClickbox(item);
+        Point pt = UIService.getClickbox(item);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -139,7 +136,7 @@ public class InteractionManager {
      */
     public void interact(Widget item, String menu, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point pt = uiService.getClickbox(item);
+        Point pt = UIService.getClickbox(item);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -155,8 +152,8 @@ public class InteractionManager {
     public void interact(Widget src, Widget dest) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
 
-        Point pt = uiService.getClickbox(src);
-        Point destPoint = uiService.getClickbox(dest);
+        Point pt = UIService.getClickbox(src);
+        Point destPoint = UIService.getClickbox(dest);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -173,8 +170,8 @@ public class InteractionManager {
     public void interact(Widget src, NPC npc) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
 
-        Point pt = uiService.getClickbox(src);
-        Point npcPoint = uiService.getClickbox(npc);
+        Point pt = UIService.getClickbox(src);
+        Point npcPoint = UIService.getClickbox(npc);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -191,8 +188,8 @@ public class InteractionManager {
     public void interact(Widget src, GameObject gameObject) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
 
-        Point pt = uiService.getClickbox(src);
-        Point gameObjectPoint = uiService.getClickbox(gameObject);
+        Point pt = UIService.getClickbox(src);
+        Point gameObjectPoint = UIService.getClickbox(gameObject);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -210,7 +207,7 @@ public class InteractionManager {
      */
     public void interact(TileObject object, String action) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point pt = uiService.getClickbox(object);
+        Point pt = UIService.getClickbox(object);
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());
@@ -228,7 +225,7 @@ public class InteractionManager {
      */
     public void interact(GroundItem item) {
         if(!ctxProvider.get().isPacketsLoaded()) return;
-        Point pt = uiService.getClickbox(item.getTileObject());
+        Point pt = UIService.getClickbox(item.getTileObject());
 
         if(pt != null) {
             mousePackets.queueClickPacket(pt.getX(), pt.getY());

@@ -28,9 +28,6 @@ public class MovementService {
     private TileService tileService;
 
     @Inject
-    private UIService uiService;
-
-    @Inject
     private MousePackets mousePackets;
 
     @Inject
@@ -60,7 +57,7 @@ public class MovementService {
             convertedPoint = point;
         }
 
-        Point clickingPoint = uiService.getClickbox(convertedPoint);
+        Point clickingPoint = UIService.getClickbox(convertedPoint);
         mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         movementPackets.queueMovement(convertedPoint);
     }
@@ -92,7 +89,7 @@ public class MovementService {
         }
 
 
-        Point clickingPoint = uiService.getClickbox(converted);
+        Point clickingPoint = UIService.getClickbox(converted);
         mousePackets.queueClickPacket(clickingPoint.getX(), clickingPoint.getY());
         movementPackets.queueMovement(converted);
     }

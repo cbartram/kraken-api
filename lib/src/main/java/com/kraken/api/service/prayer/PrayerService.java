@@ -21,9 +21,6 @@ public class PrayerService {
     private Context ctx;
 
     @Inject
-    private UIService uiService;
-
-    @Inject
     private MousePackets mousePackets;
 
     @Inject
@@ -89,7 +86,7 @@ public class PrayerService {
         }
 
         Widget widget = ctx.getWidget(prayerExtended.getIndex());
-        Point point = uiService.getClickbox(widget);
+        Point point = UIService.getClickbox(widget);
         mousePackets.queueClickPacket(point.getX(), point.getY());
         widgetPackets.queueWidgetActionPacket(prayerExtended.getIndex(), -1, -1, 1);
         return true;

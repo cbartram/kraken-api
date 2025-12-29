@@ -2,6 +2,7 @@ package com.kraken.api.query.container.bank;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.VarbitID;
@@ -109,7 +110,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
             // for that menu option "Withdraw-500" instead of setting Withdraw-X and then setting 500 again.
             int quantitySet = ctx.getVarbitValue(VarbitID.BANK_REQUESTEDQUANTITY);
             if(quantitySet == amount) {
-                Point pt = ctx.getInteractionManager().getUiService().getClickbox(raw);
+                Point pt = UIService.getClickbox(raw);
                 if(pt != null) {
                     ctx.getInteractionManager().getMousePackets().queueClickPacket(pt.getX(), pt.getY());
                     ctx.getInteractionManager().getWidgetPackets().queueWidgetAction(raw, "Withdraw-" + amount);
