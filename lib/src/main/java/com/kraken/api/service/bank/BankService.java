@@ -28,9 +28,6 @@ public class BankService {
     private static final int WITHDRAW_AS_VARBIT = 3958;
     private static final int WITHDRAW_ITEM_MODE_WIDGET = 786456;
     private static final int WITHDRAW_NOTE_MODE_WIDGET = 786458;
-
-    @Inject
-    private UIService uiService;
     
     @Inject
     private MousePackets mousePackets;
@@ -74,7 +71,7 @@ public class BankService {
 
             if (!hasAction) return false;
 
-            Point pt = uiService.getClickbox(toggleWidget);
+            Point pt = UIService.getClickbox(toggleWidget);
             if (pt != null) {
                 mousePackets.queueClickPacket(pt.getX(), pt.getY());
                 widgetPackets.queueWidgetAction(toggleWidget, action);

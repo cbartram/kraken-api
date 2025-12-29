@@ -34,7 +34,6 @@ import static com.kraken.api.input.mouse.strategy.replay.PathLibrary.DATA_DIR;
 @Singleton
 public class VirtualMouse implements MouseListener {
 
-    private final UIService uiService;
     private final Client client;
 
     @Getter
@@ -44,8 +43,7 @@ public class VirtualMouse implements MouseListener {
 
 
     @Inject
-    public VirtualMouse(UIService uiService, MouseManager mouseManager, Client client) {
-        this.uiService = uiService;
+    public VirtualMouse(MouseManager mouseManager, Client client) {
         this.client = client;
         mouseManager.registerMouseListener(this);
         updatePosition();
@@ -230,7 +228,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(Actor actor, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(actor);
+        Point p = UIService.getClickbox(actor);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -253,7 +251,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(ContainerItem item, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(item);
+        Point p = UIService.getClickbox(item);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -276,7 +274,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(TileObject tileObject, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(tileObject);
+        Point p = UIService.getClickbox(tileObject);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -299,7 +297,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(Tile tile, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(tile);
+        Point p = UIService.getClickbox(tile);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -322,7 +320,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(Widget widget, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(widget);
+        Point p = UIService.getClickbox(widget);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -345,7 +343,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(WorldPoint worldPoint, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(worldPoint);
+        Point p = UIService.getClickbox(worldPoint);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -368,7 +366,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(LocalPoint localPoint, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(localPoint);
+        Point p = UIService.getClickbox(localPoint);
         move(p, mouseMovementStrategy);
         return this;
     }
@@ -393,7 +391,7 @@ public class VirtualMouse implements MouseListener {
      * @return The VirtualMouse instance for chaining.
      */
     public VirtualMouse move(LocalPoint localPoint, int plane, MouseMovementStrategy mouseMovementStrategy) {
-        Point p = uiService.getClickbox(localPoint, plane);
+        Point p = UIService.getClickbox(localPoint, plane);
         move(p, mouseMovementStrategy);
         return this;
     }

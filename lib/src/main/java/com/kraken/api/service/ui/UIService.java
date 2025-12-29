@@ -25,6 +25,48 @@ public class UIService {
     
     private final static Context ctx = RuneLite.getInjector().getInstance(Context.class);
 
+
+    /**
+     * Converts the given packed widget integer ID to a group ID by performing a bitwise right shift.
+     *
+     * <p>This method shifts the bits of the input ID 16 positions to the right,
+     * effectively dividing by 2^16 and discarding the lower 16 bits.
+     *
+     * @param packedId the integer ID to be converted.
+     * @return the resulting group ID after the bitwise shift.
+     */
+    public static int toGroupId(int packedId) {
+        return packedId >>> 16;
+    }
+
+    /**
+     * Converts a given integer ID to a child ID by masking higher-order bits.
+     *
+     * <p>
+     * This method extracts the lower 16 bits of the provided integer.
+     *
+     * @param packedId the input integer ID to be converted.
+     * @return the child ID represented as the lower 16 bits of the input ID.
+     */
+    public static int toChildId(int packedId) {
+        return packedId & 0xFFFF;
+    }
+
+    /**
+     * Combines a group ID and a child ID into a single packed integer.
+     *
+     * <p>The group ID is shifted 16 bits to the left and combined with the child ID
+     * using a bitwise OR operation.</p>
+     *
+     * @param groupId the identifier for the group
+     * @param childId the identifier for the child
+     * @return the packed integer containing the group ID and child ID
+     */
+    public static int pack(int groupId, int childId) {
+        return groupId << 16 | childId;
+    }
+
+
     /**
      * Returns a default rectangle representing the entire game canvas with a slight random offset.
      *
