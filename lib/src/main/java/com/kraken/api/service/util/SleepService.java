@@ -80,7 +80,7 @@ public class SleepService {
      */
     public static void sleepUntilIdle() {
         do {
-            tick(1);
+            tick();
         } while (!ctx.players().local().isIdle());
     }
 
@@ -92,7 +92,7 @@ public class SleepService {
     public static void sleepUntilTile(int worldX, int worldY) {
         Player player = ctx.players().local().raw();
         while((player.getWorldLocation().getX() != worldX || player.getWorldLocation().getY() != worldY)) {
-            tick(1);
+            tick();
         }
     }
 
@@ -238,14 +238,14 @@ public class SleepService {
      * Sleeps the current thread for one game tick
      */
     public static void tick() {
-        tick(1);
+        sleepFor(1);
     }
 
     /**
      * Sleeps the current thread by the specified number of game ticks
      * @param ticks ticks
      */
-    public static void tick(int ticks) {
+    public static void sleepFor(int ticks) {
         int tick = ctx.getClient().getTickCount() + ticks;
         int start = ctx.getClient().getTickCount();
         while(ctx.getClient().getTickCount() < tick && ctx.getClient().getTickCount() >= start) {
@@ -279,6 +279,27 @@ public class SleepService {
     }
 
     /**
+     * Waits until the specified condition is true, checking every 100ms, until a timeout is reached.
+     * @param awaitedCondition the condition to be met
+     * @param timeout the maximum time to wait in milliseconds
+     * @return true if the condition was met, false if the timeout was reached
+     */
+    public static boolean sleepUntilTrue(BooleanSupplier awaitedCondition, int timeout) {
+        if (ctx.getClient().isClientThread()) return false;
+        long startTime = System.currentTimeMillis();
+        do {
+            if (RunnableTask.isCanceled()) {
+                throw new RuntimeException("Script stopped");
+            }
+            if (awaitedCondition.getAsBoolean()) {
+                return true;
+            }
+            sleep(100);
+        } while (System.currentTimeMillis() - startTime < timeout);
+        return false;
+    }
+
+    /**
      * Sleeps while the specified condition is true or until the timeout is reached.
      * @param condition the condition to be met
      * @param timeout the maximum time to sleep in milliseconds
@@ -298,16 +319,5 @@ public class SleepService {
             sleep(100);
         }
         return true;
-    }
-
-
-    /**
-     * Sleeps for a specified number of game ticks.
-     * @param ticksToWait the number of ticks to wait
-     * @return true if the sleep completed, false if it was interrupted or timed out
-     */
-    public static boolean sleepUntilTick(int ticksToWait) {
-        int startTick = ctx.getClient().getTickCount();
-        return sleepUntil(() -> ctx.getClient().getTickCount() >= startTick + ticksToWait, ticksToWait * 600 + 2000);
     }
 }
