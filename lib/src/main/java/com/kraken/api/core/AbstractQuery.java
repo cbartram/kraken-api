@@ -89,7 +89,6 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
         return list.stream();
     }
 
-
     /**
      * Reverses the order of elements in the stream and returns a new stream with the reversed order.
      * <p>
