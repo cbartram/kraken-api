@@ -6,12 +6,14 @@ import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketClient;
 import com.kraken.api.core.packet.model.PacketDefFactory;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.util.Text;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
  * It uses a {@link PacketClient} provider to send the low-level packets,
  * which are defined by the {@link PacketDefFactory}.
  */
+@Slf4j
 @Singleton
 public class WidgetPackets {
 
@@ -89,6 +92,8 @@ public class WidgetPackets {
 
         // If no valid action was found (1-10), do nothing.
         if (num < 1 || num > 10) {
+            String actionsString = actions.stream().filter(Objects::nonNull).map(Text::removeTags).collect(Collectors.joining(", "));
+            log.error("No valid action found for: {}, Actions: [{}]", actionlist, actionsString);
             return;
         }
 
