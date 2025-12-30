@@ -25,6 +25,8 @@ public class GameArea {
 
     /**
      * Checks if the given world point is inside this area.
+     * @param point The world point to check
+     * @return true if the world point is contained within the set of tiles and false otherwise.
      */
     public boolean contains(WorldPoint point) {
         return tiles.contains(point);
@@ -32,6 +34,7 @@ public class GameArea {
 
     /**
      * Returns a random tile from the area.
+     * @return A random tile within the set of tiles
      */
     public WorldPoint getRandomTile() {
         if (tiles.isEmpty()) return null;
@@ -47,6 +50,8 @@ public class GameArea {
 
     /**
      * Combines this area with another (Union).
+     * @param other Another game area to check the union of
+     * @return GameArea the union tiles of the two game areas (the tiles that overlap).
      */
     public GameArea union(GameArea other) {
         Set<WorldPoint> newSet = new HashSet<>(this.tiles);
@@ -56,6 +61,8 @@ public class GameArea {
 
     /**
      * Removes the tiles of another area from this one (Difference).
+     * @param other Another game area to check
+     * @return GameArea the tiles which are not in the other game area
      */
     public GameArea subtract(GameArea other) {
         Set<WorldPoint> newSet = new HashSet<>(this.tiles);
@@ -65,8 +72,8 @@ public class GameArea {
 
     /**
      * Visualizes the area on the game screen.
-     * CALL THIS from your Overlay's render method.
-     *
+     * This should be called from a RuneLite Overlay's {@code render()} method.
+     * @param client an instance of the game client
      * @param graphics The graphics context
      * @param color The fill color (alpha is handled automatically if needed, but best to pass a translucent color)
      * @param outline Whether to draw just the outline or fill the tiles
@@ -94,7 +101,10 @@ public class GameArea {
     }
 
     /**
-     * Renders the area on the minimap.
+     * Renders the area on the minimap. This should be called from a RuneLite Overlay's {@code render()} method
+     * @param client an instance of the game client
+     * @param graphics The graphics context
+     * @param color The fill color (alpha is handled automatically if needed, but best to pass a translucent color)
      */
     public void renderMinimap(Client client, Graphics2D graphics, Color color) {
         if (client == null || tiles.isEmpty()) return;
