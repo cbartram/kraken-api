@@ -36,6 +36,12 @@ public class InventoryTest extends BaseApiTest {
             testsPassed &= ctx.inventory().filter(entity -> entity.getName().equalsIgnoreCase("Swordfish")).first().interact("Drop");
             Thread.sleep(RandomUtils.randomIntBetween(400, 900));
             testsPassed &= ctx.inventory().food().nameContains("Lobster").first().interact("Eat");
+
+            testsPassed &= !ctx.inventory().hasItem("Gold bar");
+            testsPassed &= !ctx.inventory().hasItem(1607); // sapphire
+            testsPassed &= ctx.inventory().hasItem("Swordfish");
+            testsPassed &= ctx.inventory().hasItem(379);
+
         } catch (Exception e) {
             log.error("Exception during inventory query test", e);
             return false;
