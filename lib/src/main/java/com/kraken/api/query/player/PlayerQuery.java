@@ -116,6 +116,15 @@ public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player
     }
 
     /**
+     * Sorts the player stream by distance from the local players current location.
+     * @return PlayerQuery
+     */
+    public PlayerQuery sortByDistance() {
+        final WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getWorldLocation().distanceTo(playerLoc)));
+    }
+
+    /**
      * Directly retrieves the local player wrapper.
      * Does not use the filter list.
      * @return PlayerEntity the {@code LocalPlayerEntity} object.

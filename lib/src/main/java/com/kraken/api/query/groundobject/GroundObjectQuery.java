@@ -155,6 +155,15 @@ public class GroundObjectQuery extends AbstractQuery<GroundObjectEntity, GroundO
     }
 
     /**
+     * Sorts the ground object stream by distance from the local players' current location.
+     * @return GroundObjectQuery
+     */
+    public GroundObjectQuery sortByDistance() {
+        final WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getLocation().distanceTo(playerLoc)));
+    }
+
+    /**
      * Filters for only objects whose location is within the specified distance from the players current local point.
      * @param distance The maximum distance from the anchor point (in world units).
      * @return True if the object is within the specified distance from the anchor point, false otherwise.

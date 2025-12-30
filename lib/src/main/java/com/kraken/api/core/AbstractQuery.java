@@ -277,4 +277,13 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
             return stream.findFirst().orElse(null);
         });
     }
+
+    /**
+     * Takes the first N elements from the stream and returns them as a list.
+     * @param n The number of elements to take from the stream.
+     * @return List of entities
+     */
+    public List<T> take(int n) {
+        return stream().limit(n).collect(Collectors.toList());
+    }
 }

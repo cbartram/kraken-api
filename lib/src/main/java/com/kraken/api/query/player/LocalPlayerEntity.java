@@ -2,6 +2,7 @@ package com.kraken.api.query.player;
 
 import com.kraken.api.Context;
 import com.kraken.api.query.widget.WidgetEntity;
+import com.kraken.api.service.tile.GameArea;
 import com.kraken.api.service.ui.tab.InterfaceTab;
 import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
@@ -382,6 +383,16 @@ public class LocalPlayerEntity extends PlayerEntity {
      */
     public boolean isInArea(WorldPoint worldPoint) {
         return isInArea(worldPoint, 5);
+    }
+
+    /**
+     * Checks if the player is within the game area.
+     * @param area The {@link GameArea} to check.
+     * @return True if the player is within the game area and false otherwise.
+     */
+    public boolean isInArea(GameArea area) {
+        if (area == null) return false;
+        return area.contains(raw().getWorldLocation());
     }
 
     /**
