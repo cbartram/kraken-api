@@ -50,6 +50,10 @@ The following items must be present in your **Bank**:
 - **Location**: Must be near the **Barbarian Village fire** (permanent fire).
 - **Inventory**: Requires at least 2 Raw Salmon and 2 Raw Trout in inventory.
 
+### `InventoryTest`
+- **Location**: Any bank which is currently open
+- **Inventory**: You cannot have a gold bar or a sapphire in your inventory
+
 ### `TaskChainTest`
 - **Location**: Expects to run near **Lumbridge**.
 - **Requirements**:

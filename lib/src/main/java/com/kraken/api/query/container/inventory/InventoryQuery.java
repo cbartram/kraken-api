@@ -200,14 +200,6 @@ public class InventoryQuery extends AbstractQuery<InventoryEntity, InventoryQuer
     }
 
     /**
-     * Returns the count of items in the inventory
-     * @return The count of items in the players inventory
-     */
-    public long count() {
-        return source().get().count();
-    }
-
-    /**
      * Returns the free space in a users inventory.
      * @return The amount of free space available in the players inventory
      */
