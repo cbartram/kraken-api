@@ -7,7 +7,10 @@ import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.coords.WorldPoint;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -128,6 +131,15 @@ public class NpcQuery extends AbstractQuery<NpcEntity, NpcQuery, NPC> {
         return sorted(Comparator.comparingInt(npc ->
                 npc.raw().getWorldLocation().distanceTo(location)
         ));
+    }
+
+    /**
+     * Sorts the NPC stream by distance from the local players' current location.
+     * @return NpcQuery
+     */
+    public NpcQuery sortByDistance() {
+        final WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getWorldLocation().distanceTo(playerLoc)));
     }
 
     /**

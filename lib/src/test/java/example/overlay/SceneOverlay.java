@@ -8,9 +8,11 @@ import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.query.player.PlayerEntity;
 import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
+import com.kraken.api.service.tile.GameArea;
 import com.kraken.api.service.tile.TileService;
 import example.ExampleConfig;
 import example.ExamplePlugin;
+import example.tests.service.AreaServiceTest;
 import net.runelite.api.Actor;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
@@ -34,15 +36,17 @@ public class SceneOverlay extends Overlay {
     private final Context ctx;
     private final ExampleConfig config;
     private final TileService tileService;
+    private final AreaServiceTest areaServiceTest;
 
     @Inject
     public SceneOverlay(ExamplePlugin plugin, LocalPathfinder pathfinder, Context ctx, ExampleConfig config,
-                        TileService tileService) {
+                        TileService tileService, AreaServiceTest areaServiceTest) {
         this.plugin = plugin;
         this.pathfinder = pathfinder;
         this.ctx = ctx;
         this.config = config;
         this.tileService = tileService;
+        this.areaServiceTest = areaServiceTest;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
@@ -84,7 +88,41 @@ public class SceneOverlay extends Overlay {
             renderWidgetDebug(graphics);
         }
 
+        if(config.showAreaService()) {
+            renderAreaService(graphics);
+        }
+
         return null;
+    }
+
+    private void renderAreaService(Graphics2D graphics) {
+        if (areaServiceTest.bankReachabilityArea != null) {
+            Color reachColor = new Color(0, 255, 0, 80);
+            areaServiceTest.bankReachabilityArea.render(ctx.getClient(), graphics, reachColor, false);
+            areaServiceTest.bankReachabilityArea.render(ctx.getClient(), graphics, Color.GREEN, true);
+
+            GameArea area = areaServiceTest.bankReachabilityArea;
+            if (!area.getTiles().isEmpty()) {
+                WorldPoint first = area.getTiles().iterator().next();
+                LocalPoint lp = LocalPoint.fromWorld(ctx.getClient(), first);
+                if (lp != null) {
+                    net.runelite.api.Point p = Perspective.getCanvasTextLocation(ctx.getClient(), graphics, lp, "Reachable", 0);
+                    if (p != null) OverlayUtil.renderTextLocation(graphics, p, "Reachable", Color.GREEN);
+                }
+            }
+        }
+
+        if(areaServiceTest.radiusArea != null) {
+            Color radiusColor = new Color(255, 0, 0, 80);
+            areaServiceTest.radiusArea.render(ctx.getClient(), graphics, radiusColor, false);
+            areaServiceTest.radiusArea.render(ctx.getClient(), graphics, Color.RED, true);
+        }
+
+        if (areaServiceTest.complexBuildingArea != null) {
+            Color polyColor = new Color(255, 0, 255, 100);
+            areaServiceTest.complexBuildingArea.render(ctx.getClient(), graphics, polyColor, false);
+            areaServiceTest.complexBuildingArea.render(ctx.getClient(), graphics, Color.MAGENTA, true);
+        }
     }
 
     /**

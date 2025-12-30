@@ -178,6 +178,15 @@ public class GameObjectQuery extends AbstractQuery<GameObjectEntity, GameObjectQ
     }
 
     /**
+     * Sorts the game object stream by distance from the local players current location.
+     * @return GameObjectQuery
+     */
+    public GameObjectQuery sortByDistance() {
+        final WorldPoint playerLoc = ctx.players().local().raw().getWorldLocation();
+        return sorted(Comparator.comparingInt(obj -> obj.raw().getWorldLocation().distanceTo(playerLoc)));
+    }
+
+    /**
      * Filters for only objects whose location is within the specified distance from the anchor point.
      * @param anchor The anchor local point.
      * @param distance The maximum distance from the anchor point (in local units).

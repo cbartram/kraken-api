@@ -243,6 +243,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableAreaService",
+            name = "Start Area Service Tests",
+            description = "Enable area service tests",
+            section = serviceTests,
+            position = 9
+    )
+    default boolean enableAreaService() {
+        return true;
+    }
+
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================
@@ -391,10 +402,21 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "showaAreaService",
+            name = "Show Game Areas",
+            description = "Show game areas rendered from the Area service tests.",
+            section = overlaySettings,
+            position = 10
+    )
+    default boolean showAreaService() {
+        return true;
+    }
+
+    @ConfigItem(
             name = "Show Mouse Overlay",
             keyName = "showMouse",
             description = "Shows an overlay of the mouse position and trail.",
-            position = 13,
+            position = 11,
             section = overlaySettings
     )
     default boolean showMouse() {
@@ -406,7 +428,7 @@ public interface ExampleConfig extends Config {
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
             section = overlaySettings,
-            position = 14
+            position = 12
     )
     default boolean showDebugInfo() {
         return false;
@@ -417,7 +439,7 @@ public interface ExampleConfig extends Config {
             name = "Show Current Path",
             description = "Displays the current path calculated by the local pathfinder.",
             section = overlaySettings,
-            position = 15
+            position = 13
     )
     default boolean renderCurrentPath() {
         return false;
@@ -427,7 +449,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 16,
+            position = 14,
             section = overlaySettings
     )
     default boolean showVisualizer() {

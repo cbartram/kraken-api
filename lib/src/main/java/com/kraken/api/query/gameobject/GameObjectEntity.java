@@ -2,6 +2,7 @@ package com.kraken.api.query.gameobject;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import com.kraken.api.service.tile.GameArea;
 import net.runelite.api.GameObject;
 import net.runelite.api.ObjectComposition;
 import net.runelite.api.widgets.Widget;
@@ -49,6 +50,16 @@ public class GameObjectEntity extends AbstractEntity<GameObject> {
         if (raw == null) return false;
         ctx.getInteractionManager().interact(raw, action);
         return true;
+    }
+
+    /**
+     * Checks if the game object is within the game area.
+     * @param area The {@link GameArea} to check.
+     * @return True if the game object is within the game area and false otherwise.
+     */
+    public boolean isInArea(GameArea area) {
+        if (area == null) return false;
+        return area.contains(raw().getWorldLocation());
     }
 
     /**

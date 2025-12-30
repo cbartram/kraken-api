@@ -2,6 +2,7 @@ package com.kraken.api.query.npc;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
+import com.kraken.api.service.tile.GameArea;
 import lombok.SneakyThrows;
 import net.runelite.api.HeadIcon;
 import net.runelite.api.NPC;
@@ -86,6 +87,17 @@ public class NpcEntity extends AbstractEntity<NPC> {
         return ctx.runOnClientThreadOptional(() -> raw.getLocalLocation().distanceTo(
                 ctx.getClient().getLocalPlayer().getLocalLocation())).orElse(Integer.MAX_VALUE);
     }
+
+    /**
+     * Checks if the NPC's current location is within the game area.
+     * @param area The {@link GameArea} to check.
+     * @return True if the NPC location is within the game area and false otherwise.
+     */
+    public boolean isInArea(GameArea area) {
+        if (area == null) return false;
+        return area.contains(raw().getWorldLocation());
+    }
+
 
     @Override
     public boolean interact(String action) {
