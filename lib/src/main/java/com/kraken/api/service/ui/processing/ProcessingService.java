@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.WidgetPackets;
-import com.kraken.api.query.widget.WidgetEntity;
+import com.kraken.api.query.container.ContainerItem;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +48,37 @@ public class ProcessingService {
     public boolean process(int... itemIds) {
         List<ExtendedItem> items = getProcessableItems();
         for (ExtendedItem item : items) {
-            System.out.println("Item: " + item.name);
             if (ArrayUtils.contains(itemIds, item.getId())) {
+                widgetPackets.queueResumePause(item.getSlot(), getAmount());
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+      /**
+     * Confirms the selection of one of the specified container items by resuming the appropriate widget
+     * interaction based on the current multi-quantity value. This method expects the item id of the item
+     * to create, not necessarily the item the player has. i.e. for cooking Salmon it expects the item id
+     * of a cooked salmon, not the raw salmon that the player may have in their inventory.
+     *
+     * <p>This method iterates over a map of processable item IDs and their associated slot indices,
+     * checking if any of the provided {@code itemIds} match the available items. If a match is found,
+     * it sends a "resume/pause" action packet for the corresponding widget slot with the current
+     * quantity value.</p>
+     *
+     * @param containerItem A non null container item to compare against the processable
+     *                items currently available. These represent the items the user
+     *                wants to confirm.
+     *
+     * @return {@code true} if at least one of the provided {@code itemIds} matches the processable
+     *         items and an interaction is successfully queued; {@code false} otherwise.
+     */
+    public boolean process(ContainerItem containerItem) {
+        List<ExtendedItem> items = getProcessableItems();
+        for (ExtendedItem item : items) {
+            if (containerItem.getId() == item.getId()) {
                 widgetPackets.queueResumePause(item.getSlot(), getAmount());
                 return true;
             }
@@ -119,12 +148,12 @@ public class ProcessingService {
      * @return {@code true} if the widget is open and currently visible; {@code false} otherwise.
      */
     public boolean isOpen() {
-        WidgetEntity widget = ctx.widgets().get(InterfaceID.Skillmulti.UNIVERSE);
+        Widget widget = ctx.getClient().getWidget(InterfaceID.Skillmulti.UNIVERSE);
         if(widget == null) {
             return false;
         }
 
-        return widget.isVisible();
+        return !widget.isSelfHidden();
     }
 
     /**
