@@ -49,7 +49,7 @@ public class ProcessingService {
         List<ExtendedItem> items = getProcessableItems();
         for (ExtendedItem item : items) {
             if (ArrayUtils.contains(itemIds, item.getId())) {
-                widgetPackets.queueResumePause(item.getSlot(), getAmount());
+                ctx.runOnClientThread(() -> widgetPackets.queueResumePause(item.getSlot(), getAmount()));
                 return true;
             }
         }
@@ -79,7 +79,7 @@ public class ProcessingService {
         List<ExtendedItem> items = getProcessableItems();
         for (ExtendedItem item : items) {
             if (containerItem.getId() == item.getId()) {
-                widgetPackets.queueResumePause(item.getSlot(), getAmount());
+                ctx.runOnClientThread(() -> widgetPackets.queueResumePause(item.getSlot(), getAmount()));
                 return true;
             }
         }
@@ -108,7 +108,7 @@ public class ProcessingService {
         for (ExtendedItem item : items) {
             for (String itemName : itemNames) {
                 if (itemName.equalsIgnoreCase(item.getName())) {
-                    widgetPackets.queueResumePause(item.getSlot(), getAmount());
+                    ctx.runOnClientThread(() -> widgetPackets.queueResumePause(item.getSlot(), getAmount()));
                     return true;
                 }
             }
@@ -247,7 +247,7 @@ public class ProcessingService {
     private static class ExtendedItem {
         private int id;
         private int quantity;
-        private int slot;
+        private int slot; // Slot is actually the packed widget id
         private String name;
     }
 }

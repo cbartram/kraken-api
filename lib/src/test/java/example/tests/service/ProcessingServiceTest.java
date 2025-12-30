@@ -46,7 +46,7 @@ public class ProcessingServiceTest extends BaseApiTest {
              return false;
          }
 
-         SleepService.sleep(2000, 2500);
+         SleepService.sleep(5000, 8500);
          if(!processingService.process(333)) { // Cooked trout 333 is what we want, 331 raw is what we have
              log.error("Failed to process item 331 -> 333");
              return false;
