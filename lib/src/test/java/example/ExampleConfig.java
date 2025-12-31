@@ -254,17 +254,6 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
-    @ConfigItem(
-            keyName = "bankPin",
-            name = "Start Bank Pin",
-            description = "Enable area service tests",
-            section = serviceTests,
-            position = 10
-    )
-    default boolean bankPin() {
-        return true;
-    }
-
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================

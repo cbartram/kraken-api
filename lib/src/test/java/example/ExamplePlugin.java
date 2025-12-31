@@ -168,10 +168,6 @@ public class ExamplePlugin extends Plugin {
 
         String key = event.getKey();
 
-        if(key.equals("bankPin")) {
-            bankService.enterPin(new int[]{0, 5, 1, 9});
-        }
-
         if(key.equalsIgnoreCase("pauseScript") && config.pauseScript()) {
             exampleScript.pause();
         } else {
