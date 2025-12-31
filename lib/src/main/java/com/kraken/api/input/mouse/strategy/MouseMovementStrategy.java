@@ -6,6 +6,7 @@ import com.kraken.api.input.mouse.strategy.instant.InstantStrategy;
 import com.kraken.api.input.mouse.strategy.linear.LinearStrategy;
 import com.kraken.api.input.mouse.strategy.none.NoMovement;
 import com.kraken.api.input.mouse.strategy.replay.ReplayStrategy;
+import com.kraken.api.input.mouse.strategy.wind.WindStrategy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
@@ -17,6 +18,7 @@ public enum MouseMovementStrategy {
     INSTANT(InstantStrategy.class),
     LINEAR(LinearStrategy.class),
     BEZIER(BezierStrategy.class),
+    WIND(WindStrategy.class),
     REPLAY(ReplayStrategy.class);
     
     @Getter

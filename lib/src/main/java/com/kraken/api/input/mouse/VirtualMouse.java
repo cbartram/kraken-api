@@ -3,6 +3,8 @@ package com.kraken.api.input.mouse;
 import com.google.inject.Singleton;
 import com.kraken.api.input.mouse.strategy.MouseMovementStrategy;
 import com.kraken.api.input.mouse.strategy.linear.LinearStrategy;
+import com.kraken.api.input.mouse.strategy.wind.WindMouseConfig;
+import com.kraken.api.input.mouse.strategy.wind.WindStrategy;
 import com.kraken.api.query.container.ContainerItem;
 import com.kraken.api.service.ui.UIService;
 import lombok.Getter;
@@ -185,9 +187,20 @@ public class VirtualMouse implements MouseListener {
             updatePosition();
         }
 
-        log.info("Last point is: ({}, {})", lastPoint.getX(), lastPoint.getY());
         strategy.getStrategy().move(lastPoint, target);
         this.lastPoint = target;
+        return this;
+    }
+
+    /**
+     * Moves the mouse using the wind mouse movement strategy using a custom set of wind mouse configuration.
+     * @param target The target point for the mouse
+     * @param config Custom wind mouse configuration object
+     * @return The {@link VirtualMouse} instance for method chaining.
+     */
+    public VirtualMouse move(Point target, WindMouseConfig config) {
+        WindStrategy strategy = (WindStrategy) MouseMovementStrategy.WIND.getStrategy();
+        strategy.move(lastPoint, target, config);
         return this;
     }
 
