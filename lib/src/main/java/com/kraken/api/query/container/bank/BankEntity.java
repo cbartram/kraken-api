@@ -74,7 +74,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
      */
     public boolean withdrawAllNoted() {
         return ctx.runOnClientThread(() -> {
-            BankService.setWithdrawMode(true);
+            ctx.getService(BankService.class).setWithdrawMode(true);
             return interact("Withdraw-All");
         });
     }
@@ -105,7 +105,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
         if (amount == 10) return setModeAndInteract(noted, "Withdraw-10");
 
         return ctx.runOnClientThread(() -> {
-            if (!BankService.setWithdrawMode(noted)) return false;
+            if (!ctx.getService(BankService.class).setWithdrawMode(noted)) return false;
 
             // If user is trying to withdraw 500 and the X value is already set to 500 then just queue the packet
             // for that menu option "Withdraw-500" instead of setting Withdraw-X and then setting 500 again.
@@ -139,7 +139,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
      */
     private boolean setModeAndInteract(boolean noted, String action) {
         return ctx.runOnClientThread(() -> {
-            boolean withdrawModeSet = BankService.setWithdrawMode(noted);
+            boolean withdrawModeSet = ctx.getService(BankService.class).setWithdrawMode(noted);
             if(!withdrawModeSet) return false;
             return interact(action);
         });

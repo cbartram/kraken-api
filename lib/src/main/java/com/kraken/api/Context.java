@@ -17,6 +17,7 @@ import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.query.player.PlayerQuery;
 import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.query.world.WorldQuery;
+import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.tile.TileService;
 import lombok.Getter;
 import lombok.Setter;
@@ -54,6 +55,7 @@ public class Context {
     @Getter
     private final TileService tileService;
 
+
     @Getter
     private final LocalPlayerEntity localPlayer;
 
@@ -65,7 +67,8 @@ public class Context {
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus,
-                   final Injector injector, final InteractionManager interactionManager, final TileService tileService, final ItemManager itemManager) {
+                   final Injector injector, final InteractionManager interactionManager, final TileService tileService,
+                   final ItemManager itemManager, final BankService bankService) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
@@ -76,6 +79,7 @@ public class Context {
         this.itemManager = itemManager;
         this.localPlayer = new LocalPlayerEntity(this);
         this.eventBus.register(this.localPlayer);
+        this.eventBus.register(bankService);
     }
 
     /**

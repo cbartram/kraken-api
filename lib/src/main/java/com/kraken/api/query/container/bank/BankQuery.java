@@ -105,6 +105,6 @@ public class BankQuery extends AbstractQuery<BankEntity, BankQuery, BankItemWidg
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
     public boolean isOpen() {
-        return BankService.isOpen();
+        return ctx.getService(BankService.class).isOpen();
     }
 }

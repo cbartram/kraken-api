@@ -63,7 +63,7 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
      * @return True if the deposit was successful and false otherwise
      */
     public boolean deposit(int amount) {
-        if(!BankService.isOpen()) return false;
+        if(!ctx.getService(BankService.class).isOpen()) return false;
         ContainerItem raw = raw();
 
         switch(amount) {
