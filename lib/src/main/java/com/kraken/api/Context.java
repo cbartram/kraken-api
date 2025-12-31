@@ -55,7 +55,6 @@ public class Context {
     @Getter
     private final TileService tileService;
 
-
     @Getter
     private final LocalPlayerEntity localPlayer;
 
@@ -63,7 +62,6 @@ public class Context {
     private final ItemManager itemManager;
 
     private final Injector injector;
-    private final EventBus eventBus;
 
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus,
@@ -73,13 +71,12 @@ public class Context {
         this.clientThread = clientThread;
         this.mouse = mouse;
         this.injector = injector;
-        this.eventBus = eventBus;
         this.tileService = tileService;
         this.interactionManager = interactionManager;
         this.itemManager = itemManager;
         this.localPlayer = new LocalPlayerEntity(this);
-        this.eventBus.register(this.localPlayer);
-        this.eventBus.register(bankService);
+        eventBus.register(this.localPlayer);
+        eventBus.register(bankService);
     }
 
     /**
