@@ -1,5 +1,6 @@
 package com.kraken.api.service.bank;
 
+import com.google.inject.Provider;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
@@ -37,7 +38,7 @@ public class BankService {
     private static final int WITHDRAW_NOTE_MODE_WIDGET = 786458;
 
     @Inject
-    private Context ctx;
+    private Provider<Context> ctxProvider;
 
     @Inject
     private Client client;
@@ -51,9 +52,9 @@ public class BankService {
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
     public boolean isOpen() {
-        WidgetEntity bank = ctx.widgets().withText("Rearrange mode").first();
+        WidgetEntity bank = ctxProvider.get().widgets().withText("Rearrange mode").first();
         if(bank == null) return false;
-        return ctx.runOnClientThread(() -> !bank.raw().isHidden());
+        return ctxProvider.get().runOnClientThread(() -> !bank.raw().isHidden());
     }
 
     /**
@@ -61,7 +62,7 @@ public class BankService {
      * @return True for an open bank pin interface
      */
     public boolean isPinOpen() {
-        Widget w = ctx.getClient().getWidget(InterfaceID.BankpinKeypad.UNIVERSE);
+        Widget w = ctxProvider.get().getClient().getWidget(InterfaceID.BankpinKeypad.UNIVERSE);
         if(w == null) return false;
 
         return !w.isSelfHidden();
@@ -127,15 +128,15 @@ public class BankService {
      * @return True if the withdrawal mode was set correctly and false otherwise.
      */
     public boolean setWithdrawMode(boolean noted) {
-        MousePackets mousePackets = ctx.getService(MousePackets.class);
-        WidgetPackets widgetPackets = ctx.getService(WidgetPackets.class);
+        MousePackets mousePackets = ctxProvider.get().getService(MousePackets.class);
+        WidgetPackets widgetPackets = ctxProvider.get().getService(WidgetPackets.class);
 
         int targetMode = noted ? 1 : 0;
-        int currentMode = ctx.getVarbitValue(WITHDRAW_AS_VARBIT);
+        int currentMode = ctxProvider.get().getVarbitValue(WITHDRAW_AS_VARBIT);
 
         if (currentMode == targetMode) return true;
 
-        Widget toggleWidget = ctx.getClient().getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
+        Widget toggleWidget = client.getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
 
         if (toggleWidget != null) {
             String action = noted ? "Note" : "Item";
@@ -161,7 +162,7 @@ public class BankService {
      */
     public boolean close() {
         if (isOpen()) {
-            ctx.runOnClientThread(() -> ctx.getClient().runScript(29));
+            ctxProvider.get().runOnClientThread(() -> client.runScript(29));
             return true;
         }
         return false;
@@ -189,14 +190,14 @@ public class BankService {
      * @return
      */
     private boolean depositAllInternal(int widgetId, String action) {
-        return ctx.runOnClientThread(() -> {
-            if(ctx.inventory().isEmpty()) return true;
+        return ctxProvider.get().runOnClientThread(() -> {
+            if(ctxProvider.get().inventory().isEmpty()) return true;
             if (!isOpen()) return false;
 
-            Widget widget = ctx.getClient().getWidget(widgetId); // Deposit All
+            Widget widget = client.getWidget(widgetId); // Deposit All
             if (widget == null) return false;
 
-            ctx.widgets().withId(widgetId).first().interact(action);
+            ctxProvider.get().widgets().withId(widgetId).first().interact(action);
             return true;
         });
     }
