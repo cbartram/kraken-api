@@ -3,6 +3,7 @@ package com.kraken.api.query.container.bank;
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractEntity;
 import com.kraken.api.query.container.ContainerItem;
+import com.kraken.api.service.bank.BankService;
 
 
 public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
@@ -62,7 +63,7 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
      * @return True if the deposit was successful and false otherwise
      */
     public boolean deposit(int amount) {
-        if(!ctx.getBankService().isOpen()) return false;
+        if(!BankService.isOpen()) return false;
         ContainerItem raw = raw();
 
         switch(amount) {

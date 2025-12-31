@@ -1,6 +1,5 @@
 package com.kraken.api.service.bank;
 
-import com.google.inject.Provider;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
@@ -9,8 +8,8 @@ import com.kraken.api.service.ui.UIService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.RuneLite;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.Objects;
@@ -29,24 +28,17 @@ public class BankService {
     private static final int WITHDRAW_ITEM_MODE_WIDGET = 786456;
     private static final int WITHDRAW_NOTE_MODE_WIDGET = 786458;
     
-    @Inject
-    private MousePackets mousePackets;
-    
-    @Inject
-    private WidgetPackets widgetPackets;
-    
-    @Inject
-    private Provider<Context> ctxProvider;
+    private final static Context ctx = RuneLite.getInjector().getInstance(Context.class);
 
     /**
      * Checks whether the bank interface is open.
      *
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
-    public boolean isOpen() {
-        WidgetEntity bank = ctxProvider.get().widgets().withText("Rearrange mode").first();
+    public static boolean isOpen() {
+        WidgetEntity bank = ctx.widgets().withText("Rearrange mode").first();
         if(bank == null) return false;
-        return ctxProvider.get().runOnClientThread(() -> !bank.raw().isHidden());
+        return ctx.runOnClientThread(() -> !bank.raw().isHidden());
     }
 
     /**
@@ -56,13 +48,16 @@ public class BankService {
      *                     items in a noted format.
      * @return True if the withdrawal mode was set correctly and false otherwise.
      */
-    public boolean setWithdrawMode(boolean noted) {
+    public static boolean setWithdrawMode(boolean noted) {
+        MousePackets mousePackets = ctx.getService(MousePackets.class);
+        WidgetPackets widgetPackets = ctx.getService(WidgetPackets.class);
+
         int targetMode = noted ? 1 : 0;
-        int currentMode = ctxProvider.get().getVarbitValue(WITHDRAW_AS_VARBIT);
+        int currentMode = ctx.getVarbitValue(WITHDRAW_AS_VARBIT);
 
         if (currentMode == targetMode) return true;
 
-        Widget toggleWidget = ctxProvider.get().getClient().getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
+        Widget toggleWidget = ctx.getClient().getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
 
         if (toggleWidget != null) {
             String action = noted ? "Note" : "Item";
@@ -88,7 +83,7 @@ public class BankService {
      */
     public boolean close() {
         if (isOpen()) {
-            ctxProvider.get().runOnClientThread(() -> ctxProvider.get().getClient().runScript(29));
+            ctx.runOnClientThread(() -> ctx.getClient().runScript(29));
             return true;
         }
         return false;
@@ -98,7 +93,7 @@ public class BankService {
      * Deposit all items in the players inventory into the bank.
      * @return True if the deposit was successful and false otherwise
      */
-    public boolean depositAll() {
+    public static boolean depositAll() {
         return depositAllInternal(786476, "Deposit inventory");
     }
 
@@ -106,7 +101,7 @@ public class BankService {
      * Deposits all worn items from the players equipment tab into the bank.
      * @return True if the deposit was successful and false otherwise
      */
-    public boolean depositAllEquipment() {
+    public static boolean depositAllEquipment() {
         return depositAllInternal(786478, "Deposit worn items");
     }
 
@@ -115,15 +110,15 @@ public class BankService {
      * @param widgetId Widget id of the deposit button to interact with
      * @return
      */
-    private boolean depositAllInternal(int widgetId, String action) {
-        return ctxProvider.get().runOnClientThread(() -> {
-            if(ctxProvider.get().inventory().isEmpty()) return true;
+    private static boolean depositAllInternal(int widgetId, String action) {
+        return ctx.runOnClientThread(() -> {
+            if(ctx.inventory().isEmpty()) return true;
             if (!isOpen()) return false;
 
-            Widget widget = ctxProvider.get().getClient().getWidget(widgetId); // Deposit All
+            Widget widget = ctx.getClient().getWidget(widgetId); // Deposit All
             if (widget == null) return false;
 
-            ctxProvider.get().widgets().withId(widgetId).first().interact(action);
+            ctx.widgets().withId(widgetId).first().interact(action);
             return true;
         });
     }
