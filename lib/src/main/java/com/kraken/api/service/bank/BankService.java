@@ -3,23 +3,24 @@ package com.kraken.api.service.bank;
 import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
+import com.kraken.api.input.KeyboardService;
 import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.ui.UIService;
 import com.kraken.api.service.util.SleepService;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
 import net.runelite.api.Point;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarClientID;
+import net.runelite.api.widgets.JavaScriptCallback;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -35,10 +36,14 @@ public class BankService {
     private static final int WITHDRAW_ITEM_MODE_WIDGET = 786456;
     private static final int WITHDRAW_NOTE_MODE_WIDGET = 786458;
 
-    private final Map<Integer, Widget> pinWidgets = new ConcurrentHashMap<>();
-
     @Inject
     private Context ctx;
+
+    @Inject
+    private Client client;
+
+    @Inject
+    private KeyboardService keyboard;
 
     /**
      * Checks whether the bank interface is open.
@@ -63,39 +68,35 @@ public class BankService {
     }
 
     @Subscribe
-    private void onGameTick(GameTick e) {
-        log.info("Game tick, bank service, subs working");
-    }
-
-    @Subscribe
     public void onScriptCallbackEvent(ScriptCallbackEvent event) {
         if (event.getEventName().equals("bankpinButtonSetup")) {
-            int[] intStack = ctx.getClient().getIntStack();
-            int intStackSize = ctx.getClient().getIntStackSize();
+            int[] intStack = client.getIntStack();
+            int intStackSize = client.getIntStackSize();
 
             // The value on the stack representing the number (0-9)
-            final int buttonId = intStack[intStackSize - 1];
+            final int pinNumber = intStack[intStackSize - 1];
 
             // The widget component ID
             final int compId = intStack[intStackSize - 2];
 
-            Widget button = ctx.getClient().getWidget(compId);
+            Widget button = client.getWidget(compId);
+            Widget pinButtonWidget = button.getChild(0);
+            final Object[] onOpListener = pinButtonWidget.getOnOpListener();
+            pinButtonWidget.setOnKeyListener((JavaScriptCallback) e -> {
+                int typedChar = e.getTypedKeyChar() - '0';
+                if (typedChar != pinNumber) {
+                    return;
+                }
 
-            // Usually the clickable part is child 1 (the rect), but check your debugs.
-            // Based on your previous code:
-            Widget buttonRect = button.getChild(0);
-
-            if (buttonRect != null) {
-                log.info("Adding button: {} and rect: {}", buttonId, buttonRect);
-                pinWidgets.put(buttonId, buttonRect);
-            }
+                log.info("Bank pin keypress: {}", typedChar);
+                client.runScript(onOpListener);
+                client.setVarcIntValue(VarClientID.KEYBOARD_TIMEOUT, client.getGameCycle() + 1);
+            });
         }
     }
 
     /**
      * Enters the bank pin using the provided 4 digits.
-     * Note: This method attempts to queue interactions. Depending on your script loop speed,
-     * you may need to add sleeps between clicks if this is running on a fast loop.
      * @param pin An integer array of size 4 which contains the bank pin to enter.
      * @return boolean true if the pin was entered and false otherwise. This will return true if the pin was entered
      * at all. This doesn't necessarily mean the pin was correct.
@@ -105,33 +106,16 @@ public class BankService {
             return false;
         }
 
-        // Validate range
         for (int digit : pin) {
-            if (digit > 9 || digit < 0) {
-                log.error("Bank pin digits must be between 0-9.");
+            if (digit < 0 || digit > 9) {
+                log.error("Invalid pin digit: {}, must be between 0-9", digit);
                 return false;
             }
+
+            keyboard.typeChar(Character.forDigit(digit, 10));
+            SleepService.sleep(30, 70);
         }
 
-        MousePackets mousePackets = ctx.getService(MousePackets.class);
-        WidgetPackets widgetPackets = ctx.getService(WidgetPackets.class);
-
-        for (int digit : pin) {
-//            InterfaceID.BankpinKeypad.A - J += 2 each widget id starting with: 13959184 so 86, 88, 90, 92, 94, 96, 98, 200
-            Widget targetWidget = pinWidgets.get(digit);
-            ctx.runOnClientThread(() -> {
-                if (targetWidget != null && !targetWidget.isHidden()) {
-                    Point pt = UIService.getClickbox(targetWidget);
-                    mousePackets.queueClickPacket(pt.getX(), pt.getY());
-                    widgetPackets.queueWidgetAction(targetWidget, "Select");
-                    SleepService.sleep(600, 900);
-                } else {
-                    log.warn("Widget for digit {} not found. Interface might not be fully loaded.", digit);
-                }
-            });
-        }
-
-        pinWidgets.clear();
         return true;
     }
 

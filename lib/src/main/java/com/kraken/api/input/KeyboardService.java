@@ -36,6 +36,30 @@ public class KeyboardService {
     }
 
     /**
+     * Types a single character.
+     * Useful for things like Bank Pins where you want control over the timing between digits.
+     */
+    public void typeChar(char c) {
+        withFocusCanvas(() -> {
+            int delay = RandomService.between(20, 100);
+            dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, c, delay);
+        });
+    }
+
+    /**
+     * Types a string with a customizable sleep between characters.
+     */
+    public void typeString(String text, int minSleep, int maxSleep) {
+        withFocusCanvas(() -> {
+            for (char c : text.toCharArray()) {
+                int delay = RandomService.between(20, 100);
+                dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, c, delay);
+                SleepService.sleep(minSleep, maxSleep);
+            }
+        });
+    }
+
+    /**
      * Dispatches a low-level KeyEvent to the canvas after a specified delay.
      *
      * @param id       the KeyEvent type (e.g. KEY_TYPED, KEY_PRESSED, etc.)
