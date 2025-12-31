@@ -6,7 +6,6 @@ import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
-import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -74,9 +73,6 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private Client client;
-
-    @Inject
-    private BankService bankService;
 
     @Inject
     private SceneOverlay sceneOverlay;
