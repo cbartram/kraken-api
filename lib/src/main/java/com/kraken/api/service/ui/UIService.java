@@ -13,6 +13,7 @@ import net.runelite.client.RuneLite;
 
 import javax.inject.Singleton;
 import java.awt.*;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -24,6 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class UIService {
     
     private final static Context ctx = RuneLite.getInjector().getInstance(Context.class);
+    private final static Random random = new Random();
 
 
     /**
@@ -400,7 +402,6 @@ public class UIService {
         if (rectangle.getX() == 0 && rectangle.getY() == 0) return new Point(1, 1);
 
         if (!randomize) return new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY());
-
         return RandomService.randomPointEx(new Point((int) rectangle.getCenterX(), (int) rectangle.getCenterY()), rectangle, 0.78);
     }
 }

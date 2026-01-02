@@ -146,24 +146,8 @@ public class SceneOverlay extends Overlay {
                 graphics.setColor(Color.CYAN); // Solid Cyan
                 graphics.draw(polygon);
             }
-
         }
-    }    /**
-     * Calculates the center WorldPoint of a given WorldArea.
-     *
-     * @param area The WorldArea to calculate the center for.
-     * @return The center WorldPoint of the area.
-     */
-    private WorldPoint getCenterOfArea(WorldArea area) {
-        if (area == null) {
-            return null;
-        }
-        // Calculate the center point of the area from the southwest point
-        int centerX = area.getX() + area.getWidth() / 2;
-        int centerY = area.getY() + area.getHeight() / 2;
-        return new WorldPoint(centerX, centerY, area.getPlane());
     }
-
 
     private void renderTargetTile(Graphics2D g) {
         if(plugin.getTargetTile() != null) {
@@ -445,8 +429,6 @@ public class SceneOverlay extends Overlay {
             sb.append(" | GE: ").append(formatValue(gePrice));
             sb.append(" | HA: ").append(formatValue(haPrice));
 
-            // 4. Color Coding
-            // Pink for expensive (> 10k), White for normal, Red if unreachable
             Color textColor = Color.WHITE;
             if (!isReachable) {
                 textColor = Color.RED;
@@ -459,14 +441,12 @@ public class SceneOverlay extends Overlay {
                 continue;
             }
 
-            // 5. Render
-            // We use getCanvasTextLocation. We offset Z slightly so it floats above the item.
             net.runelite.api.Point textLocation = Perspective.getCanvasTextLocation(
                     ctx.getClient(),
                     graphics,
                     pt,
                     sb.toString(),
-                    20 // Z-offset (height)
+                    20
             );
 
             if (textLocation != null) {
@@ -475,7 +455,6 @@ public class SceneOverlay extends Overlay {
         }
     }
 
-    // Helper to make numbers readable (1000 -> 1k)
     private String formatValue(int value) {
         if (value >= 1_000_000) {
             return String.format("%.1fM", value / 1_000_000.0);
