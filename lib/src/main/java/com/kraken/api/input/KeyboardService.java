@@ -38,6 +38,7 @@ public class KeyboardService {
     /**
      * Types a single character.
      * Useful for things like Bank Pins where you want control over the timing between digits.
+     * @param c the character to type
      */
     public void typeChar(char c) {
         withFocusCanvas(() -> {
@@ -48,6 +49,9 @@ public class KeyboardService {
 
     /**
      * Types a string with a customizable sleep between characters.
+     * @param text the string to type
+     * @param minSleep The minimum the thread should be slept between key strokes
+     * @param maxSleep The max the thread should be slept between key strokes
      */
     public void typeString(String text, int minSleep, int maxSleep) {
         withFocusCanvas(() -> {
