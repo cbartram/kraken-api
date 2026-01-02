@@ -160,6 +160,8 @@ public class WidgetPackets {
         }
 
         if (menuIndex == -1 || actionIndex == -1) {
+            String actionsString = actions.stream().filter(Objects::nonNull).map(Text::removeTags).collect(Collectors.joining(", "));
+            log.error("No valid sub-action found for: {}, Actions: [{}]", action, actionsString);
             return;
         }
 

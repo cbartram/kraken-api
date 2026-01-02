@@ -144,7 +144,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
      * @return Stream of RuneLite API objects
      */
     public Stream<R> toRuneLite() {
-        return ctx.runOnClientThread(() -> source().get().map(T::raw));
+        return ctx.runOnClientThread(() -> stream().map(T::raw));
     }
 
     /**
