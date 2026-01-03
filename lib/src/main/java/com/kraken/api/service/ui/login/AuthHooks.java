@@ -26,20 +26,4 @@ public class AuthHooks {
 
     public String jxLegacyValueFieldName;
     public String jxLegacyValueClassName;
-
-
-    /**
-     * Loads a json file containing the client authorization hook fields from
-     * @return
-     */
-    public static AuthHooks load() {
-        try (okhttp3.Response response = new okhttp3.OkHttpClient().newCall(new okhttp3.Request.Builder().url("https://minio.kraken-plugins.com/kraken-bootstrap-static/authHooks.json").build()).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                return com.krakenplugins.profile.ProfilePlugin.GSON.fromJson(response.body().charStream(), AuthHooks.class);
-            }
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 }

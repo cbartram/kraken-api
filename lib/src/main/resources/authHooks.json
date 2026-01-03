@@ -1,15 +1,20 @@
 {
-  "setLoginIndexGarbageValue": -1885498671,
-  "setLoginIndexMethodName": "ah",
-  "setLoginIndexClassName": "fh",
-  "jxSessionFieldName": "or",
-  "jxSessionClassName": "cx",
-  "jxAccountIdFieldName": "oz",
-  "jxAccountIdClassName": "de",
-  "jxDisplayNameFieldName": "cj",
-  "jxDisplayNameClassName": "bj",
+  "setLoginIndexGarbageValue": 1845767532,
+  "setLoginIndexMethodName": "aq",
+  "setLoginIndexClassName": "bz",
+
+  "jxSessionFieldName": "ns",
+  "jxSessionClassName": "dz",
+
+  "jxAccountIdFieldName": "oq",
+  "jxAccountIdClassName": "bu",
+
+  "jxDisplayNameFieldName": "cl",
+  "jxDisplayNameClassName": "bv",
+
   "jxAccountCheckFieldName": "fo",
   "jxAccountCheckClassName": "client",
+
   "jxLegacyValueFieldName": "aa",
   "jxLegacyValueClassName": "ws"
 }

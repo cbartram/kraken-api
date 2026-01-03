@@ -69,7 +69,11 @@ public class LoginService {
         }
     }
 
-    public void loginWithJagexAccount(String sessionId, String characterId, String characterName) {
+    public void login(String sesionId, String characterId, String characterName) {
+        loginWithJagexAccount(sesionId, characterId, characterName, true);
+    }
+
+    public void loginWithJagexAccount(String sessionId, String characterId, String characterName, boolean doLogin) {
         if(hooks == null) {
             log.info("No Auth Hooks found");
             return;
@@ -104,7 +108,6 @@ public class LoginService {
                 log.error("Failed to set login session:", e);
             }
 
-            // Step 3: Inject account ID
             try {
                 Class<?> jxAccountIdClass = Class.forName(hooks.getJxAccountIdClassName(), true, client.getClass().getClassLoader());
                 Field jxAccountIdField = jxAccountIdClass.getDeclaredField(hooks.getJxAccountIdFieldName());
@@ -116,7 +119,6 @@ public class LoginService {
                 log.error("Failed to set login account ID:", e);
             }
 
-            // Step 4: Inject display name
             try {
                 Class<?> jxDisplayNameClass = Class.forName(hooks.getJxDisplayNameClassName(), true, client.getClass().getClassLoader());
                 Field jxDisplayNameField = jxDisplayNameClass.getDeclaredField(hooks.getJxDisplayNameFieldName());
@@ -129,7 +131,7 @@ public class LoginService {
                 log.error("Failed to set login display name:", e);
             }
 
-            if (sessionInjected && accountIdInjected && displayNameInjected) {
+            if (sessionInjected && accountIdInjected && displayNameInjected && doLogin) {
                 client.setGameState(GameState.LOGGING_IN);
             }
         });
