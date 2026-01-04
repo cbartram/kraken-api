@@ -2,6 +2,7 @@ package com.kraken.api.query.player;
 
 import com.kraken.api.Context;
 import com.kraken.api.core.AbstractQuery;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
@@ -13,6 +14,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player> {
 
     public PlayerQuery(Context ctx) {
@@ -83,7 +85,7 @@ public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player
      * @return PlayerQuery
      */
     public PlayerQuery withinDistance(int distance) {
-        return filter(p -> p.raw().getLocalLocation().distanceTo(ctx.getClient().getLocalPlayer().getLocalLocation()) <= distance);
+        return filter(p -> p.raw().getWorldLocation().distanceTo(ctx.getClient().getLocalPlayer().getWorldLocation()) <= distance);
     }
 
     /**

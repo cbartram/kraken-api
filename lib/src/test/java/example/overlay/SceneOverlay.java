@@ -5,6 +5,7 @@ import com.kraken.api.Context;
 import com.kraken.api.query.gameobject.GameObjectEntity;
 import com.kraken.api.query.groundobject.GroundObjectEntity;
 import com.kraken.api.query.npc.NpcEntity;
+import com.kraken.api.query.player.LocalPlayerEntity;
 import com.kraken.api.query.player.PlayerEntity;
 import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
@@ -16,6 +17,7 @@ import example.tests.service.AreaServiceTest;
 import net.runelite.api.Actor;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
+import net.runelite.api.Player;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
@@ -167,15 +169,34 @@ public class SceneOverlay extends Overlay {
     }
 
     private void renderLocalPlayer(Graphics2D graphics) {
-        var localEntity = ctx.players().local();
-        if (localEntity != null && !localEntity.isNull()) {
-            // Draw Blue box around self
-            renderPlayerPolygon(graphics, localEntity, Color.BLUE, localEntity.getName());
+        LocalPlayerEntity localEntity = ctx.players().local();
+        if (localEntity != null && localEntity.raw() != null) {
+
+            Actor interacting = localEntity.raw().getInteracting();
+            Color color = Color.BLUE;
+            String status = localEntity.isMoving() ? "Moving" : "Idle";
+
+            if (interacting != null) {
+                if (localEntity.raw().isInteracting()) {
+                    color = Color.YELLOW;
+                    status = "Interacting";
+                }
+            }
+
+            String text = String.format("%s (Lvl: %d) | %s",
+                    localEntity.getName(),
+                    localEntity.raw().getCombatLevel(),
+                    status
+            );
+
+            renderPlayerPolygon(graphics, localEntity.raw(), color, text);
         }
     }
 
     private void renderOtherPlayers(Graphics2D graphics) {
-        List<PlayerEntity> players = ctx.players().withinDistance(config.playerRange()).stream().collect(Collectors.toList());
+        List<PlayerEntity> players = ctx.players()
+                .withinDistance(config.playerRange())
+                .list();
 
         for (PlayerEntity p : players) {
             Color color = Color.WHITE;
@@ -199,7 +220,7 @@ public class SceneOverlay extends Overlay {
                     status
             );
 
-            renderPlayerPolygon(graphics, p, color, text);
+            renderPlayerPolygon(graphics, p.raw(), color, text);
         }
     }
 
@@ -293,10 +314,10 @@ public class SceneOverlay extends Overlay {
         }
     }
 
-    private void renderPlayerPolygon(Graphics2D graphics, PlayerEntity entity, Color color, String label) {
-        if (entity == null || entity.raw() == null) return;
+    private void renderPlayerPolygon(Graphics2D graphics, Player entity, Color color, String label) {
+        if (entity == null) return;
 
-        Shape poly = entity.raw().getConvexHull();
+        Shape poly = entity.getConvexHull();
         if (poly != null) {
             graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 100));
             graphics.fill(poly);
@@ -304,7 +325,7 @@ public class SceneOverlay extends Overlay {
             graphics.draw(poly);
         }
 
-        net.runelite.api.Point textLoc = entity.raw().getCanvasTextLocation(graphics, label, entity.raw().getLogicalHeight() + 40);
+        net.runelite.api.Point textLoc = entity.getCanvasTextLocation(graphics, label, entity.getLogicalHeight() + 40);
         if (textLoc != null) {
             OverlayUtil.renderTextLocation(graphics, textLoc, label, color);
         }

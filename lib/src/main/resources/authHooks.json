@@ -1,0 +1,23 @@
+{
+  "setLoginIndexGarbageValue": 1845767532,
+  "setLoginIndexMethodName": "aq",
+  "setLoginIndexClassName": "bz",
+
+  "jxSessionFieldName": "ns",
+  "jxSessionClassName": "dz",
+
+  "jxAccountIdFieldName": "oq",
+  "jxAccountIdClassName": "bu",
+
+  "jxDisplayNameFieldName": "cl",
+  "jxDisplayNameClassName": "bv",
+
+  "jxAccountCheckFieldName": "fo",
+  "jxAccountCheckClassName": "client",
+
+  "jxAccountTypeFieldName": "xx",
+  "jxAccountTypeClassName": "xx",
+
+  "jxLegacyValueFieldName": "aa",
+  "jxLegacyValueClassName": "ws"
+}
