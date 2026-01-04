@@ -7,6 +7,7 @@ import com.kraken.api.Context;
 import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.map.WorldMapService;
+import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.ui.login.LoginService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -94,6 +95,9 @@ public class ExamplePlugin extends Plugin {
     private LoginService loginService;
 
     @Inject
+    private MovementService movementService;
+
+    @Inject
     private MouseRecorder mouseRecorder;
 
     @Getter
@@ -167,6 +171,24 @@ public class ExamplePlugin extends Plugin {
         }
 
         String key = event.getKey();
+
+        if (key.equals("startPathfinding") && config.startPathfinding()) {
+            String waypointLocation = config.waypointLocation();
+            String[] coords = waypointLocation.split(",");
+            if (coords.length == 3) {
+                try {
+                    int x = Integer.parseInt(coords[0]);
+                    int y = Integer.parseInt(coords[1]);
+                    int z = Integer.parseInt(coords[2]);
+                    log.info("Setting target point: ({}, {}, {})", x, y, z);
+                    this.targetTile = new WorldPoint(x, y, z);
+                } catch (NumberFormatException e) {
+                    log.error("Invalid waypoint location format", e);
+                }
+            } else {
+                log.error("Invalid waypoint location format");
+            }
+        }
 
         if(key.equals("login") && config.login()) {
             log.info("Logging into the client...");

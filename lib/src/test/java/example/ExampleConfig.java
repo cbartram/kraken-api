@@ -36,6 +36,37 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+
+    // =========== Tests Section ================
+    @ConfigSection(
+            name = "Pathfinding Tests",
+            description = "Settings for enabling and testing pathfinding across the world",
+            position = 1
+    )
+    String pathfinding = "pathfinding";
+
+    @ConfigItem(
+            name = "Start Pathfinding",
+            keyName = "startPathfinding",
+            description = "Starts the movement traversal to the specified waypoint",
+            position = -1,
+            section = pathfinding
+    )
+    default boolean startPathfinding() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Pathfinding Location",
+            keyName = "pathfindingLocation",
+            description = "The location in the format: x,y,z for the waypoint to traverse to.",
+            position = 0,
+            section = pathfinding
+    )
+    default String waypointLocation() {
+        return "0,0,0";
+    }
+
     // =========== Tests Section ================
     @ConfigSection(
             name = "Query Tests",
