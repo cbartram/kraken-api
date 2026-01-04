@@ -430,13 +430,24 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "showLocalPlayer",
+            name = "Show Local Player",
+            description = "Display information about the local player in the scene.",
+            section = overlaySettings,
+            position = 9
+    )
+    default boolean showSelf() {
+        return false;
+    }
+
     @Range(min = 1, max = 25)
     @ConfigItem(
             keyName = "playerRange",
             name = "Player Range",
             description = "The range at which Players are highlighted.",
             section = overlaySettings,
-            position = 9
+            position = 10
     )
     default int playerRange() {
         return 3;
@@ -447,7 +458,7 @@ public interface ExampleConfig extends Config {
             name = "Show Game Areas",
             description = "Show game areas rendered from the Area service tests.",
             section = overlaySettings,
-            position = 10
+            position = 11
     )
     default boolean showAreaService() {
         return true;
@@ -457,7 +468,7 @@ public interface ExampleConfig extends Config {
             name = "Show Mouse Overlay",
             keyName = "showMouse",
             description = "Shows an overlay of the mouse position and trail.",
-            position = 11,
+            position = 12,
             section = overlaySettings
     )
     default boolean showMouse() {
@@ -469,7 +480,7 @@ public interface ExampleConfig extends Config {
             name = "Show Debug Info",
             description = "Display additional debug information in overlays",
             section = overlaySettings,
-            position = 12
+            position = 13
     )
     default boolean showDebugInfo() {
         return false;
@@ -480,7 +491,7 @@ public interface ExampleConfig extends Config {
             name = "Show Current Path",
             description = "Displays the current path calculated by the local pathfinder.",
             section = overlaySettings,
-            position = 13
+            position = 14
     )
     default boolean renderCurrentPath() {
         return false;
@@ -490,7 +501,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 14,
+            position = 15,
             section = overlaySettings
     )
     default boolean showVisualizer() {
