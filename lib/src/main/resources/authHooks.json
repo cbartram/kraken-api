@@ -15,6 +15,9 @@
   "jxAccountCheckFieldName": "fo",
   "jxAccountCheckClassName": "client",
 
+  "jxAccountTypeFieldName": "xx",
+  "jxAccountTypeClassName": "xx",
+
   "jxLegacyValueFieldName": "aa",
   "jxLegacyValueClassName": "ws"
 }

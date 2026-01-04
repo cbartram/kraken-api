@@ -26,6 +26,16 @@ public interface ExampleConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            name = "Login",
+            keyName = "login",
+            description = "Logs into the client.",
+            position = -2
+    )
+    default boolean login() {
+        return false;
+    }
+
     // =========== Tests Section ================
     @ConfigSection(
             name = "Query Tests",

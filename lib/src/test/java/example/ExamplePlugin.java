@@ -8,6 +8,7 @@ import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
+import com.kraken.api.service.ui.login.LoginService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
 import example.overlay.InfoPanelOverlay;
 import example.overlay.SceneOverlay;
@@ -90,6 +91,9 @@ public class ExamplePlugin extends Plugin {
     private ExampleScript exampleScript;
 
     @Inject
+    private LoginService loginService;
+
+    @Inject
     private MouseRecorder mouseRecorder;
 
     @Getter
@@ -163,6 +167,11 @@ public class ExamplePlugin extends Plugin {
         }
 
         String key = event.getKey();
+
+        if(key.equals("login") && config.login()) {
+            log.info("Logging into the client...");
+            loginService.login();
+        }
 
         if(key.equalsIgnoreCase("pauseScript") && config.pauseScript()) {
             exampleScript.pause();
