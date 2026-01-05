@@ -13,6 +13,13 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Service for handling reflection operations, including field access and method invocation.
+ * <p>
+ * This service maintains a cache of reflected fields and methods to improve performance
+ * for repeated accesses. It supports accessing obfuscated members via {@link FieldHook}
+ * and {@link MethodHook} definitions.
+ */
 @Slf4j
 @Singleton
 public class ReflectionService {
@@ -21,11 +28,24 @@ public class ReflectionService {
     private final Map<FieldHook, Field> fieldCache = new ConcurrentHashMap<>();
     private final Map<MethodHook, Method> methodCache = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a new ReflectionService.
+     *
+     * @param client The RuneLite client instance, used to obtain the class loader.
+     */
     @Inject
     public ReflectionService(Client client) {
         this.classLoader = client.getClass().getClassLoader();
     }
 
+    /**
+     * Retrieves the value of a field specified by the given hook.
+     *
+     * @param hook     The {@link FieldHook} defining the class and field name.
+     * @param instance The object instance to retrieve the field value from.
+     * @param <T>      The expected type of the field value.
+     * @return The value of the field, or null if an error occurs.
+     */
     public <T> T getFieldValue(FieldHook hook, Object instance) {
         try {
             Field field = getField(hook);
@@ -36,6 +56,13 @@ public class ReflectionService {
         }
     }
 
+    /**
+     * Sets the value of a field specified by the given hook.
+     *
+     * @param hook     The {@link FieldHook} defining the class and field name.
+     * @param instance The object instance to set the field value on.
+     * @param value    The new value to set.
+     */
     public void setFieldValue(FieldHook hook, Object instance, Object value) {
         try {
             Field field = getField(hook);
@@ -45,6 +72,17 @@ public class ReflectionService {
         }
     }
 
+    /**
+     * Invokes a method specified by the given hook.
+     * <p>
+     * This method automatically handles garbage values if the hook specifies one,
+     * appending it to the arguments list.
+     *
+     * @param hook     The {@link MethodHook} defining the class and method name.
+     * @param instance The object instance to invoke the method on.
+     * @param args     The arguments to pass to the method.
+     * @return The result of the method invocation, or null if an error occurs.
+     */
     public Object invoke(MethodHook hook, Object instance, Object... args) {
         try {
             Method method = getMethod(hook, args);

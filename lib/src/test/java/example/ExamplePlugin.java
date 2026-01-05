@@ -7,7 +7,6 @@ import com.kraken.api.Context;
 import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
 import com.kraken.api.service.map.WorldMapService;
-import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.ui.login.LoginService;
 import com.kraken.api.sim.ui.SimulationVisualizer;
@@ -93,9 +92,6 @@ public class ExamplePlugin extends Plugin {
 
     @Inject
     private LoginService loginService;
-
-    @Inject
-    private MovementService movementService;
 
     @Inject
     private MouseRecorder mouseRecorder;

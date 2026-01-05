@@ -14,8 +14,10 @@ import okhttp3.Response;
 public class HookLoader {
 
     private static final String HOOKS_URL = "https://minio.kraken-plugins.com/kraken-bootstrap-static/reflection_hooks.json";
+    private static HookRegistry registryCache = null;
 
     public static HookRegistry load() {
+        if(registryCache != null) return registryCache;
         Request request = new Request.Builder().url(HOOKS_URL).build();
         com.google.gson.Gson gson = new GsonBuilder()
                 .registerTypeAdapter(HookRegistry.class, new HookRegistryDeserializer())
@@ -23,7 +25,9 @@ public class HookLoader {
 
         try (Response response = new OkHttpClient().newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
-                return gson.fromJson(response.body().charStream(), HookRegistry.class);
+                HookRegistry registry = gson.fromJson(response.body().charStream(), HookRegistry.class);
+                registryCache = registry;
+                return registry;
             } else {
                 throw new RuntimeException("Failed to fetch hooks: HTTP " + response.code() + ", message: " + response.message());
             }
