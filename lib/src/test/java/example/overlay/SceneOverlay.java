@@ -82,6 +82,9 @@ public class SceneOverlay extends Overlay {
 
         if(config.showPlayers()) {
             renderOtherPlayers(graphics);
+        }
+
+        if(config.showSelf()) {
             renderLocalPlayer(graphics);
         }
 

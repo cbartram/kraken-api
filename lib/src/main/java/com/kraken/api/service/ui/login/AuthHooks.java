@@ -24,8 +24,8 @@ public class AuthHooks {
     public String jxAccountCheckFieldName;
     public String jxAccountCheckClassName;
 
-    public String jxAccountTypeFieldName;
-    public String jxAccountTypeClassName;
+    public String jxJagexValueFieldName;
+    public String jxJagexValueClassName;
 
     public String jxLegacyValueFieldName;
     public String jxLegacyValueClassName;
