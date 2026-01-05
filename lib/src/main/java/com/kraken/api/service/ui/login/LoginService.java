@@ -21,7 +21,7 @@ public class LoginService {
     private final Client client;
     private final ClientThread clientThread;
 
-    private static final String AUTH_HOOKS_URL = "https://minio.kraken-plugins.com/kraken-bootstrap-static/authHooks.json";
+    private static final String AUTH_HOOKS_URL = "https://minio.kraken-plugins.com/kraken-bootstrap-static/reflection_hooks.json";
     private static final Path CREDENTIALS_FILE = RuneLite.RUNELITE_DIR.toPath().resolve("credentials.properties");
 
     @Inject
@@ -35,12 +35,6 @@ public class LoginService {
         }
     }
 
-    /**
-     * Loads a set of auth hooks from a remote json file. These auth hooks tell the service which classes and methods
-     * to invoke via reflection.
-     * @param gson Gson object for deserializing the json auth hooks
-     * @return AuthHooks object or null if the object could not be loaded or deserialized.
-     */
     private AuthHooks loadAuthHooks(Gson gson) {
         try (okhttp3.Response response = new okhttp3.OkHttpClient().newCall(new okhttp3.Request.Builder().url(AUTH_HOOKS_URL).build()).execute()) {
             if (response.isSuccessful() && response.body() != null) {
@@ -52,33 +46,23 @@ public class LoginService {
         return null;
     }
 
-    /**
-     * Sets a login index to tell the client if the account logging in is a legacy or jagex account.
-     * @param index The index to set. 10 = jagex account 2 = legacy account.
-     */
+    // [setLoginIndex method remains unchanged, omitted for brevity]
     private void setLoginIndex(int index) {
-        if(hooks == null) {
-            log.info("No Auth Hooks found");
-            return;
-        }
-
+        if(hooks == null) { log.info("No Auth Hooks found"); return; }
         try {
             log.info("Setting login index {} via {}.{}", index, hooks.getSetLoginIndexClassName(), hooks.getSetLoginIndexMethodName());
             if (hooks.getSetLoginIndexGarbageValue() <= Byte.MAX_VALUE && hooks.getSetLoginIndexGarbageValue() >= Byte.MIN_VALUE) {
                 Class<?> paramComposition = Class.forName(hooks.getSetLoginIndexClassName(), true, client.getClass().getClassLoader());
                 Method updateLoginIndex = paramComposition.getDeclaredMethod(hooks.getSetLoginIndexMethodName(), int.class, byte.class);
-
                 updateLoginIndex.setAccessible(true);
                 updateLoginIndex.invoke(null, index, (byte) hooks.getSetLoginIndexGarbageValue());
                 updateLoginIndex.setAccessible(false);
-
             } else if (hooks.getSetLoginIndexGarbageValue() <= Short.MAX_VALUE && hooks.getSetLoginIndexGarbageValue() >= Short.MIN_VALUE) {
                 Class<?> paramComposition = Class.forName(hooks.getSetLoginIndexClassName(), true, client.getClass().getClassLoader());
                 Method updateLoginIndex = paramComposition.getDeclaredMethod(hooks.getSetLoginIndexMethodName(), int.class, short.class);
                 updateLoginIndex.setAccessible(true);
                 updateLoginIndex.invoke(null, index, (short) hooks.getSetLoginIndexGarbageValue());
                 updateLoginIndex.setAccessible(false);
-
             } else {
                 Class<?> paramComposition = Class.forName(hooks.getSetLoginIndexClassName(), true, client.getClass().getClassLoader());
                 Method updateLoginIndex = paramComposition.getDeclaredMethod(hooks.getSetLoginIndexMethodName(), int.class, int.class);
@@ -86,25 +70,18 @@ public class LoginService {
                 updateLoginIndex.invoke(null, index, hooks.getSetLoginIndexGarbageValue());
                 updateLoginIndex.setAccessible(false);
             }
-
             log.info("Login index {} set successfully.", index);
         } catch (Exception e) {
             log.error("Failed to set login index {}", index, e);
         }
     }
 
-    /**
-     * Loads a profile object from a set of credentials written via the {@code --insecure-write-credentials} option
-     * passed to the RuneLite client. This credentials file is expected to be called {@code credentials.properties}
-     * and will be located in ~/.runelite/credentials.properties on unix systems.
-     * @return Profile the loaded profile object
-     */
     public Profile loadProfileFromCredentials() {
         java.util.Properties props = new java.util.Properties();
         try (java.io.FileInputStream fis = new java.io.FileInputStream(CREDENTIALS_FILE.toFile())) {
             props.load(fis);
         } catch (java.io.IOException e) {
-            log.error("Failed to load credentials from {}: ", CREDENTIALS_FILE, e);
+            log.error("Failed to load credentials from {}", CREDENTIALS_FILE, e);
             return null;
         }
 
@@ -113,7 +90,6 @@ public class LoginService {
         String characterName = props.getProperty("JX_DISPLAY_NAME");
 
         if (sessionId == null || characterId == null || characterName == null) {
-            log.error("Credentials file {} is missing one or more required properties (JX_SESSION_ID, JX_CHARACTER_ID, JX_DISPLAY_NAME).", CREDENTIALS_FILE);
             return null;
         }
 
@@ -126,35 +102,50 @@ public class LoginService {
     }
 
     /**
-     * Logs the current account specified in ~/.runelite/credentials.properties into the client.
+     * Loads the Jagex account credentials (session id, character id, and display name from ~/.runelite/credentials.properties)
+     * and logs into the client. This method does NOT support legacy accounts. Use {@link #loginWithLegacyAccount} to
+     * login using legacy accounts.
      */
     public void login() {
-        login(loadProfileFromCredentials());
+        loginWithJagexAccount(loadProfileFromCredentials(), true);
     }
 
     /**
-     * Wrapper around logging in with a Jagex account. This method passes true as the doLogin param
-     * to actually perform the login in the client rather than just setting the fields via reflection.
-     * @param profile The profile to login as
-     */
-    public void login(Profile profile) {
-        if(profile == null) {
-            log.error("The passed jagex profile is null. Ensure credentials.properties exists in the RuneLite home dir and --insecure-write-credentials is passed to the client.");
-            return;
-        }
-
-        loginWithJagexAccount(profile, true);
-    }
-
-    /**
-     * Logs in with a Jagex account given the session id, character id, and character name from a {@link Profile} object.
-     * @param profile The profile to login as
-     * @param doLogin True when the game state should be set to logging in to actually login to the client. When set
-     *                to false, the fields for logging in under a specific profile will be set accordingly but the actual login
-     *                will not occur.
+     * Logs into a Jagex account using a provided profile
+     * @param profile Profile to use to login to the client
+     * @param doLogin True if the login should actually occur. When this is false the fields will be set for logging in, but
+     *                no login will actually occur into the game client. This is useful when switching accounts but not logging in.
      */
     public void loginWithJagexAccount(Profile profile, boolean doLogin) {
-        if(hooks == null) {
+        if(profile == null) {
+            log.error("The passed profile is null.");
+            return;
+        }
+        applyLoginState(AccountType.JAGEX, profile, doLogin);
+    }
+
+    /**
+     * Logs into the game client using a legacy (username/password) account.
+     * @param username The username to login with
+     * @param password The password to login with
+     * @param doLogin True if the login should actually occur. When this is false the fields will be set for logging in, but
+     *                no login will actually occur into the game client. This is useful when switching accounts but not logging in.
+     */
+    public void loginWithLegacyAccount(String username, String password, boolean doLogin) {
+        Profile legacyProfile = Profile.builder()
+                .username(username)
+                .password(password)
+                .isJagexAccount(false)
+                .build();
+
+        applyLoginState(AccountType.LEGACY, legacyProfile, doLogin);
+    }
+
+    /**
+     * Unified method to inject login data via reflection.
+     */
+    private void applyLoginState(AccountType type, Profile profile, boolean doLogin) {
+        if (hooks == null) {
             log.info("No Auth Hooks found");
             return;
         }
@@ -164,75 +155,76 @@ public class LoginService {
                 return;
             }
 
-            client.setUsername("");
-            client.setPassword("");
-
-            boolean sessionInjected = false;
-            boolean accountIdInjected = false;
-            boolean displayNameInjected = false;
-
-            try {
-                setLoginIndex(10);
-            } catch (Exception e) {
-                log.error("Failed to set the login index to 10: ", e);
+            if (type == AccountType.JAGEX) {
+                client.setUsername("");
+                client.setPassword("");
+            } else {
+                client.setUsername(profile.getUsername());
+                client.setPassword(profile.getPassword());
             }
 
+            boolean success = true;
+
             try {
-                Class<?> jxSessionClass = Class.forName(hooks.getJxSessionClassName(), true, client.getClass().getClassLoader());
-                Field jxSessionField = jxSessionClass.getDeclaredField(hooks.getJxSessionFieldName());
-
-                jxSessionField.setAccessible(true);
-                jxSessionField.set(null, profile.getSessionId());
-                jxSessionField.setAccessible(false);
-
-                sessionInjected = true;
+                setLoginIndex(type.getLoginIndex());
             } catch (Exception e) {
-                log.error("Failed to set login session:", e);
+                log.error("Failed to set login index: ", e);
+                success = false;
             }
 
-            try {
-                Class<?> jxAccountIdClass = Class.forName(hooks.getJxAccountIdClassName(), true, client.getClass().getClassLoader());
-                Field jxAccountIdField = jxAccountIdClass.getDeclaredField(hooks.getJxAccountIdFieldName());
-                jxAccountIdField.setAccessible(true);
-                jxAccountIdField.set(null, profile.getCharacterId());
-                jxAccountIdField.setAccessible(false);
-                accountIdInjected = true;
-            } catch (Exception e) {
-                log.error("Failed to set login account ID:", e);
-            }
+            String targetSession = (type == AccountType.JAGEX) ? profile.getSessionId() : null;
+            String targetAccountId = (type == AccountType.JAGEX) ? profile.getCharacterId() : null;
+            String targetDisplayName = (type == AccountType.JAGEX) ? profile.getCharacterName() : null;
+
+            success &= injectField(hooks.getJxSessionClassName(), hooks.getJxSessionFieldName(), targetSession, "session");
+            success &= injectField(hooks.getJxAccountIdClassName(), hooks.getJxAccountIdFieldName(), targetAccountId, "account ID");
+            success &= injectField(hooks.getJxDisplayNameClassName(), hooks.getJxDisplayNameFieldName(), targetDisplayName, "display name");
+
 
             try {
-                Class<?> jxDisplayNameClass = Class.forName(hooks.getJxDisplayNameClassName(), true, client.getClass().getClassLoader());
-                Field jxDisplayNameField = jxDisplayNameClass.getDeclaredField(hooks.getJxDisplayNameFieldName());
-                jxDisplayNameField.setAccessible(true);
-                jxDisplayNameField.set(null, profile.getCharacterName());
-                jxDisplayNameField.setAccessible(false);
+                // Determine which hook class/field contains the source object we need (Legacy vs Jagex value)
+                String sourceClassName = (type == AccountType.JAGEX) ? hooks.getJxJagexValueClassName() : hooks.getJxLegacyValueClassName();
+                String sourceFieldName = (type == AccountType.JAGEX) ? hooks.getJxJagexValueFieldName() : hooks.getJxLegacyValueFieldName();
 
-                displayNameInjected = true;
-            } catch (Exception e) {
-                log.error("Failed to set login display name:", e);
-            }
+                // Get the static object from the source
+                Class<?> sourceClass = Class.forName(sourceClassName, true, client.getClass().getClassLoader());
+                Field sourceField = sourceClass.getDeclaredField(sourceFieldName);
+                sourceField.setAccessible(true);
+                Object accountTypeObject = sourceField.get(null);
+                sourceField.setAccessible(false);
 
-            try {
-                Class<?> jxAccountTypeClass = Class.forName(hooks.getJxAccountTypeClassName(), true, client.getClass().getClassLoader());
-                Field jxAccountTypeField = jxAccountTypeClass.getDeclaredField(hooks.getJxAccountTypeFieldName());
-                jxAccountTypeField.setAccessible(true);
-                Object jxAccountTypeObject = jxAccountTypeField.get(null);
-                jxAccountTypeField.setAccessible(false);
-
-
+                // Inject it into the client
                 Class<?> clientClass = client.getClass();
                 Field jxAccountCheckField = clientClass.getDeclaredField(hooks.getJxAccountCheckFieldName());
                 jxAccountCheckField.setAccessible(true);
-                jxAccountCheckField.set(null, jxAccountTypeObject);
+                jxAccountCheckField.set(null, accountTypeObject);
                 jxAccountCheckField.setAccessible(false);
             } catch (Exception e) {
-                log.error("Failed to set account type field: ", e);
+                log.error("Failed to set account type check field: ", e);
+                success = false;
             }
 
-            if (sessionInjected && accountIdInjected && displayNameInjected && doLogin) {
+            // 5. Trigger login
+            if (success && doLogin) {
                 client.setGameState(GameState.LOGGING_IN);
             }
         });
+    }
+
+    /**
+     * Helper to reduce reflection boilerplate for a simple static field setting
+     */
+    private boolean injectField(String className, String fieldName, Object value, String logName) {
+        try {
+            Class<?> clazz = Class.forName(className, true, client.getClass().getClassLoader());
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(null, value);
+            field.setAccessible(false);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to set login {}:", logName, e);
+            return false;
+        }
     }
 }

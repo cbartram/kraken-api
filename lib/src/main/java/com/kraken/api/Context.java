@@ -2,6 +2,7 @@ package com.kraken.api;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
 import com.kraken.api.input.mouse.VirtualMouse;
@@ -19,6 +20,10 @@ import com.kraken.api.query.widget.WidgetQuery;
 import com.kraken.api.query.world.WorldQuery;
 import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.tile.TileService;
+import com.kraken.api.service.util.reflect.hooks.HookRegistry;
+import com.kraken.api.service.util.reflect.hooks.LoginHooks;
+import com.kraken.api.service.util.reflect.hooks.MouseHooks;
+import com.kraken.api.service.util.reflect.hooks.loader.HookLoader;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -77,6 +82,24 @@ public class Context {
         this.localPlayer = new LocalPlayerEntity(this);
         eventBus.register(this.localPlayer);
         eventBus.register(bankService);
+    }
+
+    @Provides
+    @Singleton
+    HookRegistry provideHookRegistry() {
+        return HookLoader.load();
+    }
+
+    @Provides
+    @Singleton
+    LoginHooks provideLoginHooks(HookRegistry registry) {
+        return registry.getLogin();
+    }
+
+    @Provides
+    @Singleton
+    MouseHooks provideMouseHooks(HookRegistry registry) {
+        return registry.getMouse();
     }
 
     /**
