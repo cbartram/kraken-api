@@ -212,18 +212,7 @@ dependencies {
 }
 ```
 
-### Packets & Reflection
-
-When the API starts it will dynamically parse necessary client methods to determine which methods are used to send packets. These methods are then
-invoked via reflection to actually send client packets to the OSRS servers. This enables the API to use network packets to communicate directly 
-with OSRS servers and facilitate automatic interactions with the game client.
-
-The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
-A good portion of the code has been re-written to follow best practices (using logs, factory design pattern, removing redundant code, refactoring to an API instead of plugin, etc...) however,
-the functionality for client analysis, packet wrappers, and packet ops are sourced from the Packet Utils repository.
-(Credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic.)
-
-### API Design & Methodology
+## API Design & Methodology
 
 The API is broken up into 2 distinct ways of accessing game information:
 
@@ -233,7 +222,7 @@ The API is broken up into 2 distinct ways of accessing game information:
 Each API paradigm has its strengths, and it's likely you will need both when building semi and fully autonomous RuneLite
 plugins. Read more about each API paradigm below to see which one (or a combination of both) suites your plugin needs.
 
-#### Services
+### Services
 
 Services leverage the software design pattern of dependency injection. This is the exact same pattern adopted by RuneLite 
 to ensure that plugins get exactly what they need to run from RuneLite and nothing more. As the developer you will declare to 
@@ -252,7 +241,7 @@ The Service API paradigm is useful for static widgets or global game entities, f
 If you needed to toggle a prayer, cast a spell, or close the bank then the service API paradigm would suite your plugin
 well.
 
-#### Query System
+### Query System
 
 The query system allows you to flexibly "query", refine, and filter for dynamic game entities like:
 
@@ -312,7 +301,7 @@ various game entities around Varrock east bank.
 
 > :warning: When running on non-client threads the action must be scheduled on the client thread and is thus asynchronous in nature.
 
-### Structure
+## Structure
 
 The Kraken API exposes both high and low level functions for working with
 game objects, NPC's, movement, pathing, simulations, network packets, and more. 
@@ -328,33 +317,19 @@ The documentation below describes the most likely packages developers will use w
 - `sim` - Includes classes for simulating game ticks, NPC pathing, movement, line of sight, and players. This is useful for advanced
   plugins which evaluate hundreds of potential outcomes every game tick to determine the best "decision". e.g. Inferno and Colosseum plugins
 
-### Scripting
+## Scripting
 
 For more information on writing scripts using the Kraken API 
 check out the detailed [scripting guide](docs/SCRIPTING.md).
 
-### Mouse Movement
+## Mouse Movement
 
 For more information on mouse movement in the API check out the
 detailed [mouse movement guide](docs/MOUSE.md)
 
-### Game Updates
+## Game Updates
 
-Game updates (especially new revisions) can quickly break a lot of the packet and interaction functionality in the API. 
-Since the packet functionality is based on the [PacketUtils repository](https://github.com/Ethan-Vann/PacketUtils) this API
-is constrained to the time it takes their developers to run their update and mapping process to generate a new `ObfuscatedNames.java`
-file.
-
-This file maps specific fields, methods, values, and classes from the obfuscated game client to be used in order to send packets and provide much of the API's functionality correctly.
-The core packet logic was originally written and used by the Packet Utils plugin [found here](https://github.com/Ethan-Vann/PacketUtils/blob/master/src/main/java/com/example/Packets/BufferMethods.java).
-A good portion of the code has been re-written to follow best practices (using logs, factory pattern, removing redundant code, refactoring to a library instead of plugin, etc...) however,
-the functionality for client analysis, obfuscated class names, and packet ops are sourced from the Packet Utils repository (credit to EthanVann and contributors on the repo for mapping obfuscated class names and packet logic).
-
-- Check the [PRs](https://github.com/Ethan-Vann/PacketUtils/pulls) for the Packet Utils repository. 
-- Once the new `ObfuscatedNames` is updated copy the contents of the file into `core.packets.ObfuscatedNames` 
-- Run a build to make sure everything compiles
-- Run the example plugin to make sure packets still function correctly and the right packet class can be located for the RuneLite version and revision
-- Commit and open a PR to build a new version of the API
+Please see the game updates and [how to update the API guide](docs/UPDATING.md) for more detailed information.
 
 ## Running Tests
 
@@ -414,7 +389,7 @@ For example, moving from: `1.3.5` -> `1.4.0` the `version.txt` should be `1.4.0`
 
 ## 📜 License
 
-This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
+This project is licensed under the [GNU General Public License 3.0](LICENSE).
 
 ---
 
@@ -423,6 +398,7 @@ This project is licensed under the [GNU General Public License 3.0](LICENSE.md).
 * **RuneLite** — For API's to work with and view in game data for Old School RuneScape
 * **Packet Utils** - [Plugin](https://github.com/Ethan-Vann/PacketUtils) from Ethan Vann providing access to complex packet sending functionality which was used to develop the `core.packet` package of the API
 * **Vitalite** - Vitalite for showing some incredible open source examples of dialogue, packets, mouse movement, and just working with the client in general
+* **VitaLite Mappings** - Huge shoutout for the VitaLite devs to maintain and publish these mappings for obfuscated classes and methods
 * **Microbot** — For clever ideas on client and plugin interaction using reflection.
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-api.svg?style=for-the-badge
