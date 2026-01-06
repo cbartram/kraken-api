@@ -4,8 +4,12 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.core.script.breakhandler.BreakConditions;
+import com.kraken.api.core.script.breakhandler.BreakManager;
+import com.kraken.api.core.script.breakhandler.BreakProfile;
 import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
+import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.ui.login.LoginService;
@@ -104,6 +108,12 @@ public class ExamplePlugin extends Plugin {
 
     @Getter
     private WorldArea targetArea;
+
+    @Inject
+    private BreakManager breakManager;
+
+    @Inject
+    private BankService bankService;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -246,6 +256,26 @@ public class ExamplePlugin extends Plugin {
         if (config.showMouse()) {
             overlayManager.add(mouseOverlay);
         }
+
+        breakManager.initialize();
+
+        // Create a custom break profile
+        BreakProfile profile = BreakProfile.builder()
+                .name("Jewelry Profile")
+                .minRuntime(java.time.Duration.ofMinutes(2))
+                .maxRuntime(java.time.Duration.ofMinutes(4))
+                .minBreakDuration(java.time.Duration.ofMinutes(2))
+                .maxBreakDuration(java.time.Duration.ofMinutes(5))
+                .logoutDuringBreak(true)
+                .randomizeTimings(true)
+                .build()
+                .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 51))
+                .addBreakCondition(BreakConditions.onBankEmpty(bankService, context, 1603));
+
+        if (client.getGameState() == GameState.LOGGED_IN) {
+            exampleScript.start();
+            breakManager.attachScript(exampleScript, profile);
+        }
     }
 
     @Override
@@ -257,6 +287,11 @@ public class ExamplePlugin extends Plugin {
         overlayManager.remove(infoPanelOverlay);
         overlayManager.remove(sceneOverlay);
         overlayManager.remove(mouseOverlay);
+
+        if (!breakManager.isOnBreak()) {
+            exampleScript.stop();
+            breakManager.detachScript();
+        }
     }
 
     @Subscribe

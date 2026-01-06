@@ -5,7 +5,9 @@ import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.tile.GameArea;
 import com.kraken.api.service.ui.tab.InterfaceTab;
 import com.kraken.api.service.ui.tab.TabService;
+import com.kraken.api.service.util.SleepService;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
@@ -19,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class LocalPlayerEntity extends PlayerEntity {
     private static final int VENOM_VALUE_CUTOFF = -38;
     private static final int VENOM_THRESHOLD = 1000000;
@@ -263,25 +266,31 @@ public class LocalPlayerEntity extends PlayerEntity {
         return ctx.getClient().getEnergy() / 100;
     }
 
-
+    /**
+     * Logs the current player out of the client. If the player is in a place where they cannot be logged out
+     * this method will NOT re-attempt to log the player out (i.e. the player was recently in combat).
+     * @return True if the logout was successful and false otherwise.
+     */
     public boolean logout() {
-        ctx.runOnClientThread(() -> {
+        return ctx.runOnClientThread(() -> {
             Player localPlayer = ctx.getClient().getLocalPlayer();
             if (localPlayer == null) {
                 return false;
             }
             TabService tabService = ctx.getService(TabService.class);
-            return tabService.switchTo(InterfaceTab.LOGOUT);
-        });
+            tabService.switchTo(InterfaceTab.LOGOUT);
 
-        return ctx.runOnClientThread(() -> {
+            SleepService.sleep(100, 150);
+
             WidgetEntity logoutButton = ctx.widgets().withId(LOGOUT_WIDGET_ID).first();
 
             if (logoutButton == null) {
+                log.warn("Failed to find logout but with widget id: {}, searching via action text.", LOGOUT_WIDGET_ID);
                 logoutButton = ctx.widgets().withAction("Logout").first();
             }
 
             if (logoutButton == null || !logoutButton.isVisible()) {
+                log.warn("Logout button could not be found or is not visible: {}, cannot logout", logoutButton);
                 return false;
             }
 

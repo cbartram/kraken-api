@@ -43,6 +43,11 @@ public class BreakProfile {
         return Duration.ofMillis(randomMillis);
     }
 
+    public BreakProfile addBreakCondition(BreakCondition condition) {
+        customConditions.add(condition);
+        return this;
+    }
+
     /**
      * Calculates the next break duration based on profile settings.
      */
