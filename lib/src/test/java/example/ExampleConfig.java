@@ -29,10 +29,19 @@ public interface ExampleConfig extends Config {
     @ConfigItem(
             name = "Login",
             keyName = "login",
-            description = "Logs into the client.",
+            description = "Logs into the client using the preloaded jagex account.",
             position = -2
     )
     default boolean login() {
+        return false;
+    }
+
+    @ConfigItem(
+            name = "Logout",
+            keyName = "logout",
+            description = "Logs out of the client."
+    )
+    default boolean logout() {
         return false;
     }
 

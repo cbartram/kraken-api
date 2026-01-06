@@ -191,6 +191,11 @@ public class ExamplePlugin extends Plugin {
             loginService.login();
         }
 
+        if(key.equals("logout") && config.logout()) {
+            log.info("Logging out of the client...");
+            context.players().local().logout();
+        }
+
         if(key.equalsIgnoreCase("pauseScript") && config.pauseScript()) {
             exampleScript.pause();
         } else {

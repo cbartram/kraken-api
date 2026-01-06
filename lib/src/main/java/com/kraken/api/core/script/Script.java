@@ -1,6 +1,7 @@
 package com.kraken.api.core.script;
 
 import com.google.inject.Inject;
+import com.kraken.api.core.script.breakhandler.BreakManager;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.eventbus.EventBus;
@@ -15,6 +16,9 @@ public abstract class Script implements Scriptable {
 
     @Inject
     private EventBus eventBus;
+
+    @Inject
+    private BreakManager breakManager;
 
     private Future<?> future = null;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -40,7 +44,7 @@ public abstract class Script implements Scriptable {
      * public class CustomScript extends Script {
      *     {@literal @Override}
      *     public int loop() {
-     *         // Do something to automate the game
+     *         // Do something to automate game
      *         return 100;
      *     }
      * }
@@ -59,7 +63,7 @@ public abstract class Script implements Scriptable {
     public void onStop() {}
 
     /**
-     * Starts the script execution, initializing necessary components and marking the script as running.
+     * Starts the script execution, initializing the necessary parts and marking the script as running.
      * <p>
      * This method transitions the script into a "running" state by performing the following steps:
      * </p>
