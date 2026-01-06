@@ -72,7 +72,7 @@ client revision (when methods and classes are re-obfuscated). To update these ho
 | `JX_CHARACTER_ID`         | jxAccountIdFieldName    |
 | `JX_CHARACTER_ID`         | jxAccountIdClassName    |
 | `JX_DISPLAY_NAME`         | jxDisplayNameFieldName  |
-| `JX_DISPLAY_NAME`         | jxDisplayNameFieldName  |
+| `JX_DISPLAY_NAME`         | jxDisplayNameClassName  |
 | `accountTypeCheck`        | jxAccountCheckFieldName |
 | `accountTypeCheck`        | jxAccountCheckClassName |
 | `jagexType`               | jxJagexValueFieldName   |
