@@ -29,6 +29,7 @@ public class BreakState {
 
     /**
      * Checks if we should resume after login (break ended while logged out).
+     * @return True if the script should resume after re-logging in from a break
      */
     public boolean shouldResumeAfterLogin() {
         return awaitingLogin && breakEndTime != null && Instant.now().isAfter(breakEndTime);

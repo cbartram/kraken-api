@@ -13,9 +13,13 @@ public class BreakConditions {
 
     /**
      * Breaks when a specific skill reaches a target level.
-     * TODO Will continually break every time the user logs in after reaching this level since their current level is >= targetLevel.
+     * TODO Will continually break every time the user logs in after reaching this level since their current level is {@literal >=} targetLevel.
      * Perhaps you can configure this as a one off, i.e. this custom break condition should execute but only one time, once executed remove it from the profile for
      * the duration of the session
+     * @param client RuneLite Client
+     * @param skill The Skill to track levels for
+     * @param targetLevel The target level for when the break should occur when reached.
+     * @return BreakCondition
      */
     public static BreakCondition onLevelReached(Client client, Skill skill, int targetLevel) {
         return new BreakCondition() {
@@ -41,6 +45,10 @@ public class BreakConditions {
 
     /**
      * Breaks when experience gained exceeds a threshold.
+     * @param client RuneLite client
+     * @param skill The target skill for exp tracking
+     * @param expThreshold The amount of exp needed to trigger the break
+     * @return BreakCondition
      */
     public static BreakCondition onExperienceGained(Client client, Skill skill, int expThreshold) {
         return new BreakCondition() {
@@ -82,12 +90,15 @@ public class BreakConditions {
     /**
      * Breaks when items in the bank run out (e.g., materials).
      * TODO Should possibly be an end script condition instead. After breaking if the user opens their bank this will just send them on a break.
+     * @param ctx The API game context
+     * @param itemId The item id to track. When this item is no longer present in the bank or your inventory, a break will be taken.
+     * @return BreakCondition
      */
-    public static BreakCondition onMaterialDepleted(BankService bankService, Context ctx, int itemId) {
+    public static BreakCondition onMaterialDepleted(Context ctx, int itemId) {
         return new BreakCondition() {
             @Override
             public boolean shouldBreak() {
-               if(bankService.isOpen()) {
+               if(ctx.getService(BankService.class).isOpen()) {
                    // Player does not have item in the bank or in the inventory
                    BankEntity item = ctx.bank().withId(itemId).first();
                    BankInventoryEntity inv = ctx.bankInventory().withId(itemId).first();
@@ -106,6 +117,9 @@ public class BreakConditions {
 
     /**
      * Breaks at a specific time of day.
+     * @param hourOfDay The hour 0-24 of the day when a break should initiate
+     * @param minute The minute of the hour 0-60 when a break should initiate
+     * @return BreakCondition
      */
     public static BreakCondition atSpecificTime(int hourOfDay, int minute) {
         return new BreakCondition() {

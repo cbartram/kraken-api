@@ -11,6 +11,7 @@ public interface BreakCondition {
 
     /**
      * Optional description of the condition for logging purposes.
+     * @return The custom description for the reason why the break was taken. This shows up in the logs.
      */
     default String getDescription() {
         return "Custom break condition";
