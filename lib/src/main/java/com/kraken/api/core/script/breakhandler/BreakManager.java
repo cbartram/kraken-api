@@ -158,7 +158,7 @@ public class BreakManager {
         }
 
         // Check custom conditions
-        for (BreakCondition condition : activeProfile.getCustomConditions()) {
+        for (BreakCondition condition : activeProfile.getBreakConditions()) {
             if (condition.shouldBreak()) {
                 startBreak(condition.getDescription());
                 return;
@@ -195,8 +195,9 @@ public class BreakManager {
 
         // If logout is required, try it first before committing to the break
         if (activeProfile.isLogoutDuringBreak()) {
-            if (client.getGameState() == net.runelite.api.GameState.LOGGED_IN) {
+            if (client.getGameState() == GameState.LOGGED_IN) {
                 try {
+                    log.info("Player is logged in, attempting to logout for break");
                     boolean loggedOut = ctx.players().local().logout();
                     if (!loggedOut) {
                         log.error("Failed to logout for break - aborting break attempt");

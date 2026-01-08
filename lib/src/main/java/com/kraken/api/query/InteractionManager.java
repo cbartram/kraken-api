@@ -163,6 +163,20 @@ public class InteractionManager {
     }
 
     /**
+     * Interacts with a widget using the specific action index
+     * @param action The action index to take
+     * @param packedWidgetId The packed widget id
+     * @param childId The child id of the widget to interact with
+     * @param itemId The item id of the widget to interact with
+     */
+    public void interact(int action, int packedWidgetId, int childId, int itemId) {
+        if(!ctxProvider.get().isPacketsLoaded()) return;
+        Point pt = UIService.getClickbox(ctxProvider.get().widgets().get(packedWidgetId).raw());
+        mousePackets.queueClickPacket(pt.getX(), pt.getY());
+        widgetPackets.queueWidgetActionPacket(packedWidgetId, childId, itemId, action);
+    }
+
+    /**
      * Uses a source widget on a destination NPC (i.e. Crumble Undead spell on Vorkath Spawn)
      * @param src The source widget to use on the destination widget
      * @param npc The NPC to use the widget on

@@ -3,9 +3,9 @@ package com.kraken.api.core.script.breakhandler;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Singular;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -19,8 +19,8 @@ public class BreakProfile {
     private final Duration minBreakDuration;
     private final Duration maxBreakDuration;
 
-    @Builder.Default
-    private final List<BreakCondition> customConditions = new ArrayList<>();
+    @Singular(value = "addBreakCondition")
+    private final List<BreakCondition> breakConditions;
 
     @Builder.Default
     private final boolean logoutDuringBreak = true;
@@ -41,11 +41,6 @@ public class BreakProfile {
         long maxMillis = maxRuntime.toMillis();
         long randomMillis = minMillis + (long) (random.nextDouble() * (maxMillis - minMillis));
         return Duration.ofMillis(randomMillis);
-    }
-
-    public BreakProfile addBreakCondition(BreakCondition condition) {
-        customConditions.add(condition);
-        return this;
     }
 
     /**

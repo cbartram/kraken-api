@@ -259,7 +259,6 @@ public class ExamplePlugin extends Plugin {
 
         breakManager.initialize();
 
-        // Create a custom break profile
         BreakProfile profile = BreakProfile.builder()
                 .name("Jewelry Profile")
                 .minRuntime(java.time.Duration.ofMinutes(2))
@@ -268,9 +267,9 @@ public class ExamplePlugin extends Plugin {
                 .maxBreakDuration(java.time.Duration.ofMinutes(5))
                 .logoutDuringBreak(true)
                 .randomizeTimings(true)
-                .build()
-                .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 51))
-                .addBreakCondition(BreakConditions.onBankEmpty(bankService, context, 1603));
+                .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 54))
+                .addBreakCondition(BreakConditions.onBankEmpty(bankService, context, 1603))
+                .build();
 
         breakManager.attachScript(exampleScript, profile);
     }

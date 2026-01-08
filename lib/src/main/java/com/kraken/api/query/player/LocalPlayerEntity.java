@@ -3,16 +3,15 @@ package com.kraken.api.query.player;
 import com.kraken.api.Context;
 import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.tile.GameArea;
-import com.kraken.api.service.ui.tab.InterfaceTab;
-import com.kraken.api.service.ui.tab.TabService;
-import com.kraken.api.service.util.SleepService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
@@ -272,29 +271,21 @@ public class LocalPlayerEntity extends PlayerEntity {
      * @return True if the logout was successful and false otherwise.
      */
     public boolean logout() {
-        return ctx.runOnClientThread(() -> {
-            Player localPlayer = ctx.getClient().getLocalPlayer();
-            if (localPlayer == null) {
-                return false;
-            }
-            TabService tabService = ctx.getService(TabService.class);
-            tabService.switchTo(InterfaceTab.LOGOUT);
+        if (ctx.getClient().getGameState() != GameState.LOGGED_IN) {
+            return false;
+        }
 
-            SleepService.sleepFor(2);
+        WidgetEntity logoutButton = ctx.widgets().fromClient(InterfaceID.Logout.LOGOUT);
+        if (logoutButton != null) {
+            return logoutButton.interact(1, InterfaceID.Logout.LOGOUT, -1, -1);
+        }
 
-            WidgetEntity logoutButton = ctx.widgets().withId(LOGOUT_WIDGET_ID).first();
+        logoutButton = ctx.widgets().fromClient(InterfaceID.Logout.LOGOUT);
+        if (logoutButton != null) {
+            return logoutButton.interact(1, InterfaceID.Worldswitcher.LOGOUT, -1, -1);
+        }
 
-            if (logoutButton == null) {
-                log.warn("Failed to find logout but with widget id: {}, searching via action text.", LOGOUT_WIDGET_ID);
-                logoutButton = ctx.widgets().withAction("Logout").first();
-            }
-
-            if (logoutButton == null) {
-                return false;
-            }
-
-            return logoutButton.interact("Logout");
-        });
+        return false;
     }
 
     /**
