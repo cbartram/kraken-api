@@ -41,7 +41,7 @@ public class BreakManager {
     private BreakState state;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss A").withZone(ZoneId.systemDefault());
 
     private Script activeScript;
     private BreakProfile activeProfile;
@@ -56,7 +56,7 @@ public class BreakManager {
         if (!initialized) {
             eventBus.register(this);
             initialized = true;
-            log.info("BreakHandler initialized");
+            log.info("Break Manager initialized");
         }
     }
 
@@ -72,7 +72,7 @@ public class BreakManager {
             scheduler.shutdownNow();
             initialized = false;
             state.reset();
-            log.info("BreakHandler shut down");
+            log.info("Break Manager shut down");
         }
     }
 
@@ -83,8 +83,6 @@ public class BreakManager {
     public void attachScript(Script script, BreakProfile profile) {
         // If same script is already attached, don't re-attach (plugin restart scenario)
         if (activeScript == script && activeProfile == profile) {
-            log.debug("Script already attached, checking break state...");
-
             // If we were on break and logged back in, handle resume logic
             if (state.shouldResumeAfterLogin()) {
                 log.info("Resuming script after break ended during logout");
@@ -110,7 +108,7 @@ public class BreakManager {
             log.info("Reattached script while break is active or pending");
         }
 
-        log.info("Attached script with profile: {}", profile.getName());
+        log.info("Attached script: {} with profile: {}", script.getClass().getName(), profile.getName());
     }
 
     /**
@@ -139,7 +137,8 @@ public class BreakManager {
         Instant nextBreakTime = Instant.now().plus(nextRunDuration);
         state.setNextBreakTime(nextBreakTime);
 
-        log.info("Next break scheduled in {} minutes", nextRunDuration.toMinutes());
+        String formattedTime = TIME_FORMATTER.format(nextBreakTime);
+        log.info("Next break scheduled in {} minutes at: {}", nextRunDuration.toMinutes(), formattedTime);
     }
 
     /**
@@ -226,14 +225,12 @@ public class BreakManager {
 
         if (activeProfile.isLogoutDuringBreak()) {
             state.setAwaitingLogin(true);
-            log.info("Break started with logout - will resume after login at: {}",
-                    TIME_FORMATTER.format(breakEndTime));
+            log.info("Break started with logout - will resume after login at: {}", TIME_FORMATTER.format(breakEndTime));
         }
 
         scheduledBreakEnd = scheduler.schedule(this::endBreak, breakDuration.toMillis(), TimeUnit.MILLISECONDS);
         String formattedTime = TIME_FORMATTER.format(breakEndTime);
         log.info("Break will end in {} minutes at: {}", breakDuration.toMinutes(), formattedTime);
-
         return true;
     }
 

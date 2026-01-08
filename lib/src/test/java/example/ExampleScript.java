@@ -4,16 +4,11 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
 import com.kraken.api.core.script.Script;
-import com.kraken.api.core.script.breakhandler.BreakConditions;
-import com.kraken.api.core.script.breakhandler.BreakManager;
-import com.kraken.api.core.script.breakhandler.BreakProfile;
-import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.movement.MovementService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.util.RandomService;
 import com.kraken.api.service.util.SleepService;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 
 import java.util.Arrays;
@@ -37,37 +32,6 @@ public class ExampleScript extends Script {
 
     @Inject
     private ExamplePlugin plugin;
-
-    @Inject
-    private BreakManager breakManager;
-
-    @Inject
-    private BankService bankService;
-
-    @Override
-    public void onStart() {
-        // Create a custom break profile
-        BreakProfile profile = BreakProfile.builder()
-                .name("Jewelry Profile")
-                .minRuntime(java.time.Duration.ofMinutes(2))
-                .maxRuntime(java.time.Duration.ofMinutes(4))
-                .minBreakDuration(java.time.Duration.ofMinutes(2))
-                .maxBreakDuration(java.time.Duration.ofMinutes(5))
-                .logoutDuringBreak(true)
-                .randomizeTimings(true)
-                .build();
-
-        profile.getCustomConditions().add(
-            BreakConditions.onLevelReached(ctx.getClient(), Skill.CRAFTING, 51)
-        );
-
-        profile.getCustomConditions().add(
-            BreakConditions.onBankEmpty(bankService, ctx, 1603)
-        );
-
-        // Attach this script to the break handler
-        breakManager.attachScript(this, profile);
-    }
 
     @Override
     public int loop() {

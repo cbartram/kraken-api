@@ -279,7 +279,12 @@ public abstract class Script implements Scriptable {
         isRunning = false;
         eventBus.unregister(this);
 
-        if(future == null || future.isDone()) callback.run();
+        if(future == null || future.isDone()) {
+            log.info("[{}] Script stopped", this.name);
+            onStop();
+            if(callback != null) callback.run();
+            return;
+        }
 
         log.info("[{}] Stopping script...", this.name);
         RunnableTask.cancel();

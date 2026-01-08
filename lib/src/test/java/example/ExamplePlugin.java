@@ -272,10 +272,7 @@ public class ExamplePlugin extends Plugin {
                 .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 51))
                 .addBreakCondition(BreakConditions.onBankEmpty(bankService, context, 1603));
 
-        if (client.getGameState() == GameState.LOGGED_IN) {
-            exampleScript.start();
-            breakManager.attachScript(exampleScript, profile);
-        }
+        breakManager.attachScript(exampleScript, profile);
     }
 
     @Override
@@ -289,7 +286,6 @@ public class ExamplePlugin extends Plugin {
         overlayManager.remove(mouseOverlay);
 
         if (!breakManager.isOnBreak()) {
-            exampleScript.stop();
             breakManager.detachScript();
         }
     }
