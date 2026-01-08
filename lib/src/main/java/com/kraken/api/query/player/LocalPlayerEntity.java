@@ -3,14 +3,15 @@ package com.kraken.api.query.player;
 import com.kraken.api.Context;
 import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.tile.GameArea;
-import com.kraken.api.service.ui.tab.InterfaceTab;
-import com.kraken.api.service.ui.tab.TabService;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
@@ -19,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class LocalPlayerEntity extends PlayerEntity {
     private static final int VENOM_VALUE_CUTOFF = -38;
     private static final int VENOM_THRESHOLD = 1000000;
@@ -263,30 +265,27 @@ public class LocalPlayerEntity extends PlayerEntity {
         return ctx.getClient().getEnergy() / 100;
     }
 
-
+    /**
+     * Logs the current player out of the client. If the player is in a place where they cannot be logged out
+     * this method will NOT re-attempt to log the player out (i.e. the player was recently in combat).
+     * @return True if the logout was successful and false otherwise.
+     */
     public boolean logout() {
-        ctx.runOnClientThread(() -> {
-            Player localPlayer = ctx.getClient().getLocalPlayer();
-            if (localPlayer == null) {
-                return false;
-            }
-            TabService tabService = ctx.getService(TabService.class);
-            return tabService.switchTo(InterfaceTab.LOGOUT);
-        });
+        if (ctx.getClient().getGameState() != GameState.LOGGED_IN) {
+            return false;
+        }
 
-        return ctx.runOnClientThread(() -> {
-            WidgetEntity logoutButton = ctx.widgets().withId(LOGOUT_WIDGET_ID).first();
+        WidgetEntity logoutButton = ctx.widgets().fromClient(InterfaceID.Logout.LOGOUT);
+        if (logoutButton != null) {
+            return logoutButton.interact(1, InterfaceID.Logout.LOGOUT, -1, -1);
+        }
 
-            if (logoutButton == null) {
-                logoutButton = ctx.widgets().withAction("Logout").first();
-            }
+        logoutButton = ctx.widgets().fromClient(InterfaceID.Logout.LOGOUT);
+        if (logoutButton != null) {
+            return logoutButton.interact(1, InterfaceID.Worldswitcher.LOGOUT, -1, -1);
+        }
 
-            if (logoutButton == null || !logoutButton.isVisible()) {
-                return false;
-            }
-
-            return logoutButton.interact("Logout");
-        });
+        return false;
     }
 
     /**

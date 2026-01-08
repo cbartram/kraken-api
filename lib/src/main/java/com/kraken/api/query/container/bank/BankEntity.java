@@ -37,6 +37,14 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
     }
 
     /**
+     * Returns the count of this item in the bank.
+     * @return The number of the item within the bank.
+     */
+    public int count() {
+        return raw().getItemQuantity();
+    }
+
+    /**
      * Withdraws 1 of this item.
      * @return true if the withdrawal was successful and false otherwise
      */

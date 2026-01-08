@@ -78,6 +78,39 @@ public class WidgetQuery extends AbstractQuery<WidgetEntity, WidgetQuery, Widget
     }
 
     /**
+     * Returns a widget directly from the client. This can return widgets which may not be visible but
+     * are known to the client. i.e. a logout button widget without being on the logout tab.
+     * <p>
+     * This method wraps the widget in a {@link WidgetEntity} class allowing the widget to be interacted with.
+     * @param packedId The packed widget component id to find.
+     * @return WidgetEntity or null if no widget is found.
+     */
+    public WidgetEntity fromClient(int packedId) {
+        return ctx.runOnClientThread(() -> {
+            Widget w = ctx.getClient().getWidget(packedId);
+            if(w == null) return null;
+            return new WidgetEntity(ctx, w);
+        });
+    }
+
+    /**
+     * Returns a widget directly from the client. This can return widgets which may not be visible but
+     * are known to the client. i.e. a logout button widget without being on the logout tab.
+     * <p>
+     * This method wraps the widget in a {@link WidgetEntity} class allowing the widget to be interacted with.
+     * @param groupId The widgets group id
+     * @param childId The widgets child id
+     * @return WidgetEntity or null if no widget is found.
+     */
+    public WidgetEntity fromClient(int groupId, int childId) {
+        return ctx.runOnClientThread(() -> {
+            Widget w = ctx.getClient().getWidget(groupId, childId);
+            if(w == null) return null;
+            return new WidgetEntity(ctx, w);
+        });
+    }
+
+    /**
      * Filters for a widget with the exact packed ID.
      * Useful if you know the full ID (e.g., WidgetInfo.INVENTORY.getId()).
      * @param packedId The packed widget id to search for. Packed ID's encapsulate both the group and child id into a single
