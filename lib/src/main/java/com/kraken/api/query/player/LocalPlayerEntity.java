@@ -280,7 +280,7 @@ public class LocalPlayerEntity extends PlayerEntity {
             TabService tabService = ctx.getService(TabService.class);
             tabService.switchTo(InterfaceTab.LOGOUT);
 
-            SleepService.sleep(100, 150);
+            SleepService.sleepFor(2);
 
             WidgetEntity logoutButton = ctx.widgets().withId(LOGOUT_WIDGET_ID).first();
 
@@ -289,8 +289,7 @@ public class LocalPlayerEntity extends PlayerEntity {
                 logoutButton = ctx.widgets().withAction("Logout").first();
             }
 
-            if (logoutButton == null || !logoutButton.isVisible()) {
-                log.warn("Logout button could not be found or is not visible: {}, cannot logout", logoutButton);
+            if (logoutButton == null) {
                 return false;
             }
 

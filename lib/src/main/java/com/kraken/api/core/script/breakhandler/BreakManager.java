@@ -7,6 +7,7 @@ import com.kraken.api.core.script.Script;
 import com.kraken.api.service.ui.login.LoginService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.eventbus.EventBus;
@@ -41,7 +42,7 @@ public class BreakManager {
     private BreakState state;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss A").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss a").withZone(ZoneId.systemDefault());
 
     private Script activeScript;
     private BreakProfile activeProfile;
@@ -151,7 +152,6 @@ public class BreakManager {
         // Don't check conditions while on break
         if (state.isOnBreak() || state.isAwaitingLogin()) return;
 
-        // Check time-based break
         if (state.getNextBreakTime() != null && Instant.now().isAfter(state.getNextBreakTime())) {
             startBreak("Scheduled break time reached");
             return;
@@ -172,8 +172,8 @@ public class BreakManager {
     @Subscribe
     public void onGameStateChanged(GameStateChanged event) {
         if (!initialized) return;
-        if (event.getGameState() == net.runelite.api.GameState.LOGGED_IN && state.isAwaitingLogin()) {
-            log.info("Logged back in during break period");
+        if (event.getGameState() == GameState.LOGGED_IN && state.isAwaitingLogin()) {
+            log.info("Manual login detected during break period");
 
             if (state.shouldResumeAfterLogin()) {
                 log.info("Break period ended while logged out, resuming script");
@@ -239,15 +239,11 @@ public class BreakManager {
      */
     private void endBreak() {
         if (!state.isOnBreak()) return;
-
         log.info("Break period ended");
 
         if (state.isAwaitingLogin() && client.getGameState() != net.runelite.api.GameState.LOGGED_IN) {
-            log.info("Break ended but still logged out - waiting for login to resume");
-            return;
+            completeBreakResume();
         }
-
-        completeBreakResume();
     }
 
     /**
