@@ -268,7 +268,6 @@ public class ExamplePlugin extends Plugin {
                 .logoutDuringBreak(true)
                 .randomizeTimings(true)
                 .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 54))
-                .addBreakCondition(BreakConditions.onBankEmpty(bankService, context, 1603))
                 .build();
 
         breakManager.attachScript(exampleScript, profile);

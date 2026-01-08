@@ -206,9 +206,80 @@ public class MyBotScript extends Script {
     }
 }
 ```
+
+## Break Management
+
+Having your scripts take regular breaks can help reduce detection, add humanization, and ultimately reduce bans. The Kraken API
+exposes a high level `BreakManager` class to help you faciliate breaking within your scripts.
+
+Breaks can be configured using pre-defined or custom `BreakProfiles`. A `BreakProfile` defines exactly how your breaks are
+executed. For example you can configure,
+
+- The min and max runtime of your script
+- The min and max time of your break
+- Whether to logout or just go idle during your breaks
+- Custom break conditions like:
+  - Reaching a certain level
+  - Reaching a certain exp threshold
+  - Bank being depleted of a specific material
+  - Any custom condition you can think of
+
+Here is an example of building a custom profile for breaking within a crafting plugin:
+
+```java
+BreakProfile profile = BreakProfile.builder()
+        .name("Crafting Profile")
+        .minRuntime(java.time.Duration.ofMinutes(20))
+        .maxRuntime(java.time.Duration.ofMinutes(40))
+        .minBreakDuration(java.time.Duration.ofMinutes(5))
+        .maxBreakDuration(java.time.Duration.ofMinutes(19))
+        .logoutDuringBreak(true)
+        .randomizeTimings(true)
+        .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 54))
+        .addBreakCondition(BreakConditions.customCondition(() -> ctx.groundItems().within(20).valueAbove(100000).first() != null, "I saw an item worth lots of GP"))
+        .build();
+```
+
+It is recommended to initialize and configure the break manager in your `Plugin` class within the `startUp()` method like so:
+
+```java
+
+class MyPlugin extends Plugin {
+    
+    @Inject
+    private BreakManager breakManager;
+    
+    @Inject
+    private MyCustomScript exampleScript;
+
+    @Override
+    public void startUp() {
+        breakManager.initialize();
+        BreakProfile profile = BreakProfile.builder()
+                .name("Crafting Profile")
+                .minRuntime(java.time.Duration.ofMinutes(20))
+                .maxRuntime(java.time.Duration.ofMinutes(40))
+                .minBreakDuration(java.time.Duration.ofMinutes(5))
+                .maxBreakDuration(java.time.Duration.ofMinutes(19))
+                .logoutDuringBreak(true)
+                .randomizeTimings(true)
+                .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 54))
+                .build();
+
+        breakManager.attachScript(exampleScript, profile);
+    }
+    
+    
+    @Override
+    public void shutDown() {
+        breakManager.detachScript(exampleScript);
+    }
+}
+```
+
 ## Continued Reading
 
-As you develop your skills as a scripter you will likely run into issues where tasks need to be executed in some priority order where
+As you develop your skills as a scripter, you will likely run into issues where tasks need to be executed in some priority order where
 certain tasks take precedence over other ones. The Kraken API ships with a `PriorityTask` abstraction to help you implement your task
 execution logic using a data structure like an ordered list or a priority queue.
 
@@ -218,7 +289,7 @@ By using the Loop and Task system, you achieve:
 -   **Readability**: It's easier to understand what your script is doing by looking at its individual tasks.
 -   **Maintainability**: Changes to one task are less likely to affect others.
 -   **Testability**: Individual tasks can be tested in isolation.
--   **Flexibility**: You can easily reorder, add, or remove tasks to change your script's behavior.
+-   **Flexibility**: You can reorder, add, or remove tasks to change your script's behavior.
 
-If you are interested, you should check out the [Kraken Example Plugin](https://github.com/cbartram/kraken-example-plugin) which provides a complete, best-practice
+If you are interested, you should check out the [Kraken Example Plugin,](https://github.com/cbartram/kraken-example-plugin) which provides a complete, best-practice
 example of using the API within a RuneLite plugin to create a fully automated script.

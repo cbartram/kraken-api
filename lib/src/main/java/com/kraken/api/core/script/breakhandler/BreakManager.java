@@ -42,11 +42,12 @@ public class BreakManager {
     private BreakState state;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss a").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm:ss a").withZone(ZoneId.systemDefault());
 
     private Script activeScript;
     private BreakProfile activeProfile;
     private boolean initialized = false;
+    private boolean breakScheduled = false;
     private ScheduledFuture<?> scheduledBreakEnd;
 
     /**
@@ -72,6 +73,7 @@ public class BreakManager {
             }
             scheduler.shutdownNow();
             initialized = false;
+            breakScheduled = false;
             state.reset();
             log.info("Break Manager shut down");
         }
@@ -103,8 +105,6 @@ public class BreakManager {
         // Only reset state if we're not currently managing a break
         if (!state.isOnBreak() && !state.isAwaitingLogin()) {
             this.state.reset();
-            this.state.setScriptStartTime(Instant.now());
-            scheduleNextBreak();
         } else {
             log.info("Reattached script while break is active or pending");
         }
@@ -118,12 +118,13 @@ public class BreakManager {
     public void detachScript() {
         // Don't clear state if we're on break - preserve it for potential resume
         if (!state.isOnBreak() && !state.isAwaitingLogin()) {
+            log.info("Script: {} detached", activeScript.getClass().getName());
             this.activeScript = null;
             this.activeProfile = null;
+            this.breakScheduled = false;
             this.state.reset();
-            log.info("Script detached from BreakHandler");
         } else {
-            log.info("Script detached but break state preserved");
+            log.info("Script: {} detached but break state preserved", activeScript.getClass().getName());
             this.activeScript = null;
         }
     }
@@ -137,6 +138,7 @@ public class BreakManager {
         Duration nextRunDuration = activeProfile.getNextRunDuration();
         Instant nextBreakTime = Instant.now().plus(nextRunDuration);
         state.setNextBreakTime(nextBreakTime);
+        breakScheduled = true;
 
         String formattedTime = TIME_FORMATTER.format(nextBreakTime);
         log.info("Next break scheduled in {} minutes at: {}", nextRunDuration.toMinutes(), formattedTime);
@@ -148,6 +150,15 @@ public class BreakManager {
     @Subscribe
     public void onGameTick(GameTick event) {
         if (!initialized || activeScript == null || activeProfile == null) return;
+
+        // If we haven't scheduled the first break yet and we're logged in and not on break, schedule it now
+        if (!breakScheduled && !state.isOnBreak() && !state.isAwaitingLogin() &&
+                client.getGameState() == GameState.LOGGED_IN) {
+            log.info("Player logged in, starting break schedule");
+            state.setScriptStartTime(Instant.now());
+            scheduleNextBreak();
+            return;
+        }
 
         // Don't check conditions while on break
         if (state.isOnBreak() || state.isAwaitingLogin()) return;
@@ -172,14 +183,15 @@ public class BreakManager {
     @Subscribe
     public void onGameStateChanged(GameStateChanged event) {
         if (!initialized) return;
-        if (event.getGameState() == GameState.LOGGED_IN && state.isAwaitingLogin()) {
-            log.info("Manual login detected during break period");
 
-            if (state.shouldResumeAfterLogin()) {
-                log.info("Break period ended while logged out, resuming script");
-                completeBreakResume();
-            } else {
-                log.info("Break still active, remaining logged in but paused");
+        if (event.getGameState() == GameState.LOGGED_IN) {
+            if (state.isAwaitingLogin()) {
+                if (state.shouldResumeAfterLogin()) {
+                    log.info("Break period ended while logged out, resuming script");
+                    completeBreakResume();
+                } else {
+                    log.info("Break still active, remaining logged in but paused");
+                }
             }
         }
     }
@@ -190,20 +202,17 @@ public class BreakManager {
      */
     private boolean startBreak(String reason) {
         if (activeScript == null) return false;
-
         log.info("Attempting to start break: {}", reason);
 
         // If logout is required, try it first before committing to the break
         if (activeProfile.isLogoutDuringBreak()) {
             if (client.getGameState() == GameState.LOGGED_IN) {
                 try {
-                    log.info("Player is logged in, attempting to logout for break");
                     boolean loggedOut = ctx.players().local().logout();
                     if (!loggedOut) {
                         log.error("Failed to logout for break - aborting break attempt");
                         return false;
                     }
-                    log.info("Successfully logged out for break");
                 } catch (Exception e) {
                     log.error("Exception during logout for break - aborting break", e);
                     return false;
@@ -242,15 +251,31 @@ public class BreakManager {
         if (!state.isOnBreak()) return;
         log.info("Break period ended");
 
-        if (state.isAwaitingLogin() && client.getGameState() != net.runelite.api.GameState.LOGGED_IN) {
+        if (state.isAwaitingLogin() && client.getGameState() != GameState.LOGGED_IN) {
+            try {
+                loginService.login();
+                log.info("Attempting to log back in after break");
+                // Don't call completeBreakResume here - let game state change event handle it
+            } catch (Exception e) {
+                log.error("Failed to login after break", e);
+            }
+        } else if (client.getGameState() == GameState.LOGGED_IN) {
+            // If we're already logged in, complete the resume immediately
             completeBreakResume();
         }
     }
 
     /**
-     * Completes the break resume process - logging in if needed and resuming script.
+     * Completes the break resume process - resuming script and scheduling next break.
+     * Should only be called once per break resume.
      */
     private void completeBreakResume() {
+        // Guard against duplicate calls
+        if (!state.isOnBreak() && !state.isAwaitingLogin()) {
+            log.info("Resume already completed, ignoring duplicate call");
+            return;
+        }
+
         if (activeScript == null) {
             log.warn("Cannot resume break - no active script");
             state.setOnBreak(false);
@@ -258,27 +283,22 @@ public class BreakManager {
             return;
         }
 
-        // Login if we're logged out and need to log back in
-        if (state.isAwaitingLogin() && client.getGameState() != net.runelite.api.GameState.LOGGED_IN) {
-            try {
-                loginService.login();
-                log.info("Attempting to log back in after break");
-                return;
-            } catch (Exception e) {
-                log.error("Failed to login after break", e);
-            }
+        // Make sure we're logged in before resuming
+        if (client.getGameState() != GameState.LOGGED_IN) {
+            log.warn("Cannot complete resume - not logged in");
+            return;
         }
+
+        log.info("Completing break resume");
 
         state.setOnBreak(false);
         state.setAwaitingLogin(false);
         state.setBreakStartTime(null);
         state.setBreakEndTime(null);
 
-        // Resume the script
         activeScript.resume();
         log.info("Script resumed after break");
 
-        // Schedule next break
         scheduleNextBreak();
     }
 
