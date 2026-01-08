@@ -32,6 +32,7 @@ public class BreakProfile {
 
     /**
      * Calculates the next runtime duration based on profile settings.
+     * @return The duration of the next run
      */
     public Duration getNextRunDuration() {
         if (!randomizeTimings) {
@@ -45,6 +46,7 @@ public class BreakProfile {
 
     /**
      * Calculates the next break duration based on profile settings.
+     * @return The duration of the next break
      */
     public Duration getNextBreakDuration() {
         if (!randomizeTimings) {

@@ -54,6 +54,7 @@ public class LoginService {
 
     /**
      * Loads profile credentials from the RuneLite credentials file.
+     * @return Profile the character profile loaded from the credentials file.
      */
     public Profile loadProfileFromCredentials() {
         Properties props = new Properties();

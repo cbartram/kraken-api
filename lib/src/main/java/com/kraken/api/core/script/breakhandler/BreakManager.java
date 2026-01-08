@@ -82,6 +82,8 @@ public class BreakManager {
     /**
      * Attaches a script to the break handler with a specific profile.
      * Prevents duplicate attachments and handles resuming from breaks.
+     * @param script An instance of a class extending the Script class
+     * @param profile The break profile to use
      */
     public void attachScript(Script script, BreakProfile profile) {
         // If same script is already attached, don't re-attach (plugin restart scenario)
@@ -144,9 +146,7 @@ public class BreakManager {
         log.info("Next break scheduled in {} minutes at: {}", nextRunDuration.toMinutes(), formattedTime);
     }
 
-    /**
-     * Checks on each game tick if a break should be triggered.
-     */
+
     @Subscribe
     public void onGameTick(GameTick event) {
         if (!initialized || activeScript == null || activeProfile == null) return;
@@ -177,9 +177,6 @@ public class BreakManager {
         }
     }
 
-    /**
-     * Listen for login events to handle break resume after logout.
-     */
     @Subscribe
     public void onGameStateChanged(GameStateChanged event) {
         if (!initialized) return;
@@ -304,6 +301,8 @@ public class BreakManager {
 
     /**
      * Manually triggers a break.
+     * @param reason The reason for why the break is being taken (this shows up in the logs).
+     * @return True when a break was triggered successfully and false otherwise.
      */
     public boolean triggerBreak(String reason) {
         if (activeScript != null && !state.isOnBreak()) {
@@ -314,6 +313,7 @@ public class BreakManager {
 
     /**
      * Checks if the handler is currently managing a script.
+     * @return True if there is an active script attached and false otherwise
      */
     public boolean isActive() {
         return activeScript != null;
@@ -321,6 +321,7 @@ public class BreakManager {
 
     /**
      * Checks if currently on break.
+     * @return True if a break is currently being taken and false otherwise.
      */
     public boolean isOnBreak() {
         return state.isOnBreak();
