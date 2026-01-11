@@ -141,10 +141,40 @@ public class GrandExchangeService {
     }
 
     /**
+     * Queues a buy offer in the grand exchange for a given item, the amount of the item to purchase, and a specific
+     * price point. Negative amounts are not supported.
+     * @param itemId The id of the item to purchase
+     * @param amount The amount of the item to purchase
+     * @param price The price the item should be purchased at
+     * @return The GrandExchangeSlot object for the GE slot that was used to queue the buy order, or null if no slot is free or an error occurs.
+     */
+    public GrandExchangeSlot queueBuyOffer(int itemId, int amount, int price) {
+        GrandExchangeSlot slot = getFirstFreeSlot();
+        if(slot == null) return null;
+
+        if(amount <= 0) {
+            log.error("The amount of the item to purchase with id: {} must be greater than 0", itemId);
+            return null;
+        }
+
+        ctx.runOnClientThread(() -> {
+            widgetPackets.queueWidgetActionPacket(slot.getId(), slot.getBuyChild(), -1, 1);
+            widgetPackets.queueResumeObj(itemId);
+            widgetPackets.queueWidgetActionPacket(InterfaceID.GeOffers.SETUP, 12, -1, 1);
+            widgetPackets.queueResumeCount(price);
+            widgetPackets.queueWidgetActionPacket(InterfaceID.GeOffers.SETUP, 7, -1, 1);
+            widgetPackets.queueResumeCount(amount);
+            widgetPackets.queueWidgetActionPacket(InterfaceID.GeOffers.SETUP_CONFIRM, -1, -1, 1);
+            UIService.closeNumberDialogue();
+        });
+        return slot;
+    }
+
+    /**
      * Cancels an active Grand Exchange offer in the specified slot.
      * @param slot The GrandExchangeSlot to cancel.
      */
-    public void cancel(GrandExchangeSlot slot) {
+    public void cancelOffer(GrandExchangeSlot slot) {
         widgetPackets.queueWidgetActionPacket(2, slot.getId(), 2, -1);
         SleepService.sleepFor(2);
     }

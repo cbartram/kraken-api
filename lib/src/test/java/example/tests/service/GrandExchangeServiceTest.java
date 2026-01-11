@@ -93,8 +93,14 @@ public class GrandExchangeServiceTest extends BaseApiTest {
         grandExchangeService.collect(fireRuneSellSlot, false);
         SleepService.sleepFor(2);
 
-        // Buy fire runes
+        // Buy fire runes for 15 gp each (will insta buy)
+        GrandExchangeSlot fireRuneBuySlot = grandExchangeService.queueBuyOffer(fireRune.getId(), 15, 15);
+        if(fireRuneBuySlot == null) {
+            log.error("failed to buy fire runes slot is null");
+            return false;
+        }
 
+        SleepService.sleepUntil(fireRuneBuySlot::isFulfilled, 20000);
         return true;
     }
 
