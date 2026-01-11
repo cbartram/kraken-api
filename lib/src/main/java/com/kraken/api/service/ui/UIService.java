@@ -9,11 +9,11 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.RuneLite;
 
 import javax.inject.Singleton;
 import java.awt.*;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -25,8 +25,23 @@ import java.util.concurrent.ThreadLocalRandom;
 public class UIService {
     
     private final static Context ctx = RuneLite.getInjector().getInstance(Context.class);
-    private final static Random random = new Random();
 
+
+    /**
+     * Runs a client script to close the numeric input dialogue if it is open. This
+     * dialogue is shown when players are prompted to enter a number like: inputting GE offers,
+     * clue scroll steps, or withdrawing-X items from the bank.
+     */
+    public static void closeNumberDialogue() {
+        Client client = ctx.getClient();
+        ctx.runOnClientThread(() -> {
+            Widget widgetOne = client.getWidget(WidgetInfo.CHATBOX_INPUT);
+            Widget widgetTwo = client.getWidget(WidgetInfo.CHATBOX_FULL_INPUT);
+            if(widgetOne != null || widgetTwo != null) {
+                client.runScript(138);
+            }
+        });
+    }
 
     /**
      * Converts the given packed widget integer ID to a group ID by performing a bitwise right shift.
