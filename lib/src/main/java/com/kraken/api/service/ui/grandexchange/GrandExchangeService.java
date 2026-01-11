@@ -95,6 +95,17 @@ public class GrandExchangeService {
     }
 
     /**
+     * Queues a sell offer in the first free Grand Exchange slot.
+     * @param item The item to sell.
+     * @param amount The amount to sell. Use -1 to sell all available.
+     * @param price The price per item.
+     * @return The GrandExchangeSlot object for the GE slot that was used to queue the sell order, or null if no slot is free or an error occurs.
+     */
+    public GrandExchangeSlot queueSellOrder(InventoryEntity item, int amount, int price) {
+        return queueSellOrder(item.getId(), amount, price);
+    }
+
+    /**
      * Queues a sell offer in the first free Grand Exchange slot. When the amount specified is -1 then all of that item
      * will be sold as part of the offer.
      * @param itemId The item id of the item to sell.
@@ -148,7 +159,7 @@ public class GrandExchangeService {
      * @param price The price the item should be purchased at
      * @return The GrandExchangeSlot object for the GE slot that was used to queue the buy order, or null if no slot is free or an error occurs.
      */
-    public GrandExchangeSlot queueBuyOffer(int itemId, int amount, int price) {
+    public GrandExchangeSlot queueBuyOrder(int itemId, int amount, int price) {
         GrandExchangeSlot slot = getFirstFreeSlot();
         if(slot == null) return null;
 
@@ -168,6 +179,17 @@ public class GrandExchangeService {
             UIService.closeNumberDialogue();
         });
         return slot;
+    }
+
+    /**
+     * Queues a buy offer for all of a specific item in the first free Grand Exchange slot.
+     * @param item The item to purchase
+     * @param amount The amount of the item to purchase
+     * @param price The price the item should be purchased at
+     * @return The GrandExchangeSlot object for the GE slot that was used to queue the buy order, or null if no slot is free or an error occurs.
+     */
+    public GrandExchangeSlot queueBuyOrder(InventoryEntity item, int amount, int price) {
+        return queueBuyOrder(item.getId(), amount, price);
     }
 
     /**
