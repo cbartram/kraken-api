@@ -13,9 +13,6 @@ public class BreakConditions {
 
     /**
      * Breaks when a specific skill reaches a target level.
-     * TODO Will continually break every time the user logs in after reaching this level since their current level is {@literal >=} targetLevel.
-     * Perhaps you can configure this as a one off, i.e. this custom break condition should execute but only one time, once executed remove it from the profile for
-     * the duration of the session
      * @param client RuneLite Client
      * @param skill The Skill to track levels for
      * @param targetLevel The target level for when the break should occur when reached.
@@ -88,8 +85,39 @@ public class BreakConditions {
     }
 
     /**
+     * Wraps a condition to ensure it only triggers once per session.
+     * Useful for conditions like Level Reached or Material Depleted to prevent break loops.
+     * @param condition The condition to wrap
+     * @return A new BreakCondition that only returns true once.
+     */
+    public static BreakCondition runOnce(BreakCondition condition) {
+        return new BreakCondition() {
+            private boolean triggered = false;
+
+            @Override
+            public boolean shouldBreak() {
+                // If we already triggered this break, ignore it forever
+                if (triggered) {
+                    return false;
+                }
+
+                // Check the underlying condition
+                if (condition.shouldBreak()) {
+                    triggered = true;
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public String getDescription() {
+                return condition.getDescription();
+            }
+        };
+    }
+
+    /**
      * Breaks when items in the bank run out (e.g., materials).
-     * TODO Should possibly be an end script condition instead. After breaking if the user opens their bank this will just send them on a break.
      * @param ctx The API game context
      * @param itemId The item id to track. When this item is no longer present in the bank or your inventory, a break will be taken.
      * @return BreakCondition

@@ -240,6 +240,20 @@ BreakProfile profile = BreakProfile.builder()
         .build();
 ```
 
+Frequent times you will want to only break once for certain conditions, i.e. `onLevelReached(Skill.WOODCUTTING, 53)`. Once you reach level 53
+you will take a break, log back in, and immediately break again because you’re still level 53 woodcutting. To handle situations like these
+its best to wrap certain break conditions with a `runOnce()` call.
+
+```java
+// This will now only trigger one single break when ranarrs run out. 
+// When the bot logs back in, it will return false even if the bank is still empty.
+profile.addCondition(
+    BreakConditions.runOnce(
+        BreakConditions.onMaterialDepleted(ctx, ItemID.GRIMY_RANARR_WEED)
+    )
+);
+```
+This can be helpful for chaining together multiple skill or experience level breaks.
 It is recommended to initialize and configure the break manager in your `Plugin` class within the `startUp()` method like so:
 
 ```java

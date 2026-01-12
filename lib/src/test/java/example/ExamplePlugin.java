@@ -9,7 +9,6 @@ import com.kraken.api.core.script.breakhandler.BreakManager;
 import com.kraken.api.core.script.breakhandler.BreakProfile;
 import com.kraken.api.input.mouse.MouseRecorder;
 import com.kraken.api.overlay.MouseOverlay;
-import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.map.WorldMapService;
 import com.kraken.api.service.pathfinding.LocalPathfinder;
 import com.kraken.api.service.ui.login.LoginService;
@@ -100,6 +99,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private MouseRecorder mouseRecorder;
 
+    @Inject
+    private GrandExchangeServiceTest grandExchangeServiceTest;
+
     @Getter
     private WorldPoint targetTile;
 
@@ -112,8 +114,6 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private BreakManager breakManager;
 
-    @Inject
-    private BankService bankService;
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
@@ -149,6 +149,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enableDialogueService", "DialogueService", config::enableDialogueService, dialogueServiceTest::executeTest);
         registerTest("enableProcessingService", "ProcessingService", config::enableProcessService, processingServiceTest::executeTest);
         registerTest("enableAreaService", "AreaService", config::enableAreaService, areaServiceTest::executeTest);
+        registerTest("enableGrandExchangeService", "GrandExchangeService", config::enableGrandExchangeService, grandExchangeServiceTest::executeTest);
     }
 
     private void registerTest(String configKey, String testName, BooleanSupplier enabled, Supplier<java.util.concurrent.CompletableFuture<Boolean>> test) {
@@ -270,7 +271,8 @@ public class ExamplePlugin extends Plugin {
                 .addBreakCondition(BreakConditions.onLevelReached(context.getClient(), Skill.CRAFTING, 54))
                 .build();
 
-        breakManager.attachScript(exampleScript, profile);
+        // TODO Find out how you want to test this
+        // breakManager.attachScript(exampleScript, profile);
     }
 
     @Override
@@ -283,9 +285,10 @@ public class ExamplePlugin extends Plugin {
         overlayManager.remove(sceneOverlay);
         overlayManager.remove(mouseOverlay);
 
-        if (!breakManager.isOnBreak()) {
-            breakManager.detachScript();
-        }
+        // TODO Find out how you want to test this
+//        if (!breakManager.isOnBreak()) {
+//            breakManager.detachScript();
+//        }
     }
 
     @Subscribe

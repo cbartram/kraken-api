@@ -124,6 +124,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
                     ctx.getInteractionManager().getMousePackets().queueClickPacket(pt.getX(), pt.getY());
                     ctx.getInteractionManager().getWidgetPackets().queueWidgetAction(raw, "Withdraw-" + amount);
                     ctx.getInteractionManager().getWidgetPackets().queueResumeCount(amount);
+                    UIService.closeNumberDialogue();
                 }
                 return true;
             }
@@ -137,6 +138,7 @@ public class BankEntity extends AbstractEntity<BankItemWidget> {
             ctx.getClient().runScript(681);
             // Update the client's memory of what "X" is
             ctx.getClient().setVarbit(VarbitID.BANK_REQUESTEDQUANTITY, amount);
+            UIService.closeNumberDialogue();
             return true;
         });
     }

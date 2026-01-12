@@ -304,6 +304,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableGrandExchangeService",
+            name = "Start GE Tests",
+            description = "Enable grand exchange tests",
+            section = serviceTests,
+            position = 10
+    )
+    default boolean enableGrandExchangeService() {
+        return true;
+    }
+
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================
