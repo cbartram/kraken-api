@@ -24,6 +24,7 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.EnumComposition;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
@@ -126,6 +127,17 @@ public class Context {
      */
     public Widget getWidget(int widgetId) {
         return runOnClientThread(() -> client.getWidget(widgetId));
+    }
+
+
+    /**
+     * Retrieves an enum composition from the RuneLite client thread. This method is
+     * thread-safe and will run on the client thread to retrieve the EnumComposition.
+     * @param enumId The enum id
+     * @return EnumComposition
+     */
+    public EnumComposition getEnum(int enumId) {
+        return runOnClientThread(() -> client.getEnum(enumId));
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.kraken.api.service.spell;
 
 import lombok.Getter;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.util.HashMap;
@@ -65,6 +66,11 @@ public enum Spells {
             Runes.AIR, 3,
             Runes.LAW, 1
     ), Spellbook.MODERN, 14286871),
+    GRAND_EXCHANGE_TELEPORT(MagicAction.VARROCK_TELEPORT, Map.of(
+            Runes.FIRE, 1,
+            Runes.AIR, 3,
+            Runes.LAW, 1
+    ), Spellbook.MODERN, 14286871),
     LUMBRIDGE_TELEPORT(MagicAction.LUMBRIDGE_TELEPORT, Map.of(
             Runes.EARTH, 1,
             Runes.AIR, 3,
@@ -84,11 +90,19 @@ public enum Spells {
             Runes.AIR, 5,
             Runes.LAW, 1
     ), Spellbook.MODERN, 14286882),
+    SEERS_TELEPORT(MagicAction.CAMELOT_TELEPORT, Map.of(
+            Runes.AIR, 5,
+            Runes.LAW, 1
+    ), Spellbook.MODERN, 14286882),
     ARDOUGNE_TELEPORT(MagicAction.ARDOUGNE_TELEPORT, Map.of(
             Runes.WATER, 2,
             Runes.LAW, 2
     ), Spellbook.MODERN, 14286889),
     WATCHTOWER_TELEPORT(MagicAction.WATCHTOWER_TELEPORT, Map.of(
+            Runes.EARTH, 2,
+            Runes.LAW, 2
+    ), Spellbook.MODERN, 14286895),
+    YANILLE_TELEPORT(MagicAction.WATCHTOWER_TELEPORT, Map.of(
             Runes.EARTH, 2,
             Runes.LAW, 2
     ), Spellbook.MODERN, 14286895),
@@ -625,7 +639,7 @@ public enum Spells {
             Runes.BLOOD, 1,
             Runes.DEATH, 1,
             Runes.SOUL, 1
-    ), Spellbook.ARCEUUS, 14287031);
+    ), Spellbook.ARCEUUS, InterfaceID.MagicSpellbook.DEATH_CHARGE);
 
     private final String name;
     private final MagicAction magicAction;
