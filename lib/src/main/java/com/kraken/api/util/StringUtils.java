@@ -12,9 +12,6 @@ import java.util.List;
 public class StringUtils {
 
     private static final String COL_TAGS_REGEX = "<col=[^>]*>";
-    // Note: BASE64_KEY was referenced in your snippet but not defined.
-    // You likely have a constant like this defined in the class:
-    // private static final String BASE64_KEY = "YOUR_KEY_HERE";
 
     /**
      * Finds the index of a term in an array of terms, ignoring case.
@@ -52,7 +49,7 @@ public class StringUtils {
 
     /**
      * Strips {@code <col=...>} tags from a single string.
-     * * @param source the string to process
+     * @param source the string to process
      * @return the string with all color tags removed
      */
     public static String stripColTags(String source) {
@@ -61,7 +58,7 @@ public class StringUtils {
 
     /**
      * Wraps the provided text in a standard color tag {@code <col=ff9040>}.
-     * * @param text the text to wrap
+     * @param text the text to wrap
      * @return the text wrapped in color tags, or the original text if null or empty
      */
     public static String addColTags(String text) {
@@ -107,7 +104,7 @@ public class StringUtils {
     /**
      * Decrypts a Base64 encoded string containing an IV and ciphertext.
      * <p>
-     * This method expects the input string to be the result of the {@link #encrypt(String)} method.
+     * This method expects the input string to be the result of the {@link #encrypt(String, String)} method.
      * It extracts the IV from the first 16 bytes and decrypts the remaining bytes.
      * </p>
      * @param base64IvAndCiphertext the Base64 encoded string containing the IV and encrypted data
