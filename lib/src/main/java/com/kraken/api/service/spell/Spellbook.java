@@ -48,6 +48,6 @@ public enum Spellbook {
                 return spellbook;
             }
         }
-        return MODERN;
+        return STANDARD;
     }
 }
