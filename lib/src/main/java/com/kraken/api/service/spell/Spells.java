@@ -15,183 +15,183 @@ public enum Spells {
             Runes.EARTH, 2,
             Runes.WATER, 3,
             Runes.BODY, 1
-    ), Spellbook.MODERN, 14286857),
+    ), Spellbook.STANDARD, 14286857),
     WEAKEN(MagicAction.WEAKEN, Map.of(
             Runes.EARTH, 2,
             Runes.WATER, 3,
             Runes.BODY, 1
-    ), Spellbook.MODERN, 14286863),
+    ), Spellbook.STANDARD, 14286863),
     CURSE(MagicAction.CURSE, Map.of(
             Runes.EARTH, 2,
             Runes.WATER, 3,
             Runes.BODY, 1
-    ), Spellbook.MODERN, 14286867),
+    ), Spellbook.STANDARD, 14286867),
     BIND(MagicAction.BIND, Map.of(
             Runes.EARTH, 3,
             Runes.WATER, 3,
             Runes.NATURE, 2
-    ), Spellbook.MODERN, 14286868),
+    ), Spellbook.STANDARD, 14286868),
     SNARE(MagicAction.SNARE, Map.of(
             Runes.EARTH, 4,
             Runes.WATER, 4,
             Runes.NATURE, 3
-    ), Spellbook.MODERN, 14286887),
+    ), Spellbook.STANDARD, 14286887),
     VULNERABILITY(MagicAction.VULNERABILITY, Map.of(
             Runes.EARTH, 5,
             Runes.WATER, 5,
             Runes.SOUL, 1
-    ), Spellbook.MODERN, 14286908),
+    ), Spellbook.STANDARD, 14286908),
     ENFEEBLE(MagicAction.ENFEEBLE, Map.of(
             Runes.EARTH, 8,
             Runes.WATER, 8,
             Runes.SOUL, 1
-    ), Spellbook.MODERN, 14286911),
+    ), Spellbook.STANDARD, 14286911),
     ENTANGLE(MagicAction.ENTANGLE, Map.of(
             Runes.EARTH, 5,
             Runes.WATER, 5,
             Runes.NATURE, 4
-    ), Spellbook.MODERN, 14286914),
+    ), Spellbook.STANDARD, 14286914),
     STUN(MagicAction.STUN, Map.of(
             Runes.EARTH, 12,
             Runes.WATER, 12,
             Runes.SOUL, 1
-    ), Spellbook.MODERN, 14286915),
+    ), Spellbook.STANDARD, 14286915),
     TELE_BLOCK(MagicAction.TELE_BLOCK, Map.of(
             Runes.CHAOS, 1,
             Runes.DEATH, 1,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286920),
+    ), Spellbook.STANDARD, 14286920),
     VARROCK_TELEPORT(MagicAction.VARROCK_TELEPORT, Map.of(
             Runes.FIRE, 1,
             Runes.AIR, 3,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286871),
+    ), Spellbook.STANDARD, 14286871),
     GRAND_EXCHANGE_TELEPORT(MagicAction.VARROCK_TELEPORT, Map.of(
             Runes.FIRE, 1,
             Runes.AIR, 3,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286871),
+    ), Spellbook.STANDARD, 14286871),
     LUMBRIDGE_TELEPORT(MagicAction.LUMBRIDGE_TELEPORT, Map.of(
             Runes.EARTH, 1,
             Runes.AIR, 3,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286874),
+    ), Spellbook.STANDARD, 14286874),
     FALADOR_TELEPORT(MagicAction.FALADOR_TELEPORT, Map.of(
             Runes.WATER, 1,
             Runes.AIR, 3,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286877),
+    ), Spellbook.STANDARD, 14286877),
     TELEPORT_TO_HOUSE(MagicAction.TELEPORT_TO_HOUSE, Map.of(
             Runes.AIR, 1,
             Runes.EARTH, 1,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286879),
+    ), Spellbook.STANDARD, 14286879),
     CAMELOT_TELEPORT(MagicAction.CAMELOT_TELEPORT, Map.of(
             Runes.AIR, 5,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286882),
+    ), Spellbook.STANDARD, 14286882),
     SEERS_TELEPORT(MagicAction.CAMELOT_TELEPORT, Map.of(
             Runes.AIR, 5,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286882),
+    ), Spellbook.STANDARD, 14286882),
     ARDOUGNE_TELEPORT(MagicAction.ARDOUGNE_TELEPORT, Map.of(
             Runes.WATER, 2,
             Runes.LAW, 2
-    ), Spellbook.MODERN, 14286889),
+    ), Spellbook.STANDARD, 14286889),
     WATCHTOWER_TELEPORT(MagicAction.WATCHTOWER_TELEPORT, Map.of(
             Runes.EARTH, 2,
             Runes.LAW, 2
-    ), Spellbook.MODERN, 14286895),
+    ), Spellbook.STANDARD, 14286895),
     YANILLE_TELEPORT(MagicAction.WATCHTOWER_TELEPORT, Map.of(
             Runes.EARTH, 2,
             Runes.LAW, 2
-    ), Spellbook.MODERN, 14286895),
+    ), Spellbook.STANDARD, 14286895),
     TROLLHEIM_TELEPORT(MagicAction.TROLLHEIM_TELEPORT, Map.of(
             Runes.FIRE, 2,
             Runes.LAW, 2
-    ), Spellbook.MODERN, 14286902),
+    ), Spellbook.STANDARD, 14286902),
     CIVITAS_ILLA_FORTIS_TELEPORT(MagicAction.CIVITAS_ILLA_FORTIS_TELEPORT, Map.of(
             Runes.LAW, 2,
             Runes.EARTH, 1,
             Runes.FIRE, 1
-    ), Spellbook.MODERN, 14286891),
+    ), Spellbook.STANDARD, 14286891),
     KOUREND_CASTLE_TELEPORT(MagicAction.KOUREND_CASTLE_TELEPORT, Map.of(
             Runes.LAW, 2,
             Runes.WATER, 1,
             Runes.FIRE, 1
-    ), Spellbook.MODERN, 14286884),
+    ), Spellbook.STANDARD, 14286884),
     TELEKINETIC_GRAB(MagicAction.TELEKINETIC_GRAB, Map.of(
             Runes.AIR, 1,
             Runes.LAW, 1
-    ), Spellbook.MODERN, 14286875),
+    ), Spellbook.STANDARD, 14286875),
     BONES_TO_BANANAS(MagicAction.BONES_TO_BANANAS, Map.of(
             Runes.WATER, 2,
             Runes.EARTH, 2,
             Runes.NATURE, 1
-    ), Spellbook.MODERN, 14286865),
+    ), Spellbook.STANDARD, 14286865),
     BONES_TO_PEACHES(MagicAction.BONES_TO_PEACHES, Map.of(
             Runes.WATER, 4,
             Runes.EARTH, 4,
             Runes.NATURE, 2
-    ), Spellbook.MODERN, 14286898),
+    ), Spellbook.STANDARD, 14286898),
     LOW_LEVEL_ALCHEMY(MagicAction.LOW_LEVEL_ALCHEMY, Map.of(
             Runes.FIRE, 3,
             Runes.NATURE, 1
-    ), Spellbook.MODERN, 14286869),
+    ), Spellbook.STANDARD, 14286869),
     SUPERHEAT_ITEM(MagicAction.SUPERHEAT_ITEM, Map.of(
             Runes.FIRE, 4,
             Runes.NATURE, 1
-    ), Spellbook.MODERN, 14286881),
+    ), Spellbook.STANDARD, 14286881),
     HIGH_LEVEL_ALCHEMY(MagicAction.HIGH_LEVEL_ALCHEMY, Map.of(
             Runes.FIRE, 5,
             Runes.NATURE, 1
-    ), Spellbook.MODERN, 14286892),
+    ), Spellbook.STANDARD, 14286892),
 
     ENCHANT_SAPPHIRE_JEWELLERY(MagicAction.ENCHANT_SAPPHIRE_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.WATER, 1
-    ), Spellbook.MODERN, 14286861),
+    ), Spellbook.STANDARD, 14286861),
     ENCHANT_EMERALD_JEWELLERY(MagicAction.ENCHANT_EMERALD_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.AIR, 3
-    ), Spellbook.MODERN, 14286872),
+    ), Spellbook.STANDARD, 14286872),
     ENCHANT_RUBY_JEWELLERY(MagicAction.ENCHANT_RUBY_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.FIRE, 5
-    ), Spellbook.MODERN, 14286885),
+    ), Spellbook.STANDARD, 14286885),
     ENCHANT_DIAMOND_JEWELLERY(MagicAction.ENCHANT_DIAMOND_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.EARTH, 10
-    ), Spellbook.MODERN, 14286894),
+    ), Spellbook.STANDARD, 14286894),
     ENCHANT_DRAGONSTONE_JEWELLERY(MagicAction.ENCHANT_DRAGONSTONE_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.WATER, 15
-    ), Spellbook.MODERN, 14286909),
+    ), Spellbook.STANDARD, 14286909),
     ENCHANT_ONYX_JEWELLERY(MagicAction.ENCHANT_ONYX_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.FIRE, 20
-    ), Spellbook.MODERN, 14286922),
+    ), Spellbook.STANDARD, 14286922),
     ENCHANT_ZENYTE_JEWELLERY(MagicAction.ENCHANT_ZENYTE_JEWELLERY, Map.of(
             Runes.COSMIC, 1,
             Runes.SOUL, 20,
             Runes.BLOOD, 20
-    ), Spellbook.MODERN, 14286925),
+    ), Spellbook.STANDARD, 14286925),
     CHARGE_WATER_ORB(MagicAction.CHARGE_WATER_ORB, Map.of(
             Runes.WATER, 30,
             Runes.COSMIC, 3
-    ), Spellbook.MODERN, 14286893),
+    ), Spellbook.STANDARD, 14286893),
     CHARGE_EARTH_ORB(MagicAction.CHARGE_EARTH_ORB, Map.of(
             Runes.EARTH, 30,
             Runes.COSMIC, 3
-    ), Spellbook.MODERN, 14286897),
+    ), Spellbook.STANDARD, 14286897),
     CHARGE_FIRE_ORB(MagicAction.CHARGE_FIRE_ORB, Map.of(
             Runes.FIRE, 30,
             Runes.COSMIC, 3
-    ), Spellbook.MODERN, 14286904),
+    ), Spellbook.STANDARD, 14286904),
     CHARGE_AIR_ORB(MagicAction.CHARGE_AIR_ORB, Map.of(
             Runes.AIR, 30,
             Runes.COSMIC, 3
-    ), Spellbook.MODERN, 14286907),
+    ), Spellbook.STANDARD, 14286907),
 
      // ================
      // Ancients

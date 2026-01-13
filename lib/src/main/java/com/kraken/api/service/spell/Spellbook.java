@@ -8,7 +8,7 @@ public enum Spellbook {
     /**
      * Standard/Modern Spellbook - Default spellbook available to all players
      */
-    MODERN(0, "Standard spellbook - accessible from any other spellbook altar"),
+    STANDARD(0, "Standard spellbook - accessible from any other spellbook altar"),
 
     /**
      * Ancient Magicks Spellbook - Unlocked after Desert Treasure I quest
@@ -48,6 +48,6 @@ public enum Spellbook {
                 return spellbook;
             }
         }
-        return MODERN;
+        return STANDARD;
     }
 }
