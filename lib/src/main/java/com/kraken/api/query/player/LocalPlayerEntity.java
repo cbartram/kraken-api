@@ -5,10 +5,7 @@ import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.tile.GameArea;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.Player;
-import net.runelite.api.Skill;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InterfaceID;
@@ -286,6 +283,64 @@ public class LocalPlayerEntity extends PlayerEntity {
         }
 
         return false;
+    }
+
+    /**
+     * Retrieves information about the current wilderness state for the player, including the wilderness level
+     * and the player's combat level, based on data from the game client.
+     *
+     * <p>The method checks the visibility and content of the wilderness-related widget to assess the wilderness level.
+     * Situations such as protection areas, Deadman mode, or wilderness-free zones are handled specifically.</p>
+     *
+     * <p>This method provides information as follows:</p>
+     * <ul>
+     *   <li>If the wilderness widget is not visible or is malformed, the wilderness level is set to 0 with a combat level of -1.</li>
+     *   <li>If the widget text indicates a protected or guarded area, the wilderness level is also set to 0 with a combat level of -1.</li>
+     *   <li>If in Deadman mode, the wilderness level is set to {@literal Integer.MAX_VALUE}, and the player's combat level is returned.</li>
+     *   <li>For other scenarios, the wilderness level is calculated based on the widget text or the player's current position in the world.</li>
+     * </ul>
+     *
+     * @return {@code WildernessInfo} object representing:
+     * <ul>
+     *   <li>The calculated wilderness level, depending on the game's widget state and player position.</li>
+     *   <li>The player's combat level, if applicable. Returns -1 in cases where the wilderness level cannot be determined.</li>
+     * </ul>
+     */
+    public WildernessInfo getWildernessInfo() {
+        Widget wildLevel = ctx.getClient().getWidget(InterfaceID.PvpIcons.WILDERNESSLEVEL);
+        boolean isVisible = ctx.runOnClientThread(() -> wildLevel != null && !wildLevel.isHidden() && !wildLevel.isSelfHidden());
+        if (!isVisible) {
+            return new WildernessInfo(0, -1);
+        }
+
+        // Should never be the case at this point
+        if(wildLevel == null) {
+            return new WildernessInfo(0,  -1);
+        }
+
+        if (wildLevel.getText().contains("Guarded") || wildLevel.getText().contains("Protection")) {
+            return new WildernessInfo(0,  -1);
+        }
+
+        if (wildLevel.getText().contains("Deadman")) {
+            return new WildernessInfo(Integer.MAX_VALUE, ctx.getClient().getLocalPlayer().getCombatLevel());
+        }
+
+        String widgetText = wildLevel.getText();
+        if (widgetText.isEmpty()) {
+            return new WildernessInfo(0,-1);
+        }
+
+        if (widgetText.equals("Level: --")) {
+            Client client = ctx.getClient();
+            Player local = client.getLocalPlayer();
+            WorldView worldView = client.getTopLevelWorldView();
+            int y = WorldPoint.fromLocal(worldView, local.getLocalLocation().getX(), local.getLocalLocation().getY(), worldView.getPlane()).getY();
+            return new WildernessInfo(2 + (y - 3528) / 8, ctx.getClient().getLocalPlayer().getCombatLevel());
+        }
+
+        String levelText = widgetText.contains("<br>") ? widgetText.substring(0, widgetText.indexOf("<br>")) : widgetText;
+        return new WildernessInfo(Integer.parseInt(levelText.replace("Level: ", "")), ctx.getClient().getLocalPlayer().getCombatLevel());
     }
 
     /**

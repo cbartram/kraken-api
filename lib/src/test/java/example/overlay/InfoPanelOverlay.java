@@ -1,6 +1,8 @@
 package example.overlay;
 
 import com.google.inject.Inject;
+import com.kraken.api.Context;
+import com.kraken.api.query.player.WildernessInfo;
 import example.ExampleConfig;
 import example.TestResultManager;
 import net.runelite.api.Client;
@@ -17,11 +19,13 @@ public class InfoPanelOverlay extends OverlayPanel {
     private final Client client;
     private final ExampleConfig config;
     private final TestResultManager testResultManager;
+    private final Context ctx;
 
     @Inject
-    public InfoPanelOverlay(Client client, ExampleConfig config, TestResultManager testResultManager) {
+    public InfoPanelOverlay(Client client, ExampleConfig config, TestResultManager testResultManager, Context ctx) {
         this.client = client;
         this.config = config;
+        this.ctx = ctx;
         this.testResultManager = testResultManager;
         setPosition(OverlayPosition.TOP_RIGHT);
     }
@@ -192,6 +196,13 @@ public class InfoPanelOverlay extends OverlayPanel {
                         .rightColor(Color.WHITE)
                         .build());
             }
+
+            WildernessInfo info = ctx.players().local().getWildernessInfo();
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Wilderness Level:")
+                    .right(String.format("%d (%d-%d)", info.getLevel(), info.getMinAttackableCombatLevel(), info.getMaxAttackableCombatLevel()))
+                    .rightColor(ctx.players().local().getWildernessInfo().getLevel() > 0 ? Color.GREEN : Color.RED)
+                    .build());
 
         } catch (Exception e) {
             panelComponent.getChildren().add(LineComponent.builder()
