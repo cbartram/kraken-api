@@ -99,6 +99,20 @@ public class PlayerQuery extends AbstractQuery<PlayerEntity, PlayerQuery, Player
     }
 
     /**
+     * Filters the stream for players who can attack you within the wilderness. If this is called outside
+     * the wilderness, the stream will contain no players, be warned.
+     * @return PlayerQuery
+     */
+    public PlayerQuery withinAttackableWildernessLevel() {
+        WildernessInfo wildernessInfo = ctx.players().local().getWildernessInfo();
+        if(wildernessInfo == null || wildernessInfo.getLevel() == 0) {
+            return empty();
+        }
+
+        return filter(p -> p.raw().getCombatLevel() >= wildernessInfo.getMinAttackableCombatLevel() && p.raw().getCombatLevel() <= wildernessInfo.getMaxAttackableCombatLevel());
+    }
+
+    /**
      * Finds players with a combat level strictly greater than the given argument
      * @param level Combat level
      * @return PlayerQuery

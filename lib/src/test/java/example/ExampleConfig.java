@@ -507,11 +507,22 @@ public interface ExampleConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "showWidgetDebug",
+            name = "Show Widget Debug",
+            description = "Display additional debug information about widgets when hovered with the mouse.",
+            section = overlaySettings,
+            position = 14
+    )
+    default boolean showWidgetDebug() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "renderCurrentPath",
             name = "Show Current Path",
             description = "Displays the current path calculated by the local pathfinder.",
             section = overlaySettings,
-            position = 14
+            position = 15
     )
     default boolean renderCurrentPath() {
         return false;
@@ -521,7 +532,7 @@ public interface ExampleConfig extends Config {
             name = "Show Sim Visualizer",
             keyName = "simVisualizer",
             description = "Shows the simulation visualizer UI.",
-            position = 15,
+            position = 16,
             section = overlaySettings
     )
     default boolean showVisualizer() {

@@ -90,6 +90,9 @@ public class SceneOverlay extends Overlay {
 
         if(config.showDebugInfo()) {
             renderApiDebug(graphics);
+        }
+
+        if(config.showWidgetDebug()) {
             renderWidgetDebug(graphics);
         }
 

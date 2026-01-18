@@ -69,6 +69,14 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     }
 
     /**
+     * Returns an empty stream.
+     * @return An empty stream containing no elements.
+     */
+    public Q empty() {
+        return filter(t -> false);
+    }
+
+    /**
      * Randomizes the order of elements in the stream and returns a new stream with the shuffled elements.
      * <p>
      * This method collects all elements in the stream into a list, shuffles the list using
