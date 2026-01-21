@@ -3,6 +3,7 @@ package example.tests.service;
 import com.google.inject.Inject;
 import com.kraken.api.Context;
 import com.kraken.api.service.prayer.PrayerService;
+import com.kraken.api.service.util.SleepService;
 import example.tests.BaseApiTest;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Prayer;
@@ -21,8 +22,22 @@ public class PrayerServiceTest extends BaseApiTest {
             boolean prayerPacketTest = testPrayerPacket();
             testsPassed &= prayerPacketTest;
 
-            boolean testIsActive = testIsActive();
+            boolean testIsActive = testIsActive(Prayer.PROTECT_FROM_MELEE);
             testsPassed &= testIsActive;
+
+            boolean testRange = testIsActive(Prayer.PROTECT_FROM_MISSILES);
+            testsPassed &= testRange;
+
+            boolean testMagic = testIsActive(Prayer.PROTECT_FROM_MAGIC);
+            testsPassed &= testMagic;
+
+            SleepService.sleep(1000, 3000);
+            log.info("Deactivating protection prayers");
+            prayer.deactivateProtectionPrayers();
+
+            SleepService.sleep(1000, 3000);
+            log.info("Deactivating all prayers");
+            prayer.deactivateAll();
 
         } catch (Exception e) {
             log.error("Exception during prayer service test", e);
@@ -32,11 +47,11 @@ public class PrayerServiceTest extends BaseApiTest {
         return testsPassed;
     }
 
-    private boolean testIsActive() {
+    private boolean testIsActive(Prayer p) {
         try {
-            prayer.toggle(Prayer.PROTECT_FROM_MELEE, true);
-            Thread.sleep(1000);
-            return prayer.isActive(Prayer.PROTECT_FROM_MELEE);
+            prayer.toggle(p, true);
+            SleepService.sleep(3000, 5000);
+            return prayer.isActive(p);
         } catch (Exception e) {
             log.error("Error testing prayer isActive", e);
             return false;
