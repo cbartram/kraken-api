@@ -33,6 +33,16 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
     }
 
     /**
+     * Returns the quantity of the item in your inventory when the bank interface is open.
+     * @return Int the quantity of the bank inventory entity (this will be the stack size of the item if its noted) or
+     * the value of the item if it's coins.
+     */
+    public int count() {
+        ContainerItem raw = raw();
+        return raw != null ? raw.getQuantity() : -1;
+    }
+
+    /**
      * Deposits one of the given item from the players inventory into the bank.
      * @return true if the deposit was successful and false otherwise.
      */
