@@ -129,7 +129,7 @@ public final class ObfuscatedNames {
             {"r 8", "v"},
     };
     public static final String OPLOC3_OBFUSCATEDNAME = "ax";
-    public static final String OPLOC3_WRITE1 = "worldPointy";
+    public static final String OPLOC3_WRITE1 = "worldPointY";
     public static final String OPLOC3_METHOD_NAME1 = "lk";
     public static final String OPLOC3_WRITE2 = "objectId";
     public static final String OPLOC3_METHOD_NAME2 = "lk";
