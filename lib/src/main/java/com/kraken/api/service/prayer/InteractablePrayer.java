@@ -1,11 +1,15 @@
 package com.kraken.api.service.prayer;
 
+import com.kraken.api.Context;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.Prayer;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.annotations.Varbit;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.client.RuneLite;
+
+import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
@@ -51,6 +55,29 @@ public enum InteractablePrayer {
     private final int varbit;
     private final int quickPrayerIndex;
 
+    public static final InteractablePrayer[] OVERHEAD_PRAYERS = {
+            PROTECT_MAGIC,
+            PROTECT_MELEE,
+            PROTECT_RANGE,
+            RETRIBUTION,
+            REDEMPTION,
+            SMITE
+    };
+
+    /**
+     * Checks whether the current {@literal @InteractablePrayer} is active.
+     *
+     * <p>A prayer is considered active if its corresponding {@code varbit} value
+     * equals {@code 1} in the game's internal context.
+     *
+     * @return {@code true} if the prayer is active; {@code false} otherwise.
+     */
+    public boolean isActive() {
+        Context ctx = RuneLite.getInjector().getInstance(Context.class);
+        return ctx.getVarbitValue(getVarbit()) == 1;
+    }
+
+
     /**
      * Returns the Kraken prayer (from this class) given a RuneLite API Prayer enum or null if the prayer doesn't exist.
      * @param p RuneLite prayer
@@ -65,6 +92,18 @@ public enum InteractablePrayer {
         return null;
     }
 
+    /**
+     * Maps an {@literal @InteractablePrayer} to its corresponding {@literal @Prayer} from the RuneLite API.
+     * If no matching prayer is found, returns {@code null}.
+     *
+     * <p>This method iterates through all values of the {@literal @Prayer} enum and matches them
+     * based on their {@code varbit} value.
+     *
+     * @param p The {@literal @InteractablePrayer} instance whose corresponding {@literal @Prayer}
+     *          needs to be determined. Must not be null.
+     * @return The {@literal @Prayer} instance matching the specified {@literal @InteractablePrayer}.
+     *         Returns {@code null} if no match is found.
+     */
     public static Prayer runelitePrayerFor(InteractablePrayer p) {
         for(Prayer runelitePrayer : Prayer.values()) {
             if(runelitePrayer.getVarbit() == p.getVarbit()) {
@@ -72,5 +111,19 @@ public enum InteractablePrayer {
             }
         }
         return null;
+    }
+
+    /**
+     * Determines whether the specified {@literal @InteractablePrayer} is classified
+     * as an overhead prayer.
+     *
+     * <p>Overhead prayers are typically characterized by specific protections or effects
+     * activated during player interaction.
+     *
+     * @param p The {@literal @InteractablePrayer} to be checked. Must not be {@code null}.
+     * @return {@code true} if the given prayer is an overhead prayer; {@code false} otherwise.
+     */
+    public static boolean isOverhead(InteractablePrayer p) {
+        return List.of(OVERHEAD_PRAYERS).contains(p);
     }
 }
