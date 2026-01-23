@@ -52,7 +52,7 @@ public class ExampleScript extends Script {
                 // TODO Clicks every single tick, instead we need a better way to determine waypoints.
                 if (!path.isEmpty()) {
                     try {
-                        movementService.traversePath(ctx.getClient(), movementService, path);
+                        movementService.traversePath(ctx.getClient(), path);
                     } catch (InterruptedException e) {
                         log.error("Failed to traverse path", e);
                     }

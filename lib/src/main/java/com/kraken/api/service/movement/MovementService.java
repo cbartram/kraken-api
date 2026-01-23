@@ -50,8 +50,6 @@ public class MovementService {
     public void moveTo(WorldPoint point) {
         WorldPoint convertedPoint;
         if (ctx.getClient().getTopLevelWorldView().isInstance()) {
-            // multiple conversions here: 1 which takes WP and creates instanced LP and
-            // 2 which converts a LP to WP
             convertedPoint = WorldPoint.fromLocal(ctx.getClient(), tileService.fromWorldInstance(point));
         } else {
             convertedPoint = point;
@@ -148,13 +146,12 @@ public class MovementService {
      * </ul>
      *
      * @param client The client instance used to interact with the game world and retrieve the player's location.
-     * @param movement The {@literal MovementService} instance responsible for managing player movement commands.
      * @param path A list of {@literal WorldPoint} objects representing the sequence of waypoints to traverse.
      * @return {@code true} if the path was successfully traversed to the end, {@code false} if any waypoint
      *         could not be reached after retries.
      * @throws InterruptedException If the thread running the method is interrupted during execution.
      */
-    public boolean traversePath(Client client, MovementService movement, List<WorldPoint> path) throws InterruptedException {
+    public boolean traversePath(Client client, List<WorldPoint> path) throws InterruptedException {
         for (WorldPoint step : path) {
             boolean stepSuccess = false;
 
@@ -162,7 +159,7 @@ public class MovementService {
             for (int attempt = 0; attempt < 2; attempt++) {
 
                 // 1. Send the click
-                ctx.runOnClientThread(() -> movement.moveTo(step));
+                ctx.runOnClientThread(() -> moveTo(step));
 
                 // 2. Calculate dynamic timeout
                 // Walking = 1 tile/0.6s. Running = 2 tiles/0.6s.

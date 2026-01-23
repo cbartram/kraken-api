@@ -286,7 +286,7 @@ public class PrayerService {
      *   <li>The prayer is classified as an overhead prayer based on additional logic.</li>
      * </ul>
      * If a prayer meets both conditions, it is returned immediately. If no active overhead
-     * prayer is found, the method returns {@code null}.</p>
+     * prayer is found, the method returns {@code null}.
      *
      * @return The active overhead {@link InteractablePrayer}, or {@code null} if no overhead prayer is active.
      */
