@@ -851,16 +851,9 @@ public class LocalPathfinder {
 
         Point prevCenter = null;
 
-        // Add player location as the start of the line
-        LocalPoint playerLp = client.getLocalPlayer().getLocalLocation();
-        if (playerLp != null) {
-            prevCenter = Perspective.localToCanvas(client, playerLp, client.getTopLevelWorldView().getPlane());
-        }
-
         for (WorldPoint point : path) {
             LocalPoint lp = LocalPoint.fromWorld(client, point);
             if (lp == null) continue;
-
             Point center = Perspective.localToCanvas(client, lp, client.getTopLevelWorldView().getPlane());
             if (center != null && prevCenter != null) {
                 graphics.drawLine(prevCenter.getX(), prevCenter.getY(), center.getX(), center.getY());
