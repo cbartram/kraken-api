@@ -108,7 +108,7 @@ public class TaskChain {
 
                 // 4. Walk this segment, this blocks the for loop until the current path is traversed
                 // If traverse returns false (timeout/stuck), we abort the whole chain
-                if (!movement.traversePath(client, movement, stridedPath)) {
+                if (!movement.traversePath(client, stridedPath)) {
                     return false;
                 }
 
@@ -151,7 +151,7 @@ public class TaskChain {
                 }
 
                 List<WorldPoint> stridedPath = movement.applyVariableStride(densePath);
-                if (!movement.traversePath(client, movement, stridedPath)) {
+                if (!movement.traversePath(client, stridedPath)) {
                     return false;
                 }
             }
@@ -191,7 +191,7 @@ public class TaskChain {
 
                 List<WorldPoint> stridedPath = movement.applyVariableStride(densePath);
 
-                if (!movement.traversePath(client, movement, stridedPath)) {
+                if (!movement.traversePath(client, stridedPath)) {
                     return false;
                 }
             }

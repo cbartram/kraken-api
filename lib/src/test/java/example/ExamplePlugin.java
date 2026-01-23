@@ -102,6 +102,9 @@ public class ExamplePlugin extends Plugin {
     @Inject
     private GrandExchangeServiceTest grandExchangeServiceTest;
 
+    @Inject
+    private BreakManager breakManager;
+
     @Getter
     private WorldPoint targetTile;
 
@@ -109,11 +112,10 @@ public class ExamplePlugin extends Plugin {
     private List<WorldPoint> currentPath = new ArrayList<>();
 
     @Getter
+    private final List<WorldPoint> scriptPath = new ArrayList<>(); // The path used by the script
+
+    @Getter
     private WorldArea targetArea;
-
-    @Inject
-    private BreakManager breakManager;
-
 
     private WorldPoint trueTile;
     private static final String TARGET_TILE = ColorUtil.wrapWithColorTag("Target Tile", JagexColors.CHAT_PRIVATE_MESSAGE_TEXT_TRANSPARENT_BACKGROUND);
