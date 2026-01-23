@@ -30,7 +30,6 @@ import java.util.List;
  * </p>
  * <ul>
  *   <li>Compute the shortest path between points in a game scene, including computing sparse waypoints with {@link #findSparsePath(WorldPoint, WorldPoint)}.</li>
- *   <li>Verify whether target points are within the loaded scene or reachable from a specific point using {@link #isInScene(WorldPoint)}.</li>
  *   <li>Render computed paths on a graphical interface using methods like {@link #renderMinimapPath(List, Graphics2D, Color)} and {@link #renderPath(List, Graphics2D, Color)}.</li>
  *   <li>Handle approximate pathfinding if exact target points are not reachable.</li>
  * </ul>
@@ -39,9 +38,6 @@ import java.util.List;
 @Singleton
 public class LocalPathfinder {
     private static final int SCENE_SIZE = 104;
-    private static final int[] DIR_X = {-1, 1,  0, 0, -1, 1, -1, 1};
-    private static final int[] DIR_Y = { 0, 0, -1, 1, -1, -1, 1, 1};
-
 
     @Inject
     private Context ctx;
