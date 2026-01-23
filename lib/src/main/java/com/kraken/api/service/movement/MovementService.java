@@ -7,6 +7,7 @@ import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.MovementPackets;
 import com.kraken.api.service.tile.TileService;
 import com.kraken.api.service.ui.UIService;
+import com.kraken.api.service.util.SleepService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
@@ -16,6 +17,7 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Slf4j
 @Singleton
@@ -132,6 +134,37 @@ public class MovementService {
 
     /**
      * Traverses a given path made up of waypoints, attempting to successfully move the player
+     * to each {@literal WorldPoint} in the sequence. This method moves the player towards the target
+     * waypoints and handles retries for unreachable points. The traversal stops if any waypoint
+     * cannot be reached after multiple attempts.
+     *
+     * @param client The client instance used to interact with the game world and manage player movement.
+     * @param path A list of {@literal WorldPoint} objects representing the waypoints to traverse in sequence.
+     * @return {@code true} if the path was successfully traversed to the end, or {@code false} if any waypoint
+     *         could not be reached after retries.
+     */
+    public boolean traversePath(Client client, List<WorldPoint> path) {
+        return traversePath(client, path, (ignored) -> {}, (ignored) -> {});
+    }
+
+    /**
+     * Traverses a given path made up of waypoints, attempting to successfully move the player
+     * to each {@literal WorldPoint} in the sequence. This method moves the player towards the target
+     * waypoints and handles retries for unreachable points. The traversal stops if any waypoint
+     * cannot be reached after multiple attempts.
+     *
+     * @param client The client instance used to interact with the game world and manage player movement.
+     * @param path A list of {@literal WorldPoint} objects representing the waypoints to traverse in sequence.
+     * @param onWaypointReached A functional interface invoked when a waypoint in the path is reached
+     * @return {@code true} if the path was successfully traversed to the end, or {@code false} if any waypoint
+     *         could not be reached after retries.
+     */
+    public boolean traversePath(Client client, List<WorldPoint> path, Consumer<String> onWaypointReached) {
+        return traversePath(client, path, onWaypointReached, (ignored) -> {});
+    }
+
+    /**
+     * Traverses a given path made up of waypoints, attempting to successfully move the player
      * to each {@literal WorldPoint} in the sequence. This method invokes movement commands and uses
      * retries if a waypoint fails to be reached. It aborts if a waypoint cannot be reached after
      * multiple attempts.
@@ -147,21 +180,19 @@ public class MovementService {
      *
      * @param client The client instance used to interact with the game world and retrieve the player's location.
      * @param path A list of {@literal WorldPoint} objects representing the sequence of waypoints to traverse.
+     * @param onWaypointReached A functional interface invoked when a waypoint is reached
+     * @param onDestinationReached A functional interface invoked when the paths final destination is reached
      * @return {@code true} if the path was successfully traversed to the end, {@code false} if any waypoint
      *         could not be reached after retries.
-     * @throws InterruptedException If the thread running the method is interrupted during execution.
      */
-    public boolean traversePath(Client client, List<WorldPoint> path) throws InterruptedException {
+    public boolean traversePath(Client client, List<WorldPoint> path, Consumer<String> onWaypointReached, Consumer<String> onDestinationReached) {
         for (WorldPoint step : path) {
             boolean stepSuccess = false;
 
             // Try to move to this waypoint up to 2 times
             for (int attempt = 0; attempt < 2; attempt++) {
-
-                // 1. Send the click
                 ctx.runOnClientThread(() -> moveTo(step));
 
-                // 2. Calculate dynamic timeout
                 // Walking = 1 tile/0.6s. Running = 2 tiles/0.6s.
                 // We assume walking speed (worst case) + 2 seconds buffer.
                 WorldPoint playerLoc = client.getLocalPlayer().getWorldLocation();
@@ -180,12 +211,13 @@ public class MovementService {
                         reached = true;
                         break;
                     }
-                    Thread.sleep(50);
+                    SleepService.sleep(50);
                 }
 
                 if (reached) {
                     stepSuccess = true;
-                    break; // Move to next step in the path
+                    onWaypointReached.accept("Reached waypoint: " + step);
+                    break;
                 } else {
                     log.warn("TaskChain: Timeout moving to {}, retrying... (Attempt {}/2)", step, attempt + 1);
                 }
@@ -197,6 +229,8 @@ public class MovementService {
                 return false;
             }
         }
+
+        onDestinationReached.accept("Reached destination: " + path.get(path.size() - 1));
         return true;
     }
 }

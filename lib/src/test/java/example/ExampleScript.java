@@ -11,7 +11,7 @@ import com.kraken.api.service.util.SleepService;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -33,31 +33,45 @@ public class ExampleScript extends Script {
     @Inject
     private ExamplePlugin plugin;
 
+    private boolean isTraversing = false;
+
     @Override
     public int loop() {
-        if (config.startPathfinding()) {
+        if (config.startPathfinding() && !isTraversing) {
             String waypointLocation = config.waypointLocation();
             String[] coords = waypointLocation.split(",");
             if (coords.length == 3) {
-                log.info("Starting pathfinding...");
-                log.info("Coords: {}", Arrays.asList(coords));
                 int x = Integer.parseInt(coords[0]);
                 int y = Integer.parseInt(coords[1]);
                 int z = Integer.parseInt(coords[2]);
                 WorldPoint target = new WorldPoint(x, y, z);
+                List<WorldPoint> path = pathfinder.findPathWithBackoff(ctx.players().local().raw().getWorldLocation(), target);
 
-                List<WorldPoint> path = pathfinder.findPath(ctx.getClient().getLocalPlayer().getWorldLocation(), target);
-                plugin.getCurrentPath().clear();
-                plugin.getCurrentPath().addAll(path);
-                // TODO Clicks every single tick, instead we need a better way to determine waypoints.
-                if (!path.isEmpty()) {
-                    try {
-                        movementService.traversePath(ctx.getClient(), path);
-                    } catch (InterruptedException e) {
-                        log.error("Failed to traverse path", e);
-                    }
+                if(path == null) {
+                   log.info("Null path");
+                   path = Collections.emptyList();
                 }
+
+                log.info("Computed path of size: {}", path.size());
+                plugin.getScriptPath().clear();
+                plugin.getScriptPath().addAll(path);
+                isTraversing = true;
             }
+
+//                log.info("Attempting to find path...");
+//                List<WorldPoint> path = pathfinder.findPath(ctx.getClient().getLocalPlayer().getWorldLocation(), target);
+//                plugin.getCurrentPath().clear();
+//                plugin.getCurrentPath().addAll(path);
+//                if (!path.isEmpty()) {
+//                    movementService.traversePath(ctx.getClient(), path, log::info, (dest) -> {
+//                        log.info("{} setting is traversing to false.", dest);
+//                        isTraversing = false;
+//                    });
+//
+//                    isTraversing = true;
+//                } else {
+//                    log.info("No path found.");
+//                }
         }
 
         log.debug("Looping on tick: {}", ctx.getClient().getTickCount());
