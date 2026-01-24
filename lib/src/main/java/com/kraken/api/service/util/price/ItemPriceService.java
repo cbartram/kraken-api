@@ -55,7 +55,9 @@ public class ItemPriceService {
      * 1. Checks the local cache.
      * 2. If missing, performs a BLOCKING network request for that specific item.
      * </p>
-     * * @param itemId The OSRS Item ID
+     * @param itemId The OSRS Item ID
+     * @param userAgent A user agent sent to the OSRS Wiki to identify the application fetching data. This should NOT
+     *                  be the basic java user agent or contain information about your plugins or client as it is sent to the Wiki and likely inspected.
      * @return ItemPrice or null if the item has no trade data/fails to load.
      * @throws RuntimeException if called on the main client thread (optional safety check you could add)
      */
@@ -77,8 +79,8 @@ public class ItemPriceService {
      *
      * @param itemId    The unique identifier for the item whose price information is being fetched.
      *                  This is typically the OSRS Item ID.
-     * @param userAgent The User-Agent string to be included in the API request header.
-     *                  This helps identify the calling application for the API.
+     * @param userAgent A user agent sent to the OSRS Wiki to identify the application fetching data. This should NOT
+     *                  be the basic java user agent or contain information about your plugins or client as it is sent to the Wiki and likely inspected.
      * @return An {@code ItemPrice} object representing the item's price data, or {@code null}
      *         if the item has no trade data, the request fails, or a parsing error occurs.
      */
@@ -113,6 +115,8 @@ public class ItemPriceService {
     /**
      * Asynchronously fetches prices for ALL items to populate the cache.
      * Useful for plugin startup.
+     * @param userAgent A user agent sent to the OSRS Wiki to identify the application fetching data. This should NOT
+     * be the basic java user agent or contain information about your plugins or client as it is sent to the Wiki and likely inspected.
      */
     public void refreshAllPrices(String userAgent) {
         Request request = new Request.Builder()
