@@ -34,5 +34,18 @@ public class ItemPrice {
     private int low;
     private long highTimestamp;
     private long lowTimestamp;
+
+    /**
+     * Calculates the average price for the item based on its high and low prices.
+     *
+     * <p>The average is determined by finding the midpoint between the {@code low} and {@code high}
+     * prices. The formula used is {@code low + ((high - low) / 2)}, which avoids potential
+     * floating-point arithmetic and maintains integer precision.</p>
+     *
+     * @return The average price for the item as an integer value.
+     */
+    public int getAverage() {
+        return low + ((high - low) / 2);
+    }
 }
 
