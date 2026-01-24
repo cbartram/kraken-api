@@ -1,6 +1,5 @@
 package com.kraken.api.service.util.price;
 
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -16,23 +15,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
-/**
- * A service class responsible for retrieving and caching price data for OSRS items.
- * <p>
- * This service interacts with the RuneScape Wiki Prices API to fetch both individual
- * item prices and bulk prices. It maintains a local in-memory cache of item prices
- * for efficient access.
- * </p>
- *
- * <p><strong>Features:</strong></p>
- * <ul>
- *   <li>Retrieves prices for individual items by their OSRS item IDs.</li>
- *   <li>Conducts bulk fetching of all item prices to populate the cache.</li>
- *   <li>Parses and caches price data for efficient local access.</li>
- *   <li>Utilizes {@literal @}Slf4j for logging and OkHttp for HTTP requests.</li>
- * </ul>
- */
 @Slf4j
 @Singleton
 public class ItemPriceService {
@@ -53,7 +37,8 @@ public class ItemPriceService {
      * Retrieves the price for a specific item.
      * <p>
      * 1. Checks the local cache.
-     * 2. If missing, performs a BLOCKING network request for that specific item.
+     * 2. If missing, performs a non blocking network request for that specific item. This is safe to use on or off
+     * the RuneLite client thread.
      * </p>
      * @param itemId The OSRS Item ID
      * @param userAgent A user agent sent to the OSRS Wiki to identify the application fetching data. This should NOT
@@ -61,30 +46,16 @@ public class ItemPriceService {
      * @return ItemPrice or null if the item has no trade data/fails to load.
      * @throws RuntimeException if called on the main client thread (optional safety check you could add)
      */
-    public ItemPrice getItemPrice(int itemId, String userAgent) {
+    public void getItemPrice(int itemId, String userAgent, Consumer<ItemPrice> callback) {
         if (priceCache.containsKey(itemId)) {
-            return priceCache.get(itemId);
+            callback.accept(priceCache.get(itemId));
+            return;
         }
 
-        return fetchSingleItem(itemId, userAgent);
+        fetchSingleItemAsync(itemId, userAgent, callback);
     }
 
-    /**
-     * Fetches the price information for a single item by performing a network request to the API.
-     * <p>
-     * If the API call is successful, the item's price data is parsed, cached, and returned.
-     * In case of an error (such as a network issue or unsuccessful response), this method logs the error
-     * and returns {@code null}.
-     * </p>
-     *
-     * @param itemId    The unique identifier for the item whose price information is being fetched.
-     *                  This is typically the OSRS Item ID.
-     * @param userAgent A user agent sent to the OSRS Wiki to identify the application fetching data. This should NOT
-     *                  be the basic java user agent or contain information about your plugins or client as it is sent to the Wiki and likely inspected.
-     * @return An {@code ItemPrice} object representing the item's price data, or {@code null}
-     *         if the item has no trade data, the request fails, or a parsing error occurs.
-     */
-    private ItemPrice fetchSingleItem(int itemId, String userAgent) {
+    private void fetchSingleItemAsync(int itemId, String userAgent, Consumer<ItemPrice> callback) {
         HttpUrl url = HttpUrl.parse(API_BASE).newBuilder()
                 .addQueryParameter("id", String.valueOf(itemId))
                 .build();
@@ -94,23 +65,36 @@ public class ItemPriceService {
                 .header("User-Agent", userAgent)
                 .build();
 
-        try (Response response = okHttpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                log.warn("Failed to lookup item {}: HTTP {}", itemId, response.code());
-                return null;
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                log.warn("Failed to lookup item {}", itemId, e);
+                callback.accept(null);
             }
 
-            if (response.body() == null) return null;
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                try (response) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        log.warn("Failed to lookup item {}: HTTP {}", itemId, response.code());
+                        callback.accept(null);
+                        return;
+                    }
 
-            String jsonString = response.body().string();
-            parseAndCache(jsonString);
+                    String jsonString = response.body().string();
+                    parseAndCache(jsonString);
 
-            return priceCache.get(itemId);
-        } catch (IOException e) {
-            log.error("Network error looking up item {}", itemId, e);
-            return null;
-        }
+                    ItemPrice price = priceCache.get(itemId);
+                    if (price != null) {
+                        callback.accept(price);
+                    }
+                } catch (IOException e) {
+                    log.error("Error reading response", e);
+                }
+            }
+        });
     }
+
 
     /**
      * Asynchronously fetches prices for ALL items to populate the cache.
@@ -120,9 +104,10 @@ public class ItemPriceService {
      */
     public void refreshAllPrices(String userAgent) {
         Request request = new Request.Builder()
-                .url(API_BASE) // No ID param = All items
+                .url(API_BASE)
                 .header("User-Agent", userAgent)
                 .build();
+
 
         okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
@@ -136,6 +121,7 @@ public class ItemPriceService {
                     response.close();
                     return;
                 }
+
                 try (var body = response.body()) {
                     if (body != null) {
                         parseAndCache(body.string());
@@ -146,24 +132,7 @@ public class ItemPriceService {
         });
     }
 
-    /**
-     * Parses the provided JSON string representing price data, converts it into a collection of
-     * {@code WikiPriceDTO} objects, and caches the data for efficient retrieval.
-     * <p>
-     * This method expects the input JSON to have a top-level "data" object containing
-     * key-value pairs where the key is a string representation of an item ID and the value is
-     * the price data in the form of a {@code WikiPriceDTO}. Each entry in the parsed data is
-     * converted into an {@code ItemPrice} and stored in a cache.
-     * </p>
-     * <p>
-     * If the provided JSON string is invalid or malformatted, or if the "data" field is missing,
-     * this method logs the error and silently exits without affecting the cache.
-     * </p>
-     *
-     * @param jsonString A JSON-formatted string containing price data to be parsed and cached.
-     *                   The string must include a "data" field at the top level, where each key
-     *                   is an item ID and each value is the item's price details.
-     */
+    // Helper to keep parseAndCache logic the same
     private void parseAndCache(String jsonString) {
         try {
             JsonObject root = gson.fromJson(jsonString, JsonObject.class);
