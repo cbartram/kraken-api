@@ -211,6 +211,107 @@ public class LocalPathfinder {
         return Collections.emptyList();
     }
 
+    /**
+     * Attempts to find a path to a reachable tile within a specified radius of the target.
+     * If no reachable tiles are found near the target, it linearly "backs off" from the
+     * target towards the start point and searches for reachable tiles near those intermediate points.
+     *
+     * <p>This strategy is useful for getting as close as possible to a destination that might
+     * be completely unreachable (e.g., inside a wall or on an island), by finding the closest
+     * valid cluster of tiles along the path.</p>
+     *
+     * @param start  The starting WorldPoint.
+     * @param target The target WorldPoint.
+     * @param radius The radius (Chebyshev distance) to search for reachable tiles around the target/backoff points.
+     * @return A list of WorldPoints representing the path to the best found location, or an empty list if none found.
+     */
+    public List<WorldPoint> findApproximatePathWithBackoff(WorldPoint start, WorldPoint target, int radius) {
+        List<WorldPoint> reachable = reachableTiles(start);
+
+        if (reachable == null || reachable.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. Try the original target location first
+        List<WorldPoint> candidates = getCandidatesInRadius(reachable, target, radius);
+        if (!candidates.isEmpty()) {
+            WorldPoint destination = candidates.get(new Random().nextInt(candidates.size()));
+            return findPath(start, destination);
+        }
+
+        // Begin Backoff Strategy
+        int totalDistance = start.distanceTo(target);
+
+        if (totalDistance <= 1) {
+            return Collections.emptyList();
+        }
+
+        int currentBackoff = 0;
+        int step = 1;
+
+        double dx = target.getX() - start.getX();
+        double dy = target.getY() - start.getY();
+
+        while (currentBackoff < totalDistance) {
+            // Increase backoff distance exponentially/incrementally (1, 3, 6, 10...)
+            currentBackoff += step;
+            step++;
+
+            if (currentBackoff >= totalDistance) {
+                break;
+            }
+
+            // Calculate the specific point along the line to check next
+            double ratio = (double) (totalDistance - currentBackoff) / totalDistance;
+            int newX = (int) Math.round(start.getX() + (dx * ratio));
+            int newY = (int) Math.round(start.getY() + (dy * ratio));
+
+            WorldPoint backoffPoint = new WorldPoint(newX, newY, target.getPlane());
+
+            // Check if there are any reachable tiles within the radius of this backoff point
+            candidates = getCandidatesInRadius(reachable, backoffPoint, radius);
+            if (!candidates.isEmpty()) {
+                log.debug("Found approximate backoff path near {} (Original: {}, Backoff: {})",
+                        backoffPoint, target, currentBackoff);
+
+                // Select a random reachable tile from the candidates found
+                WorldPoint destination = candidates.get(new Random().nextInt(candidates.size()));
+                return findPath(start, destination);
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Helper method to filter a list of reachable points to only those within a
+     * specified square radius (Chebyshev distance) of a center point.
+     *
+     * @param reachable The list of all reachable WorldPoints.
+     * @param center    The center point to search around.
+     * @param radius    The radius distance.
+     * @return A list of WorldPoints that are within the radius of the center.
+     */
+    private List<WorldPoint> getCandidatesInRadius(List<WorldPoint> reachable, WorldPoint center, int radius) {
+        List<WorldPoint> candidates = new ArrayList<>();
+        int cX = center.getX();
+        int cY = center.getY();
+        int plane = center.getPlane();
+
+        for (WorldPoint p : reachable) {
+            if (p.getPlane() != plane) {
+                continue;
+            }
+
+            int dx = Math.abs(p.getX() - cX);
+            int dy = Math.abs(p.getY() - cY);
+
+            if (dx <= radius && dy <= radius) {
+                candidates.add(p);
+            }
+        }
+        return candidates;
+    }
 
     /**
      * Finds an approximate path to a random reachable tile within a default radius of 5 tiles
