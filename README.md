@@ -25,7 +25,8 @@
 Kraken API is designed to extend the RuneLite API with additional client interaction utilities for writing automation-based plugins that are fully compatible with RuneLite.
 This API uses network packets to perform "click" interactions within the game client and is based on mappings defined by the [EthanVann API](https://github.com/Septharoth/EthanVannPlugins/tree/master). It's also worth shouting
 out the [Vitalite](https://github.com/Tonic-Box/VitaLite/) client and project as their open source expertise of the game client helped make some of the Kraken API possible!
-Specifically credit to Vitalite's Dialogue API and inspiration on Kraken's `TaskChain` and `ReplayStrategy` for mouse movement!
+
+Specifically credit to Vitalite's Dialogue, G.E., and World Map API's and inspiration on Kraken's `TaskChain` and `ReplayStrategy` for mouse movement!
 
 ## API Usage
 
@@ -397,9 +398,10 @@ This project is licensed under the [GNU General Public License 3.0](LICENSE).
 
 * **RuneLite** — For API's to work with and view in game data for Old School RuneScape
 * **Packet Utils** - [Plugin](https://github.com/Ethan-Vann/PacketUtils) from Ethan Vann providing access to complex packet sending functionality which was used to develop the `core.packet` package of the API
-* **Vitalite** - Vitalite for showing some incredible open source examples of dialogue, packets, mouse movement, and just working with the client in general
+* **Vitalite** - Vitalite for showing some incredible open source examples of dialogue, GE interactions, packets, mouse movement, and just working with the client in general
 * **VitaLite Mappings** - Huge shoutout for the VitaLite devs to maintain and publish these mappings for obfuscated classes and methods
 * **Microbot** — For clever ideas on client and plugin interaction using reflection.
+* **[Lucid](https://github.com/lucid-plugins/SideloadPlugins) & [Kotori](https://github.com/OreoCupcakes/kotori-plugins/blob/master/kotoriutils/src/main/java/com/theplug/kotori/kotoriutils/rlapi/table/TableComponent.java) plugins** — For their open source implementation on the Table UI element. 
 
 [contributors-shield]: https://img.shields.io/github/contributors/cbartram/kraken-api.svg?style=for-the-badge
 [contributors-url]: https://github.com/cbartram/kraken-api/graphs/contributors
