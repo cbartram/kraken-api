@@ -8,6 +8,7 @@ import net.runelite.api.Player;
 import net.runelite.client.RuneLite;
 
 import javax.inject.Singleton;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -17,6 +18,7 @@ import java.util.function.Supplier;
 public class SleepService {
 
     private static final Context ctx = RuneLite.getInjector().getInstance(Context.class);
+    private static final Random random = new Random();
 
     /**
      * Waits until the specified condition is true.
@@ -254,6 +256,15 @@ public class SleepService {
             }
             sleep(20);
         }
+    }
+
+    /**
+     * Sleeps for a random number of ticks between the provided values.
+     * @param minTicks minimum ticks to sleep
+     * @param maxTicks maximum ticks to sleep
+     */
+    public static void sleepFor(int minTicks, int maxTicks) {
+        sleepFor(RandomService.between(minTicks, maxTicks));
     }
 
     /**

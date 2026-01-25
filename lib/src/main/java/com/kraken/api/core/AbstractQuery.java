@@ -21,6 +21,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     protected final Context ctx;
     private final List<Predicate<T>> filters = new ArrayList<>();
     private Comparator<T> comparator = null;
+    private static final Random random = new Random();
 
     public AbstractQuery(Context ctx) {
         this.ctx = ctx;
@@ -198,7 +199,7 @@ public abstract class AbstractQuery<T extends Interactable<R>, Q extends Abstrac
     public T random() {
         List<T> all = list();
         if (all.isEmpty()) return null;
-        return all.get(new Random().nextInt(all.size()));
+        return all.get(random.nextInt(all.size()));
     }
 
     /**

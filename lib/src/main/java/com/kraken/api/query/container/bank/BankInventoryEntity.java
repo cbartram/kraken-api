@@ -99,4 +99,49 @@ public class BankInventoryEntity extends AbstractEntity<ContainerItem> {
     public boolean depositAll() {
         return deposit(-1);
     }
+
+
+    /**
+     * Attempts to wear an item in the inventory while the bank interface is open.
+     * <p>
+     * The action is typically used to equip wearable items
+     * such as armor or accessories from the player's bank inventory.
+     * <p>
+     * Note: This method does not validate whether the "Wear" action is supported
+     * for the current bank inventory entity, nor does it handle cases where this
+     * action fails or is unavailable. Validation and exception handling should be
+     * implemented as needed in upstream logic.
+     *
+     * @return {@code true} if the "Wear" action is invoked without encountering any
+     * internal errors. The return value does not guarantee the success of the action
+     * within the context of the game.
+     */
+    public boolean wear() {
+        // TODO This doesn't validate that the wear action exists on this bank inventory entity.
+        ctx.getInteractionManager().interact(raw, "wear");
+        return true;
+    }
+
+    /**
+     * Attempts to wield an item in the inventory while the bank interface is open {@code BankInventoryEntity}.
+     *
+     * <p>
+     * This action is typically used to equip items such as weapons or tools
+     * from the player's bank inventory.
+     * <p>
+     * <strong>Note:</strong> This method does not validate if the "Wield" action
+     * is supported for the current bank inventory entity or if the action
+     * is successful within the game. Additional validation and error handling
+     * should be implemented in the calling logic as necessary.
+     * </p>
+     *
+     * @return {@code true} if the "Wield" interaction is invoked successfully
+     * without any internal client error. The return value does not guarantee
+     * that the action completes as intended within the game.
+     */
+    public boolean wield() {
+        // TODO This doesn't validate that the wield action exists on this bank inventory entity.
+        ctx.getInteractionManager().interact(raw, "wield");
+        return true;
+    }
 }

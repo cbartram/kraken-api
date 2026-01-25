@@ -58,6 +58,18 @@ public class BankService {
     }
 
     /**
+     * Determines whether the bank interface is closed.
+     * <p>
+     * This method provides the inverse of the {@code isOpen} method by checking
+     * whether the bank interface is not open.
+     *
+     * @return {@code true} if the bank interface is closed, {@code false} otherwise.
+     */
+    public boolean isClosed() {
+        return !isOpen();
+    }
+
+    /**
      * Returns true when the bank PIN interface is open and false otherwise.
      * @return True for an open bank pin interface
      */

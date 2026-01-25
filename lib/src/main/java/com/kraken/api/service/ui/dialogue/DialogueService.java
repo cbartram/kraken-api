@@ -26,34 +26,6 @@ import java.util.List;
  * <p>Using this service, developers can interface with different dialogue widgets within the game client,
  * enabling automated interaction, data extraction, and execution of player actions. The methods in this class
  * operate on the client thread and ensure safe synchronization with the game's UI components.</p>
- *
- * <p>Features of this class include:</p>
- *
- * <ul>
- *   <li>Detection of active dialogues.</li>
- *   <li>Selection of dialogue options based on index or text.</li>
- *   <li>Handling of object-based and numeric-based dialogues.</li>
- *   <li>Support for "Make X" quantity-based operations.</li>
- *   <li>Retrieval of dialogue options, text content, and headers.</li>
- *   <li>Synchronization with game's client thread for secure widget interaction.</li>
- * </ul>
- *
- * <p>Fields:</p>
- * <ul>
- *   <li>{@literal ctx}: Context or environment within which the service operates.</li>
- *   <li>{@literal widgetPackets}: Utility responsible for interfacing with widget packets for actions.</li>
- *   <li>{@literal log}: Logging utility for debugging and information output.</li>
- * </ul>
- *
- * <p>Methods:</p>
- * <ul>
- *   <li>Detection and validation of dialogues through {@code isDialoguePresent()}.</li>
- *   <li>Option selection by index or text with {@code selectOption(int option)} and {@code selectOption(String option)}.</li>
- *   <li>Progression of specific dialogues with {@code continueObjectDialogue(int id)} and {@code continueNumericDialogue(int value)}.</li>
- *   <li>Management of "Make X" operations via {@code makeX(int quantity)}.</li>
- *   <li>Extraction of dialogue options through {@code getDialogueOptions()}.</li>
- *   <li>Fetching header and text content with {@code getDialogueHeader()} and retrieving widget text methods.</li>
- * </ul>
  */
 @Slf4j
 @Singleton
