@@ -74,24 +74,19 @@ public class LocalPathfinder {
             WorldPoint current = densePath.get(i);
             WorldPoint next = densePath.get(i + 1);
 
-            // Calculate incoming direction (Previous -> Current)
             int d1x = current.getX() - prev.getX();
             int d1y = current.getY() - prev.getY();
 
-            // outgoing direction (Current -> Next)
             int d2x = next.getX() - current.getX();
             int d2y = next.getY() - current.getY();
 
-            // If the direction changes (vectors don't match), 'current' is a waypoint
             if (d1x != d2x || d1y != d2y) {
                 sparsePath.add(current);
             }
 
-            // Move our tracking point forward
             prev = current;
         }
 
-        // Always add the final target destination
         sparsePath.add(densePath.get(densePath.size() - 1));
 
         return sparsePath;

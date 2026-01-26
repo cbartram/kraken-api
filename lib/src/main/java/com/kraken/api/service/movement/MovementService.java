@@ -129,7 +129,6 @@ public class MovementService {
         if (currentIndex >= densePath.size()) currentIndex = 0;
 
         while (currentIndex < densePath.size() - 1) {
-            // 2. Generate a Gaussian (human-like) random stride
             int stride = config.computeStride();
             int nextIndex = currentIndex + stride;
 
@@ -138,11 +137,35 @@ public class MovementService {
                 break;
             }
 
-            waypoints.add(densePath.get(nextIndex));
-            currentIndex = nextIndex;
+            WorldPoint targetPoint = densePath.get(nextIndex);
+
+            if (config.isTileDeviation()) {
+            int dx = 0;
+            int dy = 0;
+
+            // Loop until we get a non-zero deviation (ensures we actually move the point)
+            // This covers -1, 0, 1 for both axes.
+            // Example results: (-1, 1) = Diagonal, (0, 1) = Cardinal, (-1, -1) = Diagonal
+            while (dx == 0 && dy == 0) {
+                dx = ThreadLocalRandom.current().nextInt(-1, 2); // returns -1, 0, or 1
+                dy = ThreadLocalRandom.current().nextInt(-1, 2);
+            }
+
+            WorldPoint deviatedTile = targetPoint.dx(dx).dy(dy);
+
+            if (tileService.isTileReachable(deviatedTile)) {
+                waypoints.add(deviatedTile);
+            } else {
+                waypoints.add(targetPoint);
+            }
+        } else {
+            waypoints.add(targetPoint);
         }
 
-        return waypoints;
+        currentIndex = nextIndex;
+    }
+
+    return waypoints;
     }
 
     /**

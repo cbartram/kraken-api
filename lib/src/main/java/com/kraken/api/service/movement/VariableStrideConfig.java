@@ -2,6 +2,7 @@ package com.kraken.api.service.movement;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -19,6 +20,14 @@ public class VariableStrideConfig {
 
     @Builder.Default
     private int standardDeviation = 3;
+
+    @Getter
+    private boolean tileDeviation;
+
+    public VariableStrideConfig withTileDeviation() {
+        this.tileDeviation = true;
+        return this;
+    }
 
     /**
      * Computes a random stride value based on the configured mean, standard deviation, and min/max bounds.
