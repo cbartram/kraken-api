@@ -17,6 +17,7 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -95,38 +96,50 @@ public class MovementService {
     }
 
     /**
-     * Converts a dense path (every tile) into a strided path.
-     * Logic: Start with a stride of 5, increase by 1 every step, cap at 12.
+     * Converts a dense path (every tile) into a strided path of "waypoint" tiles. Tiles are based around
+     * a variable stride configuration which computes a Gaussian distribution for the length of each stride to
+     * take.
      * @param densePath The dense path with which to apply variable strides.
      * @return A list of {@literal WorldPoint} representing the strided path.
      */
     public List<WorldPoint> applyVariableStride(List<WorldPoint> densePath) {
+        return applyVariableStride(densePath, VariableStrideConfig.builder().build());
+    }
+
+    /**
+     * Converts a dense path (every tile) into a strided path of "waypoint" tiles. Tiles are based around
+     * a variable stride configuration which computes a Gaussian distribution for the length of each stride to
+     * take.
+     * @param densePath The dense path with which to apply variable strides.
+     * @param config A variable stride configuration where the mean, min, max, and std dev can be configured
+     *               to produce unique strides when traversing paths.
+     * @return A list of {@literal WorldPoint} representing the strided path.
+     */
+    public List<WorldPoint> applyVariableStride(List<WorldPoint> densePath, VariableStrideConfig config) {
         if (densePath.size() <= 5) {
             return Collections.singletonList(densePath.get(densePath.size() - 1));
         }
 
         List<WorldPoint> waypoints = new ArrayList<>();
-        int currentStride = 5;
-        int maxStride = 12;
-        int currentIndex = 0;
 
-        // densePath[0] is usually the player's current tile, so we start looking ahead
+        // Randomize the starting point slightly (0-2 tiles) to shift the whole chain
+        // This ensures we don't always "base" our stride from the exact same first pixel.
+        int currentIndex = ThreadLocalRandom.current().nextInt(0, 3);
+
+        if (currentIndex >= densePath.size()) currentIndex = 0;
+
         while (currentIndex < densePath.size() - 1) {
-            int nextIndex = currentIndex + currentStride;
+            // 2. Generate a Gaussian (human-like) random stride
+            int stride = config.computeStride();
+            int nextIndex = currentIndex + stride;
 
             if (nextIndex >= densePath.size() - 1) {
-                // If the next stride overshoots or hits the end, just add the final destination
                 waypoints.add(densePath.get(densePath.size() - 1));
                 break;
             }
 
             waypoints.add(densePath.get(nextIndex));
             currentIndex = nextIndex;
-
-            // Increase stride for next step, up to the cap
-            if (currentStride < maxStride) {
-                currentStride++;
-            }
         }
 
         return waypoints;
