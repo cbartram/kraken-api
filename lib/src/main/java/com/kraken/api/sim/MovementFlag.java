@@ -9,9 +9,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * This is a copy of the net.runelite.client.plugins.devtools.MovementFlag class which has private
- * access within the RuneLite client.
+ * This is a copy of the net.runelite.client.plugins.devtools.MovementFlag class that has private
+ * access within the RuneLite client. It is replicated here so that it can be used within classes and methods
+ * which need access to interpret collision data.
  */
+@Getter
 @AllArgsConstructor
 public enum MovementFlag {
     BLOCK_MOVEMENT_NORTH_WEST(CollisionDataFlag.BLOCK_MOVEMENT_NORTH_WEST),
@@ -28,7 +30,9 @@ public enum MovementFlag {
     BLOCK_MOVEMENT_FLOOR(CollisionDataFlag.BLOCK_MOVEMENT_FLOOR),
     BLOCK_MOVEMENT_FULL(CollisionDataFlag.BLOCK_MOVEMENT_FULL);
 
-    @Getter
+    public static final int BLOCKING_FLAGS = CollisionDataFlag.BLOCK_MOVEMENT_FULL | CollisionDataFlag.BLOCK_MOVEMENT_OBJECT
+            | CollisionDataFlag.BLOCK_MOVEMENT_FLOOR | CollisionDataFlag.BLOCK_MOVEMENT_FLOOR_DECORATION;
+
     private final int flag;
 
     /**
@@ -39,9 +43,5 @@ public enum MovementFlag {
         return Arrays.stream(values())
                 .filter(movementFlag -> (movementFlag.flag & collisionData) != 0)
                 .collect(Collectors.toSet());
-    }
-
-    public static boolean hasFlag(MovementFlag[] flags, MovementFlag flagToCheck) {
-        return Arrays.stream(flags).anyMatch(flag -> flag == flagToCheck);
     }
 }

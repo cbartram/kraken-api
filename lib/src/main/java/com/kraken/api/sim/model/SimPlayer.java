@@ -4,10 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
+import net.runelite.api.Actor;
+import net.runelite.api.Player;
+import net.runelite.api.coords.WorldArea;
+import net.runelite.api.coords.WorldPoint;
 
 /**
  * A model of a player within a simulation.
@@ -15,23 +15,23 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class SimPlayer {
+public class SimPlayer implements SimActor {
 
     @NonNull
-    private Point position;
+    private Player player;
 
-    @NonNull
-    private Integer attackRange;
+    @Override
+    public WorldPoint getLocation() {
+        return player.getWorldLocation();
+    }
 
-    @NonNull
-    private Boolean runEnabled;
+    @Override
+    public WorldArea getWorldArea() {
+        return new WorldArea(player.getWorldLocation(), 1, 1);
+    }
 
-    @NonNull
-    private Integer specRemaining;
-
-    @NonNull
-    private AttackStyle attackStyle;
-
-    private Integer pathIndex = 0;
-    private List<Point> currentPath = new ArrayList<>();
+    @Override
+    public Actor copy() {
+        return player;
+    }
 }

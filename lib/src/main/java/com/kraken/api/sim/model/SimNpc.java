@@ -1,8 +1,12 @@
 package com.kraken.api.sim.model;
 
-import lombok.*;
-
-import java.awt.*;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.runelite.api.Actor;
+import net.runelite.api.NPC;
+import net.runelite.api.coords.WorldArea;
+import net.runelite.api.coords.WorldPoint;
 
 /**
  * NPC entity class used within the simulation. The follow params can be acquired from the NPC composition object
@@ -48,30 +52,30 @@ import java.awt.*;
  */
 @Data
 @RequiredArgsConstructor
-public class SimNpc {
+public class SimNpc implements SimActor {
     @NonNull
-    private Point position;
+    private NPC npc;
 
-    @NonNull
-    private Color color;
-
-    private String name = "Unknown";
-    private int size = 1;
+    private int size = npc.getWorldArea().getWidth();
     private AttackStyle attackStyle = AttackStyle.MELEE;
     private int attackRange = 1;
     private int attackSpeed = 4;
     private boolean canPathfind = false;
     private boolean isAggressive = false;
-    private Point target;
 
-    public SimNpc(@NonNull Point position, @NonNull Color color, String name) {
-        this.position = position;
-        this.color = color;
-        this.name = name;
+    @Override
+    public WorldArea getWorldArea() {
+        return npc.getWorldArea();
+    }
 
-        if(this.name == null || this.name.isEmpty()) {
-            this.name = "Unknown";
-        }
+    @Override
+    public Actor copy() {
+        return npc;
+    }
+
+    @Override
+    public WorldPoint getLocation() {
+        return npc.getWorldLocation();
     }
 }
 
