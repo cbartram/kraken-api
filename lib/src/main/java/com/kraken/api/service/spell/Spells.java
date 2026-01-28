@@ -196,6 +196,22 @@ public enum Spells {
      // ================
      // Ancients
      // ===============
+    SMOKE_RUSH(MagicAction.SMOKE_RUSH, Map.of(Runes.AIR, 1, Runes.FIRE, 1, Runes.CHAOS, 2, Runes.DEATH, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SMOKE_RUSH),
+    SHADOW_RUSH(MagicAction.SHADOW_RUSH, Map.of(Runes.AIR, 1, Runes.CHAOS, 2, Runes.DEATH, 2, Runes.SOUL, 1), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SHADOW_RUSH),
+    BLOOD_RUSH(MagicAction.BLOOD_RUSH, Map.of(Runes.CHAOS, 2, Runes.DEATH, 2, Runes.BLOOD, 1), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.BLOOD_RUSH),
+    ICE_RUSH(MagicAction.ICE_RUSH, Map.of(Runes.WATER, 2, Runes.CHAOS, 2, Runes.DEATH, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.ICE_RUSH),
+    SMOKE_BURST(MagicAction.SMOKE_BURST, Map.of(Runes.AIR, 2, Runes.FIRE, 2, Runes.CHAOS, 4, Runes.DEATH, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SMOKE_BURST),
+    SHADOW_BURST(MagicAction.SHADOW_BURST, Map.of(Runes.AIR, 1, Runes.CHAOS, 4, Runes.DEATH, 2, Runes.SOUL, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SHADOW_BURST),
+    BLOOD_BURST(MagicAction.BLOOD_BURST, Map.of(Runes.CHAOS, 2, Runes.DEATH, 4, Runes.BLOOD, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.BLOOD_BURST),
+    ICE_BURST(MagicAction.ICE_BURST, Map.of(Runes.WATER, 4, Runes.CHAOS, 4, Runes.DEATH, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.ICE_BURST),
+    SMOKE_BLITZ(MagicAction.SMOKE_BLITZ, Map.of(Runes.AIR, 2, Runes.FIRE, 2, Runes.DEATH, 2, Runes.BLOOD, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SMOKE_BLITZ),
+    SHADOW_BLITZ(MagicAction.SHADOW_BLITZ, Map.of(Runes.AIR, 2, Runes.DEATH, 2, Runes.BLOOD, 2, Runes.SOUL, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SHADOW_BLITZ),
+    BLOOD_BLITZ(MagicAction.BLOOD_BLITZ, Map.of(Runes.DEATH, 2, Runes.BLOOD, 4), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.BLOOD_BLITZ),
+    ICE_BLITZ(MagicAction.ICE_BLITZ, Map.of(Runes.WATER, 3, Runes.DEATH, 2, Runes.BLOOD, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.ICE_BLITZ),
+    SMOKE_BARRAGE(MagicAction.SMOKE_BARRAGE, Map.of(Runes.AIR, 4, Runes.FIRE, 4, Runes.DEATH, 4, Runes.BLOOD, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SMOKE_BARRAGE),
+    SHADOW_BARRAGE(MagicAction.SHADOW_BARRAGE, Map.of(Runes.AIR, 4, Runes.DEATH, 4, Runes.BLOOD, 2, Runes.SOUL, 3), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.SHADOW_BARRAGE),
+    BLOOD_BARRAGE(MagicAction.BLOOD_BARRAGE, Map.of(Runes.DEATH, 4, Runes.BLOOD, 4, Runes.SOUL, 1), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.BLOOD_BARRAGE),
+    ICE_BARRAGE(MagicAction.ICE_BARRAGE, Map.of(Runes.WATER, 6, Runes.DEATH, 4, Runes.BLOOD, 2), Spellbook.ANCIENT, InterfaceID.MagicSpellbook.ICE_BARRAGE),
     PADDEWWA_TELEPORT(MagicAction.PADDEWWA_TELEPORT, Map.of(
             Runes.AIR, 1,
             Runes.FIRE, 1,
