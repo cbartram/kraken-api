@@ -18,6 +18,7 @@ import net.runelite.client.game.ItemManager;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -145,7 +146,7 @@ public class SpellService {
      * @return true if the player has all required runes, false otherwise.
      */
     public boolean hasRequiredRunes(Spells spell) {
-        boolean hasRunePouch = ctx.inventory().stream().anyMatch(item -> item.raw().getId() == ItemID.DIVINE_RUNE_POUCH
+        boolean hasRunePouch = ctx.inventory().stream().filter(Objects::nonNull).anyMatch(item -> item.raw().getId() == ItemID.DIVINE_RUNE_POUCH
                 || item.raw().getId() == ItemID.BH_RUNE_POUCH
                 || item.raw().getId() == ItemID.BH_RUNE_POUCH_TROUVER
                 || item.raw().getId() == ItemID.DIVINE_RUNE_POUCH_TROUVER);
