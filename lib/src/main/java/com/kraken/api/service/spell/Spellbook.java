@@ -28,9 +28,6 @@ public enum Spellbook {
     private final int value;
     private final String description;
 
-    /**
-     * Constructor for Rs2Spellbook enum
-     */
     Spellbook(int value,  String description) {
         this.value = value;
         this.description = description;

@@ -13,6 +13,7 @@ import net.runelite.api.*;
 import net.runelite.api.annotations.Varbit;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.game.ItemManager;
 
 import java.util.HashMap;
@@ -60,28 +61,40 @@ public class SpellService {
     };
 
     /**
-     * Clicks on a spell in the spellbook. This method checks the following conditions before casting a spell:
-     * 1. Player is on the right spellbook
-     * 2. Player has the magic level required to cast the spell
-     * 3. Player has the required runes to cast the spell
-     * 4. Player has the required prayer to cast the spell (if applicable)
+     * Determines whether the specified spell can be cast by the player.
      *
-     * @param spell The spell to be clicked.
-     * @return True if the cast was successful and false otherwise
+     * <p>This method verifies various conditions required to cast a spell, including:
+     * <ul>
+     *   <li>Whether the client packets are properly loaded</li>
+     *   <li>Whether the spell is valid and belongs to the player's current spellbook</li>
+     *   <li>Whether the player's boosted Magic level meets or exceeds the spell's required level</li>
+     *   <li>Whether the player possesses the necessary runes to cast the spell</li>
+     *   <li>For specific spells requiring prayer, whether the player has sufficient Prayer points</li>
+     * </ul>
+     * If any of these conditions fail, the method logs a warning and returns {@literal @false}.
+     *
+     * @param spell The {@literal @Spells} instance representing the spell to check.
+     *              <ul>
+     *                <li>Must not be {@literal @null}.</li>
+     *                <li>The spell must belong to the player's active spellbook to be castable.</li>
+     *              </ul>
+     * @return {@literal @true} if all conditions for casting the spell are met, {@literal @false} otherwise.
+     *         <p>Returns {@literal @false} for invalid spells, mismatched spellbooks, insufficient Magic level,
+     *         missing runes, or insufficient Prayer points for certain spells.</p>
      */
-    public boolean cast(Spells spell) {
-        if(!ctx.isPacketsLoaded()) return false;
-        if(spell == null) {
-            return false;
-        }
+    private boolean canCast(Spells spell) {
+        if (!ctx.isPacketsLoaded()) return false;
+        if (spell == null) return false;
 
-        if(getCurrentSpellbook() != spell.getSpellbook()) {
+        if (getCurrentSpellbook() != spell.getSpellbook()) {
             log.warn("Cannot cast spell {}. Wrong spellbook: {}", spell, getCurrentSpellbook());
             return false;
         }
 
-        if (ctx.getClient().getBoostedSkillLevel(Skill.MAGIC) < spell.getRequiredLevel() || ctx.getClient().getRealSkillLevel(Skill.MAGIC) < spell.getRequiredLevel()) {
-            log.warn("Cannot cast spell {}. Required magic level: {}, current level: {}", spell.getName(), spell.getRequiredLevel(), ctx.getClient().getBoostedSkillLevel(Skill.MAGIC));
+        int boostedLevel = ctx.getClient().getBoostedSkillLevel(Skill.MAGIC);
+        if (boostedLevel < spell.getRequiredLevel()) {
+            log.warn("Cannot cast spell {}. Required magic level: {}, current level: {}",
+                    spell.getName(), spell.getRequiredLevel(), boostedLevel);
             return false;
         }
 
@@ -90,34 +103,158 @@ public class SpellService {
             return false;
         }
 
-        if(SPELLS_REQUIRING_PRAYER.contains(spell.getWidgetId()) && ctx.getClient().getBoostedSkillLevel(Skill.PRAYER) < 6) {
-            log.warn("Cannot cast spell {}. Required prayer points: 6, current level: {}", spell.getName(), ctx.getClient().getBoostedSkillLevel(Skill.PRAYER));
+        if (SPELLS_REQUIRING_PRAYER.contains(spell.getWidgetId()) && ctx.getClient().getBoostedSkillLevel(Skill.PRAYER) < 6) {
+            log.warn("Cannot cast spell {}. Required prayer points: 6, current level: {}",
+                    spell.getName(), ctx.getClient().getBoostedSkillLevel(Skill.PRAYER));
             return false;
         }
 
+        return true;
+    }
+
+    /**
+     * Helper to get the spell widget if it exists.
+     */
+    private WidgetEntity getSpellWidget(Spells spell) {
         WidgetEntity w = ctx.widgets().fromClient(spell.getWidgetId());
-        if(w == null) {
+        if (w == null) {
             log.info("Cannot cast spell {}. Missing widget: {}", spell.getName(), spell.getWidgetId());
-            return false;
+            return null;
         }
+        return w;
+    }
 
+    /**
+     * Casts the specified spell, if it is valid and the necessary conditions are met.
+     * <p>
+     * This method validates whether the spell can be cast, determines the appropriate
+     * action (especially for teleport spell variants), and enqueues the required packets
+     * to perform the spell cast.
+     *
+     * <p>
+     * Note that this method handles teleport spells with multiple variants (e.g.,
+     * Varrock Teleport vs. Grand Exchange Teleport) and calculates the correct action
+     * based on the player's configuration.
+     *
+     * @param spell The {@literal @Spells} instance representing the spell to be cast.
+     *              Must not be null.
+     *              <ul>
+     *                 <li>For teleport spells with variants, the variant action will
+     *                     be determined dynamically.</li>
+     *                 <li>Ensure the correct spell is passed to avoid unintended behavior.</li>
+     *              </ul>
+     * @return {@literal @true} if the spell was successfully cast, {@literal @false} otherwise.
+     *         <p>Returns {@literal @false} if the spell is invalid, cannot be cast, or
+     *         if required conditions (e.g., runes) are not met.</p>
+     */
+    public boolean cast(Spells spell) {
+        if (!canCast(spell)) return false;
+
+        WidgetEntity w = getSpellWidget(spell);
+        if (w == null) return false;
+
+        // Queue Mouse Click
         Point pt = UIService.getClickingPoint(w.raw().getBounds(), true);
         mousePackets.queueClickPacket(pt.getX(), pt.getY());
 
+        // Calculate Action (Handling Teleport variants)
         int action = 1;
-        if(spell == Spells.VARROCK_TELEPORT || spell == Spells.GRAND_EXCHANGE_TELEPORT) {
+        if (spell == Spells.VARROCK_TELEPORT || spell == Spells.GRAND_EXCHANGE_TELEPORT) {
             action = getVariantAction(VarbitID.VARROCK_GE_TELEPORT, spell, Spells.VARROCK_TELEPORT, Spells.GRAND_EXCHANGE_TELEPORT);
-        }
-
-        if(spell == Spells.CAMELOT_TELEPORT || spell == Spells.SEERS_TELEPORT) {
+        } else if (spell == Spells.CAMELOT_TELEPORT || spell == Spells.SEERS_TELEPORT) {
             action = getVariantAction(VarbitID.SEERS_CAMELOT_TELEPORT, spell, Spells.CAMELOT_TELEPORT, Spells.SEERS_TELEPORT);
-        }
-
-        if(spell == Spells.WATCHTOWER_TELEPORT || spell == Spells.YANILLE_TELEPORT) {
+        } else if (spell == Spells.WATCHTOWER_TELEPORT || spell == Spells.YANILLE_TELEPORT) {
             action = getVariantAction(VarbitID.YANILLE_TELEPORT_LOCATION, spell, Spells.WATCHTOWER_TELEPORT, Spells.YANILLE_TELEPORT);
         }
 
         widgetPackets.queueWidgetActionPacket(spell.getWidgetId(), -1, -1, action);
+        return true;
+    }
+
+    /**
+     * Attempts to cast the given spell on a specified widget target.
+     * <p>
+     * This method verifies if the spell can be cast by invoking the {@code canCast} method.
+     * If the spell is valid and the required conditions are met (e.g., the spell exists in the active spellbook, the player has the necessary items, levels, etc.),
+     * it retrieves the spell's widget representation and performs the "use on" action to cast the spell on the target.
+     * </p>
+     *
+     * @param spell The {@literal @Spells} instance representing the spell to cast.
+     *              <ul>
+     *                <li>Must not be {@literal @null}.</li>
+     *                <li>Should belong to the player's current spellbook and satisfy all requirements for casting.</li>
+     *              </ul>
+     * @param target The {@literal @Widget} instance representing the target of the spell.
+     *               <ul>
+     *                 <li>Must not be {@literal @null}.</li>
+     *                 <li>The widget should correspond to a valid in-game target for the selected spell.</li>
+     *               </ul>
+     * @return {@literal @true} if the spell was successfully cast on the target, {@literal @false} otherwise.
+     *         <p>Returns {@literal @false} in cases where the spell is invalid, conditions necessary for casting are not met,
+     *         or the target widget is not valid or accessible.</p>
+     */
+    public boolean castOn(Spells spell, Widget target) {
+        if (!canCast(spell)) return false;
+
+        WidgetEntity w = getSpellWidget(spell);
+        if (w == null) return false;
+
+        w.useOn(target);
+        return true;
+    }
+
+    /**
+     * Attempts to cast the given spell on a specified NPC target.
+     *
+     * <p>This method checks whether the spell can be cast by invoking the {@code canCast} method.
+     * If the spell is valid and all necessary conditions for casting (e.g., current spellbook, required runes, etc.)
+     * are satisfied, it retrieves the spell's corresponding widget and performs the "use-on" action to cast the
+     * spell on the NPC target.</p>
+     *
+     * @param spell The {@literal @Spells} instance representing the spell to cast.
+     *              <ul>
+     *                <li>Must not be {@literal @null}.</li>
+     *                <li>The spell should exist in the player's current spellbook.</li>
+     *                <li>The spell must meet all prerequisites for casting, including level and resource requirements.</li>
+     *              </ul>
+     * @param target The {@literal @NPC} instance representing the target of the spell.
+     *               <ul>
+     *                 <li>Must not be {@literal @null}.</li>
+     *                 <li>The NPC must be a valid target for the selected spell.</li>
+     *               </ul>
+     *
+     * @return {@literal @true} if the spell was successfully cast on the NPC target, {@literal @false} otherwise.
+     *         <p>Returns {@literal @false} if the spell is invalid, the conditions for casting are not met, the spell's widget
+     *         cannot be retrieved, or the NPC is not a valid target.</p>
+     */
+    public boolean castOn(Spells spell, NPC target) {
+        if (!canCast(spell)) return false;
+
+        WidgetEntity w = getSpellWidget(spell);
+        if (w == null) return false;
+
+        w.useOn(target);
+        return true;
+    }
+
+    /**
+     * Casts a spell on a specified target object.
+     * <p>
+     * This method checks if the specified spell can be cast, retrieves the widget
+     * associated with the spell, and then uses it on the provided target object.
+     *
+     * @param spell The {@literal @}Spells object representing the spell to be cast.
+     * @param target The {@literal @}GameObject on which the spell will be cast.
+     * @return {@code true} if the spell was successfully cast on the target,
+     *         {@code false} otherwise.
+     */
+    public boolean castOn(Spells spell, GameObject target) {
+        if (!canCast(spell)) return false;
+
+        WidgetEntity w = getSpellWidget(spell);
+        if (w == null) return false;
+
+        w.useOn(target);
         return true;
     }
 
