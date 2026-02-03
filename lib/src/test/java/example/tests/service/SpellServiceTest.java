@@ -2,6 +2,7 @@ package example.tests.service;
 
 import com.google.inject.Inject;
 import com.kraken.api.Context;
+import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.service.bank.BankService;
 import com.kraken.api.service.spell.SpellService;
 import com.kraken.api.service.spell.Spells;
@@ -31,7 +32,9 @@ public class SpellServiceTest extends BaseApiTest {
             }
 
             bankService.depositAll();
-            ctx.bank().withName("Fire rune").first().withdrawOne();
+            ctx.bank().withName("Mind rune").first().withdrawTen();
+            Thread.sleep(RandomUtils.randomIntBetween(400, 1000));
+            ctx.bank().withName("Fire rune").first().withdraw(50);
             Thread.sleep(RandomUtils.randomIntBetween(400, 1000));
             ctx.bank().withName("Air rune").first().withdrawFive();
             Thread.sleep(RandomUtils.randomIntBetween(400, 1000));
@@ -48,6 +51,16 @@ public class SpellServiceTest extends BaseApiTest {
                 log.info("Spell Service tests failed, hasRequiredRunes returned false when player should have VARROCK_TELEPORT runes");
                 return false;
             }
+
+
+            NpcEntity guard = ctx.npcs().nameContains("Guard").nearest();
+            if(guard == null) {
+                log.error("Spell Service tests failed, could not find a guard");
+                return false;
+            }
+
+            // spellService.cast(Spells.FIRE_STRIKE);
+
             spellService.cast(Spells.VARROCK_TELEPORT);
         } catch (Exception e) {
             log.error("Exception during spell service test", e);
