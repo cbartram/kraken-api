@@ -142,7 +142,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enablePlayerQuery", "PlayerQuery", config::enablePlayerQuery, playerQueryTest::executeTest);
         registerTest("enableWidgetQuery", "WidgetQuery", config::enableWidgetQuery, widgetQueryTest::executeTest);
         registerTest("enableMovement", "MovementService", config::enableMovementTests, movementServiceTest::executeTest);
-        registerTest("enableSpell", "SpellService", config::enableSpellTests, spellServiceTest::executeTest);
+        registerTest("enableSpell", "MagicService", config::enableSpellTests, spellServiceTest::executeTest);
         registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
         registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
         registerTest("enableWorldQuery", "WorldQuery", config::enableWorldQuery, worldQueryTest::executeTest);

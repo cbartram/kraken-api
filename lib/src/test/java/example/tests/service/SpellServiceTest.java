@@ -4,8 +4,9 @@ import com.google.inject.Inject;
 import com.kraken.api.Context;
 import com.kraken.api.query.npc.NpcEntity;
 import com.kraken.api.service.bank.BankService;
-import com.kraken.api.service.spell.SpellService;
-import com.kraken.api.service.spell.Spells;
+import com.kraken.api.service.magic.MagicService;
+import com.kraken.api.service.magic.spellbook.Standard;
+import com.kraken.api.service.util.SleepService;
 import com.kraken.api.util.RandomUtils;
 import example.tests.BaseApiTest;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SpellServiceTest extends BaseApiTest {
 
     @Inject
-    private SpellService spellService;
+    private MagicService magicService;
 
     @Inject
     private BankService bankService;
@@ -38,7 +39,7 @@ public class SpellServiceTest extends BaseApiTest {
             Thread.sleep(RandomUtils.randomIntBetween(400, 1000));
             ctx.bank().withName("Air rune").first().withdrawFive();
             Thread.sleep(RandomUtils.randomIntBetween(400, 1000));
-            boolean hasRunes = spellService.hasRequiredRunes(Spells.VARROCK_TELEPORT);
+            boolean hasRunes = magicService.hasRequiredRunes(Standard.VARROCK_TELEPORT);
             if(hasRunes) {
                 log.info("Spell Service tests failed, hasRequiredRunes returned true when player should not have VARROCK_TELEPORT runes");
                 return false;
@@ -46,7 +47,7 @@ public class SpellServiceTest extends BaseApiTest {
             ctx.bank().withName("Law rune").first().withdrawOne();
             bankService.close();
             Thread.sleep(RandomUtils.randomIntBetween(400, 1000));
-            boolean hasRunesTrue = spellService.hasRequiredRunes(Spells.VARROCK_TELEPORT);
+            boolean hasRunesTrue = magicService.hasRequiredRunes(Standard.VARROCK_TELEPORT);
             if(!hasRunesTrue) {
                 log.info("Spell Service tests failed, hasRequiredRunes returned false when player should have VARROCK_TELEPORT runes");
                 return false;
@@ -59,9 +60,12 @@ public class SpellServiceTest extends BaseApiTest {
                 return false;
             }
 
-            // spellService.cast(Spells.FIRE_STRIKE);
+            log.info("Casting fire strike on guard");
+            magicService.castOn(Standard.FIRE_STRIKE, guard.raw());
+            SleepService.sleepFor(5);
 
-            spellService.cast(Spells.VARROCK_TELEPORT);
+            log.info("Teleporting away");
+            magicService.cast(Standard.VARROCK_TELEPORT);
         } catch (Exception e) {
             log.error("Exception during spell service test", e);
             return false;
