@@ -393,6 +393,14 @@ public class PacketDefFactory {
         ));
     }
 
+    public PacketDefinition getSetHeading() {
+        return cache.computeIfAbsent("SET_HEADING", k -> new PacketDefinition(
+                ObfuscatedNames.SET_HEADING_OBFUSCATEDNAME,
+                new String[]{ObfuscatedNames.SET_HEADING_WRITE1},
+                ObfuscatedNames.SET_HEADING_WRITES,
+                PacketType.SET_HEADING
+        ));
+    }
 
     public PacketDefinition getOpObj(int action) {
         switch (action) {
@@ -439,13 +447,5 @@ public class PacketDefFactory {
             case 8: return getOpPlayer8();
             default: throw new IllegalArgumentException("Invalid OPPLAYER action (supports 1-8): " + action);
         }
-    }
-
-    /**
-     * Clears the cache for the packet definition factory forcing the factory
-     * to re-create the objects again.
-     */
-    public void clearCache() {
-        cache.clear();
     }
 }

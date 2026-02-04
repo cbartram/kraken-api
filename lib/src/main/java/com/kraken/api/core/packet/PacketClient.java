@@ -2,7 +2,6 @@ package com.kraken.api.core.packet;
 
 import com.kraken.api.core.packet.model.PacketDefinition;
 import com.kraken.api.core.packet.model.PacketMethods;
-import com.kraken.api.core.packet.model.PacketType;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +72,7 @@ public class PacketClient {
             return;
         }
 
-        // 2. Invoke the getPacketBufferNode method to create a new packet node instance.
+        // Invoke the getPacketBufferNode method to create a new packet node instance.
         // This method is obfuscated and may require a "garbage value" of a specific type.
         getPacketBufferNode.setAccessible(true);
         long garbageValue = Math.abs(Long.parseLong(ObfuscatedNames.getPacketBufferNodeGarbageValue));
@@ -107,8 +106,8 @@ public class PacketClient {
             return;
         }
 
-        // 3. Get the raw 'buffer' object from the 'packetBufferNode' to write data into.
-        Object buffer = null;
+        // Get the raw 'buffer' object from the 'packetBufferNode' to write data into.
+        Object buffer;
         try {
             Field bufferField = packetBufferNode.getClass().getDeclaredField(ObfuscatedNames.packetBufferFieldName);
             bufferField.setAccessible(true);
@@ -120,69 +119,12 @@ public class PacketClient {
             return; // Can't proceed without the buffer
         }
 
-        // 4. Map the PacketType to the expected parameter order.
+        // Map the PacketType to the expected parameter order.
         // This is necessary because the varargs 'objects' must be written in a specific
         // sequence defined by the packet structure, not just the order they are passed in.
-        List<String> params = null;
-        if (def.getType() == PacketType.RESUME_NAMEDIALOG || def.getType() == PacketType.RESUME_STRINGDIALOG) {
-            params = List.of("length", "string");
-        }
-        if (def.getType() == PacketType.OPHELDD) {
-            params = List.of("selectedId", "selectedChildIndex", "selectedItemId", "destId", "destChildIndex", "destItemId");
-        }
-        if (def.getType() == PacketType.RESUME_COUNTDIALOG || def.getType() == PacketType.RESUME_OBJDIALOG) {
-            params = List.of("var0");
-        }
-        if (def.getType() == PacketType.RESUME_PAUSEBUTTON) {
-            params = List.of("var0", "var1");
-        }
-        if (def.getType() == PacketType.IF_BUTTON) {
-            params = List.of("widgetId", "slot", "itemId");
-        }
-        if (def.getType() == PacketType.IF_SUBOP) {
-            params = List.of("widgetId", "slot", "itemId", "menuIndex", "subActionIndex");
-        }
-        if (def.getType() == PacketType.IF_BUTTONX) {
-            params = List.of("widgetId", "slot", "itemId", "opCode");
-        }
-        if (def.getType() == PacketType.OPLOC) {
-            params = List.of("objectId", "worldPointX", "worldPointY", "ctrlDown");
-        }
-        if (def.getType() == PacketType.OPNPC) {
-            params = List.of("npcIndex", "ctrlDown");
-        }
-        if (def.getType() == PacketType.OPPLAYER) {
-            params = List.of("playerIndex", "ctrlDown");
-        }
-        if (def.getType() == PacketType.OPOBJ) {
-            params = List.of("objectId", "worldPointX", "worldPointY", "ctrlDown");
-        }
-        if (def.getType() == PacketType.OPOBJT) {
-            params = List.of("objectId", "worldPointX", "worldPointY", "slot", "itemId", "widgetId",
-                    "ctrlDown");
-        }
-        if (def.getType() == PacketType.EVENT_MOUSE_CLICK) {
-            params = List.of("mouseInfo", "mouseX", "mouseY", "0");
-        }
-        if (def.getType() == PacketType.MOVE_GAMECLICK) {
-            params = List.of("worldPointX", "worldPointY", "ctrlDown", "5");
-        }
-        if (def.getType() == PacketType.IF_BUTTONT) {
-            params = List.of("sourceWidgetId", "sourceSlot", "sourceItemId", "destinationWidgetId",
-                    "destinationSlot", "destinationItemId");
-        }
-        if (def.getType() == PacketType.OPLOCT) {
-            params = List.of("objectId", "worldPointX", "worldPointY", "slot", "itemId", "widgetId",
-                    "ctrlDown");
-        }
-        if (def.getType() == PacketType.OPPLAYERT) {
-            params = List.of("playerIndex", "itemId", "slot", "widgetId", "ctrlDown");
-        }
-        if (def.getType() == PacketType.OPNPCT) {
-            params = List.of("npcIndex", "itemId", "slot", "widgetId", "ctrlDown");
-        }
+        List<String> params = def.getParams();
 
-        // 5. If the packet type is recognized, write the data into the buffer.
+        // If the packet type is recognized, write the data into the buffer.
         if (params != null) {
             for (int i = 0; i < def.getWriteData().length; i++) {
                 // Find the index of the data element (e.g., "widgetId") in the params list

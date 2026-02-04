@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
+import com.kraken.api.core.packet.LoginHooksMethodLocator;
 import com.kraken.api.core.script.breakhandler.BreakConditions;
 import com.kraken.api.core.script.breakhandler.BreakManager;
 import com.kraken.api.core.script.breakhandler.BreakProfile;
@@ -142,7 +143,7 @@ public class ExamplePlugin extends Plugin {
         registerTest("enablePlayerQuery", "PlayerQuery", config::enablePlayerQuery, playerQueryTest::executeTest);
         registerTest("enableWidgetQuery", "WidgetQuery", config::enableWidgetQuery, widgetQueryTest::executeTest);
         registerTest("enableMovement", "MovementService", config::enableMovementTests, movementServiceTest::executeTest);
-        registerTest("enableSpell", "SpellService", config::enableSpellTests, spellServiceTest::executeTest);
+        registerTest("enableSpell", "MagicService", config::enableSpellTests, spellServiceTest::executeTest);
         registerTest("enableCamera", "CameraService", config::enableCameraTests, cameraServiceTest::executeTest);
         registerTest("enablePathfinder", "PathfinderService", config::enablePathfinder, pathfinderServiceTest::executeTest);
         registerTest("enableWorldQuery", "WorldQuery", config::enableWorldQuery, worldQueryTest::executeTest);
@@ -248,8 +249,12 @@ public class ExamplePlugin extends Plugin {
         }
     }
 
+    @Inject
+    private LoginHooksMethodLocator loginHooksMethodLocator;
+
     @Override
     protected void startUp() {
+        loginHooksMethodLocator.decompileClient();
         context.initializePackets();
         exampleScript.start();
 
