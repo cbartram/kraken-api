@@ -393,6 +393,14 @@ public class PacketDefFactory {
         ));
     }
 
+    public PacketDefinition getSetHeading() {
+        return cache.computeIfAbsent("SET_HEADING", k -> new PacketDefinition(
+                ObfuscatedNames.SET_HEADING_OBFUSCATEDNAME,
+                new String[]{ObfuscatedNames.SET_HEADING_WRITE1},
+                ObfuscatedNames.SET_HEADING_WRITES,
+                PacketType.SET_HEADING
+        ));
+    }
 
     public PacketDefinition getOpObj(int action) {
         switch (action) {

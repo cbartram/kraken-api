@@ -30,5 +30,6 @@ public enum PacketType {
     OPNPCT,
     OPPLAYERT,
     OPOBJT,
-    OPLOCT
+    OPLOCT,
+    SET_HEADING
 }

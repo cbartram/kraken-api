@@ -93,6 +93,9 @@ public class PacketDefinition {
         if (type == PacketType.OPNPCT) {
             params = List.of("npcIndex", "itemId", "slot", "widgetId", "ctrlDown");
         }
+        if (type == PacketType.SET_HEADING) {
+            params = List.of("direction");
+        }
 
         return params;
     }
