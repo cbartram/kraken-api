@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.kraken.api.core.packet.PacketMethodLocator;
+import com.kraken.api.core.packet.debug.PacketSpy;
 import com.kraken.api.input.mouse.VirtualMouse;
 import com.kraken.api.query.InteractionManager;
 import com.kraken.api.query.container.bank.BankInventoryQuery;
@@ -67,7 +68,7 @@ public class Context {
     @Inject
     public Context(final Client client, final ClientThread clientThread, final VirtualMouse mouse, final EventBus eventBus,
                    final Injector injector, final InteractionManager interactionManager, final TileService tileService,
-                   final ItemManager itemManager, final BankService bankService) {
+                   final ItemManager itemManager, final BankService bankService, final PacketSpy packetSpy) {
         this.client = client;
         this.clientThread = clientThread;
         this.mouse = mouse;
@@ -78,6 +79,7 @@ public class Context {
         this.localPlayer = new LocalPlayerEntity(this);
         eventBus.register(this.localPlayer);
         eventBus.register(bankService);
+        eventBus.register(packetSpy);
     }
 
     /**

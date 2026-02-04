@@ -440,12 +440,4 @@ public class PacketDefFactory {
             default: throw new IllegalArgumentException("Invalid OPPLAYER action (supports 1-8): " + action);
         }
     }
-
-    /**
-     * Clears the cache for the packet definition factory forcing the factory
-     * to re-create the objects again.
-     */
-    public void clearCache() {
-        cache.clear();
-    }
 }
