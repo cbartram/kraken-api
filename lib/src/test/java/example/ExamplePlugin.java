@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.kraken.api.Context;
-import com.kraken.api.core.packet.LoginHooksMethodLocator;
+import com.kraken.api.core.mapping.LoginHooksMethodLocator;
 import com.kraken.api.core.script.breakhandler.BreakConditions;
 import com.kraken.api.core.script.breakhandler.BreakManager;
 import com.kraken.api.core.script.breakhandler.BreakProfile;

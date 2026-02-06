@@ -1,4 +1,4 @@
-package com.kraken.api.core.packet;
+package com.kraken.api.core.mapping;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -9,12 +9,12 @@ import net.runelite.client.RuneLite;
 import net.runelite.client.RuneLiteProperties;
 import org.objectweb.asm.*;
 
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -22,7 +22,7 @@ import java.util.jar.JarOutputStream;
 
 @Slf4j
 @Singleton
-public class LoginHooksMethodLocator {
+public class LoginHooksMapper {
 
     Path WORKING_DIR = RuneLite.RUNELITE_DIR.toPath().resolve("kraken");
 
@@ -46,7 +46,7 @@ public class LoginHooksMethodLocator {
         Path outputPath = WORKING_DIR.resolve("deobfuscated-" + RuneLiteProperties.getVersion() + ".jar");
         Path jsonOutputPath = WORKING_DIR.resolve("mappings-" + RuneLiteProperties.getVersion() + ".json");
 
-        downloadInjectedClient(RuneLiteProperties.getVersion(), jarPath);
+        ClientDownloader.downloadInjectedClient(jarPath);
         removeNamedAnnotations(jarPath, outputPath);
         printFindings();
         writeJsonMappings(jsonOutputPath);
@@ -59,66 +59,24 @@ public class LoginHooksMethodLocator {
             return;
         }
 
-        log.info("========================================");
-        log.info("MAPPINGS FOUND:");
-        log.info("========================================");
-
         for (Map.Entry<String, FieldMapping> entry : fieldMappings.entrySet()) {
             FieldMapping mapping = entry.getValue();
-            log.info("Constant: '{}' -> Field: {}.{} (descriptor: {})",
-                    entry.getKey(), mapping.className, mapping.fieldName, mapping.descriptor);
+            log.info("Constant: '{}' -> Field: {}.{} (descriptor: {})", entry.getKey(), mapping.className, mapping.fieldName, mapping.descriptor);
         }
-
-        for (Map.Entry<String, MethodMapping> entry : methodMappings.entrySet()) {
-            MethodMapping mapping = entry.getValue();
-            log.info("Constant: '{}' -> Method: {}.{}{}",
-                    entry.getKey(), mapping.className, mapping.methodName, mapping.descriptor);
-        }
-
-        log.info("========================================");
-        log.info("LOGIN INDEX METHOD CANDIDATES:");
-        log.info("========================================");
 
         // Sort candidates by score (highest first)
         loginIndexCandidates.sort((a, b) -> Integer.compare(b.score, a.score));
 
         for (int i = 0; i < loginIndexCandidates.size(); i++) {
             LoginIndexCandidate candidate = loginIndexCandidates.get(i);
-            log.info("Candidate #{}: {}.{} (score: {}/10)",
-                    i + 1, candidate.className, candidate.methodName, candidate.score);
-            log.info("  Garbage Value: {}", candidate.garbageValue);
-            log.info("  Descriptor: {}", candidate.descriptor);
-            log.info("  Pattern Details:");
-            log.info("    - Has field read (GETSTATIC): {}", candidate.hasFieldRead);
-            log.info("    - Has field write (PUTSTATIC): {}", candidate.hasFieldWrite);
-            log.info("    - Has multiplication (IMUL): {}", candidate.hasMultiplication);
-            log.info("    - Has conditional jump: {}", candidate.hasConditionalJump);
-            log.info("    - Has try-catch RuntimeException: {}", candidate.hasTryCatch);
-            log.info("    - Field read count: {}", candidate.fieldReadCount);
-            log.info("    - Field write count: {}", candidate.fieldWriteCount);
-            log.info("    - Multiplication count: {}", candidate.multiplicationCount);
-            log.info("    - Jump count: {}", candidate.jumpCount);
-            log.info("    - Has comparison with var0 (first param): {}", candidate.hasVar0Comparison);
-            log.info("    - Has comparison with var1 (second param): {}", candidate.hasVar1Comparison);
-            log.info("    - Same field read/write: {}", candidate.sameFieldReadWrite);
-            if (i == 0 && loginIndexMethod != null) {
-                log.info("  >>> SELECTED AS BEST MATCH <<<");
-            }
-            log.info("");
+            log.info("Login Index #{}: {}.{} (score: {}/10)", i + 1, candidate.className, candidate.methodName, candidate.score);
         }
 
         if (loginIndexMethod != null) {
-            log.info("Selected Login Index Method: {}.{} (garbage value: {})",
-                    loginIndexMethod.className, loginIndexMethod.methodName, loginIndexMethod.garbageValue);
+            log.info("Selected Login Index Method: {}.{} (garbage value: {})", loginIndexMethod.className, loginIndexMethod.methodName, loginIndexMethod.garbageValue);
         } else if (!loginIndexCandidates.isEmpty()) {
             log.warn("No clear best match found. Review candidates above.");
         }
-
-        log.info("========================================");
-        log.info("Total field mappings: {}", fieldMappings.size());
-        log.info("Total method mappings: {}", methodMappings.size());
-        log.info("Login index candidates found: {}", loginIndexCandidates.size());
-        log.info("========================================");
     }
 
     @SneakyThrows
@@ -156,7 +114,6 @@ public class LoginHooksMethodLocator {
         String json = gson.toJson(jsonOutput);
 
         Files.writeString(jsonPath, json);
-        log.info("JSON mappings written to: {}", jsonPath);
         log.info("JSON content:\n{}", json);
     }
 
@@ -367,10 +324,6 @@ public class LoginHooksMethodLocator {
 
                 FieldMapping mapping = new FieldMapping(ownerClassName, name, descriptor);
                 fieldMappings.put(lastLdcConstant, mapping);
-
-                log.info("Found System.getenv('{}') -> {}.{} ({})",
-                        lastLdcConstant, ownerClassName, name, descriptor);
-
                 lastLdcConstant = null;
             }
 
@@ -784,40 +737,5 @@ public class LoginHooksMethodLocator {
             this.methodName = methodName;
             this.garbageValue = garbageValue;
         }
-    }
-
-    @SneakyThrows
-    private void downloadInjectedClient(String version, Path destination) {
-        if (Files.exists(destination)) {
-            log.info("Injected client already exists at {}, skipping download", destination);
-            return;
-        }
-
-        Files.createDirectories(destination.getParent());
-
-        if (version.contains("SNAPSHOT")) {
-            String snapshotVersion = version;
-            version = version.replace("-SNAPSHOT", "");
-            log.info("Treating SNAPSHOT version {} as base version: {}", snapshotVersion, version);
-        }
-
-        URL injectedURL = getInjectedURL(version);
-        log.info("Downloading injected client from {}", injectedURL);
-        try (InputStream clientStream = injectedURL.openStream()) {
-            Files.copy(clientStream, destination, StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
-
-    private static URL getInjectedURL(String version) throws MalformedURLException {
-        String[] versionSplits = version.split("\\.");
-        int length = versionSplits.length;
-        if (!((length > 0 && Integer.parseInt(versionSplits[0]) > 1) ||
-                (length > 1 && Integer.parseInt(versionSplits[1]) > 10) ||
-                (length > 2 && Integer.parseInt(versionSplits[2]) > 34))) {
-            throw new UnsupportedOperationException("Unsupported RuneLite version: " + version);
-        }
-
-        String url = "https://repo.runelite.net/net/runelite/injected-client/" + version + "/injected-client-" + version + ".jar";
-        return new URL(url);
     }
 }
