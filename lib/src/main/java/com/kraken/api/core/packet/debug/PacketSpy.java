@@ -27,12 +27,12 @@ public class PacketSpy {
         String option = event.getMenuOption();
         MenuAction action = event.getMenuAction();
 
-        log.info("[PacketSpy] Opt: '{}' Tgt: '{}' | Action: {} | ID: {} | P0: {} | P1: {} | ItemID: {} | ItemOp: {}",
+        log.debug("[PacketSpy] Opt: '{}' Tgt: '{}' | Action: {} | ID: {} | P0: {} | P1: {} | ItemID: {} | ItemOp: {}",
                 option, target, action, id, param0, param1, itemId, itemOp);
 
         PacketDefinition def = getDefinitionForAction(action, packetDefFactory);
         if (def != null) {
-            log.info("[PacketSpy] Packet Definition: {} (Type: {})", def.getName(), def.getType());
+            log.debug("[PacketSpy] Packet Definition: {} (Type: {})", def.getName(), def.getType());
         } else {
             log.debug("[PacketSpy] No mapping found for action: {}", action);
         }
