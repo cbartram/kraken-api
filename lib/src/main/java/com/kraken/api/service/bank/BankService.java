@@ -5,7 +5,6 @@ import com.kraken.api.Context;
 import com.kraken.api.core.packet.entity.MousePackets;
 import com.kraken.api.core.packet.entity.WidgetPackets;
 import com.kraken.api.input.KeyboardService;
-import com.kraken.api.query.widget.WidgetEntity;
 import com.kraken.api.service.ui.UIService;
 import com.kraken.api.service.util.SleepService;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +12,7 @@ import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarClientID;
 import net.runelite.api.widgets.JavaScriptCallback;
 import net.runelite.api.widgets.Widget;
@@ -22,6 +22,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.Objects;
+
+import static net.runelite.api.gameval.VarbitID.BANK_WITHDRAWNOTES;
 
 
 /**
@@ -33,9 +35,7 @@ import java.util.Objects;
 @Slf4j
 @Singleton
 public class BankService {
-    private static final int WITHDRAW_AS_VARBIT = 3958;
-    private static final int WITHDRAW_ITEM_MODE_WIDGET = 786456;
-    private static final int WITHDRAW_NOTE_MODE_WIDGET = 786458;
+    private static final int WITHDRAW_ITEM_NOT_MODE_WIDGET = 786451;
 
     @Inject
     private Provider<Context> ctxProvider;
@@ -52,9 +52,8 @@ public class BankService {
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
     public boolean isOpen() {
-        WidgetEntity bank = ctxProvider.get().widgets().withText("Rearrange mode").first();
-        if(bank == null) return false;
-        return ctxProvider.get().runOnClientThread(() -> !bank.raw().isHidden());
+        Client client = ctxProvider.get().getClient();
+        return ctxProvider.get().runOnClientThread(() -> client.getItemContainer(InventoryID.BANK) != null);
     }
 
     /**
@@ -144,14 +143,15 @@ public class BankService {
         WidgetPackets widgetPackets = ctxProvider.get().getService(WidgetPackets.class);
 
         int targetMode = noted ? 1 : 0;
-        int currentMode = ctxProvider.get().getVarbitValue(WITHDRAW_AS_VARBIT);
+        int currentMode = ctxProvider.get().getVarbitValue(BANK_WITHDRAWNOTES);
 
         if (currentMode == targetMode) return true;
 
-        Widget toggleWidget = client.getWidget(noted ? WITHDRAW_NOTE_MODE_WIDGET : WITHDRAW_ITEM_MODE_WIDGET);
+        Widget toggleWidget = client.getWidget(WITHDRAW_ITEM_NOT_MODE_WIDGET);
 
         if (toggleWidget != null) {
-            String action = noted ? "Note" : "Item";
+            String action = noted ? "Enable <col=ff9040>Notes" : "Disable <col=ff9040>Notes";
+            String cleanedAction = noted ? "enable notes" : "disable notes";
             boolean hasAction = Arrays.asList(Objects.requireNonNull(toggleWidget.getActions()))
                     .contains(action);
 
@@ -160,7 +160,7 @@ public class BankService {
             Point pt = UIService.getClickbox(toggleWidget);
             if (pt != null) {
                 mousePackets.queueClickPacket(pt.getX(), pt.getY());
-                widgetPackets.queueWidgetAction(toggleWidget, action);
+                widgetPackets.queueWidgetAction(toggleWidget, cleanedAction);
                 return true;
             }
         }
@@ -185,7 +185,16 @@ public class BankService {
      * @return True if the deposit was successful and false otherwise
      */
     public boolean depositAll() {
-        return depositAllInternal(786476, "Deposit inventory");
+        return ctxProvider.get().runOnClientThread(() -> {
+            if(ctxProvider.get().inventory().isEmpty()) return true;
+            if (!isOpen()) return false;
+
+            Widget widget = client.getWidget(786473);
+            if (widget == null) return false;
+
+            ctxProvider.get().widgets().withId(786473).first().interact("Deposit inventory");
+            return true;
+        });
     }
 
     /**
@@ -193,23 +202,30 @@ public class BankService {
      * @return True if the deposit was successful and false otherwise
      */
     public boolean depositAllEquipment() {
-        return depositAllInternal(786478, "Deposit worn items");
+        return ctxProvider.get().runOnClientThread(() -> {
+            if (!isOpen()) return false;
+
+            Widget widget = client.getWidget(786475);
+            if (widget == null) return false;
+
+            ctxProvider.get().widgets().withId(786475).first().interact("Deposit worn items");
+            return true;
+        });
     }
 
     /**
-     * An internal method to wrap deposit all widgets.
-     * @param widgetId Widget id of the deposit button to interact with
-     * @return
+     * Deposits items in stored containers (like wilderness loot bags, rune pouches, etc...)
+     * into the bank.
+     * @return True if the deposit was successful and false otherwise
      */
-    private boolean depositAllInternal(int widgetId, String action) {
+    public boolean depositContainers() {
         return ctxProvider.get().runOnClientThread(() -> {
-            if(ctxProvider.get().inventory().isEmpty()) return true;
             if (!isOpen()) return false;
 
-            Widget widget = client.getWidget(widgetId); // Deposit All
+            Widget widget = client.getWidget(786471);
             if (widget == null) return false;
 
-            ctxProvider.get().widgets().withId(widgetId).first().interact(action);
+            ctxProvider.get().widgets().withId(786471).first().interact("Empty containers");
             return true;
         });
     }

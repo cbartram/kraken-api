@@ -16,30 +16,53 @@ public enum Spellbook {
 
     private final int value;
     private final int enumCompositionIndex;
-    private final CastableSpell[] spells;
+    private CastableSpell[] spells;
 
     Spellbook(int value, int enumCompositionIndex) {
         this.value = value;
         this.enumCompositionIndex = enumCompositionIndex;
-        Spellbook current = getCurrentSpellbook();
+    }
 
-        switch (current) {
-            case LUNAR:
-                this.spells = Lunar.values();
-                break;
-            case STANDARD:
-                this.spells = Standard.values();
-                break;
-            case ANCIENT:
-                this.spells = Ancient.values();
-                break;
-            case ARCEUUS:
-                this.spells = Arceuus.values();
-                break;
-            default:
-                this.spells = new CastableSpell[0];
+    /**
+     * Retrieves the array of spells associated with the current spellbook.
+     *
+     * <p>
+     * Depending on the type of spellbook (e.g., {@code LUNAR}, {@code STANDARD},
+     * {@code ANCIENT}, or {@code ARCEUUS}), this method initializes and returns
+     * an array of spells belonging to that specific spellbook. If the spellbook
+     * cannot be determined, an empty array is returned.
+     * </p>
+     *
+     * <p>
+     * If this method is called before the spells are initialized, it will populate
+     * the corresponding spell array based on the spellbook type and cache the result
+     * for subsequent calls.
+     * </p>
+     *
+     * @return An array of {@link CastableSpell} objects representing the spells available
+     *         in the current spellbook. If the spellbook is not recognized, an empty array
+     *         of {@code CastableSpell} will be returned.
+     */
+    public CastableSpell[] getSpells() {
+        if (spells == null) {
+            switch (this) {
+                case LUNAR:
+                    this.spells = Lunar.values();
+                    break;
+                case STANDARD:
+                    this.spells = Standard.values();
+                    break;
+                case ANCIENT:
+                    this.spells = Ancient.values();
+                    break;
+                case ARCEUUS:
+                    this.spells = Arceuus.values();
+                    break;
+                default:
+                    this.spells = new CastableSpell[0];
+            }
         }
-
+        return spells;
     }
 
     public static boolean isOnStandardSpellbook() {
