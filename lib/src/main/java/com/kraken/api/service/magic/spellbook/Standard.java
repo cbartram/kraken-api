@@ -470,7 +470,7 @@ public enum Standard implements CastableSpell {
     private final int widget;
     private final int index;
     private final Map<Rune, Integer> runeRequirement;
-    private final Spellbook spellbook;
+    private final Spellbook spellbook = Spellbook.STANDARD;
     private final String name;
 
     Standard(int level, int widget, int index, Map<Rune, Integer> runeRequirement) {
@@ -478,7 +478,6 @@ public enum Standard implements CastableSpell {
         this.widget = widget;
         this.index = index;
         this.runeRequirement = runeRequirement;
-        this.spellbook = Spellbook.STANDARD;
         this.name = this.name();
     }
 

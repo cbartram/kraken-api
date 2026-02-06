@@ -289,7 +289,7 @@ public enum Lunar implements CastableSpell {
     private final int widget;
     private final int index;
     private final Map<Rune, Integer> runeRequirement;
-    private final Spellbook spellbook;
+    private final Spellbook spellbook = Spellbook.LUNAR;
     private final String name;
 
     Lunar(int level, int widget, int index, Map<Rune, Integer> runeRequirement) {
@@ -297,7 +297,6 @@ public enum Lunar implements CastableSpell {
         this.widget = widget;
         this.index = index;
         this.runeRequirement = runeRequirement;
-        this.spellbook = Spellbook.LUNAR;
         this.name = this.name();
     }
 

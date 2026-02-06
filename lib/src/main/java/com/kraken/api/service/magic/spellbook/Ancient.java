@@ -144,7 +144,7 @@ public enum Ancient implements CastableSpell {
     private final int widget;
     private final int index;
     private final Map<Rune, Integer> runeRequirement;
-    private final Spellbook spellbook;
+    private final Spellbook spellbook = Spellbook.ANCIENT;
     private final String name;
 
     Ancient(int level, int widget, int index, Map<Rune, Integer> runeRequirement) {
@@ -152,7 +152,6 @@ public enum Ancient implements CastableSpell {
         this.widget = widget;
         this.index = index;
         this.runeRequirement = runeRequirement;
-        this.spellbook = Spellbook.ANCIENT;
         this.name = this.name();
     }
 

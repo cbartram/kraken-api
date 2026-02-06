@@ -315,6 +315,17 @@ public interface ExampleConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "enableBankServiceTests",
+            name = "Start Bank Service Tests",
+            description = "Enable Bank service tests",
+            section = serviceTests,
+            position = 11
+    )
+    default boolean enableBankServiceTests() {
+        return true;
+    }
+
     // ==============================================
     // ========== MOUSE SETTINGS ==========
     // ==============================================
