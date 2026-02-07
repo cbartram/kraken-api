@@ -471,19 +471,14 @@ public class TileService {
      * @return the tile coordinate containing the local point
      */
     public WorldPoint fromInstance(WorldPoint worldPoint) {
-
-        //get local
         LocalPoint localPoint = LocalPoint.fromWorld(ctxProvider.get().getClient().getTopLevelWorldView(), worldPoint);
 
-        // if local point is null or not in an instanced region, return the world point as is
         if(localPoint == null || !ctxProvider.get().getClient().getTopLevelWorldView().isInstance())
             return worldPoint;
 
-        // get position in the scene
         int sceneX = localPoint.getSceneX();
         int sceneY = localPoint.getSceneY();
 
-        // get chunk from scene
         int chunkX = sceneX / CHUNK_SIZE;
         int chunkY = sceneY / CHUNK_SIZE;
 
